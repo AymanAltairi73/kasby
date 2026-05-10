@@ -1,0 +1,129 @@
+import 'package:kasby/core/models/investment_plan_model.dart';
+
+class UserInvestmentModel {
+  final String id;
+  final String userId;
+  final String planId;
+  final String? transactionId;
+  final double amount;
+  final double profitPercentage;
+  final double expectedProfit;
+  final double? actualProfit;
+  final String status; // active, completed, cancelled, matured
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final DateTime? maturedAt;
+  final DateTime? lastPayoutAt;
+  final String? approvedBy;
+  final DateTime? createdAt;
+  final InvestmentPlanModel? investment;
+
+  const UserInvestmentModel({
+    required this.id,
+    required this.userId,
+    required this.planId,
+    this.transactionId,
+    required this.amount,
+    required this.profitPercentage,
+    this.expectedProfit = 0.0,
+    this.actualProfit,
+    this.status = 'active',
+    this.startDate,
+    this.endDate,
+    this.maturedAt,
+    this.lastPayoutAt,
+    this.approvedBy,
+    this.createdAt,
+    this.investment,
+  });
+
+  /// Remaining days until maturity. Returns null if no end date.
+  int? get remainingDays {
+    if (endDate == null) return null;
+    final diff = endDate!.difference(DateTime.now()).inDays;
+    return diff > 0 ? diff : 0;
+  }
+
+  factory UserInvestmentModel.fromJson(Map<String, dynamic> json) {
+    return UserInvestmentModel(
+      id: json['id'] as String,
+      userId: json['user_id'] as String,
+      planId: json['plan_id'] as String,
+      transactionId: json['transaction_id'] as String?,
+      amount: (json['amount'] as num).toDouble(),
+      profitPercentage: (json['profit_percentage'] as num).toDouble(),
+      expectedProfit: (json['expected_profit'] as num?)?.toDouble() ?? 0.0,
+      actualProfit: (json['actual_profit'] as num?)?.toDouble(),
+      status: json['status'] as String? ?? 'active',
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'])
+          : null,
+      endDate: json['end_date'] != null
+          ? DateTime.parse(json['end_date'])
+          : null,
+      maturedAt: json['matured_at'] != null
+          ? DateTime.parse(json['matured_at'])
+          : null,
+      lastPayoutAt: json['last_payout_at'] != null
+          ? DateTime.parse(json['last_payout_at'])
+          : null,
+      approvedBy: json['approved_by'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      investment: json['investment'] != null
+          ? InvestmentPlanModel.fromJson(json['investment'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'plan_id': planId,
+      'transaction_id': transactionId,
+      'amount': amount,
+      'profit_percentage': profitPercentage,
+      'expected_profit': expectedProfit,
+      'actual_profit': actualProfit,
+      'status': status,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
+      'last_payout_at': lastPayoutAt?.toIso8601String(),
+    };
+  }
+
+  UserInvestmentModel copyWith({
+    String? id,
+    String? userId,
+    String? planId,
+    String? transactionId,
+    double? amount,
+    double? profitPercentage,
+    double? expectedProfit,
+    double? actualProfit,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? maturedAt,
+    DateTime? lastPayoutAt,
+    String? approvedBy,
+  }) {
+    return UserInvestmentModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      planId: planId ?? this.planId,
+      transactionId: transactionId ?? this.transactionId,
+      amount: amount ?? this.amount,
+      profitPercentage: profitPercentage ?? this.profitPercentage,
+      expectedProfit: expectedProfit ?? this.expectedProfit,
+      actualProfit: actualProfit ?? this.actualProfit,
+      status: status ?? this.status,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      maturedAt: maturedAt ?? this.maturedAt,
+      lastPayoutAt: lastPayoutAt ?? this.lastPayoutAt,
+      approvedBy: approvedBy ?? this.approvedBy,
+    );
+  }
+}

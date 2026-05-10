@@ -1,0 +1,17 @@
+# Flutter
+.dart_tool/
+.packages
+.pub/
+build/
+
+# Android
+android/.gradle/
+android/app/build/
+**/build/
+
+# iOS
+ios/Pods/
+
+# APK
+*.apk
+*.aab

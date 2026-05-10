@@ -1,0 +1,463 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/widgets/kasby_button.dart';
+import 'package:kasby/core/widgets/kasby_card.dart';
+import 'package:kasby/core/widgets/kasby_text_field.dart';
+import 'package:kasby/core/models/agent_model.dart';
+import 'package:kasby/core/services/supabase_service.dart';
+import 'package:flutter/services.dart';
+import 'package:kasby/core/widgets/glass_card.dart';
+import 'package:kasby/core/widgets/transaction_receipt.dart';
+import 'package:kasby/core/services/confetti_service.dart';
+import 'package:kasby/core/services/snack_service.dart';
+
+class DepositView extends StatefulWidget {
+  const DepositView({super.key});
+
+  @override
+  State<DepositView> createState() => _DepositViewState();
+}
+
+class _DepositViewState extends State<DepositView> {
+  final RxList<AgentModel> agents = <AgentModel>[].obs;
+  final RxBool isLoading = true.obs;
+  final RxInt selectedAgent = 0.obs;
+  final TextEditingController _amountController = TextEditingController();
+  bool _isSubmitting = false;
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAgents();
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchAgents() async {
+    isLoading.value = true;
+    try {
+      debugPrint('[DEBUG] Deposit: Fetching agents (status: Active, available: true)...');
+      final response = await SupabaseService.client
+          .from('agents')
+          .select('*, profiles(*)')
+          .eq('status', 'active')
+          .eq('is_available_now', true)
+          .limit(10);
+
+      debugPrint('[DEBUG] Deposit agents found: ${response.length}');
+      
+      agents.value = (response as List)
+          .map((json) => AgentModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      debugPrint('[DEBUG] Deposit Error: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void _handleDeposit() {
+    final amountText = _amountController.text.trim();
+    if (amountText.isEmpty) {
+      AppSnack.warning(
+        'validation_error_title'.tr,
+        'validation_error_desc'.tr,
+      );
+      return;
+    }
+
+    final amount = double.tryParse(amountText);
+    if (amount == null || amount < 10) {
+      AppSnack.error(
+        'deposit_min_title'.tr,
+        'deposit_min_desc'.tr,
+      );
+      return;
+    }
+
+    if (agents.isEmpty) {
+      AppSnack.warning(
+        'no_agents_title'.tr,
+        'no_agents_desc'.tr,
+      );
+      return;
+    }
+
+    _showConfirmationDialog(amount);
+  }
+
+  void _showConfirmationDialog(double amount) {
+    final agent = agents[selectedAgent.value];
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.softGreen.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.verified_rounded,
+                color: AppColors.softGreen,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'confirm_deposit'.tr,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildConfirmRow(
+              'deposit_amount'.tr,
+              '\$${amount.toStringAsFixed(2)}',
+              AppColors.softGreen,
+            ),
+            Divider(
+              color: isDark
+                  ? Colors.white10
+                  : Colors.black.withValues(alpha: 0.1),
+              height: 24,
+            ),
+            _buildConfirmRow('deposit_agent'.tr, agent.name, null),
+            Divider(
+              color: isDark
+                  ? Colors.white10
+                  : Colors.black.withValues(alpha: 0.1),
+              height: 24,
+            ),
+            _buildConfirmRow(
+              'deposit_location'.tr,
+              agent.city.isNotEmpty ? agent.city : agent.country,
+              null,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.darkGold.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.darkGold.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: AppColors.darkGold,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'deposit_confirm_note'.tr,
+                      style: TextStyle(
+                        color: AppColors.darkGold,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'cancel'.tr,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          KasbyButton(
+            width: 140,
+            text: 'confirm'.tr,
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Get.back();
+              _executeDeposit(amount);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfirmRow(String label, String value, Color? valueColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color:
+                  valueColor ??
+                  (isDark
+                      ? Theme.of(context).colorScheme.onSurface
+                      : AppColors.textBodyLight),
+            ),
+            textAlign: TextAlign.end,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _executeDeposit(double amount) async {
+    setState(() => _isSubmitting = true);
+
+    try {
+      final selectedAgentModel = agents[selectedAgent.value];
+      final userId = SupabaseService.userId;
+      if (userId == null) return;
+
+      // Fetch the user's wallet ID
+      final walletResponse = await SupabaseService.client
+          .from('wallets')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (walletResponse == null) {
+        AppSnack.error(
+          'deposit_error_title'.tr,
+          'deposit_error_desc'.tr,
+        );
+        return;
+      }
+
+      final walletId = walletResponse['id'] as String;
+
+      final insertResult = await SupabaseService.client
+          .from('transactions')
+          .insert({
+            'user_id': userId,
+            'wallet_id': walletId,
+            'type': 'deposit',
+            'amount': amount,
+            'currency': 'USD',
+            'status': 'pending',
+            'description':
+                '${'deposit_via_agent'.tr}: ${selectedAgentModel.name}',
+            'reference_id': selectedAgentModel.id,
+            'fee': 0,
+          })
+          .select()
+          .single();
+
+      // Celebrate success
+      ConfettiService.to.celebrate();
+
+      _showSuccessOverlay(
+        amount,
+        selectedAgentModel.name,
+        insertResult['id']?.toString() ?? '',
+      );
+
+      // Transactions list will update automatically via Realtime Stream
+    } catch (e) {
+      debugPrint('Deposit error: $e');
+      AppSnack.error(
+        'deposit_error_title'.tr,
+        'deposit_error_desc'.tr,
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showSuccessOverlay(
+    double amount,
+    String agentName,
+    String transactionId,
+  ) {
+    Get.to(
+      () => TransactionReceipt(
+        transactionId: transactionId,
+        recipientName: agentName,
+        amount: amount,
+        type: 'deposit'.tr,
+        date: DateTime.now(),
+      ),
+    );
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('deposit_funds'.tr),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Get.back(),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            KasbyCard(
+              color: isDark ? AppColors.surface : AppColors.surfaceLight,
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppColors.darkGold),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'deposit_desc'.tr,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLight,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            KasbyTextField(
+              label: 'deposit_amount'.tr,
+              hint: 'enter_amount_usd'.tr,
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              prefixIcon: Icon(
+                Icons.attach_money_rounded,
+                color: AppColors.darkGold,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              'select_payment_agent'.tr,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildAgentSelector(),
+            const SizedBox(height: 48),
+            _isSubmitting
+                ? Center(
+                    child: CircularProgressIndicator(color: AppColors.darkGold),
+                  )
+                : KasbyButton(
+                    text: 'proceed_to_payment'.tr,
+                    onPressed: _handleDeposit,
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAgentSelector() {
+    return Obx(() {
+      if (isLoading.value) {
+        return Center(
+          child: CircularProgressIndicator(color: AppColors.darkGold),
+        );
+      }
+
+      if (agents.isEmpty) {
+        return KasbyCard(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: Text(
+              'no_agents'.tr,
+               style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+        );
+      }
+
+      return Obx(
+        () => RadioGroup<int>(
+          groupValue: selectedAgent.value,
+          onChanged: (val) => selectedAgent.value = val ?? 0,
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: agents.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final agent = agents[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: GlassCard(
+                  padding: EdgeInsets.zero,
+                  opacity: isDark ? 0.03 : 0.05,
+                  child: RadioListTile<int>(
+                    value: index,
+                    activeColor: AppColors.darkGold,
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            agent.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (agent.successRate > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.softGreen.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${agent.successRate.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                color: AppColors.softGreen,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    subtitle: Text(
+                      '${agent.city}, ${agent.country}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    });
+  }
+}
