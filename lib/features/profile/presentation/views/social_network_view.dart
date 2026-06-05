@@ -8,6 +8,7 @@ import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:kasby/routes/app_routes.dart';
 
 class SocialNetworkView extends StatefulWidget {
   const SocialNetworkView({super.key});
@@ -258,7 +259,9 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
     }
   }
 
-  Future<void> _removeFriend(String friendId, int index) async {
+  Future<void> _removeFriend(String friendId) async {
+    final index = _friends.indexWhere((f) => f['id'] == friendId);
+    if (index == -1) return;
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
         title: Text('remove_friend'.tr),
@@ -406,7 +409,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final friend = filteredFriends[index];
-                          return _buildFriendItem(friend, index);
+                          return _buildFriendItem(friend);
                         },
                       ),
           ),
@@ -650,7 +653,8 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
     ).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideX();
   }
 
-  Widget _buildFriendItem(Map<String, dynamic> friend, int index) {
+  Widget _buildFriendItem(Map<String, dynamic> friend) {
+    final index = _friends.indexWhere((f) => f['id'] == friend['id']);
     return KasbyCard(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -675,8 +679,20 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
               ),
             ),
             IconButton(
+              icon: Icon(Icons.chat_bubble_outline_rounded, color: AppColors.darkGold, size: 22),
+              onPressed: () {
+                Get.toNamed(
+                  Routes.socialChat,
+                  arguments: {
+                    'friendId': friend['id'],
+                    'friendName': friend['full_name'] ?? 'مستخدم',
+                  },
+                );
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.person_remove_rounded, color: Colors.redAccent, size: 20),
-              onPressed: () => _removeFriend(friend['id'], index),
+              onPressed: () => _removeFriend(friend['id'] as String),
             ),
           ],
         ),

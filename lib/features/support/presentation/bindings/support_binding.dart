@@ -6,6 +6,6 @@ class SupportBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<SupportController>(() => SupportController());
-    Get.lazyPut<SupportChatController>(() => SupportChatController());
+    Get.lazyPut<SupportChatController>(() => SupportChatController(), fenix: true);
   }
 }

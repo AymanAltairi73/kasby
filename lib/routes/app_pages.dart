@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:kasby/features/support/presentation/controllers/support_chat_controller.dart';
 import 'app_routes.dart';
 import '../features/splash/presentation/views/splash_view.dart';
 import '../features/onboarding/presentation/views/onboarding_view.dart';
@@ -96,6 +97,20 @@ class AppPages {
       name: Routes.supportChat,
       page: () => const SupportChatView(),
       binding: SupportBinding(),
+    ),
+    GetPage(
+      name: Routes.socialChat,
+      page: () => const SupportChatView(),
+      binding: BindingsBuilder(() {
+        final args = Get.arguments;
+        final map = args is Map<String, dynamic> ? args : null;
+        Get.lazyPut(
+          () => SupportChatController(
+            friendId: map?['friendId'] as String?,
+            friendName: map?['friendName'] as String?,
+          ),
+        );
+      }),
     ),
     GetPage(
       name: Routes.allTransactions,

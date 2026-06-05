@@ -563,17 +563,20 @@ class AuthController extends GetxController {
         );
       }
 
-      final String? otp = await Get.find<OTPService>().sendOtp(
+      final bool success = await Get.find<OTPService>().sendOtp(
         target: phoneNumber,
         targetType: 'phone',
         fcmToken: fcmToken,
         purpose: purpose,
       );
 
-      _log('Phone OTP sent successfully. Code: $otp');
+      _log('Phone OTP request finished. Success: $success');
 
-      if (otp != null) {
-        AppSnack.otp(otp);
+      if (success) {
+        AppSnack.success(
+          'success'.tr,
+          'تم إرسال رمز التحقق بنجاح',
+        );
       }
 
       Get.toNamed(
@@ -611,17 +614,20 @@ class AuthController extends GetxController {
         );
       }
 
-      final String? otp = await Get.find<OTPService>().sendOtp(
+      final bool success = await Get.find<OTPService>().sendOtp(
         target: email,
         targetType: 'email',
         fcmToken: fcmToken,
         purpose: purpose,
       );
 
-      _log('Email OTP sent successfully. Code: $otp');
+      _log('Email OTP request finished. Success: $success');
 
-      if (otp != null) {
-        AppSnack.otp(otp);
+      if (success) {
+        AppSnack.success(
+          'success'.tr,
+          'تم إرسال رمز التحقق بنجاح',
+        );
       }
 
       Get.toNamed(

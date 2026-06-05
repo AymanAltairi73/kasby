@@ -29,7 +29,7 @@ class OTPService extends GetxService {
   /// [targetType] — 'phone' or 'email'.
   /// [fcmToken] — Required for phone OTP delivery.
   /// [purpose] — 'verification', 'password_reset', 'email_change', or 'phone_change'.
-  Future<String?> sendOtp({
+  Future<bool> sendOtp({
     required String target,
     required String targetType,
     String? fcmToken,
@@ -60,7 +60,7 @@ class OTPService extends GetxService {
       }
 
       debugPrint('[OTP] Sent successfully. Expires in ${data['expires_in_seconds']}s');
-      return data['otp'] as String?;
+      return data['success'] as bool? ?? false;
     } catch (e) {
       debugPrint('[OTP] Send error: $e');
       rethrow;

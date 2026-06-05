@@ -613,6 +613,35 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  /// Deep-link navigation based on notification type/target.
+  void navigateFromNotification(NotificationModel notification) {
+    switch (notification.type) {
+      case 'social_friend_request':
+      case 'social_friend_accepted':
+        Get.toNamed(Routes.friendRequests);
+        break;
+      case 'social_chat':
+        if (notification.targetUserId != null) {
+          Get.toNamed(
+            Routes.socialChat,
+            arguments: {'friendId': notification.targetUserId},
+          );
+        }
+        break;
+      case 'chat_admin_reply':
+      case 'chat_new_message':
+      case 'admin_new_chat':
+        Get.toNamed(Routes.supportChat);
+        break;
+      default:
+        if (notification.target == 'chat') {
+          Get.toNamed(Routes.supportChat);
+        } else if (notification.target == 'social') {
+          Get.toNamed(Routes.friendRequests);
+        }
+    }
+  }
+
   /// Mark a notification as read.
   Future<void> markNotificationRead(String notificationId) async {
     try {

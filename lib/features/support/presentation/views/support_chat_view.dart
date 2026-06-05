@@ -187,7 +187,7 @@ class _SupportChatViewState extends State<SupportChatView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'kasby_support'.tr,
+                  _chatController.chatTitle,
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Obx(

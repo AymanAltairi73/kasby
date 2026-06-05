@@ -31,6 +31,7 @@ abstract class Routes {
   static const myTeam = '/my-team';
   static const kyc = '/kyc';
   static const supportChat = '/support-chat';
+  static const socialChat = '/social-chat';
   static const changePassword = '/change-password';
   static const allTransactions = '/all-transactions';
   static const transactionDetails = '/transaction-details';

@@ -11,6 +11,16 @@ import '../../data/models/chat_message_model.dart';
 class SupportChatController extends GetxController {
   static SupportChatController get to => Get.find();
 
+  /// When set, opens a P2P chat with a friend (uses `start_social_chat` RPC).
+  final String? friendId;
+  final String? friendName;
+
+  SupportChatController({this.friendId, this.friendName});
+
+  bool get isSocialChat => friendId != null;
+  String get chatTitle =>
+      isSocialChat ? (friendName ?? 'محادثة') : 'kasby_support'.tr;
+
   final RxList<ChatMessageModel> messages = <ChatMessageModel>[].obs;
   final RxString searchQuery = ''.obs;
   final RxBool isLoading = false.obs;
@@ -31,6 +41,7 @@ class SupportChatController extends GetxController {
   StreamSubscription? _messageSubscription;
   StreamSubscription? _conversationSubscription;
   String? _conversationId;
+  String? _userLowId;
   RealtimeChannel? _typingChannel;
   Timer? _typingThrottleTimer;
   final Map<String, Timer> _typingTimers = {};
@@ -73,7 +84,9 @@ class SupportChatController extends GetxController {
       debugPrint('Error initializing chat: $e');
       Get.snackbar(
         'خطأ في الاتصال',
-        'تعذر الاتصال بخوادم الدعم، يرجى المحاولة مرة أخرى لاحقاً.\nالخطأ: $e',
+        isSocialChat
+            ? 'تعذر فتح المحادثة مع الصديق.\nالخطأ: $e'
+            : 'تعذر الاتصال بخوادم الدعم، يرجى المحاولة مرة أخرى لاحقاً.\nالخطأ: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withValues(alpha: 0.8),
         colorText: Colors.white,
@@ -85,18 +98,45 @@ class SupportChatController extends GetxController {
   }
 
   Future<Map<String, dynamic>> _getOrCreateConversation() async {
+    if (isSocialChat) {
+      final response = await SupabaseService.client.rpc(
+        'start_social_chat',
+        params: {'p_friend_id': friendId},
+      );
+      final map = response as Map<String, dynamic>;
+      if (map['success'] == true && map['conversation_id'] != null) {
+        final convId = map['conversation_id'] as String;
+        final conv = await SupabaseService.client
+            .from('chat_conversations')
+            .select()
+            .eq('id', convId)
+            .maybeSingle();
+        if (conv != null) {
+          _applyConversationIds(conv);
+          return conv;
+        }
+      }
+      throw Exception(map['error'] ?? 'Failed to start social chat');
+    }
+
     final String lang = Get.locale?.languageCode ?? 'ar';
-    
+
     final response = await SupabaseService.client.rpc(
       'fn_init_support_chat',
       params: {'p_language': lang},
     );
 
     if (response != null && response['success'] == true) {
-      return response['conversation'];
+      final conv = response['conversation'] as Map<String, dynamic>;
+      _applyConversationIds(conv);
+      return conv;
     }
 
     throw Exception('Failed to initialize support chat');
+  }
+
+  void _applyConversationIds(Map<String, dynamic> conv) {
+    _userLowId = conv['user_low_id'] as String?;
   }
 
   Future<void> _loadMessages() async {
@@ -129,10 +169,13 @@ class SupportChatController extends GetxController {
               .map((json) => ChatMessageModel.fromJson(json))
               .toList();
 
-          // Check for new messages from support to play sound
+          // Play sound for incoming messages from others
           if (newList.length > messages.length) {
             final latest = newList.last;
-            if (latest.senderType != 'user') {
+            final fromOther = isSocialChat
+                ? latest.senderId != SupabaseService.userId
+                : latest.senderType != 'user';
+            if (fromOther) {
               NotificationService().playNotificationSound();
             }
           }
@@ -249,19 +292,9 @@ class SupportChatController extends GetxController {
         'message_type': type,
         'idempotency_key': idempotencyKey,
       });
-
-      // 3. Update last_message on conversation
-      await SupabaseService.client
-          .from('chat_conversations')
-          .update({
-            'last_message': type == 'image' ? '📷 صورة' : content.trim(),
-            'last_message_at': DateTime.now().toIso8601String(),
-            'unread_admin_count': 1,
-          })
-          .eq('id', _conversationId!);
     } catch (e) {
       debugPrint('Error sending message: $e');
-      // 4. Rollback Optimistic Update
+      // 3. Rollback Optimistic Update
       messages.removeWhere((m) => m.id == optimisticMessage.id);
       Get.snackbar('خطأ', 'تعذر إرسال الرسالة، يرجى المحاولة مرة أخرى.');
     }
@@ -296,7 +329,8 @@ class SupportChatController extends GetxController {
   Future<String?> _uploadImage(File file) async {
     try {
       final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final String path = 'support/${SupabaseService.userId}/$fileName';
+      final folder = isSocialChat ? 'social' : 'support';
+      final String path = '$folder/${SupabaseService.userId}/$fileName';
 
       // Verify bucket exists first or just try upload with more detail
       debugPrint('Attempting to upload to bucket: chat_attachments');
@@ -330,14 +364,24 @@ class SupportChatController extends GetxController {
     }
   }
 
+  Map<String, dynamic> _myUnreadClearPayload() {
+    final userId = SupabaseService.userId;
+    if (isSocialChat && userId != null && _userLowId != null) {
+      if (userId == _userLowId) {
+        return {'unread_user_count': 0};
+      }
+      return {'unread_admin_count': 0};
+    }
+    return {'unread_user_count': 0};
+  }
+
   Future<void> _markAllRead() async {
     if (_conversationId == null) return;
 
-    // Reset user unread count on conversation
     try {
       await SupabaseService.client
           .from('chat_conversations')
-          .update({'unread_user_count': 0})
+          .update(_myUnreadClearPayload())
           .eq('id', _conversationId!);
     } catch (e) {
       debugPrint('Error marking messages as read: $e');

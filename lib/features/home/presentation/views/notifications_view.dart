@@ -92,6 +92,7 @@ class NotificationsView extends StatelessWidget {
                   if (!isRead) {
                     homeController.markNotificationRead(notification.id);
                   }
+                  homeController.navigateFromNotification(notification);
                 },
                 child: KasbyCard(
                   padding: const EdgeInsets.all(16),

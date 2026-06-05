@@ -69,17 +69,17 @@ class ProfileUpdateController extends GetxController {
 
   /// Sends OTP for either email or phone change.
   /// Requires password verification first.
-  Future<String?> sendUpdateOtp({
+  Future<bool> sendUpdateOtp({
     required String target,
     required String type, // 'email_change' or 'phone_change'
   }) async {
     // Guard: password must be verified first
     if (!isPasswordVerified.value) {
       AppSnack.warning('error'.tr, 'password_required_first'.tr);
-      return null;
+      return false;
     }
 
-    if (resendTimer.value > 0 || isLoading.value) return null;
+    if (resendTimer.value > 0 || isLoading.value) return false;
 
     isLoading.value = true;
     
@@ -91,10 +91,10 @@ class ProfileUpdateController extends GetxController {
       
       if (fcmToken.isEmpty) {
         AppSnack.error('error'.tr, 'enable_notifications_error'.tr);
-        return null;
+        return false;
       }
 
-      final String? otp = await OTPService.to.sendOtp(
+      final bool success = await OTPService.to.sendOtp(
         target: target,
         targetType: targetType,
         purpose: type,
@@ -103,23 +103,20 @@ class ProfileUpdateController extends GetxController {
 
       _startResendTimer();
       
-      // Deliver OTP via premium notification-style snackbar
-      if (otp != null) {
-        AppSnack.otp(otp);
-      } else {
+      if (success) {
         AppSnack.success(
           'success'.tr,
           'otp_sent_notification'.tr,
         );
       }
       
-      return otp;
+      return success;
     } catch (e) {
       _log('Error sending update OTP for $type to $target: $e', isError: true);
       String msg = e.toString().replaceAll('Exception:', '').trim();
       if (e.toString().contains('RATE_LIMIT')) msg = 'rate_limit_exceeded_friend'.tr;
       AppSnack.error('error'.tr, msg);
-      return null;
+      return false;
     } finally {
       isLoading.value = false;
     }

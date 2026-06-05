@@ -176,11 +176,17 @@ class FCMService extends GetxService {
     }
     
     // Deep Linking: If route is provided
-    if (message.data['route'] != null) {
-      final route = message.data['route'] as String;
-      // We delay routing to ensure app is fully initialized if coming from terminated state
+    final route = message.data['route'] as String?;
+    if (route != null) {
+      final targetUserId = message.data['target_user_id'] as String?;
       Future.delayed(const Duration(milliseconds: 500), () {
-        if (Get.currentRoute != route) {
+        if (Get.currentRoute == route) return;
+        if (route == '/social-chat' && targetUserId != null) {
+          Get.toNamed(
+            route,
+            arguments: {'friendId': targetUserId},
+          );
+        } else {
           Get.toNamed(route);
         }
       });
@@ -195,7 +201,7 @@ class FCMService extends GetxService {
           params: {
             'p_token': token,
             'p_platform': GetPlatform.isIOS ? 'ios' : 'android',
-            'p_app_type': 'agent', // Explicitly registering as agent for this controller's context
+            'p_app_type': 'user',
           },
         );
         debugPrint('[FCM] Token synced to server successfully via fn_register_device_token');

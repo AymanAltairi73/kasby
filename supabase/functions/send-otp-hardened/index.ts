@@ -16,7 +16,7 @@ const corsHeaders = {
  * 4. Generate 6-digit OTP
  * 5. Hash OTP (SHA-256)
  * 6. Store in otp_verifications
- * 7. Send via FCM Local Push
+ * 7. Send via FCM Push Notification (SECURE — OTP never in HTTP response)
  */
 
 serve(async (req) => {
@@ -116,7 +116,7 @@ serve(async (req) => {
       .insert({
         user_id: userId,
         target: target,
-        target_type: target_type, // Added this field
+        target_type: target_type,
         type: purpose,
         code_hash: hashHex,
         expires_at: new Date(Date.now() + 5 * 60000).toISOString()
@@ -124,41 +124,53 @@ serve(async (req) => {
 
     if (insertError) throw insertError
 
-    /* 
-    // 6. DELIVERY (FCM) - DISABLED AS REQUESTED
-    if (device_fcm_token) {
-      console.log(`[OTP] Pulsing FCM to ${userId} for ${purpose}`)
-      
-      const fcmResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-fcm`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
-        },
-        body: JSON.stringify({
-          token: device_fcm_token,
-          title: "Kasby OTP",
-          body: `رمز التحقق الخاص بك هو: ${otpCode}`,
-          data: {
-            type: "otp_verification",
-            purpose: purpose,
-            otp: otpCode
-          }
-        })
-      })
+    // 6. DELIVERY via FCM Push Notification
+    // OTP is delivered ONLY through the secure FCM channel — NEVER in HTTP responses.
+    let deliveryStatus = 'no_fcm_token'
 
-      if (!fcmResponse.ok) {
-        console.error("[OTP] FCM delivery failed:", await fcmResponse.text())
+    if (device_fcm_token) {
+      console.log(`[OTP] Delivering OTP via FCM to user ${userId} for ${purpose}`)
+      
+      try {
+        const fcmResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-fcm`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify({
+            token: device_fcm_token,
+            title: "Kasby — رمز التحقق",
+            body: `رمز التحقق الخاص بك هو: ${otpCode}`,
+            data: {
+              type: "otp_verification",
+              purpose: purpose,
+              otp_code: otpCode
+            }
+          })
+        })
+
+        if (fcmResponse.ok) {
+          deliveryStatus = 'delivered'
+          console.log(`[OTP] FCM delivery successful for user ${userId}`)
+        } else {
+          const errText = await fcmResponse.text()
+          deliveryStatus = 'fcm_failed'
+          console.error(`[OTP] FCM delivery failed: ${errText}`)
+        }
+      } catch (fcmErr: any) {
+        deliveryStatus = 'fcm_error'
+        console.error(`[OTP] FCM delivery error: ${fcmErr.message}`)
       }
     } else {
-      console.log(`[OTP] DEBUG: ${otpCode} for ${target} (No FCM Token)`)
+      console.log(`[OTP] No FCM token provided for user ${userId}. OTP stored but not delivered.`)
     }
-    */
-    console.log(`[OTP] Direct Code: ${otpCode} for ${target}`)
 
+    // SECURITY: OTP is NEVER included in the HTTP response.
+    // It is delivered exclusively via the FCM push notification channel.
     return new Response(JSON.stringify({ 
-      success: true, 
-      otp: otpCode, // Return OTP directly
+      success: true,
+      delivery: deliveryStatus,
       expires_in_seconds: 300 
     }), { status: 200, headers: corsHeaders })
 
