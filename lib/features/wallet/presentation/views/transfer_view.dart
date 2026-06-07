@@ -105,7 +105,7 @@ class _TransferViewState extends State<TransferView> {
             child: _buildToggleItem(
               true,
               'send_points'.tr,
-              Icons.stars_rounded,
+              'assets/images/ksp_coin.png',
             ),
           ),
           Expanded(
@@ -120,7 +120,7 @@ class _TransferViewState extends State<TransferView> {
     );
   }
 
-  Widget _buildToggleItem(bool active, String label, IconData icon) {
+  Widget _buildToggleItem(bool active, String label, dynamic icon) {
     final bool isSelected = isPoints == active;
     return GestureDetector(
       onTap: () => setState(() => isPoints = active),
@@ -133,13 +133,22 @@ class _TransferViewState extends State<TransferView> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? (isDark ? Colors.black : Colors.white)
-                  : (isDark ? Colors.white54 : Colors.black54),
-              size: 20,
-            ),
+            icon is String
+                ? Image.asset(
+                    icon,
+                    width: 20,
+                    height: 20,
+                    color: isSelected
+                        ? (isDark ? Colors.black : Colors.white)
+                        : (isDark ? Colors.white54 : Colors.black54),
+                  )
+                : Icon(
+                    icon as IconData,
+                    color: isSelected
+                        ? (isDark ? Colors.black : Colors.white)
+                        : (isDark ? Colors.white54 : Colors.black54),
+                    size: 20,
+                  ),
             const SizedBox(width: 8),
             Text(
               label,
@@ -238,10 +247,19 @@ class _TransferViewState extends State<TransferView> {
           hint: isPoints ? 'enter_amount_point'.tr : 'enter_amount_usd'.tr,
           controller: _amountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          prefixIcon: Icon(
-            isPoints ? Icons.stars_rounded : Icons.attach_money_rounded,
-            color: AppColors.darkGold,
-          ),
+          prefixIcon: isPoints
+              ? Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Image.asset(
+                    'assets/images/ksp_coin.png',
+                    width: 20,
+                    height: 20,
+                  ),
+                )
+              : Icon(
+                  Icons.attach_money_rounded,
+                  color: AppColors.darkGold,
+                ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -475,7 +493,7 @@ class _TransferViewState extends State<TransferView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${'transfer_amount_label'.tr}: \$${amount.toStringAsFixed(2)}',
+              '${'transfer_amount_label'.tr}: ${isPoints ? '${amount.toInt()} KSP' : '\$${amount.toStringAsFixed(2)}'}',
             ),
             const SizedBox(height: 8),
             Text('${'transfer_to_label'.tr}: ${_idController.text}'),

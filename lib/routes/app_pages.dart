@@ -25,7 +25,7 @@ import '../features/profile/presentation/views/profile_view.dart';
 import '../features/profile/presentation/views/support_view.dart';
 import '../features/profile/presentation/views/legal_view.dart';
 import '../features/investment/presentation/views/my_investments_view.dart';
-import '../features/home/presentation/views/points_view.dart';
+import '../features/home/presentation/views/ksp_wallet_view.dart';
 // import '../features/home/presentation/views/services_view.dart';
 import '../features/wallet/presentation/views/loan_view.dart';
 import '../features/profile/presentation/views/edit_profile_view.dart';
@@ -79,7 +79,7 @@ class AppPages {
     GetPage(name: Routes.profile, page: () => const ProfileView()),
     GetPage(name: Routes.support, page: () => const SupportView()),
     GetPage(name: Routes.legal, page: () => const LegalView()),
-    GetPage(name: Routes.points, page: () => const PointsView()),
+    GetPage(name: Routes.kspWallet, page: () => const KspWalletView()),
     GetPage(name: Routes.agentDetails, page: () => const AgentDetailsView()),
     GetPage(name: Routes.transfer, page: () => const TransferView()),
     // GetPage(name: Routes.services, page: () => const ServicesView()),

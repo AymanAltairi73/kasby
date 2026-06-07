@@ -20,7 +20,7 @@ abstract class Routes {
   static const profile = '/profile';
   static const support = '/support';
   static const legal = '/legal';
-  static const points = '/points';
+  static const kspWallet = '/ksp-wallet';
   static const agentDetails = '/agent-details';
   static const transfer = '/transfer';
   static const services = '/services';

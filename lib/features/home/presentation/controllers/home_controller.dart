@@ -40,6 +40,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   // Points
   final RxInt userPoints = 0.obs;
+  final RxInt totalEarnedKsp = 0.obs;
+  final RxInt totalSpentKsp = 0.obs;
   final RxBool isLoadingPoints = false.obs;
 
   // Transfer Recipients (recent)
@@ -292,8 +294,10 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         .listen(
           (data) {
             if (data.isNotEmpty) {
-              userPoints.value =
-                  (data.first['current_balance'] as num?)?.toInt() ?? 0;
+              final row = data.first;
+              userPoints.value = (row['current_balance'] as num?)?.toInt() ?? 0;
+              totalEarnedKsp.value = (row['total_earned'] as num?)?.toInt() ?? 0;
+              totalSpentKsp.value = (row['total_spent'] as num?)?.toInt() ?? 0;
               _log('Points updated via real-time stream: ${userPoints.value}');
             }
           },
@@ -371,6 +375,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     recentRecipients.clear();
     unreadNotificationCount.value = 0;
     userPoints.value = 0;
+    totalEarnedKsp.value = 0;
+    totalSpentKsp.value = 0;
     hasError.value = false;
     pendingRewards.clear();
     nextRewardRelease.value = null;
@@ -727,14 +733,18 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     try {
       final response = await SupabaseService.client
           .from('user_points')
-          .select('current_balance')
+          .select('current_balance, total_earned, total_spent')
           .eq('user_id', SupabaseService.userId!)
           .maybeSingle();
 
       if (response != null) {
         userPoints.value = (response['current_balance'] as num?)?.toInt() ?? 0;
+        totalEarnedKsp.value = (response['total_earned'] as num?)?.toInt() ?? 0;
+        totalSpentKsp.value = (response['total_spent'] as num?)?.toInt() ?? 0;
       } else {
         userPoints.value = 0;
+        totalEarnedKsp.value = 0;
+        totalSpentKsp.value = 0;
       }
     } catch (e) {
       debugPrint('Error fetching points: $e');

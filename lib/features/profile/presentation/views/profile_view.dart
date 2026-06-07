@@ -38,6 +38,14 @@ class ProfileView extends StatelessWidget {
                       Colors.blueAccent,
                       () => Get.toNamed(Routes.personalProfile),
                     ),
+                    _buildProfileItem(
+                      context,
+                      isDark,
+                      Icons.toll_rounded,
+                      'ksp_wallet'.tr,
+                      AppColors.darkGold,
+                      () => Get.toNamed(Routes.kspWallet),
+                    ),
                     // _buildProfileItem(
                     //   context,
                     //   isDark,

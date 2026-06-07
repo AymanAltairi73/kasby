@@ -13,6 +13,9 @@ import 'package:kasby/features/home/presentation/controllers/ad_controller.dart'
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
+import 'package:kasby/core/utils/ksp_converter.dart';
+
+
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -449,8 +452,7 @@ class _HomeViewState extends State<HomeView> {
                           ),
                           Obx(
                             () => Text(
-                              '${(currencyController.totalBalance.value * 1000).toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} ' +
-                                  'points_label_short'.tr,
+                              KspConverter.formatKsp((currencyController.totalBalance.value * 1000).toInt()),
                               style: TextStyle(
                                 color: AppColors.darkGold,
                                 fontWeight: FontWeight.bold,
@@ -630,41 +632,51 @@ class _HomeViewState extends State<HomeView> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  // Points Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.darkGold.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppColors.darkGold.withValues(alpha: 0.3),
+                  // KSP Wallet Badge
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Get.toNamed(Routes.kspWallet);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.stars_rounded,
-                          color: AppColors.darkGold,
-                          size: 16,
+                      decoration: BoxDecoration(
+                        color: AppColors.darkGold.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.darkGold.withValues(alpha: 0.3),
                         ),
-                        const SizedBox(width: 6),
-                        Obx(
-                          () => Text(
-                            'points_label'.trParams({
-                              'count': homeController.pointsBalance.toString(),
-                            }),
-                            style: TextStyle(
-                              color: AppColors.darkGold,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/images/ksp_coin.png',
+                            width: 18,
+                            height: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Obx(
+                            () => Text(
+                              KspConverter.formatKsp(homeController.pointsBalance),
+                              style: TextStyle(
+                                color: AppColors.darkGold,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 10,
+                            color: AppColors.darkGold,
+                          ),
+                        ],
+                      ),
                     ),
                   ).animate().scale(),
                   const SizedBox(height: 12),

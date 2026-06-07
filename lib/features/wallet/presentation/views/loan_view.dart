@@ -738,7 +738,11 @@ class _LoanViewState extends State<LoanView>
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _buildTypeItem(true, 'points'.tr, Icons.stars_rounded),
+              child: _buildTypeItem(
+                true,
+                'points'.tr,
+                'assets/images/ksp_coin.png',
+              ),
             ),
           ],
         ),
@@ -746,7 +750,7 @@ class _LoanViewState extends State<LoanView>
     );
   }
 
-  Widget _buildTypeItem(bool value, String label, IconData icon) {
+  Widget _buildTypeItem(bool value, String label, dynamic icon) {
     final bool isSelected = receiveAsPoints == value;
     return GestureDetector(
       onTap: () => setState(() => receiveAsPoints = value),
@@ -765,12 +769,21 @@ class _LoanViewState extends State<LoanView>
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? Colors.black
-                  : (isDark ? Colors.white54 : Colors.black54),
-            ),
+            icon is String
+                ? Image.asset(
+                    icon,
+                    width: 24,
+                    height: 24,
+                    color: isSelected
+                        ? Colors.black
+                        : (isDark ? Colors.white54 : Colors.black54),
+                  )
+                : Icon(
+                    icon as IconData,
+                    color: isSelected
+                        ? Colors.black
+                        : (isDark ? Colors.white54 : Colors.black54),
+                  ),
             const SizedBox(height: 8),
             Text(
               label,
