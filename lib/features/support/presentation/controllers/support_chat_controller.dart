@@ -15,12 +15,28 @@ class SupportChatController extends GetxController {
   /// When set, opens a P2P chat with a friend (uses `start_social_chat` RPC).
   final String? friendId;
   final String? friendName;
+  
+  // Agent Chat Variables
+  final String? agentUserId;
+  final String? agentName;
+  final bool isAgentChat;
+  final String? predefinedConversationId;
 
-  SupportChatController({this.friendId, this.friendName});
+  SupportChatController({
+    this.friendId, 
+    this.friendName,
+    this.agentUserId,
+    this.agentName,
+    this.isAgentChat = false,
+    this.predefinedConversationId,
+  });
 
   bool get isSocialChat => friendId != null;
-  String get chatTitle =>
-      isSocialChat ? (friendName ?? 'محادثة') : 'kasby_support'.tr;
+  String get chatTitle {
+    if (isAgentChat) return agentName ?? 'kasby_support'.tr;
+    if (isSocialChat) return friendName ?? 'محادثة';
+    return 'kasby_support'.tr;
+  }
 
   final RxList<ChatMessageModel> messages = <ChatMessageModel>[].obs;
   final RxString searchQuery = ''.obs;
@@ -153,6 +169,19 @@ class SupportChatController extends GetxController {
   }
 
   Future<Map<String, dynamic>> _getOrCreateConversation() async {
+    if (predefinedConversationId != null) {
+      final conv = await SupabaseService.client
+          .from('chat_conversations')
+          .select()
+          .eq('id', predefinedConversationId!)
+          .maybeSingle();
+      if (conv != null) {
+        _applyConversationIds(conv);
+        return conv;
+      }
+      throw Exception('Failed to load conversation');
+    }
+
     if (isSocialChat) {
       final response = await SupabaseService.client.rpc(
         'start_social_chat',
@@ -197,16 +226,41 @@ class SupportChatController extends GetxController {
 
   void _listenToPresence() {
     // Determine the recipient ID based on conversation type.
-    final targetId = isSocialChat ? friendId : _assignedAdminId;
+    final targetId = isAgentChat 
+        ? agentUserId 
+        : (isSocialChat ? friendId : _assignedAdminId);
 
     if (targetId != null) {
       final presenceService = Get.find<PresenceService>();
+      
       // Update initially
       isRecipientOnline.value = presenceService.isUserOnline(targetId);
+      if (!isRecipientOnline.value) _fetchRecipientLastSeen(targetId);
+      
       // Listen to changes
       ever(presenceService.onlineUsers, (_) {
-        isRecipientOnline.value = presenceService.isUserOnline(targetId);
+        final isOnline = presenceService.isUserOnline(targetId);
+        isRecipientOnline.value = isOnline;
+        if (!isOnline) {
+          _fetchRecipientLastSeen(targetId);
+        }
       });
+    }
+  }
+
+  Future<void> _fetchRecipientLastSeen(String targetId) async {
+    try {
+      final response = await SupabaseService.client
+          .from('profiles')
+          .select('last_seen_at')
+          .eq('id', targetId)
+          .maybeSingle();
+      
+      if (response != null && response['last_seen_at'] != null) {
+        recipientLastSeen.value = DateTime.parse(response['last_seen_at']);
+      }
+    } catch (e) {
+      debugPrint('[SupportChat] Error fetching last_seen_at: $e');
     }
   }
 

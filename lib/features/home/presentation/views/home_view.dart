@@ -408,66 +408,34 @@ class _HomeViewState extends State<HomeView> {
               textDirection: TextDirection.rtl,
               child: Column(
                 children: [
-                  // Top Section: Balance & Percentage
+                  // ─── TOP: KSP Coin Header ───
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Large Balance (Right in RTL)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                color: AppColors.textSecondary,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'total_balance'.tr,
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
+                          Image.asset(
+                            'assets/images/ksp_coin.png',
+                            width: 28,
+                            height: 28,
                           ),
-                          Obx(
-                            () =>
-                                Text(
-                                  currencyController.formatToUSD(
-                                    currencyController.totalBalance.value,
-                                  ),
-                                  style: Get.textTheme.displaySmall?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                    letterSpacing: -1,
-                                  ),
-                                ).animate().shimmer(
-                                  duration: const Duration(seconds: 3),
-                                ),
-                          ),
-                          Obx(
-                            () => Text(
-                              KspConverter.formatKsp((currencyController.totalBalance.value * 1000).toInt()),
-                              style: TextStyle(
-                                color: AppColors.darkGold,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                letterSpacing: 0.5,
-                              ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Kasby',
+                            style: TextStyle(
+                              color: AppColors.darkGold,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              letterSpacing: 1.5,
                             ),
                           ),
                         ],
                       ),
-                      // Percentage Badge (Left in RTL)
+                      // Percentage Badge
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                          horizontal: 10,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.softGreen.withValues(alpha: 0.1),
@@ -478,20 +446,21 @@ class _HomeViewState extends State<HomeView> {
                         ),
                         child: Obx(
                           () => Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                '${homeController.profitPercentage}%+',
-                                style: TextStyle(
-                                  color: AppColors.softGreen,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
                               Icon(
                                 Icons.trending_up_rounded,
                                 color: AppColors.softGreen,
-                                size: 16,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '+${homeController.profitPercentage}%',
+                                style: TextStyle(
+                                  color: AppColors.softGreen,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                             ],
                           ),
@@ -499,11 +468,142 @@ class _HomeViewState extends State<HomeView> {
                       ).animate().fadeIn().slideX(),
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  // Middle Section: Dual Metrics
+                  const SizedBox(height: 20),
+                  // ─── TOTAL BALANCE ───
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.account_balance_wallet_outlined,
+                            color: AppColors.textSecondary,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'total_balance'.tr,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Obx(
+                        () => Text(
+                          currencyController.formatToUSD(
+                            currencyController.totalBalance.value,
+                          ),
+                          style: Get.textTheme.displaySmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: Theme.of(context).colorScheme.onSurface,
+                            letterSpacing: -1,
+                          ),
+                        ).animate().shimmer(
+                          duration: const Duration(seconds: 3),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // ─── KSP BALANCE CARD ───
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Get.toNamed(Routes.kspWallet);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.darkGold.withValues(alpha: 0.15),
+                            AppColors.darkGold.withValues(alpha: 0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.darkGold.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Image.asset(
+                            'assets/images/ksp_coin.png',
+                            width: 32,
+                            height: 32,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'KSP',
+                                  style: TextStyle(
+                                    color: AppColors.darkGold,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 11,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                Obx(
+                                  () => Text(
+                                    KspConverter.formatKsp(homeController.pointsBalance),
+                                    style: TextStyle(
+                                      color: AppColors.darkGold,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // USD Equivalent
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'USD',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              Obx(
+                                () => Text(
+                                  currencyController.formatToUSD(
+                                    KspConverter.kspToUsd(homeController.pointsBalance.toDouble()),
+                                  ),
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 12,
+                            color: AppColors.darkGold,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ).animate().fadeIn().slideY(begin: 0.1),
+                  const SizedBox(height: 24),
+                  // ─── DUAL METRICS: Daily Profit + Currency ───
                   Row(
                     children: [
-                      // Daily Profit (Right in RTL)
+                      // Daily Profit
                       Expanded(
                         child: Column(
                           children: [
@@ -511,7 +611,7 @@ class _HomeViewState extends State<HomeView> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.info_outline_rounded,
+                                  Icons.show_chart_rounded,
                                   color: AppColors.textSecondary,
                                   size: 12,
                                 ),
@@ -548,7 +648,7 @@ class _HomeViewState extends State<HomeView> {
                             ? Colors.white.withValues(alpha: 0.1)
                             : Colors.black.withValues(alpha: 0.1),
                       ),
-                      // Currency Converter Section (Left in RTL)
+                      // Currency Converter
                       Expanded(
                         child: Column(
                           children: [
@@ -631,54 +731,6 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  // KSP Wallet Badge
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      Get.toNamed(Routes.kspWallet);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.darkGold.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.darkGold.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset(
-                            'assets/images/ksp_coin.png',
-                            width: 18,
-                            height: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Obx(
-                            () => Text(
-                              KspConverter.formatKsp(homeController.pointsBalance),
-                              style: TextStyle(
-                                color: AppColors.darkGold,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 10,
-                            color: AppColors.darkGold,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ).animate().scale(),
                   const SizedBox(height: 12),
                   // Portfolio Distribution
                   Obx(() {

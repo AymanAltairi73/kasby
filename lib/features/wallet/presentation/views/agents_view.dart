@@ -84,6 +84,57 @@ class _AgentsViewState extends State<AgentsView> {
     }
   }
 
+  Future<void> _startAgentChat(AgentModel agent) async {
+    if (agent.userId == null) {
+      Get.snackbar(
+        'warning'.tr,
+        'هذا الوكيل غير مرتبط بحساب نشط حالياً. يرجى استخدام الدعم الفني العام.',
+        backgroundColor: Colors.orange.shade800,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      final response = await SupabaseService.client.rpc(
+        'fn_start_agent_chat',
+        params: {'p_agent_id': agent.id},
+      );
+
+      Get.back(); // close loading dialog
+
+      if (response != null && response['success'] == true) {
+        final conversationId = response['conversation']['id'];
+        Get.toNamed(Routes.socialChat, arguments: {
+          'conversation_id': conversationId,
+          'user_id': agent.userId,
+          'user_name': agent.name,
+          'is_agent_chat': true,
+        });
+      } else {
+        Get.snackbar(
+          'error'.tr,
+          response['error'] ?? 'حدث خطأ أثناء بدء المحادثة',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      if (Get.isDialogOpen ?? false) Get.back();
+      debugPrint('[AgentsView] Error starting agent chat: $e');
+      Get.snackbar(
+        'error'.tr,
+        'فشل الاتصال بالوكيل. يرجى المحاولة لاحقاً',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
@@ -237,6 +288,7 @@ class _AgentsViewState extends State<AgentsView> {
                             ),
                             onPressed: () {
                               HapticFeedback.lightImpact();
+                              _startAgentChat(agent);
                             },
                           ),
                         ],

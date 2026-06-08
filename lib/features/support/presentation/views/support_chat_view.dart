@@ -212,19 +212,21 @@ class _SupportChatViewState extends State<SupportChatView> {
                   ),
                 ),
               ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: AppColors.softGreen,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.surface, width: 2),
-                  ),
-                ),
-              ),
+              Obx(() => _chatController.isRecipientOnline.value
+                  ? Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: AppColors.softGreen,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.surface, width: 2),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink()),
             ],
           ),
           const SizedBox(width: 12),
@@ -272,9 +274,11 @@ class _SupportChatViewState extends State<SupportChatView> {
                       final diff = DateTime.now().difference(lastSeen);
                       String timeStr = 'offline'.tr;
                       if (diff.inMinutes < 60) {
-                        timeStr = '${diff.inMinutes}m ago'; // Need translation key
+                        timeStr = '${diff.inMinutes} دقيقة';
                       } else if (diff.inHours < 24) {
-                        timeStr = '${diff.inHours}h ago';
+                        timeStr = '${diff.inHours} ساعة';
+                      } else {
+                        timeStr = '${diff.inDays} يوم';
                       }
                       
                       return Text(

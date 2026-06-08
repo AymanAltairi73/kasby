@@ -108,6 +108,10 @@ class AppPages {
           () => SupportChatController(
             friendId: map?['friendId'] as String?,
             friendName: map?['friendName'] as String?,
+            agentUserId: map?['user_id'] as String?,
+            agentName: map?['user_name'] as String?,
+            isAgentChat: map?['is_agent_chat'] as bool? ?? false,
+            predefinedConversationId: map?['conversation_id'] as String?,
           ),
         );
       }),
