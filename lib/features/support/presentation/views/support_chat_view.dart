@@ -29,11 +29,56 @@ class _SupportChatViewState extends State<SupportChatView> {
   bool _showSearch = false;
   ChatMessageModel? _editingMessage;
   final Set<String> _expandedMessages = {};
+  final Map<String, GlobalKey> _messageKeys = {};
+
+  GlobalKey _getKeyForMessage(String id) {
+    if (!_messageKeys.containsKey(id)) {
+      _messageKeys[id] = GlobalKey();
+    }
+    return _messageKeys[id]!;
+  }
 
   @override
   void initState() {
     super.initState();
-    // No need to load history here, controller handles it
+    _scrollController.addListener(_onScroll);
+    
+    // Jump-to-message listener
+    ever(_chatController.currentSearchIndex, (index) {
+      if (index >= 0 && index < _chatController.searchResultIds.length) {
+        final id = _chatController.searchResultIds[index];
+        final key = _messageKeys[id];
+        if (key != null && key.currentContext != null) {
+          Scrollable.ensureVisible(
+            key.currentContext!,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: 0.5,
+          );
+        }
+      }
+    });
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      
+      // If user is more than 300px away from the bottom, show the scroll-to-bottom badge
+      final isFar = (maxScroll - currentScroll) > 300;
+      _chatController.showScrollToBottom.value = isFar;
+      if (!isFar) {
+        _chatController.newIncomingCount.value = 0;
+      }
+
+      // Load more messages on scroll to top
+      if (currentScroll <= _scrollController.position.minScrollExtent + 50) {
+        if (_chatController.hasMore.value && !_chatController.isLoadingMore.value) {
+          _chatController.loadMoreMessages();
+        }
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -44,6 +89,7 @@ class _SupportChatViewState extends State<SupportChatView> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
+        _chatController.newIncomingCount.value = 0;
       }
     });
   }
@@ -191,27 +237,63 @@ class _SupportChatViewState extends State<SupportChatView> {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Obx(
-                  () => Row(
-                    children: [
-                      if (_chatController.isTyping.value)
-                        Text(
-                          'is_typing'.tr,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.darkGold,
-                            fontStyle: FontStyle.italic,
+                  () {
+                    if (_chatController.isTyping.value) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'is_typing'.tr,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.darkGold,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
-                        )
-                      else
-                        Text(
-                          'online_now'.tr,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.softGreen,
-                          ),
+                          const SizedBox(width: 4),
+                          _buildTinyBouncingDots(),
+                        ],
+                      );
+                    }
+                    
+                    if (_chatController.isRecipientOnline.value) {
+                      return Text(
+                        'online_now'.tr,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.softGreen,
                         ),
-                    ],
-                  ),
+                      );
+                    }
+
+                    final lastSeen = _chatController.recipientLastSeen.value;
+                    if (lastSeen != null) {
+                      // Formatting last seen
+                      final diff = DateTime.now().difference(lastSeen);
+                      String timeStr = 'offline'.tr;
+                      if (diff.inMinutes < 60) {
+                        timeStr = '${diff.inMinutes}m ago'; // Need translation key
+                      } else if (diff.inHours < 24) {
+                        timeStr = '${diff.inHours}h ago';
+                      }
+                      
+                      return Text(
+                        'last_seen_ago'.trArgs([timeStr]),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white54,
+                        ),
+                      );
+                    }
+
+                    return Text(
+                      'offline'.tr,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white54,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -244,30 +326,57 @@ class _SupportChatViewState extends State<SupportChatView> {
     return Container(
       padding: const EdgeInsets.all(16),
       color: AppColors.surface,
-      child: TextField(
-        controller: _searchController,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: 'search_conversations'.tr,
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-          prefixIcon: Icon(Icons.search, color: AppColors.darkGold),
-          suffixIcon: IconButton(
-            icon: Icon(Icons.close, color: Colors.white54),
-            onPressed: () {
-              _searchController.clear();
-              setState(() => _showSearch = false);
-            },
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'search_conversations'.tr,
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                prefixIcon: Icon(Icons.search, color: AppColors.darkGold),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.close, color: Colors.white54),
+                  onPressed: () {
+                    _searchController.clear();
+                    _chatController.searchMessages('');
+                    setState(() => _showSearch = false);
+                  },
+                ),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) => _chatController.searchMessages(value),
+              onSubmitted: (value) => _chatController.searchMessages(value),
+            ),
           ),
-          filled: true,
-          fillColor: AppColors.background,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-        ),
-          onChanged: (value) => _chatController.searchQuery.value = value,
-          onSubmitted: (value) => _chatController.searchQuery.value = value,
-        ),
+          Obx(() {
+            if (_chatController.searchResultIds.isEmpty) return const SizedBox.shrink();
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.keyboard_arrow_up, color: Colors.white),
+                  onPressed: _chatController.previousSearchResult,
+                ),
+                Text(
+                  '${_chatController.currentSearchIndex.value + 1}/${_chatController.searchResultIds.length}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                  onPressed: _chatController.nextSearchResult,
+                ),
+              ],
+            );
+          }),
+        ],
+      ),
     ).animate().fadeIn().slideY(begin: -0.5, end: 0);
   }
 
@@ -407,30 +516,54 @@ class _SupportChatViewState extends State<SupportChatView> {
 
       final keys = groupedMessages.keys.toList();
 
-      return ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(16),
-        itemCount: keys.length + (_chatController.isTyping.value ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == keys.length && _chatController.isTyping.value) {
-            return _buildTypingIndicator();
-          }
-
-          final date = keys[index];
-          final dateMessages = groupedMessages[date]!;
-
-          return Column(
-            children: [
-              _buildDateSeparator(date),
-              ...dateMessages.map((msg) {
-                if (msg.isDeleted) {
-                  return _buildDeletedMessage(msg);
+      return Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: () async {
+              if (_chatController.hasMore.value) {
+                await _chatController.loadMoreMessages();
+              }
+            },
+            color: AppColors.darkGold,
+            backgroundColor: AppColors.surface,
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: keys.length + (_chatController.isTyping.value ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == keys.length && _chatController.isTyping.value) {
+                  return _buildTypingIndicator();
                 }
-                return _buildMessageBubble(msg);
-              }),
-            ],
-          );
-        },
+
+                final date = keys[index];
+                final dateMessages = groupedMessages[date]!;
+
+                return Column(
+                  children: [
+                    _buildDateSeparator(date),
+                    ...dateMessages.map((msg) {
+                      if (msg.isDeleted) {
+                        return _buildDeletedMessage(msg);
+                      }
+                      return _buildMessageBubble(msg);
+                    }),
+                  ],
+                );
+              },
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            left: Get.locale?.languageCode == 'ar' ? 16 : null,
+            right: Get.locale?.languageCode == 'ar' ? null : 16,
+            child: Obx(() {
+              if (!_chatController.showScrollToBottom.value) {
+                return const SizedBox.shrink();
+              }
+              return _buildScrollToBottomButton();
+            }),
+          ),
+        ],
       );
     });
   }
@@ -517,15 +650,45 @@ class _SupportChatViewState extends State<SupportChatView> {
         ? '${message.content.substring(0, 200)}...'
         : message.content;
 
-    return GestureDetector(
-      onLongPress: () {
-        _showMessageOptions(message);
-      },
-      child:
-          Align(
-                alignment: message.isFromUser
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
+    return Obx(() {
+      final isCurrentSearch = _chatController.searchResultIds.isNotEmpty &&
+          _chatController.currentSearchIndex.value >= 0 &&
+          _chatController.currentSearchIndex.value < _chatController.searchResultIds.length &&
+          _chatController.searchResultIds[_chatController.currentSearchIndex.value] == message.id;
+
+      return Container(
+        key: _getKeyForMessage(message.id),
+        decoration: isCurrentSearch 
+            ? BoxDecoration(
+                color: AppColors.darkGold.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+              )
+            : null,
+        padding: isCurrentSearch ? const EdgeInsets.all(4) : EdgeInsets.zero,
+        child: GestureDetector(
+          onLongPress: () {
+            _showMessageOptions(message);
+          },
+          child: Dismissible(
+            key: ValueKey('reply_${message.id}'),
+            direction: DismissDirection.startToEnd,
+            confirmDismiss: (direction) async {
+              _chatController.setReplyingTo(message);
+              return false;
+            },
+            background: Container(
+              color: Colors.transparent,
+              alignment: Get.locale?.languageCode == 'ar' ? Alignment.centerRight : Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child:  Icon(
+                Icons.reply_rounded,
+                color: AppColors.darkGold,
+              ),
+            ),
+            child: Align(
+              alignment: message.isFromUser
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
                 child: Column(
                   crossAxisAlignment: message.isFromUser
                       ? CrossAxisAlignment.end
@@ -584,6 +747,8 @@ class _SupportChatViewState extends State<SupportChatView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (message.replyToId != null)
+                            _buildReplyParentPreview(message),
                           if (message.messageType == 'image')
                             GestureDetector(
                               onTap: () => Get.to(
@@ -667,27 +832,41 @@ class _SupportChatViewState extends State<SupportChatView> {
                               ),
                               if (message.isFromUser) ...[
                                 const SizedBox(width: 4),
-                                Icon(
-                                  Icons.done_all_rounded,
-                                  size: 15,
-                                  color: message.readAt != null
-                                      ? (message.messageType == 'image' ? AppColors.darkGold : Colors.blue.shade900)
-                                      : (message.messageType == 'image' ? Colors.white38 : Colors.black.withValues(alpha: 0.3)),
-                                ),
+                                _buildDeliveryStatusIcon(message),
                               ],
                             ],
                           ),
                         ],
                       ),
                     ),
-
+                     if (message.reactions.isNotEmpty)
+                      Container(
+                        margin: EdgeInsets.only(
+                          bottom: 12,
+                          left: message.isFromUser ? 0 : 8,
+                          right: message.isFromUser ? 8 : 0,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: _buildGroupedReactions(message.reactions, message),
+                        ),
+                      ),
                   ],
                 ),
               )
               .animate()
               .fadeIn(duration: 300.ms)
               .slideY(begin: 0.2, end: 0, duration: 300.ms),
-    );
+          ),
+        ),
+      );
+    });
   }
 
   void _showMessageOptions(ChatMessageModel message) {
@@ -710,6 +889,29 @@ class _SupportChatViewState extends State<SupportChatView> {
               ),
             ),
             const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: ['👍', '❤️', '😂', '😮', '😢'].map((emoji) {
+                final hasReacted = message.reactions.contains(emoji);
+                return GestureDetector(
+                  onTap: () {
+                    Get.back();
+                    _chatController.addReaction(message.id, emoji);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: hasReacted ? AppColors.darkGold.withValues(alpha: 0.2) : Colors.white10,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Divider(color: Colors.white.withValues(alpha: 0.1)),
+            const SizedBox(height: 8),
             _buildOptionItem(Icons.copy_rounded, 'copy_text'.tr, () {
               Get.back();
               _copyMessage(message.content);
@@ -853,116 +1055,128 @@ class _SupportChatViewState extends State<SupportChatView> {
   }
 
   Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+    return Obx(() {
+      final replyMsg = _chatController.replyMessage.value;
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.add_circle_outline_rounded,
-                        color: AppColors.darkGold.withValues(alpha: 0.8),
-                      ),
-                      onPressed: () => _showAttachmentMenu(),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: _editingMessage != null
-                              ? 'edit_message_hint'.tr
-                              : 'write_message_hint'.tr,
-                          hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
-                          ),
-                          border: InputBorder.none,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              Icons.emoji_emotions_outlined,
-                              color: AppColors.darkGold.withValues(alpha: 0.6),
-                            ),
-                            onPressed: () {},
-                          ),
-                        ),
-                        maxLines: null,
-                        textInputAction: TextInputAction.send,
-                        onChanged: (val) {
-                          if (val.isNotEmpty) {
-                            _chatController.sendTypingEvent();
-                          }
-                        },
-                        onSubmitted: _sendMessage,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
-            const SizedBox(width: 12),
-            GestureDetector(
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    _sendMessage(_messageController.text);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.darkGold, Color(0xFFE5C173)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.darkGold.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      _editingMessage != null
-                          ? Icons.check_rounded
-                          : Icons.send_rounded,
-                      color: Colors.black,
-                      size: 22,
-                    ),
-                  ),
-                )
-                .animate(onPlay: (c) => c.repeat(reverse: true))
-                .shimmer(
-                  duration: const Duration(seconds: 2),
-                  color: Colors.white.withValues(alpha: 0.3),
-                ),
           ],
         ),
-      ),
-    );
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (replyMsg != null) ...[
+                _buildInputReplyPreview(replyMsg),
+                const SizedBox(height: 8),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              Icons.add_circle_outline_rounded,
+                              color: AppColors.darkGold.withValues(alpha: 0.8),
+                            ),
+                            onPressed: () => _showAttachmentMenu(),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: _editingMessage != null
+                                    ? 'edit_message_hint'.tr
+                                    : 'write_message_hint'.tr,
+                                hintStyle: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                ),
+                                border: InputBorder.none,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    Icons.emoji_emotions_outlined,
+                                    color: AppColors.darkGold.withValues(alpha: 0.6),
+                                  ),
+                                  onPressed: () {},
+                                ),
+                              ),
+                              maxLines: null,
+                              textInputAction: TextInputAction.send,
+                              onChanged: (val) {
+                                if (val.isNotEmpty) {
+                                  _chatController.sendTypingEvent();
+                                }
+                              },
+                              onSubmitted: _sendMessage,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          _sendMessage(_messageController.text);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppColors.darkGold, Color(0xFFE5C173)],
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.darkGold.withValues(alpha: 0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _editingMessage != null
+                                ? Icons.check_rounded
+                                : Icons.send_rounded,
+                            color: Colors.black,
+                            size: 22,
+                          ),
+                        ),
+                      )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .shimmer(
+                        duration: const Duration(seconds: 2),
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   void _showAttachmentMenu() {
@@ -1044,8 +1258,284 @@ class _SupportChatViewState extends State<SupportChatView> {
     );
   }
 
+  List<Widget> _buildGroupedReactions(List<String> reactions, ChatMessageModel message) {
+    final Map<String, int> counts = {};
+    for (var r in reactions) {
+      counts[r] = (counts[r] ?? 0) + 1;
+    }
+    return counts.entries.map((e) {
+      final emoji = e.key;
+      final count = e.value;
+      return GestureDetector(
+        onTap: () {
+          _chatController.addReaction(message.id, emoji);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            count > 1 ? '$emoji $count' : emoji,
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+      )
+      .animate(key: ValueKey('react_${message.id}_${emoji}_$count'))
+      .scale(
+        begin: const Offset(0.7, 0.7),
+        end: const Offset(1.0, 1.0),
+        duration: 300.ms,
+        curve: Curves.easeOutBack,
+      );
+    }).toList();
+  }
+
+  Widget _buildDeliveryStatusIcon(ChatMessageModel message) {
+    IconData icon;
+    Color color;
+
+    final bool isImage = message.messageType == 'image';
+    final Color readColor = isImage ? AppColors.darkGold : Colors.blue.shade900;
+    final Color unreadColor = isImage ? Colors.white38 : Colors.black.withValues(alpha: 0.3);
+
+    switch (message.status) {
+      case MessageStatus.sending:
+        icon = Icons.access_time_rounded;
+        color = unreadColor;
+        break;
+      case MessageStatus.sent:
+        icon = Icons.check_rounded;
+        color = unreadColor;
+        break;
+      case MessageStatus.delivered:
+        icon = Icons.done_all_rounded;
+        color = unreadColor;
+        break;
+      case MessageStatus.read:
+        icon = Icons.done_all_rounded;
+        color = readColor;
+        break;
+    }
+
+    return Icon(icon, size: 15, color: color);
+  }
+
   String _formatTime(DateTime date) {
     return intl.DateFormat('HH:mm', Get.locale?.languageCode).format(date);
+  }
+
+  // ─── Animated Bouncing Dots ───
+  Widget _buildTinyBouncingDots() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (i) {
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+          width: 5,
+          height: 5,
+          decoration: BoxDecoration(
+            color: AppColors.darkGold,
+            shape: BoxShape.circle,
+          ),
+        )
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .moveY(
+          begin: 0,
+          end: -4,
+          duration: 400.ms,
+          delay: (i * 150).ms,
+          curve: Curves.easeInOut,
+        );
+      }),
+    );
+  }
+
+  // ─── Scroll-to-Bottom FAB ───
+  Widget _buildScrollToBottomButton() {
+    return GestureDetector(
+      onTap: _scrollToBottom,
+      child: Container(
+        height: 44,
+        width: 44,
+        decoration: BoxDecoration(
+          color: AppColors.darkGold,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(Icons.arrow_downward_rounded, color: Colors.black, size: 22),
+            Obx(() {
+              final count = _chatController.newIncomingCount.value;
+              if (count == 0) return const SizedBox.shrink();
+              return Positioned(
+                top: -4,
+                right: -4,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$count',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    )
+    .animate()
+    .scale(
+      begin: const Offset(0.0, 0.0),
+      end: const Offset(1.0, 1.0),
+      duration: 200.ms,
+      curve: Curves.easeOutBack,
+    );
+  }
+
+  // ─── Reply Parent Preview (inside message bubble) ───
+  Widget _buildReplyParentPreview(ChatMessageModel message) {
+    final parentMsg = _chatController.messages
+        .firstWhereOrNull((m) => m.id == message.replyToId);
+    if (parentMsg == null) return const SizedBox.shrink();
+
+    final isUser = parentMsg.isFromUser;
+
+    return GestureDetector(
+      onTap: () {
+        // Scroll to the parent message
+        final key = _messageKeys[parentMsg.id];
+        if (key != null && key.currentContext != null) {
+          Scrollable.ensureVisible(
+            key.currentContext!,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: 0.5,
+          );
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border(
+            right: BorderSide(
+              color: isUser ? Colors.white70 : AppColors.darkGold,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              isUser ? 'you'.tr : _chatController.chatTitle,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: isUser ? Colors.white70 : AppColors.darkGold,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              parentMsg.messageType == 'image'
+                  ? '📷 ${'photo'.tr}'
+                  : parentMsg.content,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: message.isFromUser
+                    ? Colors.black.withValues(alpha: 0.6)
+                    : Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Reply Preview (above input bar) ───
+  Widget _buildInputReplyPreview(ChatMessageModel replyMsg) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.darkGold,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Icon(Icons.reply_rounded, color: AppColors.darkGold, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  replyMsg.isFromUser ? 'you'.tr : _chatController.chatTitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: replyMsg.isFromUser ? Colors.white70 : AppColors.darkGold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  replyMsg.messageType == 'image'
+                      ? '📷 ${'photo'.tr}'
+                      : replyMsg.content,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white60),
+            onPressed: () => _chatController.clearReply(),
+          ),
+        ],
+      ),
+    )
+    .animate()
+    .fadeIn(duration: 200.ms)
+    .slideY(begin: 0.3, end: 0, duration: 200.ms);
   }
 }
 

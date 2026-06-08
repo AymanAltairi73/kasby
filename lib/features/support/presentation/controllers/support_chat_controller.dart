@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kasby/core/services/presence_service.dart';
 import '../../data/models/chat_message_model.dart';
 
 class SupportChatController extends GetxController {
@@ -26,15 +27,67 @@ class SupportChatController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isTyping = false.obs;
   final RxBool isUploading = false.obs;
+  
+  // Presence & Pagination
+  final RxBool isRecipientOnline = false.obs;
+  final Rxn<DateTime> recipientLastSeen = Rxn<DateTime>();
+  static const int _pageSize = 50;
+  final RxBool isLoadingMore = false.obs;
+  final RxBool hasMore = true.obs;
+  int _currentPage = 0;
 
-  List<ChatMessageModel> get filteredMessages {
-    if (searchQuery.isEmpty) return messages;
-    return messages
-        .where((m) =>
-            m.content.toLowerCase().contains(searchQuery.value.toLowerCase()) &&
-            m.messageType == 'text' &&
-            !m.isDeleted)
-        .toList();
+  final RxList<String> searchResultIds = <String>[].obs;
+  final RxInt currentSearchIndex = 0.obs;
+
+  // Reply and Scroll management
+  final Rxn<ChatMessageModel> replyMessage = Rxn<ChatMessageModel>();
+  final RxBool showScrollToBottom = false.obs;
+  final RxInt newIncomingCount = 0.obs;
+
+  void setReplyingTo(ChatMessageModel? message) {
+    replyMessage.value = message;
+  }
+
+  void clearReply() {
+    replyMessage.value = null;
+  }
+
+  List<ChatMessageModel> get filteredMessages => messages;
+
+  void searchMessages(String query) {
+    searchQuery.value = query;
+    if (query.isEmpty) {
+      searchResultIds.clear();
+      currentSearchIndex.value = 0;
+      return;
+    }
+    
+    final matches = messages.where((m) => 
+      m.messageType == 'text' && 
+      !m.isDeleted && 
+      m.content.toLowerCase().contains(query.toLowerCase())
+    ).map((m) => m.id).toList();
+    
+    searchResultIds.value = matches;
+    currentSearchIndex.value = matches.isNotEmpty ? 0 : -1;
+  }
+
+  void nextSearchResult() {
+    if (searchResultIds.isEmpty) return;
+    if (currentSearchIndex.value < searchResultIds.length - 1) {
+      currentSearchIndex.value++;
+    } else {
+      currentSearchIndex.value = 0; // Wrap around
+    }
+  }
+
+  void previousSearchResult() {
+    if (searchResultIds.isEmpty) return;
+    if (currentSearchIndex.value > 0) {
+      currentSearchIndex.value--;
+    } else {
+      currentSearchIndex.value = searchResultIds.length - 1; // Wrap around
+    }
   }
   final ImagePicker _picker = ImagePicker();
 
@@ -42,6 +95,7 @@ class SupportChatController extends GetxController {
   StreamSubscription? _conversationSubscription;
   String? _conversationId;
   String? _userLowId;
+  String? _assignedAdminId;
   RealtimeChannel? _typingChannel;
   Timer? _typingThrottleTimer;
   final Map<String, Timer> _typingTimers = {};
@@ -76,10 +130,11 @@ class SupportChatController extends GetxController {
       // 2. Load existing messages
       await _loadMessages();
 
-      // 3. Listen to new messages and conversation changes
+      // 3. Listen to new messages, conversation changes, and presence
       _listenToMessages();
       _listenToConversation();
       _setupTypingBroadcast();
+      _listenToPresence();
     } catch (e) {
       debugPrint('Error initializing chat: $e');
       Get.snackbar(
@@ -137,23 +192,75 @@ class SupportChatController extends GetxController {
 
   void _applyConversationIds(Map<String, dynamic> conv) {
     _userLowId = conv['user_low_id'] as String?;
+    _assignedAdminId = conv['assigned_admin_id'] as String?;
   }
 
-  Future<void> _loadMessages() async {
+  void _listenToPresence() {
+    // Determine the recipient ID based on conversation type.
+    final targetId = isSocialChat ? friendId : _assignedAdminId;
+
+    if (targetId != null) {
+      final presenceService = Get.find<PresenceService>();
+      // Update initially
+      isRecipientOnline.value = presenceService.isUserOnline(targetId);
+      // Listen to changes
+      ever(presenceService.onlineUsers, (_) {
+        isRecipientOnline.value = presenceService.isUserOnline(targetId);
+      });
+    }
+  }
+
+  Future<void> loadMoreMessages() async {
+    await _loadMessages(loadMore: true);
+  }
+
+  Future<void> _loadMessages({bool loadMore = false}) async {
     if (_conversationId == null) return;
+    if (loadMore && (!hasMore.value || isLoadingMore.value)) return;
 
-    // Use consolidated chat_messages table (same as admin app)
-    final response = await SupabaseService.client
-        .from('chat_messages')
-        .select()
-        .eq('conversation_id', _conversationId!)
-        .order('created_at', ascending: true);
+    if (loadMore) {
+      isLoadingMore.value = true;
+    } else {
+      _currentPage = 0;
+      hasMore.value = true;
+    }
 
-    messages.value = (response as List)
-        .map((json) => ChatMessageModel.fromJson(json))
-        .toList();
+    try {
+      final response = await SupabaseService.client
+          .from('chat_messages')
+          .select()
+          .eq('conversation_id', _conversationId!)
+          .order('created_at', ascending: false)
+          .range(_currentPage * _pageSize, (_currentPage + 1) * _pageSize - 1);
 
-    _markAllRead();
+      final List<dynamic> data = response;
+      final newMessages = data.map((json) => ChatMessageModel.fromJson(json)).toList();
+
+      if (newMessages.length < _pageSize) {
+        hasMore.value = false;
+      }
+
+      // Reverse to chronological order for the view
+      final reversedNew = newMessages.reversed.toList();
+
+      if (loadMore) {
+        messages.insertAll(0, reversedNew); // Prepend older messages
+      } else {
+        messages.value = reversedNew;
+      }
+
+      _currentPage++;
+      _markAllRead();
+      _markMessagesDelivered();
+    } catch (e) {
+      debugPrint('Error loading messages: $e');
+    } finally {
+      isLoadingMore.value = false;
+    }
+  }
+
+  Future<void> refreshMessages() async {
+    await _loadMessages(loadMore: false);
   }
 
   void _listenToMessages() {
@@ -177,11 +284,15 @@ class SupportChatController extends GetxController {
                 : latest.senderType != 'user';
             if (fromOther) {
               NotificationService().playNotificationSound();
+              if (showScrollToBottom.value) {
+                newIncomingCount.value += (newList.length - messages.length);
+              }
             }
           }
 
           messages.value = newList;
           _markAllRead();
+          _markMessagesDelivered();
         }, onError: (error) {
           debugPrint('Chat message stream error: $error');
         });
@@ -265,6 +376,8 @@ class SupportChatController extends GetxController {
   Future<void> sendMessage(String content, {String type = 'text'}) async {
     if (content.trim().isEmpty || _conversationId == null) return;
 
+    final String? replyToId = replyMessage.value?.id;
+
     final optimisticMessage = ChatMessageModel(
       id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
       conversationId: _conversationId!,
@@ -272,6 +385,7 @@ class SupportChatController extends GetxController {
       senderType: 'user',
       content: content.trim(),
       messageType: type,
+      replyToId: replyToId,
       createdAt: DateTime.now(),
       readAt: DateTime.now(),
     );
@@ -279,6 +393,9 @@ class SupportChatController extends GetxController {
     // 1. Optimistic Update
     messages.add(optimisticMessage);
     NotificationService().playMessageSentSound();
+    
+    // Clear reply state immediately
+    clearReply();
 
     try {
       // 2. Insert into consolidated chat_messages table
@@ -291,6 +408,7 @@ class SupportChatController extends GetxController {
         'message_content': content.trim(),
         'message_type': type,
         'idempotency_key': idempotencyKey,
+        'reply_to_id': replyToId,
       });
     } catch (e) {
       debugPrint('Error sending message: $e');
@@ -385,6 +503,18 @@ class SupportChatController extends GetxController {
           .eq('id', _conversationId!);
     } catch (e) {
       debugPrint('Error marking messages as read: $e');
+    }
+  }
+
+  Future<void> _markMessagesDelivered() async {
+    if (_conversationId == null) return;
+    try {
+      await SupabaseService.client.rpc(
+        'fn_mark_messages_delivered',
+        params: {'p_conversation_id': _conversationId},
+      );
+    } catch (e) {
+      debugPrint('Error marking messages as delivered: $e');
     }
   }
 

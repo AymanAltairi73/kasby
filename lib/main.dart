@@ -23,6 +23,7 @@ import 'package:kasby/core/widgets/connectivity_banner.dart';
 import 'package:kasby/core/services/session_service.dart';
 import 'package:kasby/core/services/confetti_service.dart';
 import 'package:kasby/features/qr_payment/presentation/controllers/qr_payment_controller.dart';
+import 'package:kasby/core/services/presence_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,7 @@ void main() async {
   // Initialize Services
   await Get.putAsync(() => FCMService().init());
   await Get.putAsync(() => NetworkService().init());
+  await Get.putAsync(() => PresenceService().init(), permanent: true);
   Get.put(OTPService(), permanent: true);
 
   Get.put(CurrencyController());

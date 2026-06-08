@@ -1,3 +1,5 @@
+enum MessageStatus { sending, sent, delivered, read }
+
 class ChatMessageModel {
   final String id;
   final String conversationId;
@@ -11,6 +13,9 @@ class ChatMessageModel {
   final DateTime? editedAt;
   final List<String> reactions;
   final DateTime? readAt;
+  final DateTime? deliveredAt;
+  final Map<String, dynamic>? attachmentMetadata;
+  final String? replyToId;
   final DateTime createdAt;
 
   ChatMessageModel({
@@ -26,8 +31,19 @@ class ChatMessageModel {
     this.editedAt,
     this.reactions = const [],
     this.readAt,
+    this.deliveredAt,
+    this.attachmentMetadata,
+    this.replyToId,
     required this.createdAt,
   });
+
+  /// Current delivery status
+  MessageStatus get status {
+    if (id.startsWith('temp-')) return MessageStatus.sending;
+    if (readAt != null) return MessageStatus.read;
+    if (deliveredAt != null) return MessageStatus.delivered;
+    return MessageStatus.sent;
+  }
 
   /// Whether this message has been read.
   bool get isRead => readAt != null;
@@ -48,6 +64,9 @@ class ChatMessageModel {
       'edited_at': editedAt?.toIso8601String(),
       'reactions': reactions,
       'read_at': readAt?.toIso8601String(),
+      'delivered_at': deliveredAt?.toIso8601String(),
+      'attachment_metadata': attachmentMetadata,
+      'reply_to_id': replyToId,
     };
   }
 
@@ -71,6 +90,9 @@ class ChatMessageModel {
               .toList() ??
           [],
       readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
+      deliveredAt: json['delivered_at'] != null ? DateTime.parse(json['delivered_at']) : null,
+      attachmentMetadata: json['attachment_metadata'] as Map<String, dynamic>?,
+      replyToId: json['reply_to_id'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
@@ -90,6 +112,9 @@ class ChatMessageModel {
     DateTime? editedAt,
     List<String>? reactions,
     DateTime? readAt,
+    DateTime? deliveredAt,
+    Map<String, dynamic>? attachmentMetadata,
+    String? replyToId,
     DateTime? createdAt,
   }) {
     return ChatMessageModel(
@@ -105,6 +130,9 @@ class ChatMessageModel {
       editedAt: editedAt ?? this.editedAt,
       reactions: reactions ?? this.reactions,
       readAt: readAt ?? this.readAt,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
+      attachmentMetadata: attachmentMetadata ?? this.attachmentMetadata,
+      replyToId: replyToId ?? this.replyToId,
       createdAt: createdAt ?? this.createdAt,
     );
   }
