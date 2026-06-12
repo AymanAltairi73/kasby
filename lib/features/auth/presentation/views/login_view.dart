@@ -7,28 +7,26 @@ import 'package:kasby/features/auth/presentation/controllers/auth_controller.dar
 
 import 'package:kasby/routes/app_routes.dart';
 
-class LoginView extends StatelessWidget {
+class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
   @override
+  State<LoginView> createState() => _LoginViewState();
+}
+
+class _LoginViewState extends State<LoginView> {
+  final _formKey = GlobalKey<FormState>();
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.put(AuthController());
+    final controller = AuthController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      // appBar: AppBar(
-      //   leading: IconButton(
-      //     icon: const Icon(Icons.arrow_back_ios_new_rounded),
-      //     onPressed: () {
-      //       debugPrint('[VIEW] LoginView: Back button pressed');
-      //       Get.back();
-      //     },
-      //   ),
-      // ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(
-          key: controller.loginFormKey,
+          key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -130,7 +128,11 @@ class LoginView extends StatelessWidget {
                       )
                     : KasbyButton(
                         text: 'login'.tr,
-                        onPressed: controller.login,
+                        onPressed: () {
+                          if (_formKey.currentState?.validate() ?? false) {
+                            controller.login(skipFormValidation: true);
+                          }
+                        },
                       ),
               ),
 

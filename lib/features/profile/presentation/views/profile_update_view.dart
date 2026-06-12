@@ -4,24 +4,86 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/utils/country_data.dart';
+import 'package:kasby/features/auth/domain/models/country_model.dart';
+import 'package:kasby/features/auth/domain/auth_otp_config.dart';
+import 'package:kasby/features/auth/presentation/widgets/country_selector.dart';
 
-class ProfileUpdateView extends StatelessWidget {
+class ProfileUpdateView extends StatefulWidget {
   const ProfileUpdateView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final args = Get.arguments as Map<String, dynamic>? ?? {};
-    final String type = args['type'] ?? 'email_change';
-    final String currentValue = args['current_value'] ?? '';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  State<ProfileUpdateView> createState() => _ProfileUpdateViewState();
+}
 
-    final TextEditingController inputController = TextEditingController();
-    final TextEditingController passwordController = TextEditingController();
-    final TextEditingController otpController = TextEditingController();
-    final RxInt currentStep = 0.obs;
-    final String label = type == 'email_change' ? 'new_email'.tr : 'new_phone'.tr;
+class _ProfileUpdateViewState extends State<ProfileUpdateView> {
+  late final String type;
+  late final String currentValue;
+  late final TextEditingController inputController;
+  late final TextEditingController passwordController;
+  late final TextEditingController otpController;
+  final RxInt currentStep = 0.obs;
+  final Rx<Country> selectedCountry = CountryData.defaultCountry.obs;
+
+  bool get isEmailChange => type == 'email_change';
+  String get label => isEmailChange ? 'new_email'.tr : 'new_phone'.tr;
+
+  @override
+  void initState() {
+    super.initState();
+    final args = Get.arguments as Map<String, dynamic>? ?? {};
+    type = args['type'] ?? 'email_change';
+    currentValue = args['current_value'] ?? '';
+
+    inputController = TextEditingController();
+    passwordController = TextEditingController();
+    otpController = TextEditingController();
+
+    if (!isEmailChange && currentValue.isNotEmpty) {
+      selectedCountry.value = CountryData.countryForPhone(currentValue);
+      inputController.text = CountryData.stripDialCode(
+        currentValue,
+        selectedCountry.value,
+      );
+    }
+
+    SafeGetx.debugTrace(
+      className: 'ProfileUpdateView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+      params: {'type': type},
+    );
+  }
+
+  @override
+  void dispose() {
+    inputController.dispose();
+    passwordController.dispose();
+    otpController.dispose();
+    SafeGetx.debugTrace(
+      className: 'ProfileUpdateView',
+      method: 'dispose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    super.dispose();
+  }
+
+  String _buildTargetValue() {
+    if (isEmailChange) {
+      return inputController.text.trim();
+    }
+    return '${selectedCountry.value.dialCode}${inputController.text.trim()}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final profileCtrl = ProfileUpdateController.to;
 
     return Scaffold(
@@ -40,7 +102,7 @@ class ProfileUpdateView extends StatelessWidget {
           ),
         ),
         title: Text(
-          type == 'email_change' ? 'change_email'.tr : 'change_phone'.tr,
+          isEmailChange ? 'change_email'.tr : 'change_phone'.tr,
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 20,
@@ -53,250 +115,346 @@ class ProfileUpdateView extends StatelessWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Obx(() => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ─── SECURITY NOTICE ─────────────────────
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.darkGold.withValues(alpha: 0.10),
-                      AppColors.darkGold.withValues(alpha: 0.04),
-                    ],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.darkGold.withValues(alpha: 0.15),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.darkGold.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.darkGold.withValues(alpha: 0.10),
+                          AppColors.darkGold.withValues(alpha: 0.04),
+                        ],
+                        begin: Alignment.topRight,
+                        end: Alignment.bottomLeft,
                       ),
-                      child: Icon(Icons.shield_rounded, color: AppColors.darkGold, size: 22),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.darkGold.withValues(alpha: 0.15),
+                      ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        'security_notice'.tr,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.darkGold.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.shield_rounded,
+                            color: AppColors.darkGold,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            'security_notice'.tr,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white70 : Colors.black54,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
+                  const SizedBox(height: 28),
+                  _buildStepIndicator(currentStep.value, isDark)
+                      .animate()
+                      .fadeIn(duration: 500.ms, delay: 100.ms),
+                  const SizedBox(height: 32),
+                  if (currentStep.value == 0) ...[
+                    Text(
+                      'verify_password'.tr,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ).animate().fadeIn(delay: 100.ms),
+                    const SizedBox(height: 6),
+                    Text(
+                      'enter_current_password_to_verify'.tr,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white54 : Colors.black45,
+                      ),
+                    ).animate().fadeIn(delay: 150.ms),
+                    const SizedBox(height: 20),
+                    KasbyTextField(
+                      key: const ValueKey('profile_update_password'),
+                      controller: passwordController,
+                      hint: 'current_password'.tr,
+                      isPassword: true,
+                      prefixIcon: Icon(
+                        Icons.lock_outline_rounded,
+                        color: AppColors.darkGold,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    profileCtrl.isVerifyingPassword.value
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : KasbyButton(
+                            text: 'verify_password'.tr,
+                            onPressed: () async {
+                              final success = await profileCtrl.verifyPassword(
+                                passwordController.text,
+                              );
+                              if (success) {
+                                currentStep.value = 1;
+                              }
+                            },
+                          ).animate().fadeIn(delay: 200.ms),
+                  ] else if (currentStep.value == 1) ...[
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ).animate().fadeIn(delay: 100.ms),
+                    const SizedBox(height: 6),
+                    Text(
+                      isEmailChange
+                          ? 'enter_new_email_desc'.tr
+                          : 'enter_new_phone_desc'.tr,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white54 : Colors.black45,
+                      ),
+                    ).animate().fadeIn(delay: 150.ms),
+                    const SizedBox(height: 20),
+                    if (isEmailChange)
+                      KasbyTextField(
+                        key: const ValueKey('profile_update_email'),
+                        controller: inputController,
+                        hint: label,
+                        isPassword: false,
+                        keyboardType: TextInputType.emailAddress,
+                        autocorrect: false,
+                        textCapitalization: TextCapitalization.none,
+                        prefixIcon: Icon(
+                          Icons.email_outlined,
+                          color: AppColors.darkGold,
+                        ),
+                      )
+                    else
+                      Obx(
+                        () => KasbyTextField(
+                          key: const ValueKey('profile_update_phone'),
+                          controller: inputController,
+                          hint: 'enter_phone_hint'.tr,
+                          isPassword: false,
+                          keyboardType: TextInputType.phone,
+                          prefixIcon: CountrySelector(
+                            selectedCountry: selectedCountry.value,
+                            onSelect: (country) =>
+                                selectedCountry.value = country,
+                            showBackground: false,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 32),
+                    KasbyButton(
+                      text: 'next'.tr,
+                      onPressed: () async {
+                        final newValue = _buildTargetValue();
+                        if (newValue.isEmpty || newValue == currentValue) {
+                          return;
+                        }
+
+                        if (isEmailChange) {
+                          final success = await profileCtrl.sendUpdateOtp(
+                            target: newValue,
+                            type: type,
+                          );
+                          if (success) {
+                            profileCtrl.resetFlow();
+                            Get.toNamed(
+                              Routes.otp,
+                              arguments: {
+                                'identifier': newValue,
+                                'isPhone': false,
+                                'isFreeOtp': true,
+                                'purpose': 'email_change',
+                                'otpLength':
+                                    AuthOtpConfig.lengthForPurpose(
+                                  'email_change',
+                                ),
+                              },
+                            );
+                          }
+                        } else {
+                          await profileCtrl.sendUpdateOtp(
+                            target: newValue,
+                            type: type,
+                          );
+                          if (profileCtrl.resendTimer.value > 0) {
+                            currentStep.value = 2;
+                          }
+                        }
+                      },
+                    ).animate().fadeIn(delay: 250.ms),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: () => currentStep.value = 0,
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        label: Text(
+                          'back'.tr,
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                  ] else if (currentStep.value == 2) ...[
+                    if (isEmailChange) ...[
+                      Text(
+                        'email_change_pending_title'.tr,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ).animate().fadeIn(delay: 100.ms),
+                      const SizedBox(height: 6),
+                      Text(
+                        'email_change_pending_desc'.trParams({
+                          'target': _buildTargetValue(),
+                        }),
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          color: isDark ? Colors.white54 : Colors.black45,
+                        ),
+                      ).animate().fadeIn(delay: 150.ms),
+                      const SizedBox(height: 32),
+                      profileCtrl.isLoading.value
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          : KasbyButton(
+                              text: 'check_verification_status'.tr,
+                              onPressed: () async {
+                                final success =
+                                    await profileCtrl.checkEmailChangeComplete(
+                                  _buildTargetValue(),
+                                );
+                                if (success) {
+                                  profileCtrl.resetFlow();
+                                  Get.offNamed(Routes.personalProfile);
+                                } else {
+                                  AppSnack.warning(
+                                    'change_email'.tr,
+                                    'email_not_verified_yet'.tr,
+                                  );
+                                }
+                              },
+                            ).animate().fadeIn(delay: 250.ms),
+                    ] else ...[
+                      Text(
+                        'verify_otp_title'.tr,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ).animate().fadeIn(delay: 100.ms),
+                      const SizedBox(height: 6),
+                      Text(
+                        'otp_sent_to'.trParams({'target': _buildTargetValue()}),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: isDark ? Colors.white70 : Colors.black54,
-                          height: 1.5,
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
-              const SizedBox(height: 28),
-
-              // ─── STEP INDICATOR ──────────────────────
-              _buildStepIndicator(currentStep.value, isDark)
-                  .animate().fadeIn(duration: 500.ms, delay: 100.ms),
-              const SizedBox(height: 32),
-
-              // ─── STEP 1: PASSWORD VERIFICATION (FIRST) ──────
-              if (currentStep.value == 0) ...[
-                Text(
-                  'verify_password'.tr,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ).animate().fadeIn(delay: 100.ms),
-                const SizedBox(height: 6),
-                Text(
-                  'enter_current_password_to_verify'.tr,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.white54 : Colors.black45,
-                  ),
-                ).animate().fadeIn(delay: 150.ms),
-                const SizedBox(height: 20),
-                KasbyTextField(
-                  controller: passwordController,
-                  hint: 'current_password'.tr,
-                  isPassword: true,
-                  prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.darkGold),
-                ),
-                const SizedBox(height: 32),
-                profileCtrl.isVerifyingPassword.value
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: CircularProgressIndicator(),
+                      ).animate().fadeIn(delay: 150.ms),
+                      const SizedBox(height: 4),
+                      Text(
+                        'otp_sent_notification'.tr,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white38 : Colors.black38,
                         ),
-                      )
-                    : KasbyButton(
-                        text: 'verify_password'.tr,
-                        onPressed: () async {
-                          final success = await profileCtrl.verifyPassword(
-                            passwordController.text,
-                          );
-                          if (success) {
-                            // Password verified → proceed to enter new value
-                            currentStep.value = 1;
-                          }
-                        },
                       ).animate().fadeIn(delay: 200.ms),
-              ]
-
-              // ─── STEP 2: ENTER NEW VALUE ─────────────
-              else if (currentStep.value == 1) ...[
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ).animate().fadeIn(delay: 100.ms),
-                const SizedBox(height: 6),
-                Text(
-                  type == 'email_change'
-                      ? 'enter_new_email_desc'.tr
-                      : 'enter_new_phone_desc'.tr,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.white54 : Colors.black45,
-                  ),
-                ).animate().fadeIn(delay: 150.ms),
-                const SizedBox(height: 20),
-                KasbyTextField(
-                  controller: inputController,
-                  hint: label,
-                  prefixIcon: Icon(
-                    type == 'email_change' ? Icons.email_outlined : Icons.phone_android_rounded,
-                    color: AppColors.darkGold,
-                  ),
-                  keyboardType: type == 'email_change'
-                      ? TextInputType.emailAddress
-                      : TextInputType.phone,
-                ),
-                const SizedBox(height: 32),
-                KasbyButton(
-                  text: 'next'.tr,
-                  onPressed: () async {
-                    final newValue = inputController.text.trim();
-                    if (newValue.isEmpty || newValue == currentValue) return;
-                    
-                    // Send OTP to the NEW value
-                    await profileCtrl.sendUpdateOtp(
-                      target: newValue,
-                      type: type,
-                    );
-                    
-                    // If OTP sent successfully (timer started), advance to Step 3
-                    if (profileCtrl.resendTimer.value > 0) {
-                      currentStep.value = 2;
-                    }
-                  },
-                ).animate().fadeIn(delay: 250.ms),
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () => currentStep.value = 0,
-                    icon: Icon(Icons.arrow_back_rounded, size: 16, color: AppColors.textSecondary),
-                    label: Text(
-                      'back'.tr,
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ),
-                ),
-              ]
-
-              // ─── STEP 3: OTP VERIFICATION ───────────
-              else if (currentStep.value == 2) ...[
-                Text(
-                  'verify_otp_title'.tr,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ).animate().fadeIn(delay: 100.ms),
-                const SizedBox(height: 6),
-                Text(
-                  'otp_sent_to'.trParams({'target': inputController.text.trim()}),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white70 : Colors.black54,
-                  ),
-                ).animate().fadeIn(delay: 150.ms),
-                const SizedBox(height: 4),
-                Text(
-                  'otp_sent_notification'.tr,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.white38 : Colors.black38,
-                  ),
-                ).animate().fadeIn(delay: 200.ms),
-                const SizedBox(height: 20),
-                KasbyTextField(
-                  controller: otpController,
-                  hint: 'enter_otp'.tr,
-                  prefixIcon: Icon(Icons.security_rounded, color: AppColors.darkGold),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 32),
-                profileCtrl.isLoading.value
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: CircularProgressIndicator(),
+                      const SizedBox(height: 20),
+                      KasbyTextField(
+                        key: const ValueKey('profile_update_otp'),
+                        controller: otpController,
+                        hint: 'enter_otp'.tr,
+                        isPassword: false,
+                        prefixIcon: Icon(
+                          Icons.security_rounded,
+                          color: AppColors.darkGold,
                         ),
-                      )
-                    : KasbyButton(
-                        text: 'verify'.tr,
-                        onPressed: () async {
-                          final success = await profileCtrl.verifyAndUpdate(
-                            type: type,
-                            newValue: inputController.text.trim(),
-                            otpCode: otpController.text.trim(),
-                          );
-                          if (success) {
-                            profileCtrl.resetFlow();
-                            // Navigate back to personal profile (controller handles the success message)
-                            Get.offNamed(Routes.personalProfile);
-                          }
-                        },
-                      ).animate().fadeIn(delay: 250.ms),
-                const SizedBox(height: 20),
-                Center(
-                  child: Obx(() => TextButton(
-                    onPressed: profileCtrl.resendTimer.value > 0
-                        ? null
-                        : () => profileCtrl.sendUpdateOtp(
-                              target: inputController.text.trim(),
-                              type: type,
-                            ),
-                    child: Text(
-                      profileCtrl.resendTimer.value > 0
-                          ? '${'resend_code'.tr} (${profileCtrl.resendTimer.value}s)'
-                          : 'resend_code'.tr,
-                      style: TextStyle(
-                        color: profileCtrl.resendTimer.value > 0
-                            ? Colors.grey
-                            : AppColors.darkGold,
-                        fontWeight: FontWeight.w600,
+                        keyboardType: TextInputType.number,
                       ),
-                    ),
-                  )),
-                ),
-              ],
-            ],
-          )),
+                      const SizedBox(height: 32),
+                      profileCtrl.isLoading.value
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          : KasbyButton(
+                              text: 'verify'.tr,
+                              onPressed: () async {
+                                final success = await profileCtrl.verifyAndUpdate(
+                                  type: type,
+                                  newValue: _buildTargetValue(),
+                                  otpCode: otpController.text.trim(),
+                                );
+                                if (success) {
+                                  profileCtrl.resetFlow();
+                                  Get.offNamed(Routes.personalProfile);
+                                }
+                              },
+                            ).animate().fadeIn(delay: 250.ms),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: Obx(
+                          () => TextButton(
+                            onPressed: profileCtrl.resendTimer.value > 0
+                                ? null
+                                : () => profileCtrl.sendUpdateOtp(
+                                      target: _buildTargetValue(),
+                                      type: type,
+                                    ),
+                            child: Text(
+                              profileCtrl.resendTimer.value > 0
+                                  ? '${'resend_code'.tr} (${profileCtrl.resendTimer.value}s)'
+                                  : 'resend_code'.tr,
+                              style: TextStyle(
+                                color: profileCtrl.resendTimer.value > 0
+                                    ? Colors.grey
+                                    : AppColors.darkGold,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
+              )),
         ),
       ),
     );

@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 /// حالة الاتصال بالإنترنت
 enum ConnectionStatus {
@@ -32,7 +34,7 @@ enum ConnectionQuality {
 /// خدمة مركزية لإدارة حالة الاتصال بالإنترنت.
 /// تعمل مع جميع أنواع الشبكات (WiFi, 4G/5G, Starlink, etc.)
 /// لا تقيّد نوع الشبكة — فقط تتحقق من وجود اتصال فعلي.
-class NetworkService extends GetxService {
+class NetworkService extends GetxService with WidgetsBindingObserver {
   // ─────────── State ───────────
   final connectionStatus = ConnectionStatus.checking.obs;
   final isConnected = true.obs;
@@ -45,6 +47,9 @@ class NetworkService extends GetxService {
   StreamSubscription<InternetStatus>? _internetSub;
   Timer? _retryTimer;
   Timer? _speedCheckTimer;
+  Timer? _offlineConfirmTimer;
+  int _consecutiveOfflineChecks = 0;
+  bool _hasNetworkAdapter = true;
 
   /// Whether the device currently has internet access.
   bool get hasConnection => isConnected.value;
@@ -53,37 +58,110 @@ class NetworkService extends GetxService {
 
   /// Initialize the service. Call via Get.putAsync().
   Future<NetworkService> init() async {
-    _internetChecker = InternetConnection.createInstance(
-      checkInterval: const Duration(seconds: 10),
+    final stopwatch = Stopwatch()..start();
+    SafeGetx.debugTrace(
+      className: 'NetworkService',
+      method: 'init',
+      feature: 'Core',
+      status: 'INFO',
     );
 
-    // 1. Check initial state
+    _internetChecker = InternetConnection.createInstance(
+      checkInterval: const Duration(seconds: 15),
+      useDefaultOptions: false,
+      customCheckOptions: _buildCheckOptions(),
+    );
+
+    WidgetsBinding.instance.addObserver(this);
+
+    // 1. Check initial adapter state
+    try {
+      final initialResults = await _connectivity.checkConnectivity();
+      _hasNetworkAdapter =
+          initialResults.any((r) => r != ConnectivityResult.none);
+    } catch (_) {
+      _hasNetworkAdapter = true;
+    }
+
+    // 2. Check initial internet state
     await _checkConnection();
 
-    // 2. Listen to connectivity changes (WiFi on/off, mobile data, etc.)
+    // 3. Listen to connectivity changes (WiFi on/off, mobile data, etc.)
     _connectivitySub = _connectivity.onConnectivityChanged.listen(
       (results) => _onConnectivityChanged(results),
     );
 
-    // 3. Listen to actual internet availability
+    // 4. Listen to actual internet availability
     _internetSub = _internetChecker.onStatusChange.listen(
       (status) => _onInternetStatusChanged(status),
     );
 
-    debugPrint('[NetworkService] ✓ Initialized. Online: ${isConnected.value}');
+    SafeGetx.debugTrace(
+      className: 'NetworkService',
+      method: 'init',
+      feature: 'Core',
+      status: 'SUCCESS',
+      params: {'online': isConnected.value},
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
 
-    // 4. Start periodic speed checks
+    // 5. Start periodic speed checks
     _startSpeedChecks();
 
     return this;
   }
 
+  List<InternetCheckOption> _buildCheckOptions() {
+    final options = <InternetCheckOption>[];
+
+    if (dotenv.isInitialized) {
+      final supabaseUrl = dotenv.env['SUPABASE_URL']?.trim();
+      if (supabaseUrl != null && supabaseUrl.isNotEmpty) {
+        options.add(
+          InternetCheckOption(
+            uri: Uri.parse('$supabaseUrl/auth/v1/health'),
+            timeout: const Duration(seconds: 8),
+          ),
+        );
+      }
+    }
+
+    options.addAll([
+      InternetCheckOption(
+        uri: Uri.parse('https://one.one.one.one'),
+        timeout: const Duration(seconds: 8),
+      ),
+      InternetCheckOption(
+        uri: Uri.parse('https://www.cloudflare.com/cdn-cgi/trace'),
+        timeout: const Duration(seconds: 8),
+      ),
+    ]);
+
+    return options;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _consecutiveOfflineChecks = 0;
+      _checkConnection();
+    }
+  }
+
   @override
   void onClose() {
+    SafeGetx.debugTrace(
+      className: 'NetworkService',
+      method: 'onClose',
+      feature: 'Core',
+      status: 'INFO',
+    );
+    WidgetsBinding.instance.removeObserver(this);
     _connectivitySub?.cancel();
     _internetSub?.cancel();
     _retryTimer?.cancel();
     _speedCheckTimer?.cancel();
+    _offlineConfirmTimer?.cancel();
     super.onClose();
   }
 
@@ -102,28 +180,33 @@ class NetworkService extends GetxService {
     try {
       final stopwatch = Stopwatch()..start();
 
-      // محاولة الاتصال بـ Google DNS أو أي endpoint موثوق
-      final socket = await Socket.connect('8.8.8.8', 53,
-          timeout: const Duration(seconds: 5));
+      final socket = await Socket.connect(
+        '1.1.1.1',
+        53,
+        timeout: const Duration(seconds: 5),
+      );
       socket.destroy();
 
       stopwatch.stop();
       final latency = stopwatch.elapsedMilliseconds;
 
-      // تحديد الجودة بناءً على زمن الاستجابة
       if (latency < 150) {
         connectionQuality.value = ConnectionQuality.good;
-        debugPrint('[NetworkService] ✓ Connection quality: GOOD (${latency}ms)');
       } else if (latency < 500) {
         connectionQuality.value = ConnectionQuality.weak;
-        debugPrint('[NetworkService] ⚠ Connection quality: WEAK (${latency}ms)');
       } else {
         connectionQuality.value = ConnectionQuality.weak;
-        debugPrint('[NetworkService] ⚠ Connection quality: POOR (${latency}ms)');
       }
-    } catch (e) {
+    } catch (e, stack) {
       connectionQuality.value = ConnectionQuality.unknown;
-      debugPrint('[NetworkService] ✗ Speed check failed: $e');
+      SafeGetx.debugTrace(
+        className: 'NetworkService',
+        method: '_checkConnectionQuality',
+        feature: 'Core',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -133,28 +216,81 @@ class NetworkService extends GetxService {
   Future<void> _checkConnection() async {
     connectionStatus.value = ConnectionStatus.checking;
     try {
+      if (!_hasNetworkAdapter) {
+        _applyConnectivityResult(false);
+        return;
+      }
+
       final hasInternet = await _internetChecker.hasInternetAccess;
-      _updateStatus(hasInternet);
-    } catch (e) {
-      _updateStatus(false);
-      debugPrint('[NetworkService] ✗ Check failed: $e');
+      _applyConnectivityResult(hasInternet);
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'NetworkService',
+        method: '_checkConnection',
+        feature: 'Core',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+      _applyConnectivityResult(false);
     }
   }
 
   /// Called when the network adapter changes (WiFi/Mobile/None).
   void _onConnectivityChanged(List<ConnectivityResult> results) {
-    final hasAnyConnection = results.any((r) => r != ConnectivityResult.none);
-    if (!hasAnyConnection) {
-      _updateStatus(false);
+    _hasNetworkAdapter = results.any((r) => r != ConnectivityResult.none);
+    if (!_hasNetworkAdapter) {
+      _consecutiveOfflineChecks = 2;
+      _applyConnectivityResult(false);
     } else {
-      // Network adapter connected, verify actual internet
+      _consecutiveOfflineChecks = 0;
       _checkConnection();
     }
   }
 
   /// Called when actual internet availability changes.
   void _onInternetStatusChanged(InternetStatus status) {
-    _updateStatus(status == InternetStatus.connected);
+    _applyConnectivityResult(status == InternetStatus.connected);
+  }
+
+  void _applyConnectivityResult(bool online) {
+    if (online) {
+      _consecutiveOfflineChecks = 0;
+      _offlineConfirmTimer?.cancel();
+      _updateStatus(true);
+      return;
+    }
+
+    _consecutiveOfflineChecks++;
+    if (!_hasNetworkAdapter) {
+      _scheduleOfflineConfirmation();
+      return;
+    }
+
+    if (_consecutiveOfflineChecks >= 2) {
+      _scheduleOfflineConfirmation();
+    }
+  }
+
+  void _scheduleOfflineConfirmation() {
+    _offlineConfirmTimer?.cancel();
+    _offlineConfirmTimer = Timer(const Duration(seconds: 2), () async {
+      if (!_hasNetworkAdapter) {
+        _updateStatus(false);
+        return;
+      }
+      try {
+        final stillOffline = !await _internetChecker.hasInternetAccess;
+        if (stillOffline) {
+          _updateStatus(false);
+        } else {
+          _consecutiveOfflineChecks = 0;
+          _updateStatus(true);
+        }
+      } catch (_) {
+        _updateStatus(false);
+      }
+    });
   }
 
   /// Update all reactive state.
@@ -165,10 +301,22 @@ class NetworkService extends GetxService {
         online ? ConnectionStatus.connected : ConnectionStatus.disconnected;
 
     if (online && wasOffline) {
-      debugPrint('[NetworkService] ✓ Connection restored.');
+      SafeGetx.debugTrace(
+        className: 'NetworkService',
+        method: '_updateStatus',
+        feature: 'Core',
+        status: 'SUCCESS',
+        message: 'Connection restored',
+      );
       _retryTimer?.cancel();
     } else if (!online && !wasOffline) {
-      debugPrint('[NetworkService] ✗ Connection lost.');
+      SafeGetx.debugTrace(
+        className: 'NetworkService',
+        method: '_updateStatus',
+        feature: 'Core',
+        status: 'WARN',
+        message: 'Connection lost',
+      );
       _startRetryLoop();
     }
   }
@@ -176,7 +324,7 @@ class NetworkService extends GetxService {
   /// Periodically retry connection check when offline.
   void _startRetryLoop() {
     _retryTimer?.cancel();
-    _retryTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+    _retryTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       if (!isConnected.value) {
         _checkConnection();
       } else {
@@ -187,6 +335,7 @@ class NetworkService extends GetxService {
 
   /// Force a manual retry (useful for retry buttons).
   Future<void> retryConnection() async {
+    _consecutiveOfflineChecks = 0;
     await _checkConnection();
   }
 
@@ -194,15 +343,15 @@ class NetworkService extends GetxService {
 
   /// Wraps any async API call with a connectivity check.
   /// Returns `null` and shows a snackbar if offline.
-  ///
-  /// Usage:
-  /// ```dart
-  /// final result = await NetworkService.to.guardedRequest(() async {
-  ///   return await SupabaseService.client.from('profiles').select();
-  /// });
-  /// ```
   Future<T?> guardedRequest<T>(Future<T> Function() request) async {
     if (!isConnected.value) {
+      SafeGetx.debugTrace(
+        className: 'NetworkService',
+        method: 'guardedRequest',
+        feature: 'Core',
+        status: 'WARN',
+        message: 'Request blocked: offline',
+      );
       Get.snackbar(
         'no_internet'.tr.isNotEmpty ? 'no_internet'.tr : 'لا يوجد اتصال',
         'check_connection'.tr.isNotEmpty
@@ -214,14 +363,52 @@ class NetworkService extends GetxService {
       return null;
     }
 
+    final stopwatch = Stopwatch()..start();
     try {
-      return await request();
-    } on SocketException {
-      _updateStatus(false);
+      final result = await request();
+      SafeGetx.debugTrace(
+        className: 'NetworkService',
+        method: 'guardedRequest',
+        feature: 'Core',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+      return result;
+    } on SocketException catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'NetworkService',
+        method: 'guardedRequest',
+        feature: 'Core',
+        status: 'ERROR',
+        message: 'SocketException — scheduling connectivity recheck',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
+      unawaited(_checkConnection());
       return null;
-    } on TimeoutException {
+    } on TimeoutException catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'NetworkService',
+        method: 'guardedRequest',
+        feature: 'Core',
+        status: 'ERROR',
+        message: 'TimeoutException',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       return null;
-    } catch (e) {
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'NetworkService',
+        method: 'guardedRequest',
+        feature: 'Core',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       rethrow;
     }
   }

@@ -4,9 +4,12 @@ import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/services/referral_service.dart';
+import 'package:kasby/core/services/presence_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class MyTeamView extends StatefulWidget {
   const MyTeamView({super.key});
@@ -17,33 +20,48 @@ class MyTeamView extends StatefulWidget {
 
 class _MyTeamViewState extends State<MyTeamView> {
   bool _isLoading = true;
+  String? _errorMessage;
   String _myReferralCode = '';
   int _totalMembers = 0;
-  List<Map<String, dynamic>> _members = [];
+  int _activeMembers = 0;
+  int _inactiveMembers = 0;
+  int _newToday = 0;
+  List<Map<String, dynamic>> _treeNodes = [];
+  List<Map<String, dynamic>> _friends = [];
 
   @override
   void initState() {
     super.initState();
-    // Pre-initialize with code from profile if available
-    _myReferralCode = HomeController.to.profile.value?.referralCode ?? '';
+    SafeGetx.debugTrace(
+      className: 'MyTeamView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    _myReferralCode = ReferralService.formatDisplayCode(
+      HomeController.to.profile.value?.referralCode,
+    );
     _fetchTeamData();
   }
 
+  int get _onlineCount {
+    if (!Get.isRegistered<PresenceService>()) return 0;
+    final presence = Get.find<PresenceService>();
+    final ids = <String>{
+      ..._treeNodes.map((n) => n['id']?.toString()).whereType<String>(),
+      ..._friends.map((f) => f['id']?.toString()).whereType<String>(),
+    };
+    return ids.where(presence.isUserOnline).length;
+  }
+
   Future<void> _fetchTeamData() async {
+    final stopwatch = Stopwatch()..start();
+    setState(() => _errorMessage = null);
     try {
       final result = await SupabaseService.client.rpc('get_my_team');
-      
-      // Handle the case where result might be null or not a map
+
       if (result == null || result is! Map) {
-        _log('get_my_team RPC returned invalid data');
-        if (mounted) {
-          setState(() {
-            if (_myReferralCode.isEmpty) {
-              _myReferralCode = HomeController.to.profile.value?.referralCode ?? '';
-            }
-          });
-        }
-        return;
+        throw Exception('get_my_team returned invalid data');
       }
 
       final response = Map<String, dynamic>.from(result);
@@ -51,37 +69,69 @@ class _MyTeamViewState extends State<MyTeamView> {
       if (response['success'] == true) {
         if (mounted) {
           setState(() {
-            // Priority: RPC Result > Current Value (initialized from Profile) > Default Empty
             final rpcCode = response['my_referral_code'] as String?;
             if (rpcCode != null && rpcCode.isNotEmpty) {
-              _myReferralCode = rpcCode;
+              _myReferralCode = ReferralService.formatDisplayCode(rpcCode);
             } else if (_myReferralCode.isEmpty) {
-              _myReferralCode = HomeController.to.profile.value?.referralCode ?? '';
+              _myReferralCode = ReferralService.formatDisplayCode(
+                HomeController.to.profile.value?.referralCode,
+              );
             }
 
-            _totalMembers = response['total_members'] ?? 0;
-            _members = List<Map<String, dynamic>>.from(response['members'] ?? []);
+            _totalMembers = response['total_members'] as int? ?? 0;
+            _activeMembers = response['active_members'] as int? ?? 0;
+            _inactiveMembers = response['inactive_members'] as int? ?? 0;
+            _newToday = response['new_today'] as int? ?? 0;
+            _treeNodes = List<Map<String, dynamic>>.from(
+              response['tree'] ?? response['members'] ?? [],
+            );
+            _friends = List<Map<String, dynamic>>.from(
+              response['friends'] ?? [],
+            );
           });
         }
+        SafeGetx.debugTrace(
+          className: 'MyTeamView',
+          method: '_fetchTeamData',
+          feature: 'Profile',
+          status: 'SUCCESS',
+          durationMs: stopwatch.elapsedMilliseconds,
+          params: {
+            'totalMembers': _totalMembers,
+            'treeNodes': _treeNodes.length,
+            'friends': _friends.length,
+          },
+        );
+      } else {
+        throw Exception(response['error']?.toString() ?? 'Unknown error');
       }
-    } catch (e) {
-      _log('Error fetching team: $e', isError: true);
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'MyTeamView',
+        method: '_fetchTeamData',
+        feature: 'Profile',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'unknown_error'.tr;
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-  void _log(String message, {bool isError = false}) {
-    debugPrint('[MY_TEAM] ${isError ? "❌" : "ℹ️"} $message');
-  }
-
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: isDark ? AppColors.background : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.background : AppColors.backgroundLight,
       appBar: AppBar(
         title: Text('my_team'.tr),
         backgroundColor: Colors.transparent,
@@ -92,50 +142,100 @@ class _MyTeamViewState extends State<MyTeamView> {
         ),
       ),
       body: _isLoading
-          ? Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Column(
-                children: [
-                  const KasbyShimmer.card(height: 140),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: const [
-                      Expanded(child: KasbyShimmer.card(height: 100)),
-                      SizedBox(width: 16),
-                      Expanded(child: KasbyShimmer.card(height: 100)),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: 5,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (_, __) => const KasbyShimmer.listItem(),
+          ? _buildLoadingSkeleton()
+          : _errorMessage != null
+              ? _buildErrorState()
+              : RefreshIndicator(
+                  onRefresh: _fetchTeamData,
+                  color: AppColors.darkGold,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    child: Column(
+                      children: [
+                        _buildReferralCodeCard(),
+                        const SizedBox(height: 24),
+                        Obx(() => _buildStatsDashboard()),
+                        const SizedBox(height: 32),
+                        _buildSectionHeader('referral_network'.tr),
+                        const SizedBox(height: 16),
+                        _buildReferralTree(),
+                        if (_friends.isNotEmpty) ...[
+                          const SizedBox(height: 32),
+                          _buildSectionHeader('team_friends'.tr),
+                          const SizedBox(height: 16),
+                          _buildFriendsList(),
+                        ],
+                        const SizedBox(height: 60),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _fetchTeamData,
-              color: AppColors.darkGold,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Column(
-                  children: [
-                    _buildReferralCodeCard(),
-                    const SizedBox(height: 24),
-                    _buildStatsDashboard(),
-                    const SizedBox(height: 32),
-                    _buildSectionHeader('tree_view'.tr),
-                    const SizedBox(height: 20),
-                    _buildTeamList(),
-                    const SizedBox(height: 60),
-                  ],
                 ),
-              ),
+    );
+  }
+
+  Widget _buildLoadingSkeleton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      child: Column(
+        children: [
+          const KasbyShimmer.card(height: 140),
+          const SizedBox(height: 24),
+          Row(
+            children: const [
+              Expanded(child: KasbyShimmer.card(height: 90)),
+              SizedBox(width: 12),
+              Expanded(child: KasbyShimmer.card(height: 90)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: const [
+              Expanded(child: KasbyShimmer.card(height: 90)),
+              SizedBox(width: 12),
+              Expanded(child: KasbyShimmer.card(height: 90)),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Expanded(
+            child: ListView.separated(
+              itemCount: 5,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (_, __) => const KasbyShimmer.listItem(),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded,
+                size: 56, color: AppColors.error.withValues(alpha: 0.7)),
+            const SizedBox(height: 16),
+            Text(_errorMessage!, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () {
+                setState(() => _isLoading = true);
+                _fetchTeamData();
+              },
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text('app_error_retry'.tr),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.darkGold),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -180,32 +280,26 @@ class _MyTeamViewState extends State<MyTeamView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildActionChip(
-                Icons.copy_rounded,
-                'copy'.tr,
-                () {
-                  Clipboard.setData(ClipboardData(text: _myReferralCode));
-                  HapticFeedback.lightImpact();
-                  Get.snackbar(
-                    'success'.tr,
-                    'تم نسخ كود الإحالة',
-                    backgroundColor: AppColors.softGreen.withValues(alpha: 0.9),
-                    colorText: Colors.white,
-                  );
-                },
-              ),
+              _buildActionChip(Icons.copy_rounded, 'copy'.tr, () {
+                Clipboard.setData(ClipboardData(text: _myReferralCode));
+                HapticFeedback.lightImpact();
+                Get.snackbar(
+                  'success'.tr,
+                  'referral_code_copied'.tr,
+                  backgroundColor:
+                      AppColors.softGreen.withValues(alpha: 0.9),
+                  colorText: Colors.white,
+                );
+              }),
               const SizedBox(width: 12),
-              _buildActionChip(
-                Icons.share_rounded,
-                'share'.tr,
-                () {
-                  SharePlus.instance.share(
-                    ShareParams(
-                      text: 'انضم إلى كاسبي واستثمر بذكاء! استخدم كود الإحالة: $_myReferralCode\nhttps://kasby.app/join?ref=$_myReferralCode',
-                    ),
-                  );
-                },
-              ),
+              _buildActionChip(Icons.share_rounded, 'share'.tr, () {
+                SharePlus.instance.share(
+                  ShareParams(
+                    text:
+                        '${'invite_share_text'.tr} $_myReferralCode\nhttps://kasby.app/join?ref=$_myReferralCode',
+                  ),
+                );
+              }),
             ],
           ),
         ],
@@ -243,37 +337,54 @@ class _MyTeamViewState extends State<MyTeamView> {
   }
 
   Widget _buildStatsDashboard() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'team_members_count'.tr,
-            '$_totalMembers',
-            Icons.groups_rounded,
-            Colors.blueAccent,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildStatCard(
-            'active_members'.tr,
-            '${_members.where((m) => m['status'] == 'active').length}',
-            Icons.verified_rounded,
-            AppColors.softGreen,
-          ),
-        ),
-      ],
-    ).animate().fadeIn(duration: const Duration(milliseconds: 500)).slideY(begin: 0.1);
+    final online = _onlineCount;
+    final stats = [
+      ('team_members_count'.tr, '$_totalMembers', Icons.groups_rounded,
+          Colors.blueAccent),
+      ('active_members'.tr, '$_activeMembers', Icons.verified_rounded,
+          AppColors.softGreen),
+      ('inactive_members'.tr, '$_inactiveMembers', Icons.person_off_rounded,
+          AppColors.error),
+      ('new_today'.tr, '$_newToday', Icons.person_add_alt_1_rounded,
+          AppColors.darkGold),
+      ('online_members'.tr, '$online', Icons.circle, AppColors.softGreen),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.45,
+      ),
+      itemCount: stats.length,
+      itemBuilder: (context, index) {
+        final stat = stats[index];
+        return _buildStatCard(stat.$1, stat.$2, stat.$3, stat.$4)
+            .animate()
+            .fadeIn(
+              duration: const Duration(milliseconds: 400),
+              delay: Duration(milliseconds: 60 * index),
+            );
+      },
+    );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark
             ? AppColors.surface.withValues(alpha: 0.5)
             : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
@@ -286,26 +397,30 @@ class _MyTeamViewState extends State<MyTeamView> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(height: 16),
+          const Spacer(),
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w900,
               color: isDark ? Colors.white : AppColors.textBodyLight,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
-              fontSize: 12,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLight,
+              fontSize: 11,
             ),
           ),
         ],
@@ -337,217 +452,406 @@ class _MyTeamViewState extends State<MyTeamView> {
     );
   }
 
-  Widget _buildTeamList() {
-    if (_members.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          children: [
-            Icon(
-              Icons.group_add_rounded,
-              size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'no_team_members'.tr,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'invite_friends_desc'.tr,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.7),
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-      ).animate().fadeIn();
+  Widget _buildReferralTree() {
+    if (_treeNodes.isEmpty && _friends.isEmpty) {
+      return _buildEmptyTeamState();
+    }
+
+    if (_treeNodes.isEmpty) {
+      return _buildEmptyReferralState();
+    }
+
+    final childrenByParent = <String, List<Map<String, dynamic>>>{};
+    final userId = SupabaseService.userId ?? '';
+    for (final node in _treeNodes) {
+      final parentId = node['parent_id']?.toString() ?? userId;
+      childrenByParent.putIfAbsent(parentId, () => []).add(node);
     }
 
     return Column(
       children: [
-        // Root Node (Me)
-        _buildTreeNode(
+        _buildTreeNodeCard(
           name: HomeController.to.profile.value?.fullName ?? 'You',
-          initials: _getInitials(HomeController.to.profile.value?.fullName ?? 'Y'),
+          initials: _getInitials(
+            HomeController.to.profile.value?.fullName ?? 'Y',
+          ),
           isRoot: true,
           isActive: true,
+          isOnline: true,
           subCount: _totalMembers,
+          level: 0,
         ),
         _buildVerticalLine(),
-        // Team Members (Level 1)
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _members.length,
-          itemBuilder: (context, index) {
-            final member = _members[index];
-            final name = member['full_name'] ?? 'مستخدم';
-            final isActive = member['status'] == 'active';
-            final subReferrals = member['sub_referrals'] as int? ?? 0;
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  const SizedBox(width: 40),
-                  Container(
-                    width: 2,
-                    height: 60,
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.black.withValues(alpha: 0.1),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.surface.withValues(alpha: 0.5)
-                            : AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.black.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 22,
-                            backgroundColor: AppColors.darkGold.withValues(alpha: 0.15),
-                            child: Text(
-                              _getInitials(name),
-                              style: TextStyle(
-                                color: AppColors.darkGold,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  name,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white : AppColors.textBodyLight,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: isActive ? AppColors.softGreen : AppColors.error,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      isActive ? 'active'.tr : 'inactive'.tr,
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    if (subReferrals > 0) ...[
-                                      const SizedBox(width: 12),
-                                      Icon(Icons.people_outline, size: 14, color: AppColors.textSecondary),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '$subReferrals',
-                                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideX(begin: 0.1);
-          },
-        ),
+        ..._buildTreeLevel(childrenByParent, userId, 0),
       ],
-    ).animate().fadeIn(delay: const Duration(milliseconds: 300));
+    ).animate().fadeIn(delay: const Duration(milliseconds: 200));
   }
 
-  Widget _buildTreeNode({
+  List<Widget> _buildTreeLevel(
+    Map<String, List<Map<String, dynamic>>> childrenByParent,
+    String parentId,
+    int depth,
+  ) {
+    final children = childrenByParent[parentId] ?? [];
+    if (children.isEmpty || depth > 4) return [];
+
+    return children.asMap().entries.expand((entry) {
+      final index = entry.key;
+      final member = entry.value;
+      final id = member['id']?.toString() ?? '';
+      final name = member['full_name']?.toString() ?? 'user'.tr;
+      final isActive = member['status']?.toString() == 'active';
+      final level = member['level'] as int? ?? 1;
+      final directRefs = member['direct_referrals'] as int? ??
+          member['sub_referrals'] as int? ??
+          0;
+      final isOnline = Get.isRegistered<PresenceService>() &&
+          Get.find<PresenceService>().isUserOnline(id);
+
+      return [
+        Padding(
+          padding: EdgeInsets.only(left: (level - 1) * 20.0, bottom: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 28,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 2,
+                      height: 24,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.08),
+                    ),
+                    Container(
+                      width: 10,
+                      height: 2,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.08),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTreeNodeCard(
+                      name: name,
+                      initials: _getInitials(name),
+                      isRoot: false,
+                      isActive: isActive,
+                      isOnline: isOnline,
+                      subCount: directRefs,
+                      level: level,
+                    ),
+                    ..._buildTreeLevel(childrenByParent, id, depth + 1),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ).animate().fadeIn(delay: Duration(milliseconds: 80 * index)),
+      ];
+    }).toList();
+  }
+
+  Widget _buildTreeNodeCard({
     required String name,
     required String initials,
     required bool isRoot,
     required bool isActive,
-    int subCount = 0,
+    required bool isOnline,
+    required int subCount,
+    required int level,
   }) {
-    return Column(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isRoot ? AppColors.darkGold : (isDark ? AppColors.surface : AppColors.surfaceLight),
-            border: Border.all(
-              color: isRoot ? AppColors.darkGold : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1)),
-              width: 2,
-            ),
-            boxShadow: isRoot
-                ? [BoxShadow(color: AppColors.darkGold.withValues(alpha: 0.3), blurRadius: 15, spreadRadius: 2)]
-                : null,
-          ),
-          child: Center(
-            child: Text(
-              initials,
-              style: TextStyle(
-                color: isRoot ? Colors.black : (isDark ? Colors.white : AppColors.textBodyLight),
-                fontWeight: FontWeight.w900,
-                fontSize: 18,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.surface.withValues(alpha: isRoot ? 0.7 : 0.45)
+            : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isRoot
+              ? AppColors.darkGold.withValues(alpha: 0.35)
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.05)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: isRoot ? 26 : 22,
+                backgroundColor: isRoot
+                    ? AppColors.darkGold
+                    : AppColors.darkGold.withValues(alpha: 0.15),
+                child: Text(
+                  initials,
+                  style: TextStyle(
+                    color: isRoot ? Colors.black : AppColors.darkGold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isRoot ? 16 : 14,
+                  ),
+                ),
               ),
+              if (isOnline)
+                Positioned(
+                  right: -1,
+                  bottom: -1,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: AppColors.softGreen,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark ? AppColors.background : Colors.white,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isRoot ? 15 : 14,
+                    color: isDark ? Colors.white : AppColors.textBodyLight,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    _buildStatusDot(isActive),
+                    const SizedBox(width: 6),
+                    Text(
+                      isActive ? 'active'.tr : 'inactive'.tr,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (level > 0) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        'L$level',
+                        style: TextStyle(
+                          color: AppColors.darkGold.withValues(alpha: 0.8),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    if (subCount > 0) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.people_outline,
+                          size: 13, color: AppColors.textSecondary),
+                      const SizedBox(width: 2),
+                      Text(
+                        '$subCount',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          name,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.textBodyLight,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFriendsList() {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _friends.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final friend = _friends[index];
+        final id = friend['id']?.toString() ?? '';
+        final name = friend['full_name']?.toString() ?? 'user'.tr;
+        final isActive = friend['status']?.toString() == 'active';
+        final isOnline = Get.isRegistered<PresenceService>() &&
+            Get.find<PresenceService>().isUserOnline(id);
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.surface.withValues(alpha: 0.45)
+                : AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.05),
+            ),
           ),
-        ),
-        if (isRoot && subCount > 0)
+          child: Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor:
+                        AppColors.darkGold.withValues(alpha: 0.15),
+                    child: Text(
+                      _getInitials(name),
+                      style: TextStyle(
+                        color: AppColors.darkGold,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (isOnline)
+                    Positioned(
+                      right: -1,
+                      bottom: -1,
+                      child: Container(
+                        width: 11,
+                        height: 11,
+                        decoration: BoxDecoration(
+                          color: AppColors.softGreen,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color:
+                            isDark ? Colors.white : AppColors.textBodyLight,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        _buildStatusDot(isActive),
+                        const SizedBox(width: 6),
+                        Text(
+                          isActive ? 'active'.tr : 'inactive'.tr,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.handshake_outlined,
+                            size: 14, color: AppColors.darkGold),
+                        const SizedBox(width: 4),
+                        Text(
+                          'friend'.tr,
+                          style: TextStyle(
+                            color: AppColors.darkGold,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ).animate().fadeIn(delay: Duration(milliseconds: 60 * index));
+      },
+    );
+  }
+
+  Widget _buildStatusDot(bool isActive) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isActive ? AppColors.softGreen : AppColors.error,
+      ),
+    );
+  }
+
+  Widget _buildEmptyTeamState() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        children: [
+          Icon(
+            Icons.group_add_rounded,
+            size: 64,
+            color: AppColors.textSecondary.withValues(alpha: 0.4),
+          ),
+          const SizedBox(height: 16),
+          Text('no_team_members'.tr,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+          const SizedBox(height: 8),
           Text(
-            '$subCount ${'team_members_count'.tr}',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+            'invite_friends_desc'.tr,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary.withValues(alpha: 0.7),
+              fontSize: 13,
+            ),
           ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyReferralState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.04)
+            : Colors.black.withValues(alpha: 0.03),
+      ),
+      child: Text(
+        'no_team_members'.tr,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: AppColors.textSecondary),
+      ),
     );
   }
 
   Widget _buildVerticalLine() {
     return Container(
       width: 2,
-      height: 30,
-      color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1),
+      height: 24,
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.1)
+          : Colors.black.withValues(alpha: 0.1),
     );
   }
 

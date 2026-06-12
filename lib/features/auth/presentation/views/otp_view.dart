@@ -1,11 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/services/auth_security_service.dart';
+import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/fcm_service.dart';
+import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
-import 'package:kasby/core/services/supabase_service.dart';
-import 'package:kasby/core/services/fcm_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/features/auth/domain/auth_otp_config.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:kasby/features/auth/presentation/widgets/auth_otp_input.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,38 +24,56 @@ class OtpView extends StatefulWidget {
 }
 
 class _OtpViewState extends State<OtpView> {
-  final List<TextEditingController> _controllers = List.generate(
-    6,
-    (_) => TextEditingController(),
-  );
-  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  final GlobalKey<AuthOtpInputState> _otpKey = GlobalKey<AuthOtpInputState>();
 
   bool _isLoading = false;
   bool _canResend = false;
   int _resendCountdown = 60;
   Timer? _timer;
 
-  // Get arguments from navigation
   final Map<String, dynamic> _args = Get.arguments ?? {};
 
   String get _identifier =>
       _args['identifier'] ?? AuthController.to.emailController.text.trim();
   OtpType get _otpType => _args['type'] ?? OtpType.signup;
   bool get _isPhone => _args['isPhone'] ?? false;
+  bool get _isRecovery => _args['isRecovery'] == true;
+  bool get _isFreeOtp => _args['isFreeOtp'] == true;
+
+  int get _otpLength {
+    final fromArgs = _args['otpLength'];
+    if (fromArgs is int && fromArgs > 0) return fromArgs;
+    if (_isFreeOtp) {
+      return AuthOtpConfig.lengthForPurpose(
+        _args['purpose']?.toString() ?? 'verification',
+      );
+    }
+    return AuthOtpConfig.lengthForOtpType(_otpType);
+  }
 
   @override
   void initState() {
     super.initState();
     _startResendTimer();
-    
-    // Listen for incoming OTP via FCM
-    if (_args['isFreeOtp'] == true) {
+    SafeGetx.debugTrace(
+      className: 'OtpView',
+      method: 'initState',
+      feature: 'Auth',
+      status: 'INFO',
+      params: {
+        'isPhone': _isPhone,
+        'isRecovery': _isRecovery,
+        'otpType': _otpType.name,
+        'otpLength': _otpLength,
+      },
+    );
+
+    if (_isFreeOtp) {
       ever(FCMService.to.lastOtpCode, (String? otp) {
-        if (otp != null && otp.length == 6 && mounted) {
-          for (int i = 0; i < 6; i++) {
-            _controllers[i].text = otp[i];
-          }
-          _verifyOtp();
+        if (otp != null &&
+            AuthOtpConfig.isComplete(otp, _otpLength) &&
+            mounted) {
+          _otpKey.currentState?.fillCode(otp);
         }
       });
     }
@@ -57,12 +81,6 @@ class _OtpViewState extends State<OtpView> {
 
   @override
   void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    for (final f in _focusNodes) {
-      f.dispose();
-    }
     _timer?.cancel();
     super.dispose();
   }
@@ -85,156 +103,158 @@ class _OtpViewState extends State<OtpView> {
   }
 
   Future<void> _resendOtp() async {
-    if (!_canResend) return;
+    if (!_canResend || _isLoading) return;
 
     try {
-      debugPrint('[VIEW] OtpView: Resending OTP to $_identifier');
-      
-      if (_args['isFreeOtp'] == true) {
+      if (_isFreeOtp) {
         if (_isPhone) {
           await AuthController.to.sendPhoneOtp(
-            _identifier, 
-            isRecovery: _args['isRecovery'] ?? false,
-            purpose: _args['isRecovery'] == true ? 'password_reset' : 'verification',
+            _identifier,
+            isRecovery: _isRecovery,
+            purpose: _isRecovery ? 'password_reset' : 'verification',
           );
         } else {
           await AuthController.to.sendEmailOtp(
             _identifier,
-            purpose: _args['isRecovery'] == true ? 'password_reset' : 'verification',
+            isRecovery: _isRecovery,
+            purpose: _isRecovery ? 'password_reset' : 'verification',
           );
         }
+      } else if (_otpType == OtpType.recovery) {
+        await AuthSecurityService.resendPasswordRecovery(_identifier);
+      } else if (_isPhone) {
+        await SupabaseService.auth.signInWithOtp(
+          phone: _identifier,
+          shouldCreateUser: false,
+        );
       } else {
-        // Fallback for legacy flows if any remain
-        if (_isPhone) {
-          await SupabaseService.auth.signInWithOtp(
-            phone: _identifier,
-            shouldCreateUser: false,
-          );
-        } else {
-          await SupabaseService.auth.resend(type: _otpType, email: _identifier);
-        }
+        await AuthSecurityService.resendOtp(
+          email: _identifier,
+          type: _otpType,
+        );
       }
 
       _startResendTimer();
-      Get.snackbar(
-        'success'.tr,
-        'تم إعادة إرسال الرمز بنجاح',
-        backgroundColor: AppColors.softGreen.withValues(alpha: 0.8),
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      Get.snackbar(
+      AppSnack.success('success'.tr, 'otp_resend_success'.tr);
+    } on AuthException catch (e) {
+      AppSnack.error(
         'error'.tr,
-        'فشل إعادة إرسال الرمز. حاول مرة أخرى.',
-        backgroundColor: AppColors.error.withValues(alpha: 0.8),
-        colorText: Colors.white,
+        AuthController.to.translateOtpError(e.message),
       );
+    } catch (_) {
+      AppSnack.error('error'.tr, 'otp_resend_failed'.tr);
     }
   }
 
-  Future<void> _verifyOtp() async {
-    final otp = _controllers.map((c) => c.text).join();
-    if (otp.length < 6) {
-      Get.snackbar(
+  Future<void> _verifyOtp([String? codeOverride]) async {
+    final otp = codeOverride ?? _otpKey.currentState?.code ?? '';
+    if (!AuthOtpConfig.isComplete(otp, _otpLength)) {
+      AppSnack.error(
         'error'.tr,
-        'الرجاء إدخال رمز التحقق كاملاً',
-        backgroundColor: AppColors.error.withValues(alpha: 0.7),
-        colorText: Colors.white,
+        'enter_full_otp'.trParams({'count': '$_otpLength'}),
       );
       return;
     }
 
-    if (_args['isFreeOtp'] == true) {
+    if (_isFreeOtp) {
       final purpose = _args['purpose'] ?? 'verification';
-      
-      if (_args['isRecovery'] == true || purpose == 'password_reset') {
-        debugPrint('[VIEW] OtpView: Custom OTP collected for recovery. Redirecting to ChangePasswordView.');
-        Get.toNamed(Routes.changePassword, arguments: {
-          'isRecovery': true,
-          'identifier': _identifier,
-          'otp': otp,
-        });
+
+      if (_isRecovery || purpose == 'password_reset') {
+        Get.toNamed(
+          Routes.changePassword,
+          arguments: {
+            'isRecovery': true,
+            'identifier': _identifier,
+            'otp': otp,
+          },
+        );
         return;
       }
 
       if (purpose == 'email_change' || purpose == 'phone_change') {
-        debugPrint('[VIEW] OtpView: Custom OTP collected for $purpose. Calling ProfileUpdateController.');
-        final success = await Get.find<ProfileUpdateController>().verifyAndUpdate(
+        final success =
+            await Get.find<ProfileUpdateController>().verifyAndUpdate(
           type: purpose,
           newValue: _identifier,
           otpCode: otp,
         );
         if (success) {
-          Get.back(); // Close OTP view
-          Get.back(); // Close Edit view
+          Get.back();
+          Get.back();
         }
         return;
       }
 
-      await AuthController.to.verifyPhoneOtp(_identifier, otp, targetType: _isPhone ? 'phone' : 'email', purpose: purpose);
+      await AuthController.to.verifyPhoneOtp(
+        _identifier,
+        otp,
+        targetType: _isPhone ? 'phone' : 'email',
+        purpose: purpose,
+      );
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      debugPrint(
-        '[VIEW] OtpView: Verifying OTP: $otp for $_identifier ($_otpType)',
-      );
-
-      if (_otpType == OtpType.recovery && _isPhone) {
-        await AuthController.to.verifyPasswordResetOTP(_identifier, otp);
-      } else {
+      if (_isPhone) {
         await SupabaseService.auth.verifyOTP(
+          type: _otpType,
+          token: AuthOtpConfig.normalize(otp),
+          phone: _identifier,
+        );
+      } else {
+        await AuthSecurityService.verifyOtpCode(
+          email: _identifier,
           token: otp,
           type: _otpType,
-          email: _isPhone ? null : _identifier,
-          phone: _isPhone ? _identifier : null,
         );
-
-        if (_otpType == OtpType.signup) {
-          Get.offAllNamed(Routes.home);
-        }
       }
 
-      if (mounted) {
-        setState(() => _isLoading = false);
+      if (_otpType == OtpType.recovery) {
+        AppSnack.success('success'.tr, 'otp_verified_success'.tr);
+        Get.offNamed(
+          Routes.changePassword,
+          arguments: {'isRecovery': true},
+        );
+      } else if (_otpType == OtpType.signup) {
+        AuthController.to.authStatus.value = AuthStatus.authenticated;
+        await AuthSecurityService.refreshUserProfileState();
+        Get.offAllNamed(Routes.home);
       }
     } on AuthException catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        debugPrint(
-          '[VIEW] OtpView ❌ ERROR: OTP Verification failed: ${e.message}',
-        );
-        Get.snackbar(
-          'error'.tr,
-          e.message,
-          backgroundColor: AppColors.error.withValues(alpha: 0.8),
-          colorText: Colors.white,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        Get.snackbar('error'.tr, 'حدث خطأ أثناء التحقق. حاول مرة أخرى.');
-      }
+      AppSnack.error(
+        'error'.tr,
+        AuthController.to.translateOtpError(e.message),
+      );
+      _otpKey.currentState?.clear();
+    } catch (_) {
+      AppSnack.error('error'.tr, 'invalid_otp'.tr);
+      _otpKey.currentState?.clear();
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.background : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.background : AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : Colors.black87),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'otp_verification'.tr,
+          _isRecovery ? 'reset_password'.tr : 'otp_verification'.tr,
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 20,
@@ -249,7 +269,6 @@ class _OtpViewState extends State<OtpView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ─── SECURITY ICON & TITLE ─────────────
               Center(
                 child: Column(
                   children: [
@@ -268,7 +287,7 @@ class _OtpViewState extends State<OtpView> {
                         color: AppColors.darkGold,
                         size: 40,
                       ),
-                    ),
+                    ).animate().scale(curve: Curves.easeOutBack),
                     const SizedBox(height: 24),
                     Text(
                       'verify_otp_title'.tr,
@@ -289,70 +308,26 @@ class _OtpViewState extends State<OtpView> {
                         height: 1.5,
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'enter_verification_code'.trParams({'count': '$_otpLength'}),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white54 : Colors.black45,
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 48),
-
-              // ─── OTP INPUT BOXES ───────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(
-                  6,
-                  (index) => SizedBox(
-                    width: 46,
-                    height: 58,
-                    child: TextField(
-                      controller: _controllers[index],
-                      focusNode: _focusNodes[index],
-                      textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      maxLength: 1,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                      onChanged: (value) {
-                        if (value.isNotEmpty && index < 5) {
-                          _focusNodes[index + 1].requestFocus();
-                        }
-                        if (value.isEmpty && index > 0) {
-                          _focusNodes[index - 1].requestFocus();
-                        }
-                        final currentOtp = _controllers.map((c) => c.text).join();
-                        if (currentOtp.length == 6) {
-                          _verifyOtp();
-                        }
-                      },
-                      decoration: InputDecoration(
-                        counterText: '',
-                        filled: true,
-                        fillColor: isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.black.withValues(alpha: 0.04),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: AppColors.darkGold, width: 2),
-                        ),
-                        enabledBorder: _controllers[index].text.isNotEmpty
-                            ? OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: AppColors.darkGold.withValues(alpha: 0.5)),
-                              )
-                            : null,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              AuthOtpInput(
+                key: _otpKey,
+                length: _otpLength,
+                enabled: !_isLoading,
+                onCompleted: _verifyOtp,
+              ).animate().fadeIn(delay: 200.ms),
               const SizedBox(height: 40),
-
-              // ─── RESEND SECTION ────────────────────
               Center(
                 child: Column(
                   children: [
@@ -365,7 +340,7 @@ class _OtpViewState extends State<OtpView> {
                     ),
                     const SizedBox(height: 8),
                     TextButton(
-                      onPressed: _canResend ? _resendOtp : null,
+                      onPressed: _canResend && !_isLoading ? _resendOtp : null,
                       child: Text(
                         _canResend
                             ? 'resend_code'.tr
@@ -373,9 +348,7 @@ class _OtpViewState extends State<OtpView> {
                         style: TextStyle(
                           color: _canResend
                               ? AppColors.darkGold
-                              : (isDark
-                                    ? Colors.white24
-                                    : Colors.black26),
+                              : (isDark ? Colors.white24 : Colors.black26),
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
                         ),
@@ -385,16 +358,14 @@ class _OtpViewState extends State<OtpView> {
                 ),
               ),
               const SizedBox(height: 48),
-
-              // ─── VERIFY BUTTON ─────────────────────
               _isLoading
                   ? Center(
                       child: CircularProgressIndicator(color: AppColors.darkGold),
                     )
                   : KasbyButton(
                       text: 'verify'.tr,
-                      onPressed: _verifyOtp,
-                    ),
+                      onPressed: () => _verifyOtp(),
+                    ).animate().fadeIn(delay: 300.ms),
               const SizedBox(height: 24),
             ],
           ),

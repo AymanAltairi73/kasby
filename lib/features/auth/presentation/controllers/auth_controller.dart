@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
@@ -13,6 +14,10 @@ import 'package:kasby/features/auth/domain/models/country_model.dart';
 import 'package:kasby/features/auth/domain/services/otp_service.dart';
 import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
+import 'package:kasby/core/services/auth_security_service.dart';
+import 'package:kasby/features/auth/domain/auth_otp_config.dart';
+import 'package:kasby/core/services/deep_link_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/routes/app_routes.dart';
 
 enum AuthStatus { initial, authenticated, unauthenticated }
@@ -71,6 +76,9 @@ class AuthController extends GetxController {
   final RxnBool referralCodeValid =
       RxnBool(); // null = initial, true = valid, false = invalid
   final RxBool isCheckingReferral = false.obs;
+  final RxnString pendingVerificationEmail = RxnString();
+
+  StreamSubscription<AuthState>? _authSubscription;
 
   // Text Controllers
   final phoneController = TextEditingController();
@@ -88,6 +96,7 @@ class AuthController extends GetxController {
     _log('Initializing AuthController');
     super.onInit();
     _loadSavedCredentials();
+    _loadPendingReferralCode();
     _checkInitialSession();
     _listenToAuthChanges();
     _linkVerificationStatus();
@@ -163,11 +172,14 @@ class AuthController extends GetxController {
       final session = SupabaseService.auth.currentSession;
       if (session != null) {
         _log('Initial session found for user: ${session.user.id}');
-        authStatus.value = AuthStatus.authenticated;
-
-        // Pre-fetch data
-        if (Get.isRegistered<HomeController>()) {
-          HomeController.to.fetchAll();
+        if (_requiresEmailVerification(session.user)) {
+          pendingVerificationEmail.value = session.user.email;
+          authStatus.value = AuthStatus.unauthenticated;
+        } else {
+          authStatus.value = AuthStatus.authenticated;
+          if (Get.isRegistered<HomeController>()) {
+            HomeController.to.fetchAll();
+          }
         }
       } else {
         _log('No initial session found');
@@ -181,6 +193,8 @@ class AuthController extends GetxController {
 
   @override
   void onClose() {
+    _authSubscription?.cancel();
+    _referralWorker?.dispose();
     phoneController.dispose();
     passwordController.dispose();
     nameController.dispose();
@@ -192,7 +206,7 @@ class AuthController extends GetxController {
 
   /// Listen to Supabase auth state changes for session management.
   void _listenToAuthChanges() {
-    SupabaseService.onAuthStateChange.listen((data) {
+    _authSubscription = SupabaseService.onAuthStateChange.listen((data) {
       final event = data.event;
       final session = data.session;
       _log('Auth State Changed: ${event.name}');
@@ -200,9 +214,21 @@ class AuthController extends GetxController {
       switch (event) {
         case AuthChangeEvent.signedIn:
           _log('User signed in: ${session?.user.id}');
-          authStatus.value = AuthStatus.authenticated;
+          if (session != null && _requiresEmailVerification(session.user)) {
+            pendingVerificationEmail.value = session.user.email;
+            authStatus.value = AuthStatus.unauthenticated;
+            if (Get.currentRoute != Routes.verifyEmail) {
+              Get.offAllNamed(
+                Routes.verifyEmail,
+                arguments: {'email': session.user.email ?? ''},
+              );
+            }
+            break;
+          }
 
-          // Refresh data
+          authStatus.value = AuthStatus.authenticated;
+          pendingVerificationEmail.value = null;
+
           if (Get.isRegistered<HomeController>()) {
             HomeController.to.fetchAll();
             HomeController.to.reconnectStreams();
@@ -211,10 +237,7 @@ class AuthController extends GetxController {
             CurrencyController.to.fetchWalletBalances();
           }
 
-          // Centralized navigation - Skip if already on home or during profile update re-authentication
-          if (Get.currentRoute != Routes.home && Get.currentRoute != Routes.profileUpdate) {
-            Get.offAllNamed(Routes.home);
-          }
+          _navigateAfterAuthentication();
           break;
 
         case AuthChangeEvent.signedOut:
@@ -229,8 +252,10 @@ class AuthController extends GetxController {
             CurrencyController.to.resetBalances();
           }
 
-          // Centralized navigation
-          Get.offAllNamed(Routes.login);
+          // Centralized navigation — skip if already on login (logout() triggers signOut)
+          if (Get.currentRoute != Routes.login) {
+            Get.offAllNamed(Routes.login);
+          }
           break;
 
         case AuthChangeEvent.tokenRefreshed:
@@ -247,9 +272,7 @@ class AuthController extends GetxController {
 
         case AuthChangeEvent.userUpdated:
           _log('User updated');
-          if (Get.isRegistered<HomeController>()) {
-            HomeController.to.fetchProfile();
-          }
+          AuthSecurityService.refreshUserProfileState();
           break;
 
         case AuthChangeEvent.mfaChallengeVerified:
@@ -265,16 +288,121 @@ class AuthController extends GetxController {
   Future<void> _loadSavedCredentials() async {
     try {
       final savedLoginId = await _storage.read(key: 'saved_login_id');
-      final savedPassword = await _storage.read(key: 'saved_password');
+      await _storage.delete(key: 'saved_password');
 
-      if (savedLoginId != null && savedPassword != null) {
+      if (savedLoginId != null) {
         phoneController.text = savedLoginId;
-        passwordController.text = savedPassword;
         rememberMe.value = true;
       }
     } catch (e, stack) {
       _log('Error loading credentials', isError: true, error: e, stack: stack);
     }
+  }
+
+  Future<void> _loadPendingReferralCode() async {
+    final code = await DeepLinkService.getPendingReferralCode();
+    if (code != null && code.isNotEmpty) {
+      referralCodeController.text = code;
+      await checkReferralCode(code);
+    }
+  }
+
+  bool _requiresEmailVerification(User user) {
+    return AuthSecurityService.isEmailVerificationRequired(user);
+  }
+
+  void _navigateAfterAuthentication() {
+    const skipRoutes = {
+      Routes.home,
+      Routes.profileUpdate,
+      Routes.changePassword,
+      Routes.verifyEmail,
+    };
+    if (!skipRoutes.contains(Get.currentRoute)) {
+      Get.offAllNamed(Routes.home);
+    }
+  }
+
+  Future<void> resendVerificationEmail(String email, {String purpose = 'signup'}) async {
+    _log('Resending verification ($purpose)');
+    final otpType =
+        purpose == 'email_change' ? OtpType.emailChange : OtpType.signup;
+    await AuthSecurityService.resendOtp(email: email, type: otpType);
+  }
+
+  Future<bool> checkEmailVerificationStatus({
+    String purpose = 'signup',
+    String? targetEmail,
+  }) async {
+    _log('Checking email verification status ($purpose)');
+    if (purpose == 'email_change') {
+      final target =
+          targetEmail ?? pendingVerificationEmail.value ?? '';
+      if (target.isEmpty) return false;
+      final complete =
+          await AuthSecurityService.isPendingEmailChangeComplete(target);
+      if (complete) {
+        await AuthSecurityService.refreshUserProfileState();
+      }
+      return complete;
+    }
+    final verified = await AuthSecurityService.refreshAndCheckEmailVerified();
+    if (verified) {
+      authStatus.value = AuthStatus.authenticated;
+      pendingVerificationEmail.value = null;
+      await AuthSecurityService.refreshUserProfileState();
+    }
+    return verified;
+  }
+
+  Future<void> verifyEmailWithOtp({
+    required String email,
+    required String code,
+    String purpose = 'signup',
+  }) async {
+    isLoading.value = true;
+    try {
+      final otpType = purpose == 'email_change'
+          ? OtpType.emailChange
+          : OtpType.signup;
+      _log('Verifying email OTP ($purpose)');
+      await AuthSecurityService.verifyOtpCode(
+        email: email,
+        token: code,
+        type: otpType,
+      );
+      if (purpose == 'email_change') {
+        await AuthSecurityService.refreshUserProfileState();
+        pendingVerificationEmail.value = null;
+        AppSnack.success('success'.tr, 'email_changed_success'.tr);
+        Get.offAllNamed(Routes.personalProfile);
+      } else {
+        authStatus.value = AuthStatus.authenticated;
+        pendingVerificationEmail.value = null;
+        await AuthSecurityService.refreshUserProfileState();
+        AppSnack.success('success'.tr, 'email_verified_success'.tr);
+        Get.offAllNamed(Routes.home);
+      }
+    } on AuthException catch (e, stack) {
+      _log('Email OTP verification failed', isError: true, error: e.message, stack: stack);
+      throw AuthException(AuthSecurityService.translateOtpError(e.message));
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  String translateAuthError(String message) =>
+      AuthSecurityService.translateAuthError(message);
+
+  String translateOtpError(String message) =>
+      AuthSecurityService.translateOtpError(message);
+
+  void _goToVerifyEmail(String email, {String purpose = 'signup'}) {
+    pendingVerificationEmail.value = email;
+    Get.offAllNamed(
+      Routes.verifyEmail,
+      arguments: {'email': email, 'purpose': purpose},
+    );
   }
 
   void updateCountry(Country country) {
@@ -289,8 +417,8 @@ class AuthController extends GetxController {
     termsAccepted.value = value ?? false;
   }
 
-  Future<void> login() async {
-    if (!loginFormKey.currentState!.validate()) return;
+  Future<void> login({bool skipFormValidation = false}) async {
+    if (!skipFormValidation && !loginFormKey.currentState!.validate()) return;
 
     if (phoneController.text.trim().isEmpty) {
       Get.snackbar('error'.tr, 'email_or_phone'.tr);
@@ -298,9 +426,9 @@ class AuthController extends GetxController {
     }
 
     isLoading.value = true;
+    final loginId = phoneController.text.trim();
 
     try {
-      final loginId = phoneController.text.trim();
       final password = passwordController.text;
 
       // Determine if user is logging in with email or phone
@@ -321,32 +449,30 @@ class AuthController extends GetxController {
         );
       }
 
-      // Print session data after login
       final user = SupabaseService.currentUser;
-      if (user != null) {
-        debugPrint('\n╔══════════════════════════════════════════════════');
-        debugPrint('║ 🔐 LOGIN SUCCESSFUL - USER DATA');
-        debugPrint('╠──────────────────────────────────────────────────');
-        debugPrint('║ ID:        ${user.id}');
-        debugPrint('║ Email:     ${user.email}');
-        debugPrint('║ Phone:     ${user.phone}');
-        debugPrint('║ Created:   ${user.createdAt}');
-        debugPrint('║ Metadata:  ${user.userMetadata}');
-        debugPrint('╚══════════════════════════════════════════════════\n');
+      if (kDebugMode && user != null) {
+        SafeGetx.debugTrace(
+          className: 'AuthController',
+          method: 'login',
+          feature: 'Auth',
+          status: 'SUCCESS',
+          params: {'userId': user.id},
+        );
       }
 
-      // Save credentials if "remember me" is enabled
       if (rememberMe.value) {
         await _storage.write(key: 'saved_login_id', value: loginId);
-        await _storage.write(key: 'saved_password', value: password);
       } else {
         await _storage.delete(key: 'saved_login_id');
-        await _storage.delete(key: 'saved_password');
       }
+      await _storage.delete(key: 'saved_password');
 
       isLoading.value = false;
       _log('Login successful for: $loginId');
-      Get.offAllNamed(Routes.home);
+
+      if (user != null && _requiresEmailVerification(user)) {
+        _goToVerifyEmail(user.email ?? loginId);
+      }
     } on AuthException catch (e, stack) {
       isLoading.value = false;
       _log(
@@ -355,9 +481,13 @@ class AuthController extends GetxController {
         error: e.message,
         stack: stack,
       );
+      if (e.message.contains('Email not confirmed') && loginId.contains('@')) {
+        _goToVerifyEmail(loginId);
+        return;
+      }
       Get.snackbar(
         'error'.tr,
-        _getAuthErrorMessage(e.message),
+        translateAuthError(e.message),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withValues(alpha: 0.2),
       );
@@ -372,8 +502,8 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> register() async {
-    if (!registerFormKey.currentState!.validate()) return;
+  Future<void> register({bool skipFormValidation = false}) async {
+    if (!skipFormValidation && !registerFormKey.currentState!.validate()) return;
     if (!termsAccepted.value) {
       Get.snackbar('error'.tr, 'agree_error'.tr);
       return;
@@ -409,61 +539,75 @@ class AuthController extends GetxController {
         }
       }
 
-      // Generate own referral code (k-XXXXX)
-      final ownReferralCode = ReferralService.generateReferralCode();
+      SafeGetx.debugTrace(
+        className: 'AuthController',
+        method: 'register',
+        feature: 'Auth',
+        status: 'INFO',
+        params: {
+          'hasReferral': referralCodeInput.isNotEmpty,
+          'countryCode': selectedCountry.value.code,
+        },
+      );
 
-      // Log all registration data before sending
-      debugPrint('\n╔══════════════════════════════════════════════════');
-      debugPrint('║ 📝 REGISTRATION ATTEMPT - DATA BEING SENT');
-      debugPrint('╠──────────────────────────────────────────────────');
-      debugPrint('║ Full Name:     $fullName');
-      debugPrint('║ Email:         $email');
-      debugPrint('║ Phone:         $phone');
-      debugPrint('║ Country Code:  ${selectedCountry.value.code}');
-      debugPrint('║ Referral Code: $ownReferralCode');
-      debugPrint('║ Referred By:   $referralCodeInput');
-      debugPrint('║ Referrer ID:   $referrerId');
-      debugPrint('╚══════════════════════════════════════════════════\n');
-
-      final response = await SupabaseService.auth.signUp(
+      final response = await AuthSecurityService.signUpWithEmailVerification(
         email: email,
         password: password,
         data: {
           'full_name': fullName,
           'phone': phone,
           'country_code': selectedCountry.value.code,
-          'referral_code': ownReferralCode,
           if (referralCodeInput.isNotEmpty)
             'referred_by_code': referralCodeInput,
         },
       );
 
-      // Print response data after registration
-      if (response.user != null) {
-        debugPrint('\n╔══════════════════════════════════════════════════');
-        debugPrint('║ ✅ REGISTRATION SUCCESSFUL - RESPONSE DATA');
-        debugPrint('╠──────────────────────────────────────────────────');
-        debugPrint('║ User ID:     ${response.user!.id}');
-        debugPrint('║ Email:       ${response.user!.email}');
-        debugPrint('║ Phone:       ${response.user!.phone}');
-        debugPrint('║ Created:     ${response.user!.createdAt}');
-        debugPrint('║ Metadata:    ${response.user!.userMetadata}');
-        debugPrint('║ App Meta:    ${response.user!.appMetadata}');
-        debugPrint('║ Session:     ${response.session != null ? "Active" : "None"}');
-        debugPrint('╚══════════════════════════════════════════════════\n');
+      if (kDebugMode && response.user != null) {
+        SafeGetx.debugTrace(
+          className: 'AuthController',
+          method: 'register',
+          feature: 'Auth',
+          status: 'SUCCESS',
+          params: {
+            'userId': response.user!.id,
+            'hasSession': response.session != null,
+          },
+        );
       }
 
-      // Link referral after successful registration
       if (referrerId != null && response.user != null) {
         await ReferralService.linkReferral(
           newUserId: response.user!.id,
           referrerId: referrerId,
         );
       }
+      await DeepLinkService.clearPendingReferralCode();
 
       isLoading.value = false;
       _log('Registration successful for: $email');
-      Get.offAllNamed(Routes.home);
+
+      final user = response.user;
+      final needsVerification = user != null &&
+          (response.session == null || _requiresEmailVerification(user));
+      if (needsVerification) {
+        if (user.confirmationSentAt == null) {
+          try {
+            await AuthSecurityService.ensureSignupVerificationSent(email);
+          } catch (e, stack) {
+            _log(
+              'Signup verification dispatch failed',
+              isError: true,
+              error: e,
+              stack: stack,
+            );
+          }
+        }
+        _goToVerifyEmail(email);
+        AppSnack.success('success'.tr, 'verification_email_sent'.tr);
+      } else if (response.session != null) {
+        authStatus.value = AuthStatus.authenticated;
+        Get.offAllNamed(Routes.home);
+      }
     } on AuthException catch (e, stack) {
       isLoading.value = false;
       _log(
@@ -474,7 +618,7 @@ class AuthController extends GetxController {
       );
       Get.snackbar(
         'error'.tr,
-        _getAuthErrorMessage(e.message),
+        translateAuthError(e.message),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withValues(alpha: 0.2),
       );
@@ -500,7 +644,7 @@ class AuthController extends GetxController {
       await _storage.delete(key: 'saved_login_id');
       await _storage.delete(key: 'saved_password');
       _log('Logout successful');
-      Get.offAllNamed(Routes.login);
+      // Navigation is handled by the signedOut auth-state listener.
     } catch (e, stack) {
       _log('Logout error', isError: true, error: e, stack: stack);
     }
@@ -519,12 +663,54 @@ class AuthController extends GetxController {
       return;
     }
 
-    _log('Routing email password reset to custom FCM OTP: $sanitizedEmail');
-    await sendEmailOtp(
-      sanitizedEmail,
-      purpose: 'password_reset',
-      isRecovery: true,
-    );
+    isLoading.value = true;
+    try {
+      _log('Sending password reset email');
+      try {
+        await AuthSecurityService.sendPasswordResetEmail(sanitizedEmail);
+        AppSnack.success('success'.tr, 'reset_otp_sent'.tr);
+        Get.toNamed(
+          Routes.otp,
+          arguments: {
+            'identifier': sanitizedEmail,
+            'isPhone': false,
+            'isFreeOtp': false,
+            'type': OtpType.recovery,
+            'isRecovery': true,
+            'otpLength': AuthOtpConfig.lengthForOtpType(OtpType.recovery),
+          },
+        );
+      } on AuthException catch (e) {
+        if (!AuthSecurityService.isEmailDeliveryFailure(e.message)) {
+          rethrow;
+        }
+        _log(
+          'Supabase recovery email unavailable — using app OTP delivery',
+          isError: true,
+          error: e.message,
+        );
+        await sendEmailOtp(
+          sanitizedEmail,
+          isRecovery: true,
+          purpose: 'password_reset',
+        );
+      }
+    } on AuthException catch (e, stack) {
+      _log('Password reset email failed', isError: true, error: e.message, stack: stack);
+      Get.snackbar(
+        'error'.tr,
+        translateAuthError(e.message),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.2),
+      );
+      rethrow;
+    } catch (e, stack) {
+      _log('Password reset email failed', isError: true, error: e, stack: stack);
+      Get.snackbar('error'.tr, 'unexpected_error'.tr);
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> sendPasswordResetOTP(String phone) async {
@@ -587,6 +773,7 @@ class AuthController extends GetxController {
           'isFreeOtp': true,
           'isRecovery': isRecovery,
           'purpose': purpose,
+          'otpLength': AuthOtpConfig.fcmOtpLength,
         },
       );
     } catch (e, stack) {
@@ -597,47 +784,39 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Send OTP to an email address via FCM.
+  /// Send OTP to an email address via the hardened edge function (Resend).
   Future<void> sendEmailOtp(
     String email, {
     bool isRecovery = false,
     String purpose = 'verification',
   }) async {
     isLoading.value = true;
-    _log('Sending email OTP via FCM to: $email');
+    _log('Sending email OTP to: $email');
 
     try {
-      final fcmToken = FCMService.to.fcmToken.value;
-      if (fcmToken.isEmpty) {
-        throw Exception(
-          'FCM Token not available. Please enable notifications.',
-        );
-      }
-
       final bool success = await Get.find<OTPService>().sendOtp(
-        target: email,
+        target: email.trim().toLowerCase(),
         targetType: 'email',
-        fcmToken: fcmToken,
         purpose: purpose,
       );
 
       _log('Email OTP request finished. Success: $success');
 
       if (success) {
-        AppSnack.success(
-          'success'.tr,
-          'تم إرسال رمز التحقق بنجاح',
-        );
+        AppSnack.success('success'.tr, 'verification_code_resent'.tr);
       }
 
       Get.toNamed(
         Routes.otp,
         arguments: {
-          'identifier': email,
+          'identifier': email.trim().toLowerCase(),
           'isPhone': false,
           'isFreeOtp': true,
           'isRecovery': isRecovery,
           'purpose': purpose,
+          'otpLength': purpose == 'email_change'
+              ? AuthOtpConfig.lengthForPurpose('email_change')
+              : AuthOtpConfig.fcmOtpLength,
         },
       );
     } catch (e, stack) {
@@ -689,30 +868,5 @@ class AuthController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  /// Translate Supabase auth error messages to Arabic.
-  String _getAuthErrorMessage(String message) {
-    if (message.contains('Invalid login credentials')) {
-      return 'بيانات الدخول غير صحيحة';
-    } else if (message.contains('Email not confirmed')) {
-      return 'البريد الإلكتروني غير مفعّل. تحقق من بريدك';
-    } else if (message.contains('User already registered')) {
-      return 'هذا الحساب مسجل مسبقاً';
-    } else if (message.contains('Password should be')) {
-      return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
-    } else if (message.contains('rate limit')) {
-      return 'محاولات كثيرة. حاول بعد قليل';
-    } else if (message.toLowerCase().contains('invalid email') ||
-        message.contains('Email address')) {
-      return 'البريد الإلكتروني غير مسجل في النظام أو غير صالح';
-    } else if (message.contains('User not found')) {
-      return 'هذا الحساب غير موجود لدينا';
-    } else if (message.contains('Signups not allowed')) {
-      return 'هذا الحساب غير مسجل مسبقاً في النظام';
-    } else if (message.contains('Database error saving new user')) {
-      return 'رقم الهاتف أو البريد الإلكتروني مسجل مسبقاً';
-    }
-    return message;
   }
 }

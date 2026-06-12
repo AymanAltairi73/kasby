@@ -1,15 +1,15 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/features/auth/domain/services/otp_service.dart';
-import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kasby/core/services/auth_security_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class ProfileUpdateController extends GetxController {
   static ProfileUpdateController get to => Get.find();
@@ -17,6 +17,17 @@ class ProfileUpdateController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxInt resendTimer = 0.obs;
   Timer? _timer;
+
+  @override
+  void onInit() {
+    SafeGetx.debugTrace(
+      className: 'ProfileUpdateController',
+      method: 'onInit',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    super.onInit();
+  }
 
   // ─── PASSWORD VERIFICATION STATE ─────────────────────────
   final RxBool isPasswordVerified = false.obs;
@@ -37,27 +48,23 @@ class ProfileUpdateController extends GetxController {
       // Get current user email for reauthentication
       final currentEmail = SupabaseService.currentUser?.email;
       if (currentEmail == null || currentEmail.isEmpty) {
-        _log('Cannot verify password: no email found on current user', isError: true);
+        _log('Cannot verify password: no email on current user', method: 'verifyPassword', isError: true);
         AppSnack.error('error'.tr, 'unknown_error'.tr);
         return false;
       }
 
-      // Reauthenticate using Supabase Auth
-      await SupabaseService.auth.signInWithPassword(
-        email: currentEmail,
-        password: password.trim(),
-      );
+      await AuthSecurityService.reauthenticateWithPassword(password.trim());
 
       isPasswordVerified.value = true;
-      _log('Password verified successfully for profile update');
+      _log('Password verified successfully', method: 'verifyPassword');
       AppSnack.success('success'.tr, 'password_verified'.tr);
       return true;
     } on AuthException catch (e) {
-      _log('Password verification failed: ${e.message}', isError: true);
+      _log('Password verification failed', method: 'verifyPassword', isError: true, error: e.message);
       AppSnack.error('error'.tr, 'incorrect_password'.tr);
       return false;
     } catch (e) {
-      _log('Password verification error: $e', isError: true);
+      _log('Password verification error', method: 'verifyPassword', isError: true, error: e);
       AppSnack.error('error'.tr, 'unknown_error'.tr);
       return false;
     } finally {
@@ -87,18 +94,22 @@ class ProfileUpdateController extends GetxController {
     await SupabaseService.hardRefreshSession();
     try {
       final targetType = type == 'email_change' ? 'email' : 'phone';
-      final fcmToken = Get.find<FCMService>().fcmToken.value;
-      
-      if (fcmToken.isEmpty) {
-        AppSnack.error('error'.tr, 'enable_notifications_error'.tr);
-        return false;
+      final isEmailChange = type == 'email_change';
+      String? fcmToken;
+
+      if (!isEmailChange) {
+        fcmToken = Get.find<FCMService>().fcmToken.value;
+        if (fcmToken.isEmpty) {
+          AppSnack.error('error'.tr, 'enable_notifications_error'.tr);
+          return false;
+        }
       }
 
       final bool success = await OTPService.to.sendOtp(
         target: target,
         targetType: targetType,
         purpose: type,
-        fcmToken: fcmToken, 
+        fcmToken: isEmailChange ? null : fcmToken,
       );
 
       _startResendTimer();
@@ -106,16 +117,61 @@ class ProfileUpdateController extends GetxController {
       if (success) {
         AppSnack.success(
           'success'.tr,
-          'otp_sent_notification'.tr,
+          isEmailChange ? 'otp_sent_email'.tr : 'otp_sent_notification'.tr,
         );
       }
       
       return success;
     } catch (e) {
-      _log('Error sending update OTP for $type to $target: $e', isError: true);
+      _log('Error sending update OTP', method: 'sendUpdateOtp', isError: true, error: e, params: {'type': type});
       String msg = e.toString().replaceAll('Exception:', '').trim();
       if (e.toString().contains('RATE_LIMIT')) msg = 'rate_limit_exceeded_friend'.tr;
       AppSnack.error('error'.tr, msg);
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Requests email change via Supabase Auth (confirmation email sent).
+  Future<bool> requestEmailChange(String newEmail) async {
+    if (!isPasswordVerified.value) {
+      AppSnack.warning('error'.tr, 'password_required_first'.tr);
+      return false;
+    }
+
+    isLoading.value = true;
+    try {
+      await SupabaseService.hardRefreshSession();
+      await AuthSecurityService.requestEmailChange(newEmail);
+      AppSnack.success('success'.tr, 'email_change_confirmation_sent'.tr);
+      return true;
+    } on AuthException catch (e) {
+      _log('Email change request failed', method: 'requestEmailChange', isError: true, error: e.message);
+      AppSnack.error('error'.tr, AuthSecurityService.translateAuthError(e.message));
+      return false;
+    } catch (e) {
+      _log('Email change request error', method: 'requestEmailChange', isError: true, error: e);
+      AppSnack.error('error'.tr, 'unknown_error'.tr);
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Checks whether a pending email change has been confirmed.
+  Future<bool> checkEmailChangeComplete(String targetEmail) async {
+    isLoading.value = true;
+    try {
+      final complete =
+          await AuthSecurityService.isPendingEmailChangeComplete(targetEmail);
+      if (complete) {
+        await AuthSecurityService.refreshUserProfileState();
+        AppSnack.success('success'.tr, 'email_changed_success'.tr);
+      }
+      return complete;
+    } catch (e) {
+      _log('Email change status check failed', method: 'checkEmailChangeComplete', isError: true, error: e);
       return false;
     } finally {
       isLoading.value = false;
@@ -137,14 +193,7 @@ class ProfileUpdateController extends GetxController {
       });
 
       if (response.statusCode == 200) {
-        // 1. Refresh Profile
-        await HomeController.to.fetchProfile();
-        
-        // 2. If email changed, refresh session to update JWT
-        if (type == 'email_change') {
-          await SupabaseService.client.auth.refreshSession();
-        }
-
+        await AuthSecurityService.refreshUserProfileState();
         AppSnack.success('success'.tr, 'profile_updated_success'.tr);
         return true;
       } else {
@@ -162,14 +211,14 @@ class ProfileUpdateController extends GetxController {
             userMsg = type == 'email_change' ? 'email_already_exists'.tr : 'phone_already_exists'.tr;
           }
         } catch (e) {
-          _log('Failed to decode error response: ${response.body}', isError: true);
+          _log('Failed to decode error response', method: 'verifyAndUpdate', isError: true);
         }
 
         AppSnack.error('error'.tr, userMsg);
         return false;
       }
     } catch (e) {
-      _log('Error in verifyAndUpdate: $e', isError: true);
+      _log('Error in verifyAndUpdate', method: 'verifyAndUpdate', isError: true, error: e);
       AppSnack.error('error'.tr, 'unknown_error'.tr);
       return false;
     } finally {
@@ -219,12 +268,27 @@ class ProfileUpdateController extends GetxController {
     });
   }
 
-  void _log(String message, {bool isError = false}) {
-    debugPrint('[PROFILE_UPDATE_CONTROLLER] ${isError ? "❌" : "ℹ️"} $message');
+  void _log(String message, {String method = 'event', bool isError = false, Object? error, StackTrace? stack, Map<String, Object?>? params}) {
+    SafeGetx.debugTrace(
+      className: 'ProfileUpdateController',
+      method: method,
+      feature: 'Profile',
+      status: isError ? 'ERROR' : 'INFO',
+      message: message,
+      params: params,
+      error: error,
+      stackTrace: stack,
+    );
   }
 
   @override
   void onClose() {
+    SafeGetx.debugTrace(
+      className: 'ProfileUpdateController',
+      method: 'onClose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
     _timer?.cancel();
     super.onClose();
   }

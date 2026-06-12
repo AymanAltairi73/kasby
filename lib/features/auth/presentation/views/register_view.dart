@@ -7,25 +7,26 @@ import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/auth/presentation/widgets/country_selector.dart';
 
-class RegisterView extends StatelessWidget {
+class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
 
   @override
+  State<RegisterView> createState() => _RegisterViewState();
+}
+
+class _RegisterViewState extends State<RegisterView> {
+  final _formKey = GlobalKey<FormState>();
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.put(AuthController());
+    final controller = AuthController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      // appBar: AppBar(
-      //   leading: IconButton(
-      //     icon: const Icon(Icons.arrow_back_ios_new_rounded),
-      //     onPressed: () => Get.back(),
-      //   ),
-      // ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(
-          key: controller.registerFormKey,
+          key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -194,7 +195,11 @@ class RegisterView extends StatelessWidget {
                     : KasbyButton(
                         text: 'register'.tr,
                         onPressed: controller.termsAccepted.value
-                            ? controller.register
+                            ? () {
+                                if (_formKey.currentState?.validate() ?? false) {
+                                  controller.register(skipFormValidation: true);
+                                }
+                              }
                             : null,
                         // Disable button style if needed? KasbyButton might not handle null logic visually unless I check.
                         // KasbyButton usually takes onPressed. If null, it might not look disabled.
