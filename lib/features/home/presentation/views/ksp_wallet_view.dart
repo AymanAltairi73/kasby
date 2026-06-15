@@ -12,6 +12,7 @@ import 'package:kasby/core/utils/ksp_converter.dart';
 import 'package:kasby/core/models/ksp_category.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class KspWalletView extends StatefulWidget {
   const KspWalletView({super.key});
@@ -27,11 +28,29 @@ class _KspWalletViewState extends State<KspWalletView> {
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'KspWalletView',
+      method: 'initState',
+      feature: 'Home',
+      status: 'INFO',
+    );
     _fetchPointsData();
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'KspWalletView',
+      method: 'dispose',
+      feature: 'Home',
+      status: 'INFO',
+    );
+    super.dispose();
   }
 
   Future<void> _fetchPointsData() async {
     if (!SupabaseService.isLoggedIn) return;
+    final stopwatch = Stopwatch()..start();
     isLoading.value = true;
     try {
       // Refresh points and metrics from centralized controller
@@ -57,8 +76,24 @@ class _KspWalletViewState extends State<KspWalletView> {
           createdAt: DateTime.parse(json['created_at']),
         );
       }).toList();
-    } catch (e) {
-      debugPrint('Error fetching points history: $e');
+      SafeGetx.debugTrace(
+        className: 'KspWalletView',
+        method: '_fetchPointsData',
+        feature: 'Home',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'historyCount': pointsHistory.length},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'KspWalletView',
+        method: '_fetchPointsData',
+        feature: 'Home',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -516,9 +551,9 @@ class _KspWalletViewState extends State<KspWalletView> {
             const Divider(),
             const SizedBox(height: 12),
             _buildDetailRow('ksp_amount'.tr, '${tx.type == 'earn' ? '+' : '-'}${tx.amount.toInt()} KSP', color: tx.type == 'earn' ? AppColors.softGreen : AppColors.error),
-            _buildDetailRow('usd_equivalent'.tr, '\$${(tx.amount / 1000).toStringAsFixed(2)}'),
+            _buildDetailRow('usd_equivalent'.tr, '\$${KspConverter.kspToUsd(tx.amount).toStringAsFixed(2)}'),
             if (tx.createdAt != null)
-              _buildDetailRow('date'.tr, '${tx.createdAt!.day}/${tx.createdAt!.month}/${tx.createdAt!.year} ${tx.createdAt!.hour.toString().padLeft(2, '0')}:${tx.createdAt!.minute.toString().padLeft(2, '0')}'),
+              _buildDetailRow('date'.tr, '${tx.createdAt!.day.toString().padLeft(2, '0')}/${tx.createdAt!.month.toString().padLeft(2, '0')}/${tx.createdAt!.year} ${tx.createdAt!.hour.toString().padLeft(2, '0')}:${tx.createdAt!.minute.toString().padLeft(2, '0')}'),
             _buildDetailRow('reference_id'.tr, tx.id),
             _buildDetailRow('description'.tr, tx.description ?? 'N/A', isLast: true),
             const SizedBox(height: 20),

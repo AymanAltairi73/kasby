@@ -1,3 +1,5 @@
+import 'package:kasby/core/utils/safe_getx.dart';
+
 class LoanRepaymentModel {
   final String id;
   final String loanId;
@@ -20,7 +22,8 @@ class LoanRepaymentModel {
   });
 
   factory LoanRepaymentModel.fromJson(Map<String, dynamic> json) {
-    return LoanRepaymentModel(
+    try {
+      return LoanRepaymentModel(
       id: json['id'] as String? ?? '',
       loanId: json['loan_id'] as String? ?? '',
       userId: json['user_id'] as String? ?? '',
@@ -31,7 +34,19 @@ class LoanRepaymentModel {
       createdAt: json['created_at'] != null 
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
-    );
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'LoanRepaymentModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

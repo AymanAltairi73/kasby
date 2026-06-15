@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class AgencyApplyController extends GetxController {
   final isLoading = false.obs;
@@ -11,8 +12,25 @@ class AgencyApplyController extends GetxController {
 
   @override
   void onInit() {
+    SafeGetx.debugTrace(
+      className: 'AgencyApplyController',
+      method: 'onInit',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     super.onInit();
     checkApplicationStatus();
+  }
+
+  @override
+  void onClose() {
+    SafeGetx.debugTrace(
+      className: 'AgencyApplyController',
+      method: 'onClose',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
+    super.onClose();
   }
 
   Future<void> checkApplicationStatus() async {
@@ -30,8 +48,15 @@ class AgencyApplyController extends GetxController {
         hasApplied.value = true;
         applicationStatus.value = response['status'] ?? 'pending';
       }
-    } catch (e) {
-      debugPrint('Error checking agency application: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgencyApplyController',
+        method: 'checkApplicationStatus',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -73,11 +98,18 @@ class AgencyApplyController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(20),
       );
-    } catch (e) {
-      debugPrint('Error submitting agency application: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgencyApplyController',
+        method: 'submitApplication',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       Get.snackbar(
         'error'.tr,
-        'حدث خطأ أثناء إرسال الطلب. حاول مرة أخرى.',
+        'unexpected_error'.tr,
         backgroundColor: AppColors.error,
         colorText: Colors.white,
       );

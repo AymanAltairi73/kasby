@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
@@ -9,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/services/referral_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
@@ -34,13 +36,21 @@ class _EditProfileViewState extends State<EditProfileView> {
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   String get _referralCode {
-    return HomeController.to.profile.value?.referralCode ?? '---';
+    return ReferralService.formatDisplayCode(
+      HomeController.to.profile.value?.referralCode,
+    );
   }
 
   @override
   void initState() {
     super.initState();
-    Get.put(ProfileUpdateController());
+    SafeGetx.debugTrace(
+      className: 'EditProfileView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    Get.put(ProfileUpdateController(), permanent: false);
     _loadProfileData();
   }
 
@@ -48,7 +58,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     final profile = HomeController.to.profile.value;
     if (profile != null) {
       _nameController.text = profile.fullName;
-      _emailController.text = profile.email;
+      _emailController.text = profile.email ?? '';
       _phoneController.text = profile.phone ?? '';
       _provinceController.text = profile.province ?? '';
       _cityController.text = profile.city ?? '';
@@ -59,6 +69,12 @@ class _EditProfileViewState extends State<EditProfileView> {
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'EditProfileView',
+      method: 'dispose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
@@ -81,6 +97,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     }
 
     setState(() => _isSaving = true);
+    final stopwatch = Stopwatch()..start();
 
     try {
       final userId = SupabaseService.userId;
@@ -126,8 +143,16 @@ class _EditProfileViewState extends State<EditProfileView> {
       // 5. Clear local preview path
       AuthController.to.profileImagePath.value = null;
 
+      SafeGetx.debugTrace(
+        className: 'EditProfileView',
+        method: '_saveProfile',
+        feature: 'Profile',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'hasNewAvatar': uploadedImageUrl != null},
+      );
       if (mounted) {
-        Get.back();
+        Get.safeBack();
         Get.snackbar(
           'success'.tr,
           'save_changes'.tr,
@@ -135,13 +160,21 @@ class _EditProfileViewState extends State<EditProfileView> {
           colorText: Colors.white,
         );
       }
-    } catch (e) {
-      debugPrint('Profile update error: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'EditProfileView',
+        method: '_saveProfile',
+        feature: 'Profile',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       if (mounted) {
-        String errorMessage = 'حدث خطأ أثناء حفظ التعديلات. حاول مرة أخرى.';
+        String errorMessage = 'profile_update_error'.tr;
 
         if (e is PostgrestException && e.code == '23505') {
-          errorMessage = 'رقم الهاتف هذا مستخدم بالفعل من قبل مستخدم آخر.';
+          errorMessage = 'phone_already_used'.tr;
         }
 
         Get.snackbar(
@@ -169,7 +202,7 @@ class _EditProfileViewState extends State<EditProfileView> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => Get.safeBack(),
         ),
       ),
       body: SingleChildScrollView(
@@ -310,7 +343,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                 );
                 if (image != null) {
                   AuthController.to.profileImagePath.value = image.path;
-                  Get.back();
+                  Get.safeBack();
                 }
               },
             ),
@@ -326,7 +359,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                 );
                 if (image != null) {
                   AuthController.to.profileImagePath.value = image.path;
-                  Get.back();
+                  Get.safeBack();
                 }
               },
             ),
@@ -366,13 +399,13 @@ class _EditProfileViewState extends State<EditProfileView> {
           _buildInfoRow(
             context,
             'email_address'.tr,
-            profile.email,
+            profile.email ?? '---',
             Icons.email_outlined,
             onEdit: () {
               ProfileUpdateController.to.resetFlow();
               Get.toNamed(Routes.profileUpdate, arguments: {
                 'type': 'email_change',
-                'current_value': profile.email,
+                'current_value': profile.email ?? '',
               });
             },
           ),

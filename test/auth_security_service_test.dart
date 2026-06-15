@@ -33,6 +33,15 @@ void main() {
         'Invalid verification code.',
       );
     });
+
+    test('maps link-style otp errors to otp messages not auth_link_invalid', () {
+      expect(
+        AuthSecurityService.translateOtpError(
+          'Email link is invalid or has expired',
+        ),
+        'Verification code expired.',
+      );
+    });
   });
 
   group('AuthSecurityService.translateAuthError', () {
@@ -49,6 +58,35 @@ void main() {
       expect(
         AuthSecurityService.translateAuthError('Invalid callback link'),
         'The link is invalid or has expired.',
+      );
+    });
+
+    test('maps smtp delivery failures to auth_error_email_delivery', () {
+      Get.addTranslations({
+        'en_US': {
+          'auth_error_email_delivery': 'Unable to send email right now.',
+        },
+      });
+      expect(
+        AuthSecurityService.translateAuthError(
+          '535 5.7.8 Username and Password not accepted',
+        ),
+        'Unable to send email right now.',
+      );
+    });
+
+    test('parses GoTrue JSON error bodies', () {
+      expect(
+        AuthSecurityService.normalizeAuthErrorMessage(
+          '{"code":"unexpected_failure","message":"Error sending recovery email"}',
+        ),
+        'Error sending recovery email',
+      );
+      expect(
+        AuthSecurityService.translateAuthError(
+          '{"code":"unexpected_failure","message":"Error sending recovery email"}',
+        ),
+        isNot('The link is invalid or has expired.'),
       );
     });
   });

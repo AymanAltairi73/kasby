@@ -19,31 +19,114 @@ import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/firebase_options.dart';
 import 'package:kasby/features/auth/domain/services/otp_service.dart';
 import 'package:kasby/core/services/network_service.dart';
+import 'package:kasby/core/services/account_restriction_service.dart';
+import 'package:kasby/core/widgets/account_restriction_banner.dart';
 import 'package:kasby/core/widgets/connectivity_banner.dart';
 import 'package:kasby/core/services/session_service.dart';
 import 'package:kasby/core/services/confetti_service.dart';
 import 'package:kasby/features/qr_payment/presentation/controllers/qr_payment_controller.dart';
 import 'package:kasby/core/services/presence_service.dart';
+import 'package:kasby/core/services/app_version_service.dart';
+import 'package:kasby/core/services/deep_link_service.dart';
+import 'package:kasby/core/utils/locale_helper.dart';
+import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/widgets/app_error_widget.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 void main() async {
+  final startupStopwatch = Stopwatch()..start();
   WidgetsFlutterBinding.ensureInitialized();
 
+  SafeGetx.debugTrace(
+    className: 'main',
+    method: 'startup',
+    feature: 'Startup',
+    status: 'INFO',
+    message: 'App startup initiated',
+  );
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    SafeGetx.debugTrace(
+      className: 'FlutterError',
+      method: 'onError',
+      feature: 'ErrorHandling',
+      status: 'FAILED',
+      error: details.exceptionAsString(),
+      stackTrace: details.stack,
+    );
+  };
+
+  ErrorWidget.builder = (details) => AppErrorWidget(details: details);
+
   // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    SafeGetx.debugTrace(
+      className: 'main',
+      method: 'initFirebase',
+      feature: 'Startup',
+      status: 'SUCCESS',
+      durationMs: startupStopwatch.elapsedMilliseconds,
+    );
+  } catch (e, st) {
+    SafeGetx.debugTrace(
+      className: 'main',
+      method: 'initFirebase',
+      feature: 'Startup',
+      status: 'FAILED',
+      error: e,
+      stackTrace: st,
+    );
+    rethrow;
+  }
 
   // Register background handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Load environment variables
   await dotenv.load(fileName: '.env');
-
-  // Initialize Supabase
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  SafeGetx.debugTrace(
+    className: 'main',
+    method: 'loadEnv',
+    feature: 'Startup',
+    status: 'SUCCESS',
   );
 
+  // Initialize Supabase
+  try {
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL']!,
+      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    );
+    SafeGetx.debugTrace(
+      className: 'main',
+      method: 'initSupabase',
+      feature: 'Startup',
+      status: 'SUCCESS',
+      durationMs: startupStopwatch.elapsedMilliseconds,
+    );
+    SupabaseService.registerAuthListener();
+  } catch (e, st) {
+    SafeGetx.debugTrace(
+      className: 'main',
+      method: 'initSupabase',
+      feature: 'Startup',
+      status: 'FAILED',
+      error: e,
+      stackTrace: st,
+    );
+    rethrow;
+  }
+
   // Initialize Services
+  SafeGetx.debugTrace(
+    className: 'main',
+    method: 'initDependencyInjection',
+    feature: 'Startup',
+    status: 'INFO',
+    message: 'Registering GetX services and controllers',
+  );
   await Get.putAsync(() => FCMService().init());
   await Get.putAsync(() => NetworkService().init());
   await Get.putAsync(() => PresenceService().init(), permanent: true);
@@ -51,6 +134,7 @@ void main() async {
 
   Get.put(CurrencyController());
   Get.put(HomeController(), permanent: true);
+  Get.put(AccountRestrictionService(), permanent: true);
   Get.put(AuthController(), permanent: true);
   Get.put(ThemeController(), permanent: true);
   Get.put(ShellController(), permanent: true);
@@ -58,11 +142,50 @@ void main() async {
   Get.put(ConfettiService(), permanent: true);
   Get.lazyPut(() => AgentController());
   Get.lazyPut(() => QrPaymentController(), fenix: true);
-  runApp(const KasbyApp());
+  Get.put(AppVersionService(), permanent: true);
+  await Get.putAsync(() => DeepLinkService().init(), permanent: true);
+
+  final savedLocale = await LocaleHelper.getLanguageCode();
+  final initialLocale = savedLocale == 'en'
+      ? const Locale('en', 'US')
+      : const Locale('ar', 'SA');
+
+  SafeGetx.debugTrace(
+    className: 'main',
+    method: 'runApp',
+    feature: 'Startup',
+    status: 'SUCCESS',
+    durationMs: startupStopwatch.elapsedMilliseconds,
+    params: {'locale': initialLocale.toString()},
+  );
+
+  runApp(KasbyApp(initialLocale: initialLocale));
 }
 
-class KasbyApp extends StatelessWidget {
-  const KasbyApp({super.key});
+class KasbyApp extends StatefulWidget {
+  final Locale initialLocale;
+
+  const KasbyApp({super.key, required this.initialLocale});
+
+  @override
+  State<KasbyApp> createState() => _KasbyAppState();
+}
+
+class _KasbyAppState extends State<KasbyApp> {
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'KasbyApp',
+      method: 'initState',
+      feature: 'Startup',
+      status: 'SUCCESS',
+      message: 'GetMaterialApp initialized',
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppVersionService.to.checkForUpdate();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,8 +199,9 @@ class KasbyApp extends StatelessWidget {
         themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
         initialRoute: AppPages.initial,
         getPages: AppPages.routes,
+        routingCallback: SafeGetx.logRoute,
         translations: KasbyTranslations(),
-        locale: const Locale('ar', 'SA'),
+        locale: widget.initialLocale,
         fallbackLocale: const Locale('en', 'US'),
         supportedLocales: const [Locale('en', 'US'), Locale('ar', 'SA')],
         localizationsDelegates: const [
@@ -89,7 +213,9 @@ class KasbyApp extends StatelessWidget {
         builder: (context, child) {
           return Stack(
             children: [
-              ConnectivityBanner(child: child ?? const SizedBox.shrink()),
+              AccountRestrictionBanner(
+                child: ConnectivityBanner(child: child ?? const SizedBox.shrink()),
+              ),
               ConfettiService.to.buildConfetti(),
             ],
           );

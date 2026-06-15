@@ -10,10 +10,42 @@ import 'package:kasby/features/home/presentation/controllers/home_controller.dar
 // import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/utils/locale_helper.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 
-class ProfileView extends StatelessWidget {
+class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
+
+  @override
+  State<ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends State<ProfileView> {
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'ProfileView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+      message: 'Tab mounted in MainShell',
+    );
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'ProfileView',
+      method: 'dispose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +189,7 @@ class ProfileView extends StatelessWidget {
                       trailing: Obx(() => Switch(
                         value: FCMService.to.isNotificationsEnabled.value,
                         onChanged: (val) => FCMService.to.setNotificationsEnabled(val),
-                        activeColor: AppColors.darkGold,
+                        activeThumbColor: AppColors.darkGold,
                       )),
                     ),
                     _buildProfileItem(
@@ -179,6 +211,8 @@ class ProfileView extends StatelessWidget {
                   ]),
                   const SizedBox(height: 48),
                   _buildLogoutButton(),
+                  const SizedBox(height: 16),
+                  _buildDeleteAccountButton(context),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -536,8 +570,102 @@ class ProfileView extends StatelessWidget {
       text: 'logout'.tr,
       color: AppColors.error.withValues(alpha: 0.2),
       textColor: AppColors.error,
-      onPressed: () => Get.offAllNamed(Routes.login),
+      onPressed: () {
+        if (Get.isRegistered<HomeController>()) {
+          HomeController.to.clearData();
+        }
+        AuthController.to.logout();
+      },
     ).animate().fadeIn(delay: 600.ms);
+  }
+
+  Widget _buildDeleteAccountButton(BuildContext context) {
+    return TextButton(
+      onPressed: () => _showDeleteAccountDialog(context),
+      child: Text(
+        'delete_account'.tr,
+        style: TextStyle(
+          color: AppColors.error.withValues(alpha: 0.7),
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    final confirmController = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'delete_account'.tr,
+          style: TextStyle(
+            color: AppColors.error,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'delete_account_confirm'.tr,
+              style: TextStyle(
+                color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: confirmController,
+              decoration: InputDecoration(
+                hintText: 'type_delete_confirm'.tr,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (confirmController.text.trim().toUpperCase() != 'DELETE') {
+                return;
+              }
+              Get.back();
+              try {
+                final userId = SupabaseService.userId;
+                if (userId != null) {
+                  await SupabaseService.client.functions.invoke(
+                    'admin-proxy',
+                    body: {
+                      'operation': 'delete_user',
+                      'params': {'user_id': userId},
+                    },
+                  );
+                }
+                await SupabaseService.auth.signOut();
+                if (Get.isRegistered<HomeController>()) {
+                  HomeController.to.clearData();
+                }
+                Get.offAllNamed(Routes.login);
+                AppSnack.success('success'.tr, 'account_deleted'.tr);
+              } catch (e) {
+                AppSnack.error('error'.tr, e.toString());
+              }
+            },
+            child: Text(
+              'delete_account'.tr,
+              style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showLanguageSelector(BuildContext context, bool isDark) {
@@ -599,8 +727,9 @@ class ProfileView extends StatelessWidget {
     bool isSelected,
   ) {
     return InkWell(
-      onTap: () {
+      onTap: () async {
         Get.updateLocale(Locale(langCode, countryCode));
+        await LocaleHelper.saveLanguageCode(langCode);
         Get.back();
       },
       child: Container(

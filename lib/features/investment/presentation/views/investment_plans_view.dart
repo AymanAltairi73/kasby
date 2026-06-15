@@ -8,6 +8,7 @@ import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 // import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class InvestmentPlansView extends StatefulWidget {
   const InvestmentPlansView({super.key});
@@ -23,10 +24,28 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'InvestmentPlansView',
+      method: 'initState',
+      feature: 'Investment',
+      status: 'INFO',
+    );
     _fetchPlans();
   }
 
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'InvestmentPlansView',
+      method: 'dispose',
+      feature: 'Investment',
+      status: 'INFO',
+    );
+    super.dispose();
+  }
+
   Future<void> _fetchPlans() async {
+    final stopwatch = Stopwatch()..start();
     isLoading.value = true;
     try {
       final response = await SupabaseService.client
@@ -38,8 +57,24 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
       plans.value = (response as List)
           .map((json) => InvestmentPlanModel.fromJson(json))
           .toList();
-    } catch (e) {
-      debugPrint('Error fetching plans: $e');
+      SafeGetx.debugTrace(
+        className: 'InvestmentPlansView',
+        method: '_fetchPlans',
+        feature: 'Investment',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'count': plans.length},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'InvestmentPlansView',
+        method: '_fetchPlans',
+        feature: 'Investment',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -54,6 +89,24 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
       default:
         return const Color(0xFFFFD700); // gold
     }
+  }
+
+  String _formatDuration(int? days) {
+    if (days == null) return '30_months_2_5_years'.tr;
+    if (days >= 365) {
+      final years = days / 365.0;
+      return years == years.roundToDouble()
+          ? '${years.toInt()} ${'years'.tr}'
+          : '${years.toStringAsFixed(1)} ${'years'.tr}';
+    }
+    final months = (days / 30).round();
+    return '$months ${'months'.tr}';
+  }
+
+  String _formatProfit(double percentage) {
+    return percentage == percentage.roundToDouble()
+        ? '${percentage.toInt()}%'
+        : '${percentage.toStringAsFixed(1)}%';
   }
 
   String _getPlanImage(String name) {
@@ -125,13 +178,14 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
 
               return InvestmentPlanCard(
                     id: plan.id,
-                    title: plan.nameAr,
-                    profit: '${plan.profitPercentage.toInt()}%',
+                    title: Get.locale?.languageCode == 'ar' ? plan.nameAr : (plan.nameEn ?? plan.nameAr),
+                    profit: _formatProfit(plan.profitPercentage),
                     rawProfitPercentage: plan.profitPercentage.toDouble(),
                     minAmount: '\$${plan.minAmount.toInt()}',
                     imagePath: _getPlanImage(plan.nameEn ?? plan.nameAr),
                     color: _planColor(plan.riskLevel),
                     amounts: amounts,
+                    duration: _formatDuration(plan.durationDays),
                   )
                   .animate()
                   .fadeIn(

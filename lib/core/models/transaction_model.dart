@@ -1,3 +1,5 @@
+import 'package:kasby/core/utils/safe_getx.dart';
+
 class TransactionModel {
   final String id;
   final String? idempotencyKey;
@@ -60,32 +62,45 @@ class TransactionModel {
   bool get isDebit => !isCredit;
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
-    return TransactionModel(
-      id: json['id'] as String,
-      idempotencyKey: json['idempotency_key'] as String?,
-      userId: json['user_id'] as String,
-      walletId: json['wallet_id'] as String,
-      type: json['type'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      fee: (json['fee'] as num?)?.toDouble() ?? 0.0,
-      netAmount: (json['net_amount'] as num?)?.toDouble(),
-      currency: json['currency'] as String? ?? 'USD',
-      status: json['status'] as String? ?? 'pending',
-      runningBalance: (json['running_balance'] as num?)?.toDouble(),
-      counterpartUserId: json['counterpart_user_id'] as String?,
-      referenceId: json['reference_id'] as String?,
-      reason: json['reason'] as String?,
-      description: json['description'] as String?,
-      proofUrl: json['proof_url'] as String?,
-      processedBy: json['processed_by'] as String?,
-      processedAt: json['processed_at'] != null
-          ? DateTime.parse(json['processed_at'])
-          : null,
-      rejectionReason: json['rejection_reason'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-    );
+    try {
+      return TransactionModel(
+        id: json['id'] as String,
+        idempotencyKey: json['idempotency_key'] as String?,
+        userId: json['user_id'] as String,
+        walletId: json['wallet_id'] as String,
+        type: json['type'] as String,
+        amount: (json['amount'] as num).toDouble(),
+        fee: (json['fee'] as num?)?.toDouble() ?? 0.0,
+        netAmount: (json['net_amount'] as num?)?.toDouble(),
+        currency: json['currency'] as String? ?? 'USD',
+        status: json['status'] as String? ?? 'pending',
+        runningBalance: (json['running_balance'] as num?)?.toDouble(),
+        counterpartUserId: json['counterpart_user_id'] as String?,
+        referenceId: json['reference_id'] as String?,
+        reason: json['reason'] as String?,
+        description: json['description'] as String?,
+        proofUrl: json['proof_url'] as String?,
+        processedBy: json['processed_by'] as String?,
+        processedAt: json['processed_at'] != null
+            ? DateTime.parse(json['processed_at'])
+            : null,
+        rejectionReason: json['rejection_reason'] as String?,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'])
+            : null,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'TransactionModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

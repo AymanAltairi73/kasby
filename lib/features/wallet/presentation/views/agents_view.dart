@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/models/agent_model.dart';
+import 'package:kasby/core/services/agent_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
@@ -25,6 +27,12 @@ class _AgentsViewState extends State<AgentsView> {
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'AgentsView',
+      method: 'initState',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     _fetchAgents();
     _searchController.addListener(() {
       _searchQuery.value = _searchController.text;
@@ -47,38 +55,40 @@ class _AgentsViewState extends State<AgentsView> {
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'AgentsView',
+      method: 'dispose',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _fetchAgents() async {
+    final stopwatch = Stopwatch()..start();
     isLoading.value = true;
     try {
-      debugPrint('[DEBUG] Fetching agents with status: Active...');
-      final response = await SupabaseService.client
-          .from('agents')
-          .select('*, profiles(*)')
-          .eq('status', 'active');
-
-      debugPrint('[DEBUG] Agents Response Length: ${response.length}');
-      if (response.isNotEmpty) {
-        debugPrint('[DEBUG] First Agent Raw Data: ${response[0]}');
-      } else {
-        debugPrint('[DEBUG] Response is empty or null');
-        // Test query: check if ANY agents exist without filter
-        final countCheck = await SupabaseService.client
-          .from('agents')
-          .select('id')
-          .limit(1);
-        debugPrint('[DEBUG] Any agents in table? ${countCheck.isNotEmpty}');
-      }
-
-      agents.value = (response as List)
-          .map((json) => AgentModel.fromJson(json))
-          .toList();
+      agents.value = await AgentService.fetchActiveAgents(limit: 50);
       _filterAgents();
-    } catch (e) {
-      debugPrint('[DEBUG] Error fetching agents: $e');
+      SafeGetx.debugTrace(
+        className: 'AgentsView',
+        method: '_fetchAgents',
+        feature: 'Wallet',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'count': agents.length},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgentsView',
+        method: '_fetchAgents',
+        feature: 'Wallet',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -88,7 +98,7 @@ class _AgentsViewState extends State<AgentsView> {
     if (agent.userId == null) {
       Get.snackbar(
         'warning'.tr,
-        'هذا الوكيل غير مرتبط بحساب نشط حالياً. يرجى استخدام الدعم الفني العام.',
+        'agent_not_active'.tr,
         backgroundColor: Colors.orange.shade800,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -96,6 +106,7 @@ class _AgentsViewState extends State<AgentsView> {
       return;
     }
 
+    final stopwatch = Stopwatch()..start();
     try {
       Get.dialog(
         const Center(child: CircularProgressIndicator()),
@@ -107,9 +118,17 @@ class _AgentsViewState extends State<AgentsView> {
         params: {'p_agent_id': agent.id},
       );
 
-      Get.back(); // close loading dialog
+      Get.safeBack();
 
       if (response != null && response['success'] == true) {
+        SafeGetx.debugTrace(
+          className: 'AgentsView',
+          method: '_startAgentChat',
+          feature: 'Wallet',
+          status: 'SUCCESS',
+          durationMs: stopwatch.elapsedMilliseconds,
+          params: {'agentId': agent.id},
+        );
         final conversationId = response['conversation']['id'];
         Get.toNamed(Routes.socialChat, arguments: {
           'conversation_id': conversationId,
@@ -118,18 +137,34 @@ class _AgentsViewState extends State<AgentsView> {
           'is_agent_chat': true,
         });
       } else {
+        SafeGetx.debugTrace(
+          className: 'AgentsView',
+          method: '_startAgentChat',
+          feature: 'Wallet',
+          status: 'WARN',
+          durationMs: stopwatch.elapsedMilliseconds,
+          message: response?['error']?.toString(),
+        );
         Get.snackbar(
           'error'.tr,
-          response['error'] ?? 'حدث خطأ أثناء بدء المحادثة',
+          response['error'] ?? 'chat_connection_error'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
       }
-    } catch (e) {
-      if (Get.isDialogOpen ?? false) Get.back();
-      debugPrint('[AgentsView] Error starting agent chat: $e');
+    } catch (e, stack) {
+      if (Get.isDialogOpen ?? false) Get.safeBack();
+      SafeGetx.debugTrace(
+        className: 'AgentsView',
+        method: '_startAgentChat',
+        feature: 'Wallet',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       Get.snackbar(
         'error'.tr,
-        'فشل الاتصال بالوكيل. يرجى المحاولة لاحقاً',
+        'chat_connection_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -146,7 +181,7 @@ class _AgentsViewState extends State<AgentsView> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => Get.safeBack(),
         ),
       ),
       body: Column(

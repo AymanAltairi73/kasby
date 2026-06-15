@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/services/fcm_service.dart';
@@ -22,12 +23,14 @@ class SubscriptionController extends GetxController {
   Timer? _timer;
   bool _notifiedExpiry = false;
 
-  void _log(String message, {bool isError = false}) {
-    debugPrint('[SUBSCRIPTION] ${isError ? "❌" : "ℹ️"} $message');
-  }
-
   @override
   void onInit() {
+    SafeGetx.debugTrace(
+      className: 'SubscriptionController',
+      method: 'onInit',
+      feature: 'Home',
+      status: 'INFO',
+    );
     super.onInit();
     fetchActiveSubscription();
     _startCountdownTimer();
@@ -35,6 +38,12 @@ class SubscriptionController extends GetxController {
 
   @override
   void onClose() {
+    SafeGetx.debugTrace(
+      className: 'SubscriptionController',
+      method: 'onClose',
+      feature: 'Home',
+      status: 'INFO',
+    );
     _timer?.cancel();
     super.onClose();
   }
@@ -122,6 +131,7 @@ class SubscriptionController extends GetxController {
 
   Future<void> fetchActiveSubscription() async {
     if (!SupabaseService.isLoggedIn) return;
+    final stopwatch = Stopwatch()..start();
     try {
       final response = await SupabaseService.client
           .from('subscriptions')
@@ -138,8 +148,24 @@ class SubscriptionController extends GetxController {
         activeSubscription.clear();
         isFreePlanActivationAvailable.value = true;
       }
-    } catch (e) {
-      _log('Error fetching subscription: $e', isError: true);
+      SafeGetx.debugTrace(
+        className: 'SubscriptionController',
+        method: 'fetchActiveSubscription',
+        feature: 'Home',
+        status: 'SUCCESS',
+        params: {'hasActive': response != null},
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SubscriptionController',
+        method: 'fetchActiveSubscription',
+        feature: 'Home',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -150,6 +176,7 @@ class SubscriptionController extends GetxController {
     }
 
     isLoading.value = true;
+    final stopwatch = Stopwatch()..start();
     try {
       final response = await SupabaseService.client.rpc('activate_free_plan');
 
@@ -159,11 +186,34 @@ class SubscriptionController extends GetxController {
 
         await HomeController.to.fetchProfile();
         await fetchActiveSubscription();
+        SafeGetx.debugTrace(
+          className: 'SubscriptionController',
+          method: 'activateFreePlan',
+          feature: 'Home',
+          status: 'SUCCESS',
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
       } else {
+        SafeGetx.debugTrace(
+          className: 'SubscriptionController',
+          method: 'activateFreePlan',
+          feature: 'Home',
+          status: 'ERROR',
+          message: response['error']?.toString(),
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
         AppSnack.error('error'.tr, response['error']?.toString() ?? 'unknown_error'.tr);
       }
-    } catch (e) {
-      _log('Error activating free plan: $e', isError: true);
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SubscriptionController',
+        method: 'activateFreePlan',
+        feature: 'Home',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       AppSnack.error('error'.tr, 'unknown_error'.tr);
     } finally {
       isLoading.value = false;
@@ -180,6 +230,7 @@ class SubscriptionController extends GetxController {
     }
 
     isLoading.value = true;
+    final stopwatch = Stopwatch()..start();
     try {
       final response = await SupabaseService.client.rpc(
         'buy_subscription',
@@ -200,12 +251,36 @@ class SubscriptionController extends GetxController {
           investmentId: 'sub_${DateTime.now().millisecondsSinceEpoch}', // Unique ID for idempotency
         );
 
+        SafeGetx.debugTrace(
+          className: 'SubscriptionController',
+          method: 'buySubscription',
+          feature: 'Home',
+          status: 'SUCCESS',
+          params: {'tier': tier, 'isYearly': isYearly},
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
         Get.back();
       } else {
+        SafeGetx.debugTrace(
+          className: 'SubscriptionController',
+          method: 'buySubscription',
+          feature: 'Home',
+          status: 'ERROR',
+          message: response['error']?.toString(),
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
         AppSnack.error('error'.tr, response['error']?.toString() ?? 'unknown_error'.tr);
       }
-    } catch (e) {
-      _log('Error buying subscription: $e', isError: true);
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SubscriptionController',
+        method: 'buySubscription',
+        feature: 'Home',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       AppSnack.error('error'.tr, 'unknown_error'.tr);
     } finally {
       isLoading.value = false;

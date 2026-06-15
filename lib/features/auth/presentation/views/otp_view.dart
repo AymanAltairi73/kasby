@@ -139,7 +139,7 @@ class _OtpViewState extends State<OtpView> {
     } on AuthException catch (e) {
       AppSnack.error(
         'error'.tr,
-        AuthController.to.translateOtpError(e.message),
+        AuthController.to.translateOtpError(e),
       );
     } catch (_) {
       AppSnack.error('error'.tr, 'otp_resend_failed'.tr);
@@ -225,7 +225,7 @@ class _OtpViewState extends State<OtpView> {
     } on AuthException catch (e) {
       AppSnack.error(
         'error'.tr,
-        AuthController.to.translateOtpError(e.message),
+        AuthController.to.translateOtpError(e),
       );
       _otpKey.currentState?.clear();
     } catch (_) {

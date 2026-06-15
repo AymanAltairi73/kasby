@@ -7,6 +7,7 @@ import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/core/services/presence_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import '../../data/models/chat_message_model.dart';
 
 class SupportChatController extends GetxController {
@@ -32,9 +33,10 @@ class SupportChatController extends GetxController {
   });
 
   bool get isSocialChat => friendId != null;
+  bool get isKasbySupportChat => !isSocialChat && !isAgentChat;
   String get chatTitle {
     if (isAgentChat) return agentName ?? 'kasby_support'.tr;
-    if (isSocialChat) return friendName ?? 'محادثة';
+    if (isSocialChat) return friendName ?? 'chat'.tr;
     return 'kasby_support'.tr;
   }
 
@@ -107,27 +109,49 @@ class SupportChatController extends GetxController {
   }
   final ImagePicker _picker = ImagePicker();
 
-  StreamSubscription? _messageSubscription;
+  RealtimeChannel? _messageChannel;
   StreamSubscription? _conversationSubscription;
   String? _conversationId;
   String? _userLowId;
   String? _assignedAdminId;
   RealtimeChannel? _typingChannel;
+
+  // Edit mode
+  final Rxn<ChatMessageModel> editingMessage = Rxn<ChatMessageModel>();
+
   Timer? _typingThrottleTimer;
   final Map<String, Timer> _typingTimers = {};
+  Worker? _presenceWorker;
 
   @override
   void onInit() {
+    SafeGetx.debugTrace(
+      className: 'SupportChatController',
+      method: 'onInit',
+      feature: 'Support',
+      status: 'INFO',
+      params: {
+        'isSocialChat': isSocialChat,
+        'isAgentChat': isAgentChat,
+      },
+    );
     super.onInit();
     _initChat();
   }
 
   @override
   void onClose() {
-    _messageSubscription?.cancel();
+    SafeGetx.debugTrace(
+      className: 'SupportChatController',
+      method: 'onClose',
+      feature: 'Support',
+      status: 'INFO',
+    );
+    _messageChannel?.unsubscribe();
     _conversationSubscription?.cancel();
     _typingThrottleTimer?.cancel();
     _typingChannel?.unsubscribe();
+    _presenceWorker?.dispose();
     for (var t in _typingTimers.values) {
       t.cancel();
     }
@@ -138,6 +162,7 @@ class SupportChatController extends GetxController {
     if (!SupabaseService.isLoggedIn) return;
 
     isLoading.value = true;
+    final stopwatch = Stopwatch()..start();
     try {
       // 1. Get or create conversation for the user
       final conversation = await _getOrCreateConversation();
@@ -151,13 +176,26 @@ class SupportChatController extends GetxController {
       _listenToConversation();
       _setupTypingBroadcast();
       _listenToPresence();
-    } catch (e) {
-      debugPrint('Error initializing chat: $e');
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: '_initChat',
+        feature: 'Support',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: '_initChat',
+        feature: 'Support',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       Get.snackbar(
-        'خطأ في الاتصال',
-        isSocialChat
-            ? 'تعذر فتح المحادثة مع الصديق.\nالخطأ: $e'
-            : 'تعذر الاتصال بخوادم الدعم، يرجى المحاولة مرة أخرى لاحقاً.\nالخطأ: $e',
+        'error'.tr,
+        'chat_connection_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withValues(alpha: 0.8),
         colorText: Colors.white,
@@ -238,7 +276,7 @@ class SupportChatController extends GetxController {
       if (!isRecipientOnline.value) _fetchRecipientLastSeen(targetId);
       
       // Listen to changes
-      ever(presenceService.onlineUsers, (_) {
+      _presenceWorker = ever(presenceService.onlineUsers, (_) {
         final isOnline = presenceService.isUserOnline(targetId);
         isRecipientOnline.value = isOnline;
         if (!isOnline) {
@@ -259,8 +297,8 @@ class SupportChatController extends GetxController {
       if (response != null && response['last_seen_at'] != null) {
         recipientLastSeen.value = DateTime.parse(response['last_seen_at']);
       }
-    } catch (e) {
-      debugPrint('[SupportChat] Error fetching last_seen_at: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: '_fetchRecipientLastSeen', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
     }
   }
 
@@ -306,8 +344,8 @@ class SupportChatController extends GetxController {
       _currentPage++;
       _markAllRead();
       _markMessagesDelivered();
-    } catch (e) {
-      debugPrint('Error loading messages: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: '_loadMessages', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
     } finally {
       isLoadingMore.value = false;
     }
@@ -320,36 +358,62 @@ class SupportChatController extends GetxController {
   void _listenToMessages() {
     if (_conversationId == null) return;
 
-    _messageSubscription = SupabaseService.client
-        .from('chat_messages')
-        .stream(primaryKey: ['id'])
-        .eq('conversation_id', _conversationId!)
-        .order('created_at', ascending: true)
-        .listen((data) {
-          final newList = data
-              .map((json) => ChatMessageModel.fromJson(json))
-              .toList();
+    _messageChannel?.unsubscribe();
+    _messageChannel = SupabaseService.client
+        .channel('chat_messages_$_conversationId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'chat_messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'conversation_id',
+            value: _conversationId!,
+          ),
+          callback: (payload) {
+            final newMsg = ChatMessageModel.fromJson(payload.newRecord);
 
-          // Play sound for incoming messages from others
-          if (newList.length > messages.length) {
-            final latest = newList.last;
-            final fromOther = isSocialChat
-                ? latest.senderId != SupabaseService.userId
-                : latest.senderType != 'user';
-            if (fromOther) {
-              NotificationService().playNotificationSound();
-              if (showScrollToBottom.value) {
-                newIncomingCount.value += (newList.length - messages.length);
+            // Replace optimistic temp message with the real one
+            messages.removeWhere(
+              (m) => m.id.startsWith('temp-') && m.content == newMsg.content,
+            );
+
+            if (!messages.any((m) => m.id == newMsg.id)) {
+              messages.add(newMsg);
+
+              final fromOther = isSocialChat
+                  ? newMsg.senderId != SupabaseService.userId
+                  : newMsg.senderType != 'user';
+              if (fromOther) {
+                NotificationService().playNotificationSound();
+                if (showScrollToBottom.value) {
+                  newIncomingCount.value++;
+                }
               }
-            }
-          }
 
-          messages.value = newList;
-          _markAllRead();
-          _markMessagesDelivered();
-        }, onError: (error) {
-          debugPrint('Chat message stream error: $error');
-        });
+              _markAllRead();
+              _markMessagesDelivered();
+            }
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'chat_messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'conversation_id',
+            value: _conversationId!,
+          ),
+          callback: (payload) {
+            final updated = ChatMessageModel.fromJson(payload.newRecord);
+            final index = messages.indexWhere((m) => m.id == updated.id);
+            if (index != -1) {
+              messages[index] = updated;
+            }
+          },
+        )
+        .subscribe();
   }
 
   void _listenToConversation() {
@@ -361,17 +425,15 @@ class SupportChatController extends GetxController {
         .eq('id', _conversationId!)
         .listen((data) {
           if (data.isNotEmpty) {
-            // chat_conversations does not have is_admin_typing column
-            // Typing indicator can be added later if needed
             isTyping.value = false;
           }
-        }, onError: (error) {
-          debugPrint('Chat conversation stream error: $error');
+        }, onError: (error, stack) {
+          SafeGetx.debugTrace(className: 'SupportChatController', method: '_listenToConversation', feature: 'Support', status: 'ERROR', error: error, stackTrace: stack);
         });
   }
 
   void reconnectStreams() {
-    _messageSubscription?.cancel();
+    _messageChannel?.unsubscribe();
     _conversationSubscription?.cancel();
     _listenToMessages();
     _listenToConversation();
@@ -464,15 +526,16 @@ class SupportChatController extends GetxController {
         'idempotency_key': idempotencyKey,
         'reply_to_id': replyToId,
       });
-    } catch (e) {
-      debugPrint('Error sending message: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: 'sendMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
       // 3. Rollback Optimistic Update
       messages.removeWhere((m) => m.id == optimisticMessage.id);
-      Get.snackbar('خطأ', 'تعذر إرسال الرسالة، يرجى المحاولة مرة أخرى.');
+      Get.snackbar('error'.tr, 'chat_send_error'.tr);
     }
   }
 
   Future<void> pickAndSendImage(ImageSource source) async {
+    if (isClosed) return;
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -480,19 +543,19 @@ class SupportChatController extends GetxController {
         maxWidth: 1200,
       );
 
-      if (image == null) return;
+      if (image == null || isClosed) return;
 
       isUploading.value = true;
       final File file = File(image.path);
       
       final String? imageUrl = await _uploadImage(file);
       
-      if (imageUrl != null) {
+      if (imageUrl != null && !isClosed) {
         await sendMessage(imageUrl, type: 'image');
       }
-    } catch (e) {
-      debugPrint('Error picking image: $e');
-      Get.snackbar('خطأ', 'تعذر التقاط الصورة');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: 'pickAndSendImage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      Get.snackbar('error'.tr, 'chat_capture_error'.tr);
     } finally {
       isUploading.value = false;
     }
@@ -501,35 +564,31 @@ class SupportChatController extends GetxController {
   Future<String?> _uploadImage(File file) async {
     try {
       final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final userId = SupabaseService.userId!;
       final folder = isSocialChat ? 'social' : 'support';
-      final String path = '$folder/${SupabaseService.userId}/$fileName';
+      final String path = '$userId/$folder/$fileName';
 
-      // Verify bucket exists first or just try upload with more detail
-      debugPrint('Attempting to upload to bucket: chat_attachments');
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: '_uploadImage',
+        feature: 'Support',
+        status: 'INFO',
+        message: 'Uploading chat attachment',
+        params: {'path': path},
+      );
       
       await SupabaseService.client.storage
           .from('chat_attachments')
           .upload(path, file);
 
-      final String publicUrl = SupabaseService.client.storage
-          .from('chat_attachments')
-          .getPublicUrl(path);
-
-      return publicUrl;
-    } catch (e) {
-      debugPrint('Error uploading image: $e');
+      // Store relative path; UI resolves signed URL at display time.
+      return path;
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: '_uploadImage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
       
-      // Additional diagnostic: List buckets to see what's available
-      try {
-        final buckets = await SupabaseService.client.storage.listBuckets();
-        debugPrint('Available buckets: ${buckets.map((b) => b.name).toList()}');
-      } catch (listError) {
-        debugPrint('Could not list buckets: $listError');
-      }
-
       Get.snackbar(
-        'خطأ في الرفع', 
-        'تعذر رفع الصورة. تأكد من وجود الحاوية "chat_attachments" في Supabase وإعدادات الوصول (Policies).',
+        'error'.tr, 
+        'chat_upload_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
       return null;
@@ -555,8 +614,8 @@ class SupportChatController extends GetxController {
           .from('chat_conversations')
           .update(_myUnreadClearPayload())
           .eq('id', _conversationId!);
-    } catch (e) {
-      debugPrint('Error marking messages as read: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: '_markAllRead', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
     }
   }
 
@@ -567,8 +626,46 @@ class SupportChatController extends GetxController {
         'fn_mark_messages_delivered',
         params: {'p_conversation_id': _conversationId},
       );
-    } catch (e) {
-      debugPrint('Error marking messages as delivered: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: '_markMessagesDelivered', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+    }
+  }
+
+  void startEditing(ChatMessageModel message) {
+    editingMessage.value = message;
+  }
+
+  void cancelEditing() {
+    editingMessage.value = null;
+  }
+
+  Future<void> updateMessage(String messageId, String newContent) async {
+    if (newContent.trim().isEmpty) return;
+
+    final index = messages.indexWhere((m) => m.id == messageId);
+    if (index != -1) {
+      messages[index] = messages[index].copyWith(
+        content: newContent.trim(),
+        isEdited: true,
+        editedAt: DateTime.now(),
+      );
+    }
+
+    try {
+      await SupabaseService.client
+          .from('chat_messages')
+          .update({
+            'message_content': newContent.trim(),
+            'is_edited': true,
+            'edited_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', messageId);
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: 'updateMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      await refreshMessages();
+      Get.snackbar('error'.tr, 'chat_edit_error'.tr);
+    } finally {
+      cancelEditing();
     }
   }
 
@@ -579,9 +676,9 @@ class SupportChatController extends GetxController {
           .update({'is_deleted': true})
           .eq('id', messageId);
       // Realtime listener will handle local update
-    } catch (e) {
-      debugPrint('Error deleting message: $e');
-      Get.snackbar('خطأ', 'تعذر حذف الرسالة');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: 'deleteMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      Get.snackbar('error'.tr, 'chat_delete_error'.tr);
     }
   }
 
@@ -601,9 +698,9 @@ class SupportChatController extends GetxController {
           .update({'reactions': newReactions})
           .eq('id', messageId);
       // Realtime listener will handle local update
-    } catch (e) {
-      debugPrint('Error adding reaction: $e');
-      Get.snackbar('خطأ', 'تعذر إضافة التفاعل');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: 'addReaction', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      Get.snackbar('error'.tr, 'chat_reaction_error'.tr);
     }
   }
 }

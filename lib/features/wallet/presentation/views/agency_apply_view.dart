@@ -5,6 +5,7 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../controllers/agency_apply_controller.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class AgencyApplyView extends StatefulWidget {
   const AgencyApplyView({super.key});
@@ -27,7 +28,24 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'AgencyApplyView',
+      method: 'initState',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
+  }
+
+  @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'AgencyApplyView',
+      method: 'dispose',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     _nameController.dispose();
     _phoneController.dispose();
     _whatsappController.dispose();

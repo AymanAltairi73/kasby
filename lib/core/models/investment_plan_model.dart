@@ -1,3 +1,5 @@
+import 'package:kasby/core/utils/safe_getx.dart';
+
 class InvestmentPlanModel {
   final String id;
   final String nameAr;
@@ -38,7 +40,8 @@ class InvestmentPlanModel {
   });
 
   factory InvestmentPlanModel.fromJson(Map<String, dynamic> json) {
-    return InvestmentPlanModel(
+    try {
+      return InvestmentPlanModel(
       id: json['id'] as String,
       nameAr: json['name_ar'] as String,
       nameEn: json['name_en'] as String?,
@@ -60,7 +63,19 @@ class InvestmentPlanModel {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
-    );
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'InvestmentPlanModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

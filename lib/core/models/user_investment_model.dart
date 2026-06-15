@@ -1,4 +1,5 @@
 import 'package:kasby/core/models/investment_plan_model.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class UserInvestmentModel {
   final String id;
@@ -45,36 +46,49 @@ class UserInvestmentModel {
   }
 
   factory UserInvestmentModel.fromJson(Map<String, dynamic> json) {
-    return UserInvestmentModel(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      planId: json['plan_id'] as String,
-      transactionId: json['transaction_id'] as String?,
-      amount: (json['amount'] as num).toDouble(),
-      profitPercentage: (json['profit_percentage'] as num).toDouble(),
-      expectedProfit: (json['expected_profit'] as num?)?.toDouble() ?? 0.0,
-      actualProfit: (json['actual_profit'] as num?)?.toDouble(),
-      status: json['status'] as String? ?? 'active',
-      startDate: json['start_date'] != null
-          ? DateTime.parse(json['start_date'])
-          : null,
-      endDate: json['end_date'] != null
-          ? DateTime.parse(json['end_date'])
-          : null,
-      maturedAt: json['matured_at'] != null
-          ? DateTime.parse(json['matured_at'])
-          : null,
-      lastPayoutAt: json['last_payout_at'] != null
-          ? DateTime.parse(json['last_payout_at'])
-          : null,
-      approvedBy: json['approved_by'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      investment: json['investment'] != null
-          ? InvestmentPlanModel.fromJson(json['investment'])
-          : null,
-    );
+    try {
+      return UserInvestmentModel(
+        id: json['id'] as String,
+        userId: json['user_id'] as String,
+        planId: json['plan_id'] as String,
+        transactionId: json['transaction_id'] as String?,
+        amount: (json['amount'] as num).toDouble(),
+        profitPercentage: (json['profit_percentage'] as num).toDouble(),
+        expectedProfit: (json['expected_profit'] as num?)?.toDouble() ?? 0.0,
+        actualProfit: (json['actual_profit'] as num?)?.toDouble(),
+        status: json['status'] as String? ?? 'active',
+        startDate: json['start_date'] != null
+            ? DateTime.parse(json['start_date'])
+            : null,
+        endDate: json['end_date'] != null
+            ? DateTime.parse(json['end_date'])
+            : null,
+        maturedAt: json['matured_at'] != null
+            ? DateTime.parse(json['matured_at'])
+            : null,
+        lastPayoutAt: json['last_payout_at'] != null
+            ? DateTime.parse(json['last_payout_at'])
+            : null,
+        approvedBy: json['approved_by'] as String?,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'])
+            : null,
+        investment: json['investment'] != null
+            ? InvestmentPlanModel.fromJson(json['investment'])
+            : null,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'UserInvestmentModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -108,6 +122,8 @@ class UserInvestmentModel {
     DateTime? maturedAt,
     DateTime? lastPayoutAt,
     String? approvedBy,
+    DateTime? createdAt,
+    InvestmentPlanModel? investment,
   }) {
     return UserInvestmentModel(
       id: id ?? this.id,
@@ -124,6 +140,8 @@ class UserInvestmentModel {
       maturedAt: maturedAt ?? this.maturedAt,
       lastPayoutAt: lastPayoutAt ?? this.lastPayoutAt,
       approvedBy: approvedBy ?? this.approvedBy,
+      createdAt: createdAt ?? this.createdAt,
+      investment: investment ?? this.investment,
     );
   }
 }

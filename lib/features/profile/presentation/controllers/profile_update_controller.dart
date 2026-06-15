@@ -148,7 +148,7 @@ class ProfileUpdateController extends GetxController {
       return true;
     } on AuthException catch (e) {
       _log('Email change request failed', method: 'requestEmailChange', isError: true, error: e.message);
-      AppSnack.error('error'.tr, AuthSecurityService.translateAuthError(e.message));
+      AppSnack.error('error'.tr, AuthSecurityService.translateAuthError(e));
       return false;
     } catch (e) {
       _log('Email change request error', method: 'requestEmailChange', isError: true, error: e);

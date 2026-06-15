@@ -9,6 +9,7 @@ import 'package:kasby/core/models/investment_plan_model.dart';
 import 'package:kasby/core/models/user_investment_model.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class MyInvestmentsView extends StatelessWidget {
   const MyInvestmentsView({super.key});
@@ -71,10 +72,17 @@ class _InvestmentPlansListState extends State<_InvestmentPlansList> {
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: '_InvestmentPlansList',
+      method: 'initState',
+      feature: 'Investment',
+      status: 'INFO',
+    );
     _fetchPlans();
   }
 
   Future<void> _fetchPlans() async {
+    final stopwatch = Stopwatch()..start();
     isLoading.value = true;
     try {
       final response = await SupabaseService.client
@@ -86,8 +94,24 @@ class _InvestmentPlansListState extends State<_InvestmentPlansList> {
       plans.value = (response as List)
           .map((json) => InvestmentPlanModel.fromJson(json))
           .toList();
-    } catch (e) {
-      debugPrint('Error fetching plans: $e');
+      SafeGetx.debugTrace(
+        className: '_InvestmentPlansList',
+        method: '_fetchPlans',
+        feature: 'Investment',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'count': plans.length},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: '_InvestmentPlansList',
+        method: '_fetchPlans',
+        feature: 'Investment',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -207,11 +231,19 @@ class _InvestmentsListState extends State<_InvestmentsList> {
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: '_InvestmentsList',
+      method: 'initState',
+      feature: 'Investment',
+      status: 'INFO',
+      params: {'isActive': widget.isActive},
+    );
     _fetchInvestments();
   }
 
   Future<void> _fetchInvestments() async {
     if (!SupabaseService.isLoggedIn) return;
+    final stopwatch = Stopwatch()..start();
     isLoading.value = true;
     try {
       final response = await SupabaseService.client
@@ -223,8 +255,24 @@ class _InvestmentsListState extends State<_InvestmentsList> {
       investments.value = (response as List)
           .map((json) => UserInvestmentModel.fromJson(json))
           .toList();
-    } catch (e) {
-      debugPrint('Error fetching investments: $e');
+      SafeGetx.debugTrace(
+        className: '_InvestmentsList',
+        method: '_fetchInvestments',
+        feature: 'Investment',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'count': investments.length},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: '_InvestmentsList',
+        method: '_fetchInvestments',
+        feature: 'Investment',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoading.value = false;
     }

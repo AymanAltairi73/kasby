@@ -44,11 +44,34 @@ class _MyTeamViewState extends State<MyTeamView> {
     _fetchTeamData();
   }
 
+  List<Map<String, dynamic>> get _allTreeNodes {
+    if (_treeNodes.isNotEmpty) return _treeNodes;
+
+    final userId = SupabaseService.userId ?? '';
+    return _friends.map((friend) {
+      return {
+        'id': friend['id'],
+        'full_name': friend['full_name'],
+        'avatar_url': friend['avatar_url'],
+        'created_at': friend['created_at'],
+        'status': friend['status'],
+        'referral_code': friend['referral_code'],
+        'parent_id': userId,
+        'level': 1,
+        'member_type': 'friend',
+        'direct_referrals': 0,
+        'sub_referrals': 0,
+      };
+    }).toList();
+  }
+
+  bool get _hasTeamContent => _allTreeNodes.isNotEmpty || _friends.isNotEmpty;
+
   int get _onlineCount {
     if (!Get.isRegistered<PresenceService>()) return 0;
     final presence = Get.find<PresenceService>();
     final ids = <String>{
-      ..._treeNodes.map((n) => n['id']?.toString()).whereType<String>(),
+      ..._allTreeNodes.map((n) => n['id']?.toString()).whereType<String>(),
       ..._friends.map((f) => f['id']?.toString()).whereType<String>(),
     };
     return ids.where(presence.isUserOnline).length;
@@ -99,6 +122,7 @@ class _MyTeamViewState extends State<MyTeamView> {
           params: {
             'totalMembers': _totalMembers,
             'treeNodes': _treeNodes.length,
+            'displayNodes': _allTreeNodes.length,
             'friends': _friends.length,
           },
         );
@@ -160,15 +184,9 @@ class _MyTeamViewState extends State<MyTeamView> {
                         const SizedBox(height: 24),
                         Obx(() => _buildStatsDashboard()),
                         const SizedBox(height: 32),
-                        _buildSectionHeader('referral_network'.tr),
+                        _buildSectionHeader('tree_view'.tr),
                         const SizedBox(height: 16),
-                        _buildReferralTree(),
-                        if (_friends.isNotEmpty) ...[
-                          const SizedBox(height: 32),
-                          _buildSectionHeader('team_friends'.tr),
-                          const SizedBox(height: 16),
-                          _buildFriendsList(),
-                        ],
+                        _buildUnifiedTeamTree(),
                         const SizedBox(height: 60),
                       ],
                     ),
@@ -350,14 +368,18 @@ class _MyTeamViewState extends State<MyTeamView> {
       ('online_members'.tr, '$online', Icons.circle, AppColors.softGreen),
     ];
 
+    final width = MediaQuery.sizeOf(context).width;
+    final crossAxisCount = width >= 900 ? 3 : 2;
+    final aspectRatio = width >= 600 ? 1.85 : 1.65;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.45,
+        childAspectRatio: aspectRatio,
       ),
       itemCount: stats.length,
       itemBuilder: (context, index) {
@@ -393,35 +415,44 @@ class _MyTeamViewState extends State<MyTeamView> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 18),
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: isDark ? Colors.white : AppColors.textBodyLight,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: isDark
-                  ? AppColors.textSecondary
-                  : AppColors.textSecondaryLight,
-              fontSize: 11,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : AppColors.textBodyLight,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLight,
+                  fontSize: 11,
+                  height: 1.2,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -452,18 +483,15 @@ class _MyTeamViewState extends State<MyTeamView> {
     );
   }
 
-  Widget _buildReferralTree() {
-    if (_treeNodes.isEmpty && _friends.isEmpty) {
+  Widget _buildUnifiedTeamTree() {
+    if (!_hasTeamContent) {
       return _buildEmptyTeamState();
     }
 
-    if (_treeNodes.isEmpty) {
-      return _buildEmptyReferralState();
-    }
-
+    final nodes = _allTreeNodes;
     final childrenByParent = <String, List<Map<String, dynamic>>>{};
     final userId = SupabaseService.userId ?? '';
-    for (final node in _treeNodes) {
+    for (final node in nodes) {
       final parentId = node['parent_id']?.toString() ?? userId;
       childrenByParent.putIfAbsent(parentId, () => []).add(node);
     }
@@ -478,10 +506,11 @@ class _MyTeamViewState extends State<MyTeamView> {
           isRoot: true,
           isActive: true,
           isOnline: true,
+          isFriend: false,
           subCount: _totalMembers,
           level: 0,
         ),
-        _buildVerticalLine(),
+        if (nodes.isNotEmpty) _buildVerticalLine(),
         ..._buildTreeLevel(childrenByParent, userId, 0),
       ],
     ).animate().fadeIn(delay: const Duration(milliseconds: 200));
@@ -507,6 +536,7 @@ class _MyTeamViewState extends State<MyTeamView> {
           0;
       final isOnline = Get.isRegistered<PresenceService>() &&
           Get.find<PresenceService>().isUserOnline(id);
+      final isFriend = member['member_type']?.toString() == 'friend';
 
       return [
         Padding(
@@ -545,6 +575,7 @@ class _MyTeamViewState extends State<MyTeamView> {
                       isRoot: false,
                       isActive: isActive,
                       isOnline: isOnline,
+                      isFriend: isFriend,
                       subCount: directRefs,
                       level: level,
                     ),
@@ -565,6 +596,7 @@ class _MyTeamViewState extends State<MyTeamView> {
     required bool isRoot,
     required bool isActive,
     required bool isOnline,
+    required bool isFriend,
     required int subCount,
     required int level,
   }) {
@@ -670,6 +702,20 @@ class _MyTeamViewState extends State<MyTeamView> {
                         ),
                       ),
                     ],
+                    if (isFriend) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.handshake_outlined,
+                          size: 13, color: AppColors.darkGold),
+                      const SizedBox(width: 2),
+                      Text(
+                        'friend'.tr,
+                        style: TextStyle(
+                          color: AppColors.darkGold,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -677,115 +723,6 @@ class _MyTeamViewState extends State<MyTeamView> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFriendsList() {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _friends.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final friend = _friends[index];
-        final id = friend['id']?.toString() ?? '';
-        final name = friend['full_name']?.toString() ?? 'user'.tr;
-        final isActive = friend['status']?.toString() == 'active';
-        final isOnline = Get.isRegistered<PresenceService>() &&
-            Get.find<PresenceService>().isUserOnline(id);
-
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.surface.withValues(alpha: 0.45)
-                : AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.05),
-            ),
-          ),
-          child: Row(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor:
-                        AppColors.darkGold.withValues(alpha: 0.15),
-                    child: Text(
-                      _getInitials(name),
-                      style: TextStyle(
-                        color: AppColors.darkGold,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (isOnline)
-                    Positioned(
-                      right: -1,
-                      bottom: -1,
-                      child: Container(
-                        width: 11,
-                        height: 11,
-                        decoration: BoxDecoration(
-                          color: AppColors.softGreen,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color:
-                            isDark ? Colors.white : AppColors.textBodyLight,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        _buildStatusDot(isActive),
-                        const SizedBox(width: 6),
-                        Text(
-                          isActive ? 'active'.tr : 'inactive'.tr,
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(Icons.handshake_outlined,
-                            size: 14, color: AppColors.darkGold),
-                        const SizedBox(width: 4),
-                        Text(
-                          'friend'.tr,
-                          style: TextStyle(
-                            color: AppColors.darkGold,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: Duration(milliseconds: 60 * index));
-      },
     );
   }
 
@@ -823,24 +760,6 @@ class _MyTeamViewState extends State<MyTeamView> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyReferralState() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.04)
-            : Colors.black.withValues(alpha: 0.03),
-      ),
-      child: Text(
-        'no_team_members'.tr,
-        textAlign: TextAlign.center,
-        style: TextStyle(color: AppColors.textSecondary),
       ),
     );
   }

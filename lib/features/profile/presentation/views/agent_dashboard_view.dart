@@ -7,9 +7,37 @@ import 'package:kasby/features/profile/presentation/controllers/agent_controller
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
-class AgentDashboardView extends StatelessWidget {
+class AgentDashboardView extends StatefulWidget {
   const AgentDashboardView({super.key});
+
+  @override
+  State<AgentDashboardView> createState() => _AgentDashboardViewState();
+}
+
+class _AgentDashboardViewState extends State<AgentDashboardView> {
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'AgentDashboardView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'AgentDashboardView',
+      method: 'dispose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +65,7 @@ class AgentDashboardView extends StatelessWidget {
                     opacity: controller.isLoading.value ? 0.5 : 1.0,
                     child: Switch.adaptive(
                       value: controller.agentProfile.value?.isAvailableNow ?? false,
-                      activeColor: AppColors.softGreen,
+                      activeThumbColor: AppColors.softGreen,
                       onChanged: controller.isLoading.value 
                         ? null 
                         : (val) => controller.toggleAvailability(),
@@ -52,6 +80,39 @@ class AgentDashboardView extends StatelessWidget {
         ],
       ),
       body: Obx(() {
+        if (controller.agentRecordMissing.value) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.support_agent_rounded,
+                    size: 64,
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'agent_profile_not_linked'.tr,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'agent_profile_not_linked_hint'.tr,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         if (controller.isLoading.value && controller.pendingOperations.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }

@@ -1,3 +1,5 @@
+import 'package:kasby/core/utils/safe_getx.dart';
+
 enum MessageStatus { sending, sent, delivered, read }
 
 class ChatMessageModel {
@@ -71,7 +73,8 @@ class ChatMessageModel {
   }
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
-    return ChatMessageModel(
+    try {
+      return ChatMessageModel(
       id: json['id'] as String,
       conversationId: json['conversation_id'] as String? ?? '',
       senderId: json['sender_id'] as String? ?? '',
@@ -96,7 +99,19 @@ class ChatMessageModel {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
-    );
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'ChatMessageModel',
+        method: 'fromJson',
+        feature: 'Support',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   ChatMessageModel copyWith({

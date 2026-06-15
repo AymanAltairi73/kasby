@@ -5,6 +5,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/core/services/session_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class LockScreen extends StatefulWidget {
@@ -20,22 +21,67 @@ class _LockScreenState extends State<LockScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto trigger biometric auth
+    SafeGetx.debugTrace(
+      className: 'LockScreen',
+      method: 'initState',
+      feature: 'Core',
+      status: 'INFO',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _handleAuth());
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'LockScreen',
+      method: 'dispose',
+      feature: 'Core',
+      status: 'INFO',
+    );
+    super.dispose();
   }
 
   Future<void> _handleAuth() async {
     if (_isAuthenticating) return;
     setState(() => _isAuthenticating = true);
+    final stopwatch = Stopwatch()..start();
 
-    final success = await SessionService.to.authenticate();
-    
-    if (success) {
-      SessionService.to.unlock();
-      Get.back();
+    try {
+      final success = await SessionService.to.authenticate();
+
+      if (success) {
+        SessionService.to.unlock();
+        SafeGetx.debugTrace(
+          className: 'LockScreen',
+          method: '_handleAuth',
+          feature: 'Core',
+          status: 'SUCCESS',
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
+        Get.back();
+      } else {
+        SafeGetx.debugTrace(
+          className: 'LockScreen',
+          method: '_handleAuth',
+          feature: 'Core',
+          status: 'WARN',
+          message: 'Authentication failed',
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
+      }
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'LockScreen',
+        method: '_handleAuth',
+        feature: 'Core',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
+    } finally {
+      if (mounted) setState(() => _isAuthenticating = false);
     }
-    
-    if (mounted) setState(() => _isAuthenticating = false);
   }
 
   @override

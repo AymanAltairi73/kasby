@@ -1,3 +1,5 @@
+import 'package:kasby/core/utils/safe_getx.dart';
+
 class WalletModel {
   final String id;
   final String userId;
@@ -34,27 +36,40 @@ class WalletModel {
       availableBalance + profitBalance + investedBalance + pendingBalance;
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
-    return WalletModel(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
-      availableBalance: (json['available_balance'] as num?)?.toDouble() ?? 0.0,
-      profitBalance: (json['profit_balance'] as num?)?.toDouble() ?? 0.0,
-      investedBalance: (json['invested_balance'] as num?)?.toDouble() ?? 0.0,
-      pendingBalance: (json['pending_balance'] as num?)?.toDouble() ?? 0.0,
-      currency: json['currency'] as String? ?? 'USD',
-      isFrozen: json['is_frozen'] as bool? ?? false,
-      frozenReason: json['frozen_reason'] as String?,
-      frozenAt: json['frozen_at'] != null
-          ? DateTime.parse(json['frozen_at'])
-          : null,
-      frozenBy: json['frozen_by'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
-    );
+    try {
+      return WalletModel(
+        id: json['id'] as String,
+        userId: json['user_id'] as String,
+        availableBalance: (json['available_balance'] as num?)?.toDouble() ?? 0.0,
+        profitBalance: (json['profit_balance'] as num?)?.toDouble() ?? 0.0,
+        investedBalance: (json['invested_balance'] as num?)?.toDouble() ?? 0.0,
+        pendingBalance: (json['pending_balance'] as num?)?.toDouble() ?? 0.0,
+        currency: json['currency'] as String? ?? 'USD',
+        isFrozen: json['is_frozen'] as bool? ?? false,
+        frozenReason: json['frozen_reason'] as String?,
+        frozenAt: json['frozen_at'] != null
+            ? DateTime.parse(json['frozen_at'])
+            : null,
+        frozenBy: json['frozen_by'] as String?,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'])
+            : null,
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'])
+            : null,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'WalletModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

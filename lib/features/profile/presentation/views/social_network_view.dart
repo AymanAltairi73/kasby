@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -41,6 +42,12 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'SocialNetworkView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+    );
     _tabController = TabController(length: 3, vsync: this);
     _searchController.addListener(() {
       setState(() {
@@ -52,20 +59,40 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'SocialNetworkView',
+      method: 'dispose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _fetchAllData() async {
+    final stopwatch = Stopwatch()..start();
     await Future.wait([
       _fetchRequests(),
       _fetchFriends(),
       _fetchSuggestions(),
     ]);
+    SafeGetx.debugTrace(
+      className: 'SocialNetworkView',
+      method: '_fetchAllData',
+      feature: 'Profile',
+      status: 'SUCCESS',
+      durationMs: stopwatch.elapsedMilliseconds,
+      params: {
+        'requests': _requests.length,
+        'friends': _friends.length,
+        'suggestions': _suggestions.length,
+      },
+    );
   }
 
   Future<void> _fetchRequests() async {
+    final stopwatch = Stopwatch()..start();
     try {
       final result = await SupabaseService.client.rpc('get_friend_requests');
       final response = result as Map<String, dynamic>;
@@ -74,14 +101,31 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
           _requests = List<Map<String, dynamic>>.from(response['requests'] ?? []);
         });
       }
-    } catch (e) {
-      debugPrint('Error fetching requests: $e');
+      SafeGetx.debugTrace(
+        className: 'SocialNetworkView',
+        method: '_fetchRequests',
+        feature: 'Profile',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'count': _requests.length},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SocialNetworkView',
+        method: '_fetchRequests',
+        feature: 'Profile',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       if (mounted) setState(() => _isLoadingRequests = false);
     }
   }
 
   Future<void> _fetchFriends() async {
+    final stopwatch = Stopwatch()..start();
     try {
       final result = await SupabaseService.client.rpc('get_friends');
       final response = result as Map<String, dynamic>;
@@ -90,14 +134,31 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
           _friends = List<Map<String, dynamic>>.from(response['friends'] ?? []);
         });
       }
-    } catch (e) {
-      debugPrint('Error fetching friends: $e');
+      SafeGetx.debugTrace(
+        className: 'SocialNetworkView',
+        method: '_fetchFriends',
+        feature: 'Profile',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'count': _friends.length},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SocialNetworkView',
+        method: '_fetchFriends',
+        feature: 'Profile',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       if (mounted) setState(() => _isLoadingFriends = false);
     }
   }
 
   Future<void> _fetchSuggestions() async {
+    final stopwatch = Stopwatch()..start();
     try {
       final result = await SupabaseService.client.rpc('get_friend_suggestions');
       final response = result as Map<String, dynamic>;
@@ -106,8 +167,24 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
           _suggestions = List<Map<String, dynamic>>.from(response['suggestions'] ?? []);
         });
       }
-    } catch (e) {
-      debugPrint('Error fetching suggestions: $e');
+      SafeGetx.debugTrace(
+        className: 'SocialNetworkView',
+        method: '_fetchSuggestions',
+        feature: 'Profile',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'count': _suggestions.length},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SocialNetworkView',
+        method: '_fetchSuggestions',
+        feature: 'Profile',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       if (mounted) setState(() => _isLoadingSuggestions = false);
     }
@@ -217,7 +294,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
         setState(() => _sentRequestIds.remove(receiverId));
         Get.snackbar(
           'error'.tr,
-          response['error'] ?? 'حدث خطأ',
+          response['error'] ?? 'error'.tr,
           backgroundColor: AppColors.error.withValues(alpha: 0.7),
           colorText: Colors.white,
         );
@@ -267,8 +344,8 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
         title: Text('remove_friend'.tr),
         content: Text('confirm_remove_friend'.tr),
         actions: [
-          TextButton(onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
-          TextButton(onPressed: () => Get.back(result: true), child: Text('remove_friend'.tr, style: const TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Get.safeBack(result: false), child: Text('cancel'.tr)),
+          TextButton(onPressed: () => Get.safeBack(result: true), child: Text('remove_friend'.tr, style: const TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -310,7 +387,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
         title: Text('social_network'.tr),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => Get.safeBack(),
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -577,7 +654,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                   HapticFeedback.lightImpact();
                   Get.snackbar(
                     'success'.tr,
-                    'تم نسخ رابط الدعوة',
+                    'invite_link_copied'.tr,
                     backgroundColor: AppColors.softGreen.withValues(alpha: 0.8),
                     colorText: Colors.white,
                   );
@@ -588,7 +665,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                 onPressed: () {
                   SharePlus.instance.share(
                     ShareParams(
-                      text: 'انضم إلى كاسبي! استخدم كود الإحالة: $referralCode\nhttps://kasby.app/join?ref=$referralCode',
+                      text: '${'invite_share_text'.tr} $referralCode\nhttps://kasby.app/join?ref=$referralCode',
                     ),
                   );
                 },
@@ -618,7 +695,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    request['full_name'] ?? 'مستخدم',
+                    request['full_name'] ?? 'user'.tr,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   if (request['referral_code'] != null)
@@ -667,7 +744,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    friend['full_name'] ?? 'مستخدم',
+                    friend['full_name'] ?? 'user'.tr,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   if (friend['referral_code'] != null)
@@ -685,7 +762,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                   Routes.socialChat,
                   arguments: {
                     'friendId': friend['id'],
-                    'friendName': friend['full_name'] ?? 'مستخدم',
+                    'friendName': friend['full_name'] ?? 'user'.tr,
                   },
                 );
               },
@@ -716,7 +793,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    suggestion['full_name'] ?? 'مستخدم',
+                    suggestion['full_name'] ?? 'user'.tr,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   if (suggestion['referral_code'] != null)

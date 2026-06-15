@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class SpinReward {
   final String id;
@@ -20,15 +21,28 @@ class SpinReward {
   });
 
   factory SpinReward.fromJson(Map<String, dynamic> json) {
-    return SpinReward(
-      id: json['id'] ?? '',
-      label: json['label'] ?? '',
-      points: json['points'] ?? 0,
-      iconName: json['icon'] ?? 'stars_rounded',
-      colorHex: json['color'] ?? '#FFFFFF',
-      weight: json['weight'] ?? 1,
-      isActive: json['is_active'] ?? true,
-    );
+    try {
+      return SpinReward(
+        id: json['id'] ?? '',
+        label: json['label'] ?? '',
+        points: json['points'] ?? 0,
+        iconName: json['icon'] ?? 'stars_rounded',
+        colorHex: json['color'] ?? '#FFFFFF',
+        weight: json['weight'] ?? 1,
+        isActive: json['is_active'] ?? true,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SpinReward',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

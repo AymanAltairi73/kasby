@@ -5,12 +5,18 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/core/models/agent_model.dart';
+import 'package:kasby/core/services/account_restriction_service.dart';
+import 'package:kasby/core/services/agent_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
 import 'package:kasby/core/widgets/transaction_receipt.dart';
 import 'package:kasby/core/services/confetti_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/controllers/currency_controller.dart';
+import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
+import 'package:uuid/uuid.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class DepositView extends StatefulWidget {
   const DepositView({super.key});
@@ -42,27 +48,28 @@ class _DepositViewState extends State<DepositView> {
   Future<void> _fetchAgents() async {
     isLoading.value = true;
     try {
-      debugPrint('[DEBUG] Deposit: Fetching agents (status: Active, available: true)...');
-      final response = await SupabaseService.client
-          .from('agents')
-          .select('*, profiles(*)')
-          .eq('status', 'active')
-          .eq('is_available_now', true)
-          .limit(10);
-
-      debugPrint('[DEBUG] Deposit agents found: ${response.length}');
-      
-      agents.value = (response as List)
-          .map((json) => AgentModel.fromJson(json))
-          .toList();
-    } catch (e) {
-      debugPrint('[DEBUG] Deposit Error: $e');
+      agents.value = await AgentService.fetchActiveAgents(limit: 20);
+      SafeGetx.debugTrace(
+        className: 'DepositView',
+        method: '_fetchAgents',
+        feature: 'Wallet',
+        status: 'SUCCESS',
+        params: {'count': agents.length},
+      );
+    } catch (_) {
+      // traceAsync already logged the failure.
     } finally {
       isLoading.value = false;
     }
   }
 
   void _handleDeposit() {
+    if (!AccountRestrictionService.to.checkWriteAccess()) return;
+    if (HomeController.to.dashboard.value?.isFrozen == true) {
+      Get.snackbar('error'.tr, 'wallet_frozen'.tr);
+      return;
+    }
+
     final amountText = _amountController.text.trim();
     if (amountText.isEmpty) {
       AppSnack.warning(
@@ -235,52 +242,60 @@ class _DepositViewState extends State<DepositView> {
       final userId = SupabaseService.userId;
       if (userId == null) return;
 
-      // Fetch the user's wallet ID
-      final walletResponse = await SupabaseService.client
-          .from('wallets')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
+      final idempotencyKey = const Uuid().v4();
 
-      if (walletResponse == null) {
+      final result = await SafeGetx.traceAsync(
+        className: 'DepositView',
+        method: '_executeDeposit',
+        feature: 'Wallet',
+        params: {
+          'table': 'transactions',
+          'operation': 'RPC',
+          'rpc': 'fn_create_deposit_request',
+          'amount': amount,
+          'agentId': selectedAgentModel.id,
+        },
+        operation: () => SupabaseService.client.rpc(
+          'fn_create_deposit_request',
+          params: {
+            'p_amount': amount,
+            'p_agent_id': selectedAgentModel.id,
+            'p_idempotency_key': idempotencyKey,
+          },
+        ),
+      );
+
+      final response = result as Map<String, dynamic>?;
+      if (response == null || response['success'] != true) {
+        SafeGetx.debugTrace(
+          className: 'DepositView',
+          method: '_executeDeposit',
+          feature: 'Wallet',
+          status: 'WARNING',
+          message: response?['error']?.toString(),
+        );
         AppSnack.error(
           'deposit_error_title'.tr,
-          'deposit_error_desc'.tr,
+          (response?['error'] as String?) ?? 'deposit_error_desc'.tr,
         );
         return;
       }
 
-      final walletId = walletResponse['id'] as String;
-
-      final insertResult = await SupabaseService.client
-          .from('transactions')
-          .insert({
-            'user_id': userId,
-            'wallet_id': walletId,
-            'type': 'deposit',
-            'amount': amount,
-            'currency': 'USD',
-            'status': 'pending',
-            'description':
-                '${'deposit_via_agent'.tr}: ${selectedAgentModel.name}',
-            'reference_id': selectedAgentModel.id,
-            'fee': 0,
-          })
-          .select()
-          .single();
-
-      // Celebrate success
       ConfettiService.to.celebrate();
+
+      if (Get.isRegistered<HomeController>()) {
+        HomeController.to.fetchDashboard();
+      }
+      if (Get.isRegistered<CurrencyController>()) {
+        CurrencyController.to.fetchWalletBalances();
+      }
 
       _showSuccessOverlay(
         amount,
         selectedAgentModel.name,
-        insertResult['id']?.toString() ?? '',
+        response['transaction_id']?.toString() ?? '',
       );
-
-      // Transactions list will update automatically via Realtime Stream
-    } catch (e) {
-      debugPrint('Deposit error: $e');
+    } catch (_) {
       AppSnack.error(
         'deposit_error_title'.tr,
         'deposit_error_desc'.tr,
@@ -317,7 +332,8 @@ class _DepositViewState extends State<DepositView> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,6 +386,7 @@ class _DepositViewState extends State<DepositView> {
                     onPressed: _handleDeposit,
                   ),
           ],
+        ),
         ),
       ),
     );

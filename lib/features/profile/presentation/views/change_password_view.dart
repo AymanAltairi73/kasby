@@ -4,10 +4,12 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:kasby/core/services/auth_security_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/features/auth/domain/services/otp_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class ChangePasswordView extends StatefulWidget {
   const ChangePasswordView({super.key});
@@ -31,7 +33,25 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
   String get _recoveryOtp => Get.arguments?['otp'] ?? '';
 
   @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'ChangePasswordView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+      params: {'isRecovery': _isRecovery},
+    );
+  }
+
+  @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'ChangePasswordView',
+      method: 'dispose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
@@ -42,9 +62,9 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    final stopwatch = Stopwatch()..start();
 
     try {
-      // If recovery, we don't need current password, Supabase session is authorized via recovery link/OTP
       if (_isRecovery) {
         if (_recoveryIdentifier.isNotEmpty && _recoveryOtp.isNotEmpty) {
           await OTPService.to.resetPasswordSecure(
@@ -53,18 +73,33 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
             newPassword: _newPasswordController.text.trim(),
           );
         } else {
-          throw AuthException('بيانات الاستعادة غير مكتملة، يرجى المحاولة مرة أخرى.');
+          await AuthSecurityService.updatePassword(
+            _newPasswordController.text.trim(),
+          );
         }
       } else {
-        await SupabaseService.auth.updateUser(
-        UserAttributes(password: _newPasswordController.text.trim()),
-      );
+        await AuthSecurityService.reauthenticateWithPassword(
+          _currentPasswordController.text,
+        );
+        await AuthSecurityService.updatePassword(
+          _newPasswordController.text.trim(),
+        );
+        await AuthSecurityService.refreshUserProfileState();
       }
 
+      SafeGetx.debugTrace(
+        className: 'ChangePasswordView',
+        method: '_changePassword',
+        feature: 'Profile',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'isRecovery': _isRecovery},
+      );
       if (mounted) {
         setState(() => _isLoading = false);
 
         if (_isRecovery) {
+          await SupabaseService.auth.signOut();
           Get.offAllNamed(Routes.login);
         } else {
           Get.back();
@@ -82,11 +117,22 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
       }
     }
      on AuthException catch (e) {
+      SafeGetx.debugTrace(
+        className: 'ChangePasswordView',
+        method: '_changePassword',
+        feature: 'Profile',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+      );
       if (mounted) {
         setState(() => _isLoading = false);
+        final message = e.message.contains('expired') || e.message.contains('invalid')
+            ? 'auth_link_invalid'.tr
+            : e.message;
         Get.snackbar(
           'error'.tr,
-          e.message,
+          message,
           backgroundColor: AppColors.error.withValues(alpha: 0.8),
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
@@ -94,12 +140,21 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
           borderRadius: 16,
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'ChangePasswordView',
+        method: '_changePassword',
+        feature: 'Profile',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       if (mounted) {
         setState(() => _isLoading = false);
         Get.snackbar(
           'error'.tr,
-          'حدث خطأ أثناء تغيير كلمة المرور. حاول مرة أخرى.',
+          'password_change_error'.tr,
           backgroundColor: AppColors.error.withValues(alpha: 0.8),
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
@@ -132,7 +187,8 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -147,6 +203,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
               _buildSubmitButton(),
             ],
           ),
+        ),
         ),
       ),
     );

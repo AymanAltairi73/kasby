@@ -37,4 +37,23 @@ class CountryData {
     (c) => c.code == 'YE',
     orElse: () => countries.first,
   );
+
+  static Country countryForPhone(String? phone) {
+    if (phone == null || phone.trim().isEmpty) return defaultCountry;
+    final normalized = phone.trim();
+    final sorted = List<Country>.from(countries)
+      ..sort((a, b) => b.dialCode.length.compareTo(a.dialCode.length));
+    for (final country in sorted) {
+      if (normalized.startsWith(country.dialCode)) return country;
+    }
+    return defaultCountry;
+  }
+
+  static String stripDialCode(String phone, Country country) {
+    final normalized = phone.trim();
+    if (normalized.startsWith(country.dialCode)) {
+      return normalized.substring(country.dialCode.length);
+    }
+    return normalized.replaceFirst('+', '');
+  }
 }

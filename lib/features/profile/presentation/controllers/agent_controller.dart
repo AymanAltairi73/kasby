@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/models/agent_model.dart';
+import 'package:kasby/core/models/profile_model.dart';
+import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'dart:async';
 
@@ -12,12 +15,19 @@ class AgentController extends GetxController {
   final RxList<TransactionModel> pendingOperations = <TransactionModel>[].obs;
   final Rx<AgentModel?> agentProfile = Rx<AgentModel?>(null);
   final RxBool isLoading = false.obs;
+  final RxBool agentRecordMissing = false.obs;
   Timer? _heartbeatTimer;
   StreamSubscription? _notifSubscription;
   StreamSubscription? _txSubscription;
 
   @override
   void onInit() {
+    SafeGetx.debugTrace(
+      className: 'AgentController',
+      method: 'onInit',
+      feature: 'Profile',
+      status: 'INFO',
+    );
     super.onInit();
     refreshData();
     _startHeartbeat();
@@ -26,6 +36,12 @@ class AgentController extends GetxController {
 
   @override
   void onClose() {
+    SafeGetx.debugTrace(
+      className: 'AgentController',
+      method: 'onClose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
     _heartbeatTimer?.cancel();
     _notifSubscription?.cancel();
     _txSubscription?.cancel();
@@ -50,7 +66,13 @@ class AgentController extends GetxController {
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
         .listen((data) {
-          debugPrint('[AGENT] Realtime Notif received: ${data.length} items');
+          SafeGetx.debugTrace(
+            className: 'AgentController',
+            method: '_listenToAssignments',
+            feature: 'Profile',
+            status: 'INFO',
+            params: {'notifCount': data.length},
+          );
           // Filter in Dart since stream only supports one eq filter
           final agentNotifs = data.where((n) => n['role_target'] == 'agent').toList();
           
@@ -65,7 +87,13 @@ class AgentController extends GetxController {
         .stream(primaryKey: ['id'])
         .eq('reference_id', userId)
         .listen((data) {
-          debugPrint('[AGENT] Realtime TX received: ${data.length} items');
+          SafeGetx.debugTrace(
+            className: 'AgentController',
+            method: '_listenToAssignments',
+            feature: 'Profile',
+            status: 'INFO',
+            params: {'txCount': data.length},
+          );
           final txs = data.map((json) => TransactionModel.fromJson(json)).toList();
           
           // Filter for pending/processing only
@@ -73,8 +101,10 @@ class AgentController extends GetxController {
             tx.status == 'pending' || tx.status == 'processing'
           ).toList();
           
-          // Also refresh profile stats whenever transaction changes
-          fetchAgentProfile();
+          // Refresh profile stats only when an agent record exists
+          if (!agentRecordMissing.value) {
+            fetchAgentProfile();
+          }
         });
   }
 
@@ -91,14 +121,77 @@ class AgentController extends GetxController {
     try {
       final response = await SupabaseService.client
           .from('agents')
-          .select('*, profiles(full_name, city, country_code, phone)')
+          .select('*, profiles(full_name, city, country_code, phone, email, whatsapp, telegram, country, province, address)')
           .eq('user_id', SupabaseService.userId!)
-          .single();
+          .maybeSingle();
 
+      if (response == null) {
+        final profile = HomeController.to.profile.value ??
+            await _loadProfileRole();
+        if (profile?.role == 'agent') {
+          final ensured = await _ensureAgentProfile();
+          if (ensured) {
+            await fetchAgentProfile();
+            return;
+          }
+        }
+        agentProfile.value = null;
+        agentRecordMissing.value = true;
+        return;
+      }
+
+      agentRecordMissing.value = false;
       agentProfile.value = AgentModel.fromJson(response);
-    } catch (e) {
-      debugPrint('Error fetching agent profile: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgentController',
+        method: 'fetchAgentProfile',
+        feature: 'Profile',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
+  }
+
+  Future<ProfileModel?> _loadProfileRole() async {
+    try {
+      final response = await SupabaseService.client
+          .from('profiles')
+          .select()
+          .eq('id', SupabaseService.userId!)
+          .maybeSingle();
+      if (response == null) return null;
+      return ProfileModel.fromJson(response);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> _ensureAgentProfile() async {
+    try {
+      final result = await SupabaseService.client.rpc('ensure_agent_profile');
+      if (result is Map && result['success'] == true) {
+        SafeGetx.debugTrace(
+          className: 'AgentController',
+          method: '_ensureAgentProfile',
+          feature: 'Profile',
+          status: 'SUCCESS',
+          params: {'created': result['created']?.toString() ?? 'false'},
+        );
+        return true;
+      }
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgentController',
+        method: '_ensureAgentProfile',
+        feature: 'Profile',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+    }
+    return false;
   }
 
   Future<void> fetchPendingOperations() async {
@@ -119,8 +212,15 @@ class AgentController extends GetxController {
       pendingOperations.value = (response as List)
           .map((json) => TransactionModel.fromJson(json))
           .toList();
-    } catch (e) {
-      debugPrint('Error fetching agent operations: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgentController',
+        method: 'fetchPendingOperations',
+        feature: 'Profile',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -135,19 +235,27 @@ class AgentController extends GetxController {
       );
 
       if (response['success'] == true) {
-        Get.snackbar(
-          'success'.tr,
-          'deposit_approved_successfully'.tr,
+        SafeGetx.snackbar(
+          title: 'success'.tr,
+          message: 'deposit_approved_successfully'.tr,
           backgroundColor: AppColors.softGreen,
           colorText: Colors.white,
         );
         fetchPendingOperations();
       } else {
-        Get.snackbar('error'.tr, response['message']);
+        SafeGetx.snackbar(title: 'error'.tr, message: response['message'].toString());
       }
-    } catch (e) {
-      debugPrint('Approve deposit error: $e');
-      Get.snackbar('error'.tr, 'حدث خطأ أثناء معالجة الطلب');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgentController',
+        method: 'approveDeposit',
+        feature: 'Profile',
+        status: 'ERROR',
+        params: {'transactionId': transactionId},
+        error: e,
+        stackTrace: stack,
+      );
+      SafeGetx.snackbar(title: 'error'.tr, message: 'agent_process_error'.tr);
     } finally {
       isLoading.value = false;
     }
@@ -162,20 +270,28 @@ class AgentController extends GetxController {
       );
 
       if (response['success'] == true) {
-        Get.snackbar(
-          'success'.tr,
-          'withdrawal_confirmed_successfully'.tr,
+        SafeGetx.snackbar(
+          title: 'success'.tr,
+          message: 'withdrawal_confirmed_successfully'.tr,
           backgroundColor: AppColors.softGreen,
           colorText: Colors.white,
         );
         fetchPendingOperations();
         fetchAgentProfile(); // Refresh profile to see escrow/commission changes
       } else {
-        Get.snackbar('error'.tr, response['message']);
+        SafeGetx.snackbar(title: 'error'.tr, message: response['message'].toString());
       }
-    } catch (e) {
-      debugPrint('Confirm withdrawal error: $e');
-      Get.snackbar('error'.tr, 'حدث خطأ أثناء معالجة الطلب');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgentController',
+        method: 'confirmWithdrawal',
+        feature: 'Profile',
+        status: 'ERROR',
+        params: {'transactionId': transactionId},
+        error: e,
+        stackTrace: stack,
+      );
+      SafeGetx.snackbar(title: 'error'.tr, message: 'agent_process_error'.tr);
     } finally {
       isLoading.value = false;
     }
@@ -196,14 +312,21 @@ class AgentController extends GetxController {
 
       agentProfile.value = agentProfile.value!.copyWith(isAvailableNow: newStatus);
 
-      Get.snackbar(
-        'success'.tr,
-        newStatus ? 'agent_now_online'.tr : 'agent_now_offline'.tr,
+      SafeGetx.snackbar(
+        title: 'success'.tr,
+        message: newStatus ? 'agent_now_online'.tr : 'agent_now_offline'.tr,
         backgroundColor: newStatus ? AppColors.softGreen : AppColors.textSecondary,
         colorText: Colors.white,
       );
-    } catch (e) {
-      debugPrint('Toggle availability error: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgentController',
+        method: 'toggleAvailability',
+        feature: 'Profile',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -214,8 +337,15 @@ class AgentController extends GetxController {
           .from('agents')
           .update({'last_active_at': DateTime.now().toIso8601String()})
           .eq('id', agentProfile.value!.id);
-    } catch (e) {
-      debugPrint('Heartbeat update error: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgentController',
+        method: 'updateHeartbeat',
+        feature: 'Profile',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 }

@@ -8,8 +8,8 @@ import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
-// import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class AllTransactionsView extends StatefulWidget {
   const AllTransactionsView({super.key});
@@ -69,7 +69,13 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
   @override
   void initState() {
     super.initState();
-    // Safety: ensure this runs after the current build cycle
+    SafeGetx.debugTrace(
+      className: 'AllTransactionsView',
+      method: 'initState',
+      feature: 'Wallet',
+      status: 'INFO',
+      message: 'Tab mounted in MainShell',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       homeController.fetchAllTransactions(reset: true);
     });
@@ -78,6 +84,12 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'AllTransactionsView',
+      method: 'dispose',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     _scrollController.dispose();
     super.dispose();
   }
@@ -213,7 +225,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: AppColors.darkGold.withOpacity(0.3),
+                            color: AppColors.darkGold.withValues(alpha: 0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -322,7 +334,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                 Routes.transactionDetails,
                 arguments: {
                   'transaction': tx,
-                  'heroTag': 'all_tx_${tx.id}_${groupIndex}_${itemIndex}',
+                  'heroTag': 'all_tx_${tx.id}_${groupIndex}_$itemIndex',
                 },
               );
             },
@@ -333,14 +345,14 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isDark
-                      ? Colors.white.withOpacity(0.05)
-                      : Colors.black.withOpacity(0.08),
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.08),
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: isDark
-                        ? Colors.black.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.04),
+                        ? Colors.black.withValues(alpha: 0.2)
+                        : Colors.black.withValues(alpha: 0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -486,12 +498,15 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
             date.month == now.month &&
             date.day == now.day) {
           key = 'today'.tr;
-        } else if (date.year == now.year &&
-            date.month == now.month &&
-            date.day == now.day - 1) {
+        } else if (() {
+            final yesterday = DateTime(now.year, now.month, now.day - 1);
+            return date.year == yesterday.year &&
+                date.month == yesterday.month &&
+                date.day == yesterday.day;
+          }()) {
           key = 'yesterday'.tr;
         } else {
-          key = '${date.day}/${date.month}/${date.year}';
+          key = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
         }
       }
       groups.putIfAbsent(key, () => []);
@@ -505,7 +520,9 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return '';
-    return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '${hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} $period';
   }
 
   Map<String, dynamic> _getTypeInfo(String type) {

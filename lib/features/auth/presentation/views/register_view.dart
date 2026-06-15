@@ -6,6 +6,7 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/auth/presentation/widgets/country_selector.dart';
+import 'package:kasby/features/auth/presentation/widgets/referral_code_formatter.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -80,23 +81,25 @@ class _RegisterViewState extends State<RegisterView> {
               const SizedBox(height: 20),
 
               // Phone Input with Integrated Country Selector
-              Obx(
-                () => KasbyTextField(
-                  label: 'phone_number'.tr,
-                  hint: 'enter_phone_hint'.tr,
-                  controller: controller.phoneController,
-                  keyboardType: TextInputType.phone,
-                  prefixIcon: CountrySelector(
+              KasbyTextField(
+                label: 'phone_number'.tr,
+                hint: 'enter_phone_hint'.tr,
+                controller: controller.phoneController,
+                keyboardType: TextInputType.phone,
+                prefixIcon: Obx(
+                  () => CountrySelector(
                     selectedCountry: controller.selectedCountry.value,
                     onSelect: controller.updateCountry,
                     showBackground: false,
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'fill_all_data'.tr;
-                    if (value.trim().length < 6) return 'invalid_phone'.tr;
-                    return null;
-                  },
                 ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'fill_all_data'.tr;
+                  }
+                  if (value.trim().length < 6) return 'invalid_phone'.tr;
+                  return null;
+                },
               ),
 
               const SizedBox(height: 20),
@@ -121,18 +124,18 @@ class _RegisterViewState extends State<RegisterView> {
               const SizedBox(height: 20),
 
               // Referral Code (Optional)
-              Obx(
-                () => KasbyTextField(
-                  label: 'referral_code_optional'.tr,
-                  hint: 'k-XXXXX',
-                  controller: controller.referralCodeController,
-                  textCapitalization: TextCapitalization.none,
-                  prefixIcon: Icon(
-                    Icons.card_giftcard_rounded,
-                    color: AppColors.darkGold,
-                  ),
-                  suffixIcon: _buildReferralStatus(controller),
+              KasbyTextField(
+                label: 'referral_code_optional'.tr,
+                hint: 'KXXXXXX',
+                controller: controller.referralCodeController,
+                textCapitalization: TextCapitalization.characters,
+                autocorrect: false,
+                inputFormatters: const [ReferralCodeFormatter()],
+                prefixIcon: Icon(
+                  Icons.card_giftcard_rounded,
+                  color: AppColors.darkGold,
                 ),
+                suffixIcon: Obx(() => _buildReferralStatus(controller)),
               ),
 
               const SizedBox(height: 24),

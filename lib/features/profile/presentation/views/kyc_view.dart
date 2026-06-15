@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
@@ -8,8 +9,35 @@ import 'package:kasby/features/profile/presentation/controllers/kyc_controller.d
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:io';
 
-class KycView extends StatelessWidget {
+class KycView extends StatefulWidget {
   const KycView({super.key});
+
+  @override
+  State<KycView> createState() => _KycViewState();
+}
+
+class _KycViewState extends State<KycView> {
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'KycView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'KycView',
+      method: 'dispose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +54,7 @@ class KycView extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => Get.safeBack(),
         ),
       ),
       body: Obx(() {
@@ -99,7 +127,7 @@ class KycView extends StatelessWidget {
             const SizedBox(height: 40),
             KasbyButton(
               text: 'go_back'.tr,
-              onPressed: () => Get.back(),
+              onPressed: () => Get.safeBack(),
             ),
           ],
         ),
@@ -140,7 +168,7 @@ class KycView extends StatelessWidget {
             const SizedBox(height: 40),
             KasbyButton(
               text: 'go_back'.tr,
-              onPressed: () => Get.back(),
+              onPressed: () => Get.safeBack(),
             ),
           ],
         ),

@@ -82,7 +82,7 @@ serve(async (req) => {
     }
 
     if (!userId) {
-      return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers: corsHeaders })
+      return new Response(JSON.stringify({ success: true, message: "If this account exists, an OTP has been sent." }), { status: 200, headers: corsHeaders })
     }
 
     // 2. Rate Limiting Check
@@ -101,11 +101,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Please wait 60 seconds.', code: 'RATE_LIMIT_EXCEEDED' }), { status: 429, headers: corsHeaders })
     }
 
-    // 3. Generate 6-digit OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
+    // 3. Generate 6-digit OTP (cryptographically secure)
+    const randomBytes = new Uint32Array(1)
+    crypto.getRandomValues(randomBytes)
+    const otpCode = (100000 + (randomBytes[0] % 900000)).toString()
     
-    // 4. Hash OTP (SHA-256)
-    const msgUint8 = new TextEncoder().encode(otpCode)
+    // 4. Hash OTP (SHA-256 with salt)
+    const salt = `${userId}:${Date.now()}`
+    const msgUint8 = new TextEncoder().encode(salt + otpCode)
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8)
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
@@ -119,6 +122,7 @@ serve(async (req) => {
         target_type: target_type,
         type: purpose,
         code_hash: hashHex,
+        hash_salt: salt,
         expires_at: new Date(Date.now() + 5 * 60000).toISOString()
       })
 

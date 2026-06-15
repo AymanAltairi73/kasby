@@ -2,15 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/models/profile_model.dart';
+import 'package:kasby/core/services/referral_service.dart';
 
-class PersonalProfileView extends StatelessWidget {
+class PersonalProfileView extends StatefulWidget {
   const PersonalProfileView({super.key});
 
+  @override
+  State<PersonalProfileView> createState() => _PersonalProfileViewState();
+}
+
+class _PersonalProfileViewState extends State<PersonalProfileView> {
   bool get isDark => Get.isDarkMode;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = HomeController.to.profile.value;
+    SafeGetx.debugTrace(
+      className: 'PersonalProfileView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+      message: 'Profile data bound',
+      params: {
+        'hasProfile': profile != null,
+        'kycStatus': profile?.kycStatus,
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +61,15 @@ class PersonalProfileView extends StatelessWidget {
               ),
               child: Icon(Icons.edit_note_rounded, color: AppColors.darkGold),
             ),
-            onPressed: () => Get.toNamed(Routes.editProfile),
+            onPressed: () {
+              SafeGetx.debugTrace(
+                className: 'PersonalProfileView',
+                method: 'navigateEditProfile',
+                feature: 'Profile',
+                status: 'INFO',
+              );
+              Get.toNamed(Routes.editProfile);
+            },
           ),
           const SizedBox(width: 8),
         ],
@@ -121,9 +153,12 @@ class PersonalProfileView extends StatelessWidget {
       child: Column(
         children: [
           _buildDetailRow(context, 'full_name'.tr, profile.fullName, Icons.person_rounded),
-          _buildDetailRow(context, 'email_address'.tr, profile.email, Icons.email_rounded),
+          _buildDetailRow(context, 'email_address'.tr, profile.email ?? '---', Icons.email_rounded),
           _buildDetailRow(context, 'phone_number'.tr, profile.phone ?? '---', Icons.phone_rounded),
-          _buildReferralRow(context, profile.referralCode ?? '---'),
+          _buildReferralRow(
+            context,
+            ReferralService.formatDisplayCode(profile.referralCode),
+          ),
           _buildDetailRow(context, 'country'.tr, profile.country ?? '---', Icons.public_rounded),
           _buildDetailRow(context, 'province'.tr, profile.province ?? '---', Icons.location_city_rounded),
           _buildDetailRow(context, 'city'.tr, profile.city ?? '---', Icons.location_on_rounded),
@@ -198,7 +233,7 @@ class PersonalProfileView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'كود الاحالة'.tr,
+                  'referral_code'.tr,
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
@@ -219,6 +254,12 @@ class PersonalProfileView extends StatelessWidget {
                     const Spacer(),
                     GestureDetector(
                       onTap: () {
+                        SafeGetx.debugTrace(
+                          className: 'PersonalProfileView',
+                          method: 'copyReferralCode',
+                          feature: 'Profile',
+                          status: 'INFO',
+                        );
                         Clipboard.setData(ClipboardData(text: code));
                         Get.snackbar('success'.tr, 'success_copy'.tr);
                       },

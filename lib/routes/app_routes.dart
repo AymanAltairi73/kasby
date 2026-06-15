@@ -5,6 +5,7 @@ abstract class Routes {
   static const register = '/register';
   static const otp = '/otp';
   static const forgotPassword = '/forgot-password';
+  static const verifyEmail = '/verify-email';
   static const home = '/home';
   static const investmentPlans = '/investment-plans';
   static const investmentDetails = '/investment-details';

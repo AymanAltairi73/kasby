@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,6 +12,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart' as intl;
 import '../../data/models/chat_message_model.dart';
 import '../controllers/support_chat_controller.dart';
+import '../widgets/chat_attachment_image.dart';
+import 'package:kasby/core/utils/chat_attachment_helper.dart';
 
 class SupportChatView extends StatefulWidget {
   const SupportChatView({super.key});
@@ -41,6 +44,18 @@ class _SupportChatViewState extends State<SupportChatView> {
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'SupportChatView',
+      method: 'initState',
+      feature: 'Support',
+      status: 'INFO',
+      params: {
+        'isAgentChat': _chatController.isAgentChat,
+        'isSocialChat': _chatController.isSocialChat,
+        'hasPredefinedConversation':
+            _chatController.predefinedConversationId != null,
+      },
+    );
     _scrollController.addListener(_onScroll);
     
     // Jump-to-message listener
@@ -96,7 +111,36 @@ class _SupportChatViewState extends State<SupportChatView> {
 
   void _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
-    await _chatController.sendMessage(text);
+    final stopwatch = Stopwatch()..start();
+    final isEdit = _editingMessage != null;
+
+    try {
+      if (isEdit) {
+        await _chatController.updateMessage(_editingMessage!.id, text);
+        setState(() => _editingMessage = null);
+      } else {
+        await _chatController.sendMessage(text);
+      }
+      SafeGetx.debugTrace(
+        className: 'SupportChatView',
+        method: '_sendMessage',
+        feature: 'Support',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'isEdit': isEdit},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SupportChatView',
+        method: '_sendMessage',
+        feature: 'Support',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
+    }
+
     _messageController.clear();
     _scrollToBottom();
   }
@@ -129,6 +173,12 @@ class _SupportChatViewState extends State<SupportChatView> {
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'SupportChatView',
+      method: 'dispose',
+      feature: 'Support',
+      status: 'INFO',
+    );
     _messageController.dispose();
     _searchController.dispose();
     _scrollController.dispose();
@@ -190,7 +240,7 @@ class _SupportChatViewState extends State<SupportChatView> {
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded),
-        onPressed: () => Get.back(),
+        onPressed: () => Get.safeBack(),
       ),
       title: Row(
         children: [
@@ -212,7 +262,8 @@ class _SupportChatViewState extends State<SupportChatView> {
                   ),
                 ),
               ),
-              Obx(() => _chatController.isRecipientOnline.value
+              Obx(() => (_chatController.isKasbySupportChat ||
+                      _chatController.isRecipientOnline.value)
                   ? Positioned(
                       right: 0,
                       bottom: 0,
@@ -258,9 +309,10 @@ class _SupportChatViewState extends State<SupportChatView> {
                       );
                     }
                     
-                    if (_chatController.isRecipientOnline.value) {
+                    if (_chatController.isKasbySupportChat ||
+                        _chatController.isRecipientOnline.value) {
                       return Text(
-                        'online_now'.tr,
+                        'kasby_support_online_now'.tr,
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.softGreen,
@@ -757,30 +809,14 @@ class _SupportChatViewState extends State<SupportChatView> {
                             GestureDetector(
                               onTap: () => Get.to(
                                 () => FullScreenImageViewer(
-                                  imageUrl: message.content,
+                                  imageContent: message.content,
                                   tag: message.id,
                                 ),
                               ),
                               child: Hero(
                                 tag: message.id,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: CachedNetworkImage(
-                                    imageUrl: message.content,
-                                    placeholder: (context, url) => Container(
-                                      width: 200,
-                                      height: 200,
-                                      color: Colors.white10,
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          color: AppColors.darkGold,
-                                        ),
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.error),
-                                    fit: BoxFit.cover,
-                                  ),
+                                child: ChatAttachmentImage(
+                                  content: message.content,
                                 ),
                               ),
                             )
@@ -899,7 +935,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                 final hasReacted = message.reactions.contains(emoji);
                 return GestureDetector(
                   onTap: () {
-                    Get.back();
+                    Get.safeBack();
                     _chatController.addReaction(message.id, emoji);
                   },
                   child: Container(
@@ -917,16 +953,16 @@ class _SupportChatViewState extends State<SupportChatView> {
             Divider(color: Colors.white.withValues(alpha: 0.1)),
             const SizedBox(height: 8),
             _buildOptionItem(Icons.copy_rounded, 'copy_text'.tr, () {
-              Get.back();
+              Get.safeBack();
               _copyMessage(message.content);
             }),
             if (message.isFromUser) ...[
               _buildOptionItem(Icons.edit_rounded, 'edit_message'.tr, () {
-                Get.back();
+                Get.safeBack();
                 _editMessage(message);
               }),
               _buildOptionItem(Icons.delete_rounded, 'delete'.tr, () {
-                Get.back();
+                Get.safeBack();
                 _deleteMessage(message);
               }, color: AppColors.error),
             ],
@@ -991,13 +1027,13 @@ class _SupportChatViewState extends State<SupportChatView> {
 
   Widget _buildQuickActions() {
     final actions = [
-      {'icon': Icons.help_outline_rounded, 'text': 'الأسئلة الشائعة'},
-      {'icon': Icons.report_problem_outlined, 'text': 'الإبلاغ عن مشكلة'},
+      {'icon': Icons.help_outline_rounded, 'text': 'support_faq'.tr},
+      {'icon': Icons.report_problem_outlined, 'text': 'report_issue'.tr},
       {
         'icon': Icons.account_balance_wallet_outlined,
-        'text': 'مشكلة في المحفظة',
+        'text': 'wallet_issue'.tr,
       },
-      {'icon': Icons.verified_user_outlined, 'text': 'التحقق من الهوية'},
+      {'icon': Icons.verified_user_outlined, 'text': 'kyc_verification'.tr},
     ];
 
     return Container(
@@ -1183,6 +1219,13 @@ class _SupportChatViewState extends State<SupportChatView> {
     });
   }
 
+  void _closeAttachmentSheetThen(VoidCallback action) {
+    if (Get.isBottomSheetOpen ?? false) {
+      Get.back();
+    }
+    Future.microtask(action);
+  }
+
   void _showAttachmentMenu() {
     Get.bottomSheet(
       Container(
@@ -1208,20 +1251,22 @@ class _SupportChatViewState extends State<SupportChatView> {
               children: [
                 _buildAttachmentOption(
                   Icons.camera_alt_rounded,
-                  'الكاميرا',
+                  'camera'.tr,
                   AppColors.darkGold,
                   () {
-                    Get.back();
-                    _chatController.pickAndSendImage(ImageSource.camera);
+                    _closeAttachmentSheetThen(
+                      () => _chatController.pickAndSendImage(ImageSource.camera),
+                    );
                   },
                 ),
                 _buildAttachmentOption(
                   Icons.image_rounded,
-                  'المعرض',
+                  'gallery'.tr,
                   Colors.blue,
                   () {
-                    Get.back();
-                    _chatController.pickAndSendImage(ImageSource.gallery);
+                    _closeAttachmentSheetThen(
+                      () => _chatController.pickAndSendImage(ImageSource.gallery),
+                    );
                   },
                 ),
               ],
@@ -1544,12 +1589,12 @@ class _SupportChatViewState extends State<SupportChatView> {
 }
 
 class FullScreenImageViewer extends StatelessWidget {
-  final String imageUrl;
+  final String imageContent;
   final String tag;
 
   const FullScreenImageViewer({
     super.key,
-    required this.imageUrl,
+    required this.imageContent,
     required this.tag,
   });
 
@@ -1570,16 +1615,28 @@ class FullScreenImageViewer extends StatelessWidget {
             boundaryMargin: const EdgeInsets.all(20),
             minScale: 0.5,
             maxScale: 4,
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              placeholder: (context, url) => Center(
-                child: CircularProgressIndicator(color: AppColors.darkGold),
-              ),
-              errorWidget: (context, url, error) => const Icon(
-                Icons.error,
-                color: Colors.white,
-              ),
-              fit: BoxFit.contain,
+            child: FutureBuilder<String>(
+              future: ChatAttachmentHelper.resolveDisplayUrl(imageContent),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(
+                    child: CircularProgressIndicator(color: AppColors.darkGold),
+                  );
+                }
+                return CachedNetworkImage(
+                  imageUrl: snapshot.data!,
+                  memCacheWidth: 1200,
+                  maxHeightDiskCache: 1200,
+                  placeholder: (context, url) => Center(
+                    child: CircularProgressIndicator(color: AppColors.darkGold),
+                  ),
+                  errorWidget: (context, url, error) => const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white,
+                  ),
+                  fit: BoxFit.contain,
+                );
+              },
             ),
           ),
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'dart:math' as math;
@@ -25,7 +26,6 @@ class _SpinWheelViewState extends State<SpinWheelView>
   int _selectedRewardIndex = 0;
   int _userPoints = 0;
   int _storedSpins = 0;
-  bool _isLoadingRewards = false; // Set to false since we start with defaults
   List<SpinReward> _dbRewards = SpinReward.defaultRewards;
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -40,6 +40,12 @@ class _SpinWheelViewState extends State<SpinWheelView>
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'SpinWheelView',
+      method: 'initState',
+      feature: 'Home',
+      status: 'INFO',
+    );
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 5),
@@ -90,12 +96,25 @@ class _SpinWheelViewState extends State<SpinWheelView>
   }
 
   Future<void> _fetchInitialData() async {
+    final stopwatch = Stopwatch()..start();
     await Future.wait([
       _fetchUserPoints(),
       _fetchRewards(),
       _fetchFreeSpinStatus(),
     ]);
     _startCountdownTimer();
+    SafeGetx.debugTrace(
+      className: 'SpinWheelView',
+      method: '_fetchInitialData',
+      feature: 'Home',
+      status: 'SUCCESS',
+      durationMs: stopwatch.elapsedMilliseconds,
+      params: {
+        'rewards': _dbRewards.length,
+        'points': _userPoints,
+        'storedSpins': _storedSpins,
+      },
+    );
   }
 
   Future<void> _fetchFreeSpinStatus() async {
@@ -137,12 +156,12 @@ class _SpinWheelViewState extends State<SpinWheelView>
           _dbRewards = (response as List)
               .map((r) => SpinReward.fromJson(r))
               .toList();
-          _isLoadingRewards = false;
+
         });
       }
     } catch (e) {
       debugPrint('Error fetching rewards: $e');
-      if (mounted) setState(() => _isLoadingRewards = false);
+      if (mounted) setState(() {});
     }
   }
 
@@ -215,9 +234,9 @@ class _SpinWheelViewState extends State<SpinWheelView>
     setState(() {
       _isSpinning = true;
     });
+    final stopwatch = Stopwatch()..start();
 
     try {
-      // Call secure backend RPC
       final response = await SupabaseService.client.rpc('spin_wheel');
 
       if (response['success'] == false) {
@@ -281,10 +300,25 @@ class _SpinWheelViewState extends State<SpinWheelView>
             (response['stored_spins'] as num?)?.toInt() ?? _storedSpins;
       });
 
-      // Refresh cooldown
       _fetchFreeSpinStatus();
-    } catch (e) {
-      debugPrint('Spin error: $e');
+      SafeGetx.debugTrace(
+        className: 'SpinWheelView',
+        method: '_spin',
+        feature: 'Home',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'rewardIndex': _selectedRewardIndex},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SpinWheelView',
+        method: '_spin',
+        feature: 'Home',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       setState(() => _isSpinning = false);
       Get.snackbar(
         'error'.tr,
@@ -367,7 +401,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
           text: '$title ($cost ${'points'.tr})',
           onPressed: () async {
             if (_userPoints >= cost) {
-              Get.back();
+              Get.safeBack();
               try {
                 final response = await SupabaseService.client.rpc(
                   'buy_spins_bundle',
@@ -536,7 +570,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
               const SizedBox(height: 40),
               KasbyButton(
                 text: 'ok'.tr,
-                onPressed: () => Get.back(),
+                onPressed: () => Get.safeBack(),
               ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.1, end: 0),
             ],
           ),
@@ -548,6 +582,13 @@ class _SpinWheelViewState extends State<SpinWheelView>
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'SpinWheelView',
+      method: 'dispose',
+      feature: 'Home',
+      status: 'INFO',
+    );
+    _countdownTimer?.cancel();
     _controller.dispose();
     _audioPlayer.dispose();
     super.dispose();
@@ -565,7 +606,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            onPressed: _isSpinning ? null : () => Get.back(),
+            onPressed: _isSpinning ? null : () => Get.safeBack(),
           ),
         ),
         body: SingleChildScrollView(
@@ -858,7 +899,7 @@ class WheelPainter extends CustomPainter {
           ? 'bonus'.tr
           : reward.label;
       final bool isGift =
-          reward.label == 'bonus' || labelText == 'هدية' || labelText == 'Gift';
+          reward.label == 'bonus' || labelText.toLowerCase() == 'gift';
 
       if (isGift) {
         final iconPainter = TextPainter(
@@ -903,5 +944,14 @@ class WheelPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant WheelPainter oldDelegate) {
+    if (rewards.length != oldDelegate.rewards.length) return true;
+    for (int i = 0; i < rewards.length; i++) {
+      if (rewards[i].id != oldDelegate.rewards[i].id ||
+          rewards[i].label != oldDelegate.rewards[i].label) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

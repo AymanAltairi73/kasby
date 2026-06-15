@@ -5,6 +5,7 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/features/home/presentation/controllers/subscription_controller.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 
 class SubscriptionView extends StatefulWidget {
@@ -20,6 +21,28 @@ class _SubscriptionViewState extends State<SubscriptionView> {
   int selectedPlanIndex = 1; // 0 for Free, 1 for Premium
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'SubscriptionView',
+      method: 'initState',
+      feature: 'Home',
+      status: 'INFO',
+    );
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'SubscriptionView',
+      method: 'dispose',
+      feature: 'Home',
+      status: 'INFO',
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +221,7 @@ class _SubscriptionViewState extends State<SubscriptionView> {
 
   Widget _buildToggleItem(String label, bool isActive, {String? badge}) {
     return GestureDetector(
-      onTap: () => setState(() => isYearly = label == 'yearly'.tr),
+      onTap: () => setState(() => isYearly = isActive ? isYearly : !isYearly),
       child: AnimatedContainer(
         duration: 300.ms,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

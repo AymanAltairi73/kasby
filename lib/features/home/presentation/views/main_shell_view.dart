@@ -8,6 +8,7 @@ import 'package:kasby/features/wallet/presentation/views/all_transactions_view.d
 import 'package:kasby/features/investment/presentation/views/investment_plans_view.dart';
 import 'package:kasby/features/profile/presentation/views/profile_view.dart';
 import 'package:kasby/core/controllers/shell_controller.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class MainShellView extends StatefulWidget {
   const MainShellView({super.key});
@@ -27,6 +28,29 @@ class _MainShellViewState extends State<MainShellView> {
       const AllTransactionsView(),
       const ProfileView(),
     ];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'MainShellView',
+      method: 'initState',
+      feature: 'Home',
+      status: 'INFO',
+      params: {'tabCount': 5},
+    );
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'MainShellView',
+      method: 'dispose',
+      feature: 'Home',
+      status: 'INFO',
+    );
+    super.dispose();
   }
 
   @override

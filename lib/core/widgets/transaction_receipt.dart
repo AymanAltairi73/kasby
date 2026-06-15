@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -35,7 +36,32 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isExporting = false;
 
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'TransactionReceipt',
+      method: 'initState',
+      feature: 'Wallet',
+      status: 'INFO',
+      message: 'Receipt displayed',
+      params: {
+        'type': widget.type,
+        'amount': widget.amount,
+        'txId': widget.transactionId.length > 8
+            ? '${widget.transactionId.substring(0, 8)}...'
+            : widget.transactionId,
+      },
+    );
+  }
+
   Future<void> _shareAsImage() async {
+    SafeGetx.debugTrace(
+      className: 'TransactionReceipt',
+      method: '_shareAsImage',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     setState(() => _isExporting = true);
     try {
       final image = await _screenshotController.capture();
@@ -53,8 +79,14 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
         );
       }
     } catch (e, stackTrace) {
-      debugPrint('[TransactionReceipt] Share image error: $e');
-      debugPrint('[TransactionReceipt] Stack trace: $stackTrace');
+      SafeGetx.debugTrace(
+        className: 'TransactionReceipt',
+        method: '_shareAsImage',
+        feature: 'Wallet',
+        status: 'FAILED',
+        error: e,
+        stackTrace: stackTrace,
+      );
       Get.snackbar('error'.tr, 'share_error'.tr);
     } finally {
       setState(() => _isExporting = false);
@@ -62,6 +94,12 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
   }
 
   Future<void> _downloadPdf() async {
+    SafeGetx.debugTrace(
+      className: 'TransactionReceipt',
+      method: '_downloadPdf',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     setState(() => _isExporting = true);
     try {
       final regularFontData = await rootBundle.load(
@@ -137,8 +175,14 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
 
       Get.snackbar('success'.tr, 'pdf_saved'.tr);
     } catch (e, stackTrace) {
-      debugPrint('[TransactionReceipt] PDF error: $e');
-      debugPrint('[TransactionReceipt] Stack trace: $stackTrace');
+      SafeGetx.debugTrace(
+        className: 'TransactionReceipt',
+        method: '_downloadPdf',
+        feature: 'Wallet',
+        status: 'FAILED',
+        error: e,
+        stackTrace: stackTrace,
+      );
       Get.snackbar('error'.tr, 'pdf_error'.tr);
     } finally {
       setState(() => _isExporting = false);
@@ -413,6 +457,12 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 icon: Icon(Icons.copy_rounded, size: 16, color: AppColors.darkGold),
                 onPressed: () {
+                  SafeGetx.debugTrace(
+                    className: 'TransactionReceipt',
+                    method: 'copyTransactionId',
+                    feature: 'Wallet',
+                    status: 'INFO',
+                  );
                   Clipboard.setData(ClipboardData(text: value));
                   HapticFeedback.mediumImpact();
                   Get.snackbar(

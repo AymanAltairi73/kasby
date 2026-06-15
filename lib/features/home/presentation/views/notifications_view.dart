@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-class NotificationsView extends StatelessWidget {
+class NotificationsView extends StatefulWidget {
   const NotificationsView({super.key});
 
+  @override
+  State<NotificationsView> createState() => _NotificationsViewState();
+}
+
+class _NotificationsViewState extends State<NotificationsView> {
   Color _getTypeColor(String type) {
     switch (type) {
       case 'success':
@@ -46,7 +52,7 @@ class NotificationsView extends StatelessWidget {
         title: Text('notifications'.tr),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => Get.safeBack(),
         ),
         actions: [
           Obx(() {

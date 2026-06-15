@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
@@ -8,6 +9,7 @@ import 'package:kasby/core/services/referral_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
+import 'package:kasby/routes/app_routes.dart';
 
 class InvestmentDetailsView extends StatefulWidget {
   const InvestmentDetailsView({super.key});
@@ -24,12 +26,10 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
-  void _log(String message, {dynamic details}) {
-    final timestamp = DateTime.now().toIso8601String().split('T').last.substring(0, 8);
-    debugPrint('$timestamp [INVESTMENT] ℹ️ $message');
-    if (details != null) {
-      debugPrint('$timestamp [INVESTMENT] 🔍 Data: $details');
-    }
+  @override
+  void dispose() {
+    amountController.dispose();
+    super.dispose();
   }
 
   void calculateProfit(String val) {
@@ -59,7 +59,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
         title: Text(plan['title']),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => Get.safeBack(),
         ),
       ),
       body: SingleChildScrollView(
@@ -313,12 +313,12 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           }),
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr)),
+          TextButton(onPressed: () => Get.safeBack(), child: Text('cancel'.tr)),
           KasbyButton(
             width: 120,
             text: 'confirm'.tr,
             onPressed: () {
-              Get.back();
+              Get.safeBack();
               _executeInvestment();
             },
           ),
@@ -336,7 +336,13 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
       final idempotencyKey = const Uuid().v4();
 
       if (planId == null) {
-        _log('Plan ID is null, blocking investment', details: plan);
+        SafeGetx.debugTrace(
+          className: 'InvestmentDetailsView',
+          method: '_executeInvestment',
+          feature: 'Investment',
+          status: 'WARNING',
+          message: 'Plan ID is null',
+        );
         Get.snackbar(
           'error'.tr,
           'plan_data_incomplete'.tr,
@@ -346,23 +352,34 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
         return;
       }
 
-      _log('Starting investment request', details: {
-        'plan_id': planId,
-        'amount': amount,
-        'idempotency_key': idempotencyKey,
-      });
-
-      final result = await SupabaseService.client.rpc(
-        'create_investment',
+      final result = await SafeGetx.traceAsync(
+        className: 'InvestmentDetailsView',
+        method: '_executeInvestment',
+        feature: 'Investment',
         params: {
-          'p_plan_id': planId,
-          'p_amount': amount,
-          'p_idempotency_key': idempotencyKey,
+          'table': 'investments',
+          'operation': 'RPC',
+          'rpc': 'create_investment',
+          'planId': planId,
+          'amount': amount,
+        },
+        operation: () => SupabaseService.client.rpc(
+          'create_investment',
+          params: {
+            'p_plan_id': planId,
+            'p_amount': amount,
+            'p_idempotency_key': idempotencyKey,
+          },
+        ),
+        onSuccessParams: (rpcResult) {
+          final rpcResponse = rpcResult as Map<String, dynamic>;
+          return {
+            'investmentId': rpcResponse['investment_id']?.toString(),
+          };
         },
       );
 
       final response = result as Map<String, dynamic>;
-      _log('Investment response received', details: response);
 
       if (response['success'] == true) {
         HapticFeedback.heavyImpact();
@@ -379,6 +396,13 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           response['message'] ?? 'investment_success_desc'.tr,
         );
       } else {
+        SafeGetx.debugTrace(
+          className: 'InvestmentDetailsView',
+          method: '_executeInvestment',
+          feature: 'Investment',
+          status: 'WARNING',
+          message: response['error']?.toString(),
+        );
         Get.snackbar(
           'error'.tr,
           response['error'] ?? 'unexpected_error'.tr,
@@ -386,8 +410,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           colorText: Colors.white,
         );
       }
-    } catch (e) {
-      debugPrint('Investment error: $e');
+    } catch (_) {
       Get.snackbar(
         'error'.tr,
         'error_executing_operation'.tr,
@@ -461,7 +484,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
               KasbyButton(
                 text: 'done'.tr,
                 onPressed: () {
-                  Get.offAllNamed('/home');
+                  Get.offAllNamed(Routes.home);
                 },
               ),
             ],

@@ -26,6 +26,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: corsHeaders })
     }
 
+    if (typeof new_password !== 'string' || new_password.length < 8) {
+      return new Response(JSON.stringify({ error: "Password must be at least 8 characters", code: 'WEAK_PASSWORD' }), { status: 400, headers: corsHeaders })
+    }
+
+    if (!/[A-Za-z]/.test(new_password) || !/[0-9]/.test(new_password)) {
+      return new Response(JSON.stringify({ error: "Password must contain both letters and numbers", code: 'WEAK_PASSWORD' }), { status: 400, headers: corsHeaders })
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -65,6 +73,34 @@ serve(async (req) => {
       .maybeSingle()
 
     if (error || !otp) {
+      // Track failed attempts on the most recent unused OTP for this target
+      const { data: latestOtp } = await supabaseAdmin
+        .from('otp_verifications')
+        .select('id, attempts')
+        .eq('target', target)
+        .eq('type', 'password_reset')
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (latestOtp) {
+        const newAttempts = (latestOtp.attempts || 0) + 1
+        await supabaseAdmin
+          .from('otp_verifications')
+          .update({ attempts: newAttempts })
+          .eq('id', latestOtp.id)
+
+        if (newAttempts >= 5) {
+          await supabaseAdmin
+            .from('otp_verifications')
+            .update({ used_at: new Date().toISOString() })
+            .eq('id', latestOtp.id)
+          return new Response(JSON.stringify({ error: 'Maximum attempts exceeded. Please request a new code.', code: 'MAX_ATTEMPTS' }), { status: 403, headers: corsHeaders })
+        }
+      }
+
       return new Response(JSON.stringify({ error: 'Invalid or expired OTP code', code: 'INVALID_OTP' }), { status: 400, headers: corsHeaders })
     }
 

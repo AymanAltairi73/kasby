@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class SessionService extends GetxService with WidgetsBindingObserver {
   static SessionService get to => Get.find();
@@ -21,12 +22,14 @@ class SessionService extends GetxService with WidgetsBindingObserver {
 
   @override
   void onInit() {
+    SafeGetx.debugTrace(className: 'SessionService', method: 'onInit', feature: 'Core', status: 'INFO');
     super.onInit();
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void onClose() {
+    SafeGetx.debugTrace(className: 'SessionService', method: 'onClose', feature: 'Core', status: 'INFO');
     WidgetsBinding.instance.removeObserver(this);
     _logoutTimer?.cancel();
     super.onClose();
@@ -37,9 +40,11 @@ class SessionService extends GetxService with WidgetsBindingObserver {
     if (!AuthController.to.isLoggedIn) return;
 
     if (state == AppLifecycleState.paused) {
+      SafeGetx.debugTrace(className: 'SessionService', method: 'didChangeAppLifecycleState', feature: 'Core', status: 'INFO', params: {'state': 'paused'});
       _backgroundTime = DateTime.now();
       _startLogoutTimer();
     } else if (state == AppLifecycleState.resumed) {
+      SafeGetx.debugTrace(className: 'SessionService', method: 'didChangeAppLifecycleState', feature: 'Core', status: 'INFO', params: {'state': 'resumed'});
       _handleAppResume();
     }
   }
@@ -48,6 +53,7 @@ class SessionService extends GetxService with WidgetsBindingObserver {
     _logoutTimer?.cancel();
     _logoutTimer = Timer(const Duration(minutes: logoutTimeout), () {
       if (_backgroundTime != null) {
+        SafeGetx.debugTrace(className: 'SessionService', method: '_startLogoutTimer', feature: 'Core', status: 'WARN', message: 'Auto logout triggered');
         AuthController.to.logout();
       }
     });
@@ -60,8 +66,10 @@ class SessionService extends GetxService with WidgetsBindingObserver {
     final duration = DateTime.now().difference(_backgroundTime!);
     
     if (duration.inMinutes >= logoutTimeout) {
+      SafeGetx.debugTrace(className: 'SessionService', method: '_handleAppResume', feature: 'Core', status: 'WARN', message: 'Logout timeout exceeded');
       AuthController.to.logout();
     } else if (duration.inMinutes >= lockTimeout) {
+      SafeGetx.debugTrace(className: 'SessionService', method: '_handleAppResume', feature: 'Core', status: 'INFO', message: 'Showing lock screen');
       _showLockScreen();
     }
 
@@ -83,17 +91,21 @@ class SessionService extends GetxService with WidgetsBindingObserver {
   Future<bool> authenticate() async {
     try {
       final bool canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
-      if (!canAuthenticateWithBiometrics) return true; // Fallback if no biometrics
+      final bool isDeviceSupported = await _auth.isDeviceSupported();
+
+      if (!canAuthenticateWithBiometrics && !isDeviceSupported) {
+        return true;
+      }
 
       return await _auth.authenticate(
         localizedReason: 'authenticate_to_continue'.tr,
-        options: const AuthenticationOptions(
+        options: AuthenticationOptions(
           stickyAuth: true,
-          biometricOnly: true,
+          biometricOnly: canAuthenticateWithBiometrics,
         ),
       );
-    } catch (e) {
-      debugPrint('Auth error: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SessionService', method: 'authenticate', feature: 'Core', status: 'ERROR', error: e, stackTrace: stack);
       return false;
     }
   }

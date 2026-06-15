@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 enum KspCategoryType {
   dailyProfit,
@@ -86,6 +87,23 @@ enum KspCategoryType {
   }
 
   static KspCategoryType fromDescription(String? description, String? type) {
+    try {
+      return _resolveCategory(description, type);
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'KspCategoryType',
+        method: 'fromDescription',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'type': type},
+        error: e,
+        stackTrace: stack,
+      );
+      return KspCategoryType.unknown;
+    }
+  }
+
+  static KspCategoryType _resolveCategory(String? description, String? type) {
     if (description == null) {
       if (type == 'earn') return KspCategoryType.bonusReward;
       if (type == 'spend') return KspCategoryType.transferOut;

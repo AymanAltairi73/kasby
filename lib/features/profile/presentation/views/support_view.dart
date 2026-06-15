@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter/services.dart';
-// import 'package:url_launcher/url_launcher.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class SupportView extends StatefulWidget {
   const SupportView({super.key});
@@ -23,21 +23,32 @@ class _SupportViewState extends State<SupportView> {
     {'question': 'faq_q1'.tr, 'answer': 'faq_a1'.tr, 'category': 'account'},
     {'question': 'faq_q2'.tr, 'answer': 'faq_a2'.tr, 'category': 'wallet'},
     {'question': 'faq_q3'.tr, 'answer': 'faq_a3'.tr, 'category': 'investment'},
-    {
-      'question': 'كيف يمكنني سحب أرباحي؟'.tr,
-      'answer':
-          'يمكنك سحب أرباحك من خلال قسم المحفظة واختيار سحب، ثم اختيار الوكيل المناسب لك.'
-              .tr,
-      'category': 'wallet',
-    },
-    {
-      'question': 'ما هي شروط الانضمام للوكلاء؟'.tr,
-      'answer':
-          'يجب أن يكون حسابك موثقاً (KYC) ولديك رصيد لا يقل عن مبلغ معين يحدده النظام.'
-              .tr,
-      'category': 'account',
-    },
+    {'question': 'faq_q4'.tr, 'answer': 'faq_a4'.tr, 'category': 'wallet'},
+    {'question': 'faq_q5'.tr, 'answer': 'faq_a5'.tr, 'category': 'account'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'SupportView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'SupportView',
+      method: 'dispose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    _searchController.dispose();
+    super.dispose();
+  }
 
   List<Map<String, String>> get _filteredFaqs {
     return _allFaqs.where((faq) {
@@ -124,57 +135,6 @@ class _SupportViewState extends State<SupportView> {
                 ),
               ),
             ),
-          // SliverToBoxAdapter(
-          //   child: Padding(
-          //     padding: const EdgeInsets.all(20),
-          //     child: Column(
-          //       crossAxisAlignment: CrossAxisAlignment.start,
-          //       children: [
-          //         const SizedBox(height: 32),
-          //         Text(
-          //           'still_need_help'.tr,
-          //           style: const TextStyle(
-          //             fontSize: 18,
-          //             fontWeight: FontWeight.bold,
-          //           ),
-          //         ),
-          //         const SizedBox(height: 16),
-          //         KasbyCard(
-          //           color: isDark ? AppColors.surface : AppColors.surfaceLight,
-          //           child: Column(
-          //             children: [
-          //               _buildContactItem(
-          //                 Icons.chat_bubble_outline_rounded,
-          //                 'chat_support'.tr,
-          //                 'start_conversation'.tr,
-          //                 () => Get.toNamed('/support-chat'),
-          //               ),
-          //               Divider(
-          //                 color: isDark
-          //                     ? Colors.white10
-          //                     : Colors.black.withValues(alpha: 0.1),
-          //               ),
-          //               _buildContactItem(
-          //                 Icons.email_outlined,
-          //                 'email_us'.tr,
-          //                 'support@kasby.com',
-          //                 () => _launchEmail('support@kasby.com'),
-          //               ),
-          //             ],
-          //           ),
-          //         ),
-          //         const SizedBox(height: 48),
-          //         // KasbyButton(
-          //         //   text: 'open_ticket'.tr,
-          //         //   onPressed: () {
-          //         //     HapticFeedback.lightImpact();
-          //         //   },
-          //         // ),
-          //         // const SizedBox(height: 40),
-          //       ],
-          //     ),
-          //   ),
-          // ),
         ],
       ),
     );
@@ -348,44 +308,4 @@ class _SupportViewState extends State<SupportView> {
     );
   }
 
-  Widget _buildContactItem(
-    IconData icon,
-    String title,
-    String subtitle,
-    VoidCallback onTap,
-  ) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppColors.darkGold.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: AppColors.darkGold, size: 20),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: isDark
-              ? AppColors.textSecondary
-              : AppColors.textSecondaryLight,
-          fontSize: 12,
-        ),
-      ),
-      trailing: Icon(
-        Icons.arrow_forward_ios_rounded,
-        size: 12,
-        color: isDark ? Colors.white24 : Colors.black26,
-      ),
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-    );
-  }
 }

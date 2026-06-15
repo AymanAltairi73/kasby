@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:confetti/confetti.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class ConfettiService extends GetxService {
   static ConfettiService get to => Get.find();
@@ -13,15 +14,33 @@ class ConfettiService extends GetxService {
   void onInit() {
     super.onInit();
     _controller = ConfettiController(duration: const Duration(seconds: 3));
+    SafeGetx.debugTrace(
+      className: 'ConfettiService',
+      method: 'onInit',
+      feature: 'Core',
+      status: 'SUCCESS',
+    );
   }
 
   @override
   void onClose() {
     _controller.dispose();
+    SafeGetx.debugTrace(
+      className: 'ConfettiService',
+      method: 'onClose',
+      feature: 'Core',
+      status: 'INFO',
+    );
     super.onClose();
   }
 
   void celebrate() {
+    SafeGetx.debugTrace(
+      className: 'ConfettiService',
+      method: 'celebrate',
+      feature: 'Core',
+      status: 'INFO',
+    );
     _controller.play();
   }
 

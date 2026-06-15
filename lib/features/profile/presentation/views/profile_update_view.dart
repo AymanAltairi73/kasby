@@ -10,7 +10,6 @@ import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/utils/country_data.dart';
 import 'package:kasby/features/auth/domain/models/country_model.dart';
-import 'package:kasby/features/auth/domain/auth_otp_config.dart';
 import 'package:kasby/features/auth/presentation/widgets/country_selector.dart';
 
 class ProfileUpdateView extends StatefulWidget {
@@ -274,23 +273,15 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                         }
 
                         if (isEmailChange) {
-                          final success = await profileCtrl.sendUpdateOtp(
-                            target: newValue,
-                            type: type,
-                          );
+                          final success =
+                              await profileCtrl.requestEmailChange(newValue);
                           if (success) {
                             profileCtrl.resetFlow();
                             Get.toNamed(
-                              Routes.otp,
+                              Routes.verifyEmail,
                               arguments: {
-                                'identifier': newValue,
-                                'isPhone': false,
-                                'isFreeOtp': true,
+                                'email': newValue,
                                 'purpose': 'email_change',
-                                'otpLength':
-                                    AuthOtpConfig.lengthForPurpose(
-                                  'email_change',
-                                ),
                               },
                             );
                           }

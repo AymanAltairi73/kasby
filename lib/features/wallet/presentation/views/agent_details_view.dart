@@ -5,9 +5,38 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
-class AgentDetailsView extends StatelessWidget {
+class AgentDetailsView extends StatefulWidget {
   const AgentDetailsView({super.key});
+
+  @override
+  State<AgentDetailsView> createState() => _AgentDetailsViewState();
+}
+
+class _AgentDetailsViewState extends State<AgentDetailsView> {
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'AgentDetailsView',
+      method: 'initState',
+      feature: 'Wallet',
+      status: 'INFO',
+      params: {'hasArgs': Get.arguments != null},
+    );
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'AgentDetailsView',
+      method: 'dispose',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

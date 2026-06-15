@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'supabase_service.dart';
 
 /// PresenceService — tracks online users and manages real-time presence for the User App.
@@ -9,6 +10,12 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
   // Map of userId -> presence data
   final onlineUsers = <String, Map<String, dynamic>>{}.obs;
   RealtimeChannel? _presenceChannel;
+
+  static String _truncateId(String? id) {
+    if (id == null || id.isEmpty) return 'none';
+    if (id.length <= 8) return id;
+    return '${id.substring(0, 8)}...';
+  }
   
   // Getters for UI
   int get onlineCount => onlineUsers.length;
@@ -17,6 +24,7 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
   StreamSubscription? _authSubscription;
 
   Future<PresenceService> init() async {
+    SafeGetx.debugTrace(className: 'PresenceService', method: 'init', feature: 'Core', status: 'INFO');
     WidgetsBinding.instance.addObserver(this);
     
     // Listen to login status to start/stop presence
@@ -33,6 +41,7 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
       _updateLastSeen();
     }
 
+    SafeGetx.debugTrace(className: 'PresenceService', method: 'init', feature: 'Core', status: 'SUCCESS');
     return this;
   }
 
@@ -43,7 +52,13 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
     final user = client.auth.currentUser;
     if (user == null) return;
 
-    debugPrint('[PresenceService] ▶ Setting up presence channel for user: ${user.id}');
+    SafeGetx.debugTrace(
+      className: 'PresenceService',
+      method: '_setupPresence',
+      feature: 'Core',
+      status: 'INFO',
+      params: {'userId': _truncateId(user.id)},
+    );
 
     _presenceChannel = client.channel('global-presence', opts: const RealtimeChannelConfig(self: true));
 
@@ -67,14 +82,14 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
       })
       .subscribe((status, [error]) async {
         if (status == RealtimeSubscribeStatus.subscribed) {
-          debugPrint('[PresenceService] √ Subscribed to presence channel.');
+          SafeGetx.debugTrace(className: 'PresenceService', method: '_setupPresence', feature: 'Core', status: 'SUCCESS', message: 'Subscribed to presence channel');
           await _presenceChannel!.track({
             'user_id': user.id,
             'online_at': DateTime.now().toIso8601String(),
             'user_type': 'user',
           });
         } else if (error != null) {
-          debugPrint('[PresenceService] ✗ Presence subscription error: $error');
+          SafeGetx.debugTrace(className: 'PresenceService', method: '_setupPresence', feature: 'Core', status: 'ERROR', error: error);
         }
       });
   }
@@ -89,8 +104,8 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
     if (!SupabaseService.isLoggedIn) return;
     try {
       await SupabaseService.client.rpc('fn_update_last_seen');
-    } catch (e) {
-      debugPrint('[PresenceService] Error updating last seen: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'PresenceService', method: '_updateLastSeen', feature: 'Core', status: 'ERROR', error: e, stackTrace: stack);
     }
   }
 
@@ -98,12 +113,14 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        if (SupabaseService.isLoggedIn) {
+        if (SupabaseService.isLoggedIn && _presenceChannel == null) {
           _setupPresence();
         }
         break;
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
+        _updateLastSeen();
+        break;
       case AppLifecycleState.detached:
       case AppLifecycleState.hidden:
         _updateLastSeen();
@@ -114,6 +131,7 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
 
   @override
   void onClose() {
+    SafeGetx.debugTrace(className: 'PresenceService', method: 'onClose', feature: 'Core', status: 'INFO');
     _authSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _cleanupPresence();

@@ -13,6 +13,7 @@ import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:intl/intl.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class WalletView extends StatefulWidget {
   const WalletView({super.key});
@@ -31,6 +32,13 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'WalletView',
+      method: 'initState',
+      feature: 'Wallet',
+      status: 'INFO',
+      message: 'Tab mounted in MainShell',
+    );
     _gradientController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
@@ -39,6 +47,12 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'WalletView',
+      method: 'dispose',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     _gradientController.dispose();
     super.dispose();
   }
@@ -509,6 +523,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
             ),
           ],
         ),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -530,14 +545,37 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _buildTransferButton(
-                label: 'receive_funds'.tr,
-                icon: Icons.qr_code_rounded,
-                iconColor: AppColors.darkGold,
-                onTap: () => Get.toNamed(Routes.myQr),
+              child: Obx(
+                () => _buildTransferButton(
+                  label: 'receive_funds'.tr,
+                  isLocked: !authController.isVerified.value,
+                  icon: Icons.qr_code_scanner_rounded,
+                  iconColor: AppColors.darkGold,
+                  onTap: () {
+                    if (authController.isVerified.value) {
+                      Get.toNamed(Routes.qrScanner);
+                    } else {
+                      _showKYCPrompt();
+                    }
+                  },
+                ),
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: TextButton.icon(
+            onPressed: () => Get.toNamed(Routes.myQr),
+            icon: Icon(Icons.qr_code_rounded, color: AppColors.darkGold, size: 18),
+            label: Text(
+              'my_qr'.tr,
+              style: TextStyle(
+                color: AppColors.darkGold,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
       ],
     ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0);
@@ -607,8 +645,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
         onTap();
       },
       child: Container(
-        width: 120,
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
         decoration: BoxDecoration(
           color: isDark ? AppColors.surface : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(40),
@@ -868,7 +905,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
   }
 
   Widget _buildGlassTransactionItem(TransactionModel tx) {
-    final isNegative = tx.type == 'withdraw' || tx.type == 'transfer_out' || tx.type == 'investment';
+    final isNegative = tx.type == 'withdrawal' || tx.type == 'transfer_out' || tx.type == 'investment';
     
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),

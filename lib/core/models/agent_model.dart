@@ -1,4 +1,4 @@
-import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class AgentModel {
   final String id;
@@ -54,17 +54,18 @@ class AgentModel {
   });
 
   factory AgentModel.fromJson(Map<String, dynamic> json) {
-    // Handle JOIN from profiles table - This is the Single Source of Truth
-    // However, if the join fails (e.g. due to RLS), we fall back to agents table fields
-    final profile = json['profiles'] as Map<String, dynamic>?;
+    try {
+      // Handle JOIN from profiles table - This is the Single Source of Truth
+      // However, if the join fails (e.g. due to RLS), we fall back to agents table fields
+      final profile = json['profiles'] as Map<String, dynamic>?;
 
-    return AgentModel(
+      return AgentModel(
       id: json['id'] as String,
       userId: json['user_id'] as String?,
       // Fallback logic: Use profile if available, otherwise use agents table fields
       name: (profile?['full_name'] ?? json['name'] ?? '') as String,
       country:
-          (profile?['country_code'] ?? json['country'] ?? 'iraq'.tr) as String,
+          (profile?['country_code'] ?? json['country'] ?? '') as String,
       province: (profile?['province'] ?? json['province'] ?? '') as String,
       city:
           (profile?['city'] ?? json['city'] ?? json['province'] ?? '')
@@ -97,7 +98,19 @@ class AgentModel {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
-    );
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'AgentModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

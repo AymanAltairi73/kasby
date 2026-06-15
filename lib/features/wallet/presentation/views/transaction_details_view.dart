@@ -4,29 +4,72 @@ import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/models/transaction_model.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-class TransactionDetailsView extends StatelessWidget {
+class TransactionDetailsView extends StatefulWidget {
   const TransactionDetailsView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final dynamic rawArgs = Get.arguments;
-    final TransactionModel tx;
-    final String? heroTag;
+  State<TransactionDetailsView> createState() => _TransactionDetailsViewState();
+}
 
+class _TransactionDetailsViewState extends State<TransactionDetailsView> {
+  TransactionModel? _tx;
+  String? _heroTag;
+  bool _hasValidArgs = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final dynamic rawArgs = Get.arguments;
+
+    TransactionModel? tx;
     if (rawArgs is Map<String, dynamic>) {
       tx = rawArgs['transaction'] as TransactionModel;
-      heroTag = rawArgs['heroTag'] as String?;
+      _tx = tx;
+      _heroTag = rawArgs['heroTag'] as String?;
     } else if (rawArgs is TransactionModel) {
       tx = rawArgs;
-      heroTag = null;
+      _tx = tx;
+      _heroTag = null;
     } else {
+      _hasValidArgs = false;
+      SafeGetx.debugTrace(
+        className: 'TransactionDetailsView',
+        method: 'initState',
+        feature: 'Wallet',
+        status: 'FAILED',
+        message: 'Invalid transaction arguments',
+      );
+      return;
+    }
+
+    SafeGetx.debugTrace(
+      className: 'TransactionDetailsView',
+      method: 'initState',
+      feature: 'Wallet',
+      status: 'INFO',
+      message: 'Transaction details loaded',
+      params: {
+        'txId': tx.id.length > 8 ? '${tx.id.substring(0, 8)}...' : tx.id,
+        'type': tx.type,
+        'status': tx.status,
+        'amount': tx.amount,
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_hasValidArgs) {
       return const Scaffold(
         body: Center(child: Text("Invalid transaction arguments")),
       );
     }
 
+    final tx = _tx!;
+    final heroTag = _heroTag;
     final currencyController = CurrencyController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isOut = tx.isDebit;
@@ -438,7 +481,7 @@ class TransactionDetailsView extends StatelessWidget {
           _buildDetailRow(
             'transaction_date'.tr,
             tx.createdAt != null
-                ? '${tx.createdAt!.day}/${tx.createdAt!.month}/${tx.createdAt!.year}  ${tx.createdAt!.hour}:${tx.createdAt!.minute.toString().padLeft(2, '0')}'
+                ? '${_formatDate(tx.createdAt!)}  ${_formatTime(tx.createdAt!)}'
                 : '—',
             isDark,
           ),
@@ -446,7 +489,7 @@ class TransactionDetailsView extends StatelessWidget {
             _buildDivider(isDark),
             _buildDetailRow(
               'processed_at'.tr,
-              '${tx.processedAt!.day}/${tx.processedAt!.month}/${tx.processedAt!.year}  ${tx.processedAt!.hour}:${tx.processedAt!.minute.toString().padLeft(2, '0')}',
+              '${_formatDate(tx.processedAt!)}  ${_formatTime(tx.processedAt!)}',
               isDark,
             ),
           ],
@@ -603,6 +646,15 @@ class TransactionDetailsView extends StatelessWidget {
   Widget _buildTransactionIdCard(TransactionModel tx, bool isDark) {
     return GestureDetector(
       onTap: () {
+        SafeGetx.debugTrace(
+          className: 'TransactionDetailsView',
+          method: 'copyTransactionId',
+          feature: 'Wallet',
+          status: 'INFO',
+          params: {
+            'txId': tx.id.length > 8 ? '${tx.id.substring(0, 8)}...' : tx.id,
+          },
+        );
         Clipboard.setData(ClipboardData(text: tx.id));
         Get.snackbar(
           'success_copy'.tr,
@@ -668,6 +720,16 @@ class TransactionDetailsView extends StatelessWidget {
   }
 
   // ── Helpers ──────────────────────────────────────────
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  String _formatTime(DateTime date) {
+    final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '${hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} $period';
+  }
 
   List<Map<String, dynamic>> _getTimelineSteps(TransactionModel tx) {
     final statusOrder = ['pending', 'processing', 'completed'];

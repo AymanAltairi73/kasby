@@ -113,7 +113,8 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
   void _listenForAuthVerification() {
     _authSubscription = SupabaseService.onAuthStateChange.listen((state) {
       if (state.event == AuthChangeEvent.signedIn ||
-          state.event == AuthChangeEvent.userUpdated) {
+          state.event == AuthChangeEvent.userUpdated ||
+          state.event == AuthChangeEvent.tokenRefreshed) {
         _refreshStatus(silent: true);
       }
     });
@@ -155,7 +156,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
       }
     } on AuthException catch (e) {
       if (!silent && mounted) {
-        AppSnack.error('error'.tr, _auth.translateOtpError(e.message));
+        AppSnack.error('error'.tr, _auth.translateOtpError(e));
       }
     } catch (_) {
       if (!silent && mounted) {
@@ -179,7 +180,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
       AppSnack.success('success'.tr, 'verification_code_resent'.tr);
       _startCountdown();
     } on AuthException catch (e) {
-      AppSnack.error('error'.tr, _auth.translateAuthError(e.message));
+      AppSnack.error('error'.tr, _auth.translateAuthError(e));
     } catch (_) {
       AppSnack.error('error'.tr, 'otp_resend_failed'.tr);
     } finally {
@@ -204,7 +205,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
         purpose: _purpose,
       );
     } on AuthException catch (e) {
-      AppSnack.error('error'.tr, _auth.translateOtpError(e.message));
+      AppSnack.error('error'.tr, _auth.translateOtpError(e));
       _otpKey.currentState?.clear();
     } catch (_) {
       AppSnack.error('error'.tr, 'invalid_otp'.tr);

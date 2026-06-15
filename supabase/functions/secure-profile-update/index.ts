@@ -22,7 +22,19 @@ serve(async (req) => {
 
   try {
     const { type, new_value, otp_code } = await req.json()
-    
+
+    if (!type || !new_value || !otp_code) {
+      return new Response(JSON.stringify({ error: "Missing required fields: type, new_value, otp_code" }), { status: 400, headers: corsHeaders })
+    }
+
+    if (!['email_change', 'phone_change'].includes(type)) {
+      return new Response(JSON.stringify({ error: "Invalid type. Must be 'email_change' or 'phone_change'" }), { status: 400, headers: corsHeaders })
+    }
+
+    if (typeof new_value !== 'string' || new_value.trim().length === 0) {
+      return new Response(JSON.stringify({ error: "Invalid new_value" }), { status: 400, headers: corsHeaders })
+    }
+
     // 1. Setup Supabase Admin Client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -120,7 +132,13 @@ serve(async (req) => {
       if (updateProfileError) throw updateProfileError
 
     } else if (type === 'phone_change') {
-      // Update public.profiles (phone is primary in profiles table)
+      const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        { phone: new_value, phone_confirm: true }
+      )
+
+      if (updateAuthError) throw updateAuthError
+
       const { error: updateProfileError } = await supabaseAdmin
         .from('profiles')
         .update({ phone: new_value })

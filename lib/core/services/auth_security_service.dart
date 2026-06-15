@@ -6,6 +6,8 @@ import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 /// Centralized Supabase Auth security operations (verification, reset, reauth).
 class AuthSecurityService {
@@ -170,9 +172,40 @@ class AuthSecurityService {
     await SupabaseService.hardRefreshSession();
   }
 
+  /// Extracts a human-readable message from Supabase [AuthException] payloads.
+  static String extractAuthErrorMessage(Object error) {
+    if (error is AuthException) {
+      return normalizeAuthErrorMessage(error.message);
+    }
+    return normalizeAuthErrorMessage(error.toString());
+  }
+
+  /// Parses GoTrue JSON error bodies (`{"code":"...","message":"..."}`).
+  static String normalizeAuthErrorMessage(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        final decoded = jsonDecode(trimmed);
+        if (decoded is Map) {
+          final message = decoded['message'] ?? decoded['msg'] ?? decoded['error'];
+          if (message != null && message.toString().trim().isNotEmpty) {
+            return message.toString();
+          }
+        }
+      } catch (_) {}
+    }
+    return trimmed;
+  }
+
   /// Maps Supabase OTP verification errors to user-facing OTP messages.
-  static String translateOtpError(String message) {
+  static String translateOtpError(Object error) {
+    final message = extractAuthErrorMessage(error);
     final lower = message.toLowerCase();
+    // GoTrue may return "Email link is invalid or has expired" for OTP failures.
+    if (lower.contains('link') &&
+        (lower.contains('invalid') || lower.contains('expired'))) {
+      return lower.contains('expired') ? 'otp_expired'.tr : 'invalid_otp'.tr;
+    }
     if (lower.contains('expired') ||
         lower.contains('has expired') ||
         lower.contains('otp_expired')) {
@@ -192,7 +225,8 @@ class AuthSecurityService {
   }
 
   /// Maps general Supabase auth errors (login, signup, links).
-  static String translateAuthError(String message) {
+  static String translateAuthError(Object error) {
+    final message = extractAuthErrorMessage(error);
     final lower = message.toLowerCase();
     if (lower.contains('invalid login credentials')) {
       return 'auth_error_invalid_credentials'.tr;
@@ -241,12 +275,22 @@ class AuthSecurityService {
     return lower.contains('error sending') ||
         lower.contains('sending recovery email') ||
         lower.contains('sending email change') ||
+        lower.contains('sending confirmation email') ||
         lower.contains('email delivery') ||
-        lower.contains('unexpected_failure');
+        lower.contains('unexpected_failure') ||
+        lower.contains('badcredentials') ||
+        lower.contains('username and password not accepted') ||
+        lower.contains('535 5.7.8');
   }
 
   static bool _isOtpRelatedAuthError(String message) {
     final lower = message.toLowerCase();
+    if (lower.contains('link') &&
+        (lower.contains('invalid') || lower.contains('expired')) &&
+        !lower.contains('callback') &&
+        !lower.contains('flow_state')) {
+      return true;
+    }
     return lower.contains('otp') ||
         lower.contains('token has expired') ||
         lower.contains('invalid token') ||
@@ -261,6 +305,8 @@ class AuthSecurityService {
   /// Refresh session when possible; returns verification status.
   static Future<bool> refreshAndCheckEmailVerified() async {
     _log('refreshAndCheckEmailVerified', 'Checking verification status');
+    await fetchFreshUser();
+    await SupabaseService.hardRefreshSession();
     final user = await fetchFreshUser();
     if (user == null) return false;
 
@@ -268,7 +314,10 @@ class AuthSecurityService {
     _log(
       'refreshAndCheckEmailVerified',
       'Verification status checked',
-      params: {'verified': verified},
+      params: {
+        'verified': verified,
+        'emailConfirmedAt': user.emailConfirmedAt,
+      },
     );
     return verified;
   }
@@ -334,20 +383,16 @@ class AuthSecurityService {
 
   /// Returns true when a pending email change has been confirmed.
   static Future<bool> isPendingEmailChangeComplete(String targetEmail) async {
+    await fetchFreshUser();
+    await SupabaseService.hardRefreshSession();
     final user = await fetchFreshUser();
     if (user == null) return false;
 
     final normalizedTarget = targetEmail.trim().toLowerCase();
     final currentEmail = user.email?.trim().toLowerCase();
-    final pendingEmail = user.newEmail?.trim().toLowerCase();
 
-    if (currentEmail == normalizedTarget && user.emailConfirmedAt != null) {
-      return true;
-    }
-
-    // Still waiting on OTP/link confirmation for the new address.
-    if (pendingEmail == normalizedTarget) {
-      return false;
+    if (currentEmail == normalizedTarget) {
+      return user.emailConfirmedAt != null;
     }
 
     return false;
@@ -363,9 +408,126 @@ class AuthSecurityService {
   }
 
   /// Ensures signup confirmation OTP/email is dispatched after registration.
+  ///
+  /// Primary path: Resend via [send-otp] edge function (works when Supabase SMTP
+  /// is misconfigured). Falls back to native GoTrue resend if Resend fails.
   static Future<void> ensureSignupVerificationSent(String email) async {
+    final sanitized = email.trim().toLowerCase();
     _log('ensureSignupVerificationSent', 'Sending signup verification');
-    await resendOtp(email: email, type: OtpType.signup);
+
+    try {
+      await _sendSignupOtpViaResend(sanitized);
+      _log(
+        'ensureSignupVerificationSent',
+        'Signup OTP sent via Resend edge function',
+      );
+      return;
+    } catch (e, stack) {
+      _log(
+        'ensureSignupVerificationSent',
+        'Resend edge function failed, trying Supabase auth resend',
+        status: 'WARN',
+        error: e,
+        stackTrace: stack,
+      );
+    }
+
+    await resendOtp(email: sanitized, type: OtpType.signup);
+  }
+
+  /// Verify signup OTP delivered by [send-otp] and mark email confirmed server-side.
+  static Future<void> confirmSignupEmailOtp({
+    required String email,
+    required String code,
+  }) async {
+    final sanitized = email.trim().toLowerCase();
+    final normalized = AuthOtpConfig.normalize(code);
+    final expectedLength = AuthOtpConfig.lengthForOtpType(OtpType.signup);
+    if (normalized.length != expectedLength) {
+      throw AuthException(
+        'otp_length_mismatch'.trParams({'count': '$expectedLength'}),
+      );
+    }
+
+    _log('confirmSignupEmailOtp', 'Confirming signup OTP via edge function');
+    final response = await _invokeEdgeFunction(
+      'confirm-signup-email',
+      body: {
+        'email': sanitized,
+        'otp_code': normalized,
+      },
+    );
+
+    final data = jsonDecode(response.body);
+    if (response.statusCode != 200) {
+      final message = data is Map ? (data['error'] ?? 'invalid_otp'.tr) : 'invalid_otp'.tr;
+      throw AuthException(translateOtpError(message));
+    }
+
+    await _syncUserAfterOtpVerification();
+    _log('confirmSignupEmailOtp', 'Signup email confirmed');
+  }
+
+  /// Sign in immediately after signup email confirmation (no session yet).
+  static Future<void> signInAfterSignup({
+    required String email,
+    required String password,
+  }) async {
+    final sanitized = email.trim().toLowerCase();
+    _log('signInAfterSignup', 'Creating session after signup verification');
+    await SupabaseService.auth.signInWithPassword(
+      email: sanitized,
+      password: password.trim(),
+    );
+    await SupabaseService.hardRefreshSession();
+    _log('signInAfterSignup', 'Session created');
+  }
+
+  static Future<void> _sendSignupOtpViaResend(String email) async {
+    final response = await _invokeEdgeFunction(
+      'send-otp',
+      body: {
+        'target': email,
+        'target_type': 'email',
+        'purpose': 'signup',
+      },
+    );
+
+    final data = jsonDecode(response.body);
+    if (response.statusCode != 200) {
+      final message = data is Map
+          ? (data['error']?.toString() ?? 'auth_error_email_delivery'.tr)
+          : 'auth_error_email_delivery'.tr;
+      throw AuthException(message);
+    }
+  }
+
+  static Future<http.Response> _invokeEdgeFunction(
+    String functionName, {
+    required Map<String, dynamic> body,
+  }) async {
+    if (!dotenv.isInitialized) {
+      throw AuthException('auth_error_email_delivery'.tr);
+    }
+
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final anonKey = dotenv.env['SUPABASE_ANON_KEY'];
+    if (supabaseUrl == null ||
+        supabaseUrl.isEmpty ||
+        anonKey == null ||
+        anonKey.isEmpty) {
+      throw AuthException('auth_error_email_delivery'.tr);
+    }
+
+    final url = Uri.parse('$supabaseUrl/functions/v1/$functionName');
+    return http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': anonKey,
+      },
+      body: jsonEncode(body),
+    );
   }
 
   /// Native Supabase sign-up with email confirmation redirect configured.

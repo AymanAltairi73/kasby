@@ -10,10 +10,20 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
 
   try {
+    // Require at minimum the apikey header (anon key) to prevent fully anonymous access
+    const apikey = req.headers.get('apikey')
+    if (!apikey) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders })
+    }
+
     const { target, target_type, otp_code } = await req.json()
     
     if (!target || !target_type || !otp_code) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers: corsHeaders })
+    }
+
+    if (typeof otp_code !== 'string' || otp_code.length !== 6 || !/^\d{6}$/.test(otp_code)) {
+      return new Response(JSON.stringify({ error: "Invalid OTP format" }), { status: 400, headers: corsHeaders })
     }
 
     const supabaseAdmin = createClient(
@@ -21,19 +31,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 1. Identify User (optional for verification but helpful)
-    let userId: string | null = null
-    const authHeader = req.headers.get('Authorization')
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      try {
-        const token = authHeader.replace('Bearer ', '')
-        if (token.includes('.') && token.length > 40) {
-          const { data: { user } } = await supabaseAdmin.auth.getUser(token)
-          userId = user?.id || null
-        }
-      } catch (e) {
-        console.log('[OTP] Auth token verification skipped or failed')
-      }
+    // Target-level rate limiting: max 10 verification attempts per target per 15 min
+    const { data: recentAttempts } = await supabaseAdmin
+      .from('otp_verifications')
+      .select('attempts')
+      .eq('target', target)
+      .is('used_at', null)
+      .gt('created_at', new Date(Date.now() - 15 * 60000).toISOString())
+
+    const totalAttempts = (recentAttempts || []).reduce((sum: number, r: any) => sum + (r.attempts || 0), 0)
+    if (totalAttempts >= 15) {
+      return new Response(JSON.stringify({ 
+        error: 'Too many verification attempts. Please wait before retrying.', 
+        code: 'RATE_LIMIT_EXCEEDED' 
+      }), { status: 429, headers: corsHeaders })
     }
 
     // 2. Hash the provided code for comparison
@@ -108,8 +119,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      purpose: otp.type,
-      user_id: otp.user_id 
+      purpose: otp.type
     }), { status: 200, headers: corsHeaders })
 
   } catch (err: any) {

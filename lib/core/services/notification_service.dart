@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -12,8 +13,15 @@ class NotificationService {
     try {
       await _audioPlayer.play(AssetSource('sounds/notification.mp3'));
       HapticFeedback.mediumImpact();
-    } catch (e) {
-      // Fallback to haptic only if sound fails
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'NotificationService',
+        method: 'playNotificationSound',
+        feature: 'Core',
+        status: 'FAILED',
+        error: e,
+        stackTrace: stack,
+      );
       HapticFeedback.mediumImpact();
     }
   }
@@ -22,7 +30,15 @@ class NotificationService {
     try {
       await _audioPlayer.play(AssetSource('sounds/message_sent.mp3'));
       HapticFeedback.lightImpact();
-    } catch (e) {
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'NotificationService',
+        method: 'playMessageSentSound',
+        feature: 'Core',
+        status: 'FAILED',
+        error: e,
+        stackTrace: stack,
+      );
       HapticFeedback.lightImpact();
     }
   }

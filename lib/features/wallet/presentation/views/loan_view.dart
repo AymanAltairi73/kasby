@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
@@ -33,7 +34,7 @@ class _LoanViewState extends State<LoanView>
       (loanController.activeInvestmentValue.value * 0.10);
   double get maxLoanAmount =>
       (loanController.activeInvestmentValue.value * 0.50);
-  double get totalInterest => currentLoanAmount * 0.10 * selectedDuration;
+  double get totalInterest => currentLoanAmount * loanController.serverInterestRate.value * selectedDuration;
   double get totalRepayment => currentLoanAmount + totalInterest;
 
   double get loanPercentage {
@@ -63,11 +64,23 @@ class _LoanViewState extends State<LoanView>
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'LoanView',
+      method: 'initState',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'LoanView',
+      method: 'dispose',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     _tabController.dispose();
     _amountController.dispose();
     super.dispose();
@@ -80,7 +93,7 @@ class _LoanViewState extends State<LoanView>
         title: Text('salefni_kasby'.tr),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => Get.safeBack(),
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -330,7 +343,7 @@ class _LoanViewState extends State<LoanView>
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: () => Get.safeBack(),
             child: Text('close'.tr, style: TextStyle(color: AppColors.darkGold)),
           ),
         ],
@@ -647,7 +660,7 @@ class _LoanViewState extends State<LoanView>
               'loan_interest'.tr,
               currencyController.formatAmount(totalInterest),
               valueColor: AppColors.error,
-              subtitle: '10% / ${'months'.trParams({'count': '1'})}',
+              subtitle: '${(loanController.serverInterestRate.value * 100).toStringAsFixed(0)}% / ${'months'.trParams({'count': '1'})}',
             ),
           ),
           Padding(
@@ -935,7 +948,7 @@ class _LoanViewState extends State<LoanView>
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
                   Text(
-                    currencyController.formatAmount(loan.remainingAmount),
+                    currencyController.formatAmount(loan.effectiveRemaining),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -1051,21 +1064,24 @@ class _LoanViewState extends State<LoanView>
           backgroundColor: AppColors.surface,
           title: Text('confirm_full_repayment'.tr, style: const TextStyle(color: Colors.white)),
           content: Text(
-            'full_repayment_desc'.trParams({'amount': currencyController.formatAmount(loan.remainingAmount)}),
+            'full_repayment_desc'.trParams({'amount': currencyController.formatAmount(loan.effectiveRemaining)}),
             style: const TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr, style: TextStyle(color: AppColors.textSecondary))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.darkGold),
-              onPressed: () {
+              onPressed: loanController.isSubmitting.value
+                  ? null
+                  : () {
                 Get.back();
-                loanController.repayLoan(loan.id, loan.remainingAmount, 'full');
+                loanController.repayLoan(loan.id, loan.effectiveRemaining, 'full');
               },
               child: Text('confirm'.tr, style: const TextStyle(color: Colors.black)),
             ),
           ],
         ),
+        barrierDismissible: false,
       );
     } else {
       final TextEditingController partialAmountController = TextEditingController();
@@ -1080,7 +1096,7 @@ class _LoanViewState extends State<LoanView>
               const SizedBox(height: 16),
               KasbyTextField(
                 controller: partialAmountController,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 hint: currencyController.formatAmount(0),
               ),
             ],
@@ -1089,9 +1105,11 @@ class _LoanViewState extends State<LoanView>
             TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr, style: TextStyle(color: AppColors.textSecondary))),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.darkGold),
-              onPressed: () {
-                final amount = double.tryParse(partialAmountController.text) ?? 0.0;
-                if (amount <= 0 || amount > loan.remainingAmount) {
+              onPressed: loanController.isSubmitting.value
+                  ? null
+                  : () {
+                final amount = double.tryParse(partialAmountController.text.replaceAll(',', '')) ?? 0.0;
+                if (amount <= 0 || amount > loan.effectiveRemaining) {
                   Get.snackbar('error'.tr, 'invalid_amount'.tr);
                   return;
                 }
@@ -1102,6 +1120,7 @@ class _LoanViewState extends State<LoanView>
             ),
           ],
         ),
+        barrierDismissible: false,
       );
     }
   }

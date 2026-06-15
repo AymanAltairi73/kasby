@@ -9,6 +9,7 @@ import 'package:kasby/core/utils/country_data.dart';
 import 'package:kasby/features/auth/domain/models/country_model.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 
 enum ResetMethod { email, phone, none }
@@ -214,17 +215,20 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
           const SizedBox(height: 48),
           Obx(
             () => KasbyButton(
-              text: 'send_otp'.tr,
+              text: _selectedMethod == ResetMethod.email
+                  ? 'send_reset_link'.tr
+                  : 'send_otp'.tr,
               isLoading: AuthController.to.isLoading.value,
-              onPressed: () {
-                debugPrint(
-                  '[VIEW] ForgotPasswordView: Send Reset Link pressed for ${_selectedMethod.name}',
-                );
+              onPressed: () async {
                 if (_selectedMethod == ResetMethod.email) {
-                  AuthController.to.sendPasswordResetEmail(
-                    _emailController.text.trim(),
-                  );
-                } else if (_selectedMethod == ResetMethod.phone) {
+                  try {
+                    await AuthController.to.sendPasswordResetEmail(
+                      _emailController.text.trim(),
+                    );
+                  } on AuthException catch (_) {
+                    // Error surfaced by controller
+                  } catch (_) {}
+                } else {
                   final phoneText = _phoneController.text.trim();
                   final fullPhone = '${_selectedCountry.dialCode}$phoneText';
                   AuthController.to.sendPasswordResetOTP(fullPhone);

@@ -14,6 +14,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/utils/ksp_converter.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 
 
@@ -29,6 +30,29 @@ class _HomeViewState extends State<HomeView> {
   final homeController = HomeController.to;
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'HomeView',
+      method: 'initState',
+      feature: 'Home',
+      status: 'INFO',
+      message: 'Tab mounted in MainShell',
+    );
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'HomeView',
+      method: 'dispose',
+      feature: 'Home',
+      status: 'INFO',
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1211,89 +1235,6 @@ class _HomeViewState extends State<HomeView> {
     });
   }
 
-  /*
-  Widget _buildProofOfTrust() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'proof_of_trust_label'.tr,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.softGreen.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.sync_rounded,
-                    size: 10,
-                    color: AppColors.softGreen,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'auto_updated'.tr,
-                    style: const TextStyle(
-                      color: AppColors.softGreen,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        KasbyCard(
-          child: IntrinsicHeight(
-            child: Row(
-              children: [
-                _buildProofItem('distributed_profits_label'.tr, '1,245,000\$'),
-                const VerticalDivider(color: Colors.white10),
-                _buildProofItem('successful_withdrawals_label'.tr, '8,320'),
-                const VerticalDivider(color: Colors.white10),
-                _buildProofItem('active_users_label'.tr, '42,000'),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProofItem(String label, String value) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.darkGold,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  */
-
-
   Widget _buildLegendItem(String label, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
@@ -1448,6 +1389,8 @@ class _HomeSliderState extends State<_HomeSlider> {
                                     CachedNetworkImage(
                                       imageUrl: ad.imageUrl,
                                       fit: BoxFit.cover,
+                                      memCacheWidth: 800,
+                                      maxHeightDiskCache: 600,
                                       placeholder: (context, url) => const KasbyShimmer.card(),
                                       errorWidget: (context, url, error) =>
                                           Image.asset(

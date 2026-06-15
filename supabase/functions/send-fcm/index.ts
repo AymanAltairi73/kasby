@@ -5,6 +5,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 // Note: Ensure FIREBASE_SERVICE_ACCOUNT is added to Supabase Secrets
 // Command: supabase secrets set FIREBASE_SERVICE_ACCOUNT='{"type":"service_account",...}'
 
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -28,7 +31,7 @@ async function validateAuthorization(req: Request): Promise<{ role: string; user
   const token = authHeader.replace('Bearer ', '').trim();
   if (!token) return null;
 
-  const fcmSecret = Deno.env.get('FCM_SECRET') ?? 'kasby_internal_fcm_secret_2026_x972f';
+  const fcmSecret = Deno.env.get('FCM_SECRET') ?? '';
 
   // 1. Check if token matches service_role key or internal fcm_secret (used by DB triggers & internal calls)
   if (token === serviceRoleKey || token === fcmSecret) {

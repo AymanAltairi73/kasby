@@ -1,10 +1,13 @@
+import 'package:kasby/core/utils/safe_getx.dart';
+
 class ProfileModel {
   final String id;
   final String fullName;
-  final String email;
+  final String? email;
   final String? phone;
   final String? avatarUrl;
   final String status; // active, blocked, suspended
+  final String? statusReason;
   final String accountTier; // free, verified, vip
   final String kycStatus; // unverified, pending, verified, rejected
   final String? referralCode;
@@ -25,10 +28,11 @@ class ProfileModel {
   const ProfileModel({
     required this.id,
     required this.fullName,
-    required this.email,
+    this.email,
     this.phone,
     this.avatarUrl,
     this.status = 'active',
+    this.statusReason,
     this.accountTier = 'free',
     this.kycStatus = 'unverified',
     this.referralCode,
@@ -48,36 +52,51 @@ class ProfileModel {
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
-    return ProfileModel(
-      id: json['id'] as String,
-      fullName: json['full_name'] as String? ?? '',
-      email: json['email'] as String,
-      phone: json['phone'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
-      status: json['status'] as String? ?? 'active',
-      accountTier: json['account_tier'] as String? ?? 'free',
-      kycStatus: json['kyc_status'] as String? ?? 'unverified',
-      role: json['role'] as String? ?? 'user',
-      referralCode: json['referral_code'] as String?,
-      referredBy: json['referred_by'] as String?,
-      countryCode: json['country_code'] as String?,
-      province: json['province'] as String?,
-      city: json['city'] as String?,
-      country: json['country'] as String?,
-      address: json['address'] as String? ?? '',
-      whatsapp: json['whatsapp'] as String? ?? '',
-      telegram: json['telegram'] as String? ?? '',
-      lastLoginAt: json['last_login_at'] != null
-          ? DateTime.parse(json['last_login_at'])
-          : null,
-      lastLoginIp: json['last_login_ip'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
-    );
+    try {
+      return ProfileModel(
+        id: json['id'] as String,
+        fullName: json['full_name'] as String? ?? '',
+        email: json['email'] as String?,
+        phone: json['phone'] as String?,
+        avatarUrl: json['avatar_url'] as String?,
+        status: json['status'] as String? ?? 'active',
+        statusReason: json['status_reason'] as String?,
+        accountTier: json['account_tier'] as String? ?? 'free',
+        kycStatus: json['kyc_status'] as String? ?? 'unverified',
+        role: json['role'] as String? ?? 'user',
+        referralCode: json['referral_code'] as String?,
+        referredBy: json['referred_by_id'] as String? ??
+            json['referred_by'] as String?,
+        countryCode: json['country_code'] as String?,
+        province: json['province'] as String?,
+        city: json['city'] as String?,
+        country: json['country'] as String?,
+        address: json['address'] as String? ?? '',
+        whatsapp: json['whatsapp'] as String? ?? '',
+        telegram: json['telegram'] as String? ?? '',
+        lastLoginAt: json['last_login_at'] != null
+            ? DateTime.parse(json['last_login_at'])
+            : null,
+        lastLoginIp: json['last_login_ip'] as String?,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'])
+            : null,
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'])
+            : null,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'ProfileModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -88,10 +107,11 @@ class ProfileModel {
       'phone': phone,
       'avatar_url': avatarUrl,
       'status': status,
+      'status_reason': statusReason,
       'account_tier': accountTier,
       'kyc_status': kycStatus,
       'referral_code': referralCode,
-      'referred_by': referredBy,
+      'referred_by_id': referredBy,
       'country_code': countryCode,
       'province': province,
       'city': city,
@@ -112,6 +132,7 @@ class ProfileModel {
     String? phone,
     String? avatarUrl,
     String? status,
+    String? statusReason,
     String? accountTier,
     String? kycStatus,
     String? referralCode,
@@ -134,6 +155,7 @@ class ProfileModel {
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       status: status ?? this.status,
+      statusReason: statusReason ?? this.statusReason,
       accountTier: accountTier ?? this.accountTier,
       kycStatus: kycStatus ?? this.kycStatus,
       referralCode: referralCode ?? this.referralCode,

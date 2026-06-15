@@ -1,3 +1,5 @@
+import 'package:kasby/core/utils/safe_getx.dart';
+
 class DashboardModel {
   final String userId;
   final String fullName;
@@ -34,7 +36,8 @@ class DashboardModel {
   });
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
-    return DashboardModel(
+    try {
+      return DashboardModel(
       userId: json['user_id'] as String,
       fullName: json['full_name'] as String? ?? '',
       accountTier: json['account_tier'] as String? ?? 'free',
@@ -50,6 +53,18 @@ class DashboardModel {
       activeLoans: (json['active_loans'] as num?)?.toInt() ?? 0,
       dailyProfit: (json['daily_profit'] as num?)?.toDouble() ?? 0.0,
       profitPercentage: (json['profit_percentage'] as num?)?.toDouble() ?? 0.0,
-    );
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'DashboardModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'userId': json['user_id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 }

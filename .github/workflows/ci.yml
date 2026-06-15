@@ -1,0 +1,90 @@
+name: Kasby CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  analyze-consumer:
+    name: Analyze Consumer App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kasby
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable'
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test --coverage
+
+  analyze-admin:
+    name: Analyze Admin App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kasby_admin/kasby_admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable'
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: [analyze-consumer]
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: kasby
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable'
+      - run: flutter pub get
+      - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: kasby/build/app/outputs/flutter-apk/app-release.apk
+
+  build-admin-android:
+    name: Build Admin APK
+    runs-on: ubuntu-latest
+    needs: [analyze-admin]
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: kasby_admin/kasby_admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.0'
+          channel: 'stable'
+      - run: flutter pub get
+      - run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: admin-release-apk
+          path: kasby_admin/kasby_admin/build/app/outputs/flutter-apk/app-release.apk

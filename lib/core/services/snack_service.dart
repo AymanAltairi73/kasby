@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 /// Unified, premium notification service for all user-facing alerts.
@@ -11,6 +12,13 @@ class AppSnack {
 
   /// ✅ Success notification — green accent, checkmark icon, light haptic.
   static void success(String title, String message, {TextButton? mainButton}) {
+    SafeGetx.debugTrace(
+      className: 'AppSnack',
+      method: 'success',
+      feature: 'Core',
+      status: 'INFO',
+      params: {'title': title},
+    );
     HapticFeedback.mediumImpact();
     _show(
       title: title,
@@ -23,6 +31,13 @@ class AppSnack {
 
   /// ❌ Error notification — red accent, alert icon, heavy haptic.
   static void error(String title, String message, {TextButton? mainButton}) {
+    SafeGetx.debugTrace(
+      className: 'AppSnack',
+      method: 'error',
+      feature: 'Core',
+      status: 'INFO',
+      params: {'title': title},
+    );
     HapticFeedback.heavyImpact();
     _show(
       title: title,
@@ -35,6 +50,13 @@ class AppSnack {
 
   /// ⚠️ Warning notification — gold accent, warning icon, medium haptic.
   static void warning(String title, String message, {TextButton? mainButton}) {
+    SafeGetx.debugTrace(
+      className: 'AppSnack',
+      method: 'warning',
+      feature: 'Core',
+      status: 'INFO',
+      params: {'title': title},
+    );
     HapticFeedback.mediumImpact();
     _show(
       title: title,
@@ -47,6 +69,13 @@ class AppSnack {
 
   /// ℹ️ Info notification — blue accent, info icon, light haptic.
   static void info(String title, String message, {TextButton? mainButton}) {
+    SafeGetx.debugTrace(
+      className: 'AppSnack',
+      method: 'info',
+      feature: 'Core',
+      status: 'INFO',
+      params: {'title': title},
+    );
     HapticFeedback.lightImpact();
     _show(
       title: title,
@@ -60,6 +89,13 @@ class AppSnack {
   /// 🔐 OTP notification — premium notification-style snackbar for verification codes.
   /// Mimics a system notification with shield icon, prominent code display, and elevated shadow.
   static void otp(String code) {
+    SafeGetx.debugTrace(
+      className: 'AppSnack',
+      method: 'otp',
+      feature: 'Core',
+      status: 'INFO',
+      message: 'OTP snackbar displayed',
+    );
     HapticFeedback.mediumImpact();
     // Play notification sound
     final player = AudioPlayer();

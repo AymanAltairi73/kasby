@@ -1,13 +1,20 @@
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/features/qr_payment/presentation/controllers/qr_payment_controller.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class MyQrView extends StatefulWidget {
   const MyQrView({super.key});
@@ -18,12 +25,19 @@ class MyQrView extends StatefulWidget {
 
 class _MyQrViewState extends State<MyQrView> {
   final TextEditingController _amountController = TextEditingController();
+  final GlobalKey _qrKey = GlobalKey();
   double? _customAmount;
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'MyQrView',
+      method: 'initState',
+      feature: 'QrPayment',
+      status: 'INFO',
+    );
     if (!Get.isRegistered<QrPaymentController>()) {
       Get.put(QrPaymentController());
     }
@@ -31,6 +45,12 @@ class _MyQrViewState extends State<MyQrView> {
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'MyQrView',
+      method: 'dispose',
+      feature: 'QrPayment',
+      status: 'INFO',
+    );
     _amountController.dispose();
     super.dispose();
   }
@@ -79,7 +99,9 @@ class _MyQrViewState extends State<MyQrView> {
             const SizedBox(height: 40),
 
             // 2. QR Card
-            GlassCard(
+            RepaintBoundary(
+            key: _qrKey,
+            child: GlassCard(
               padding: const EdgeInsets.all(32),
               child: Column(
                 children: [
@@ -131,6 +153,7 @@ class _MyQrViewState extends State<MyQrView> {
                   ],
                 ],
               ),
+            ),
             ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
 
             const SizedBox(height: 40),
@@ -157,9 +180,7 @@ class _MyQrViewState extends State<MyQrView> {
                 Expanded(
                   child: KasbyButton(
                     text: 'share_qr'.tr,
-                    onPressed: () {
-                      // Logic for sharing would go here
-                    },
+                    onPressed: _shareQr,
                     isSecondary: true,
                   ),
                 ),
@@ -167,9 +188,7 @@ class _MyQrViewState extends State<MyQrView> {
                 Expanded(
                   child: KasbyButton(
                     text: 'save_qr'.tr,
-                    onPressed: () {
-                      // Logic for saving to gallery would go here
-                    },
+                    onPressed: _saveQr,
                   ),
                 ),
               ],
@@ -178,5 +197,105 @@ class _MyQrViewState extends State<MyQrView> {
         ),
       ),
     );
+  }
+
+  Future<File?> _captureQrImage() async {
+    try {
+      final boundary = _qrKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return null;
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/kasby_qr_${DateTime.now().millisecondsSinceEpoch}.png');
+      await file.writeAsBytes(byteData.buffer.asUint8List());
+      return file;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> _shareQr() async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      final file = await _captureQrImage();
+      if (file == null) {
+        SafeGetx.debugTrace(
+          className: 'MyQrView',
+          method: '_shareQr',
+          feature: 'QrPayment',
+          status: 'WARN',
+          durationMs: stopwatch.elapsedMilliseconds,
+          message: 'QR capture failed',
+        );
+        AppSnack.error('error'.tr, 'qr_capture_error'.tr);
+        return;
+      }
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile(file.path)],
+        text: 'qr_share_text'.tr,
+      ));
+      SafeGetx.debugTrace(
+        className: 'MyQrView',
+        method: '_shareQr',
+        feature: 'QrPayment',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'MyQrView',
+        method: '_shareQr',
+        feature: 'QrPayment',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
+    }
+  }
+
+  Future<void> _saveQr() async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      final file = await _captureQrImage();
+      if (file == null) {
+        SafeGetx.debugTrace(
+          className: 'MyQrView',
+          method: '_saveQr',
+          feature: 'QrPayment',
+          status: 'WARN',
+          durationMs: stopwatch.elapsedMilliseconds,
+          message: 'QR capture failed',
+        );
+        AppSnack.error('error'.tr, 'qr_capture_error'.tr);
+        return;
+      }
+
+      final dir = await getApplicationDocumentsDirectory();
+      final savedFile = await file.copy('${dir.path}/kasby_qr_${DateTime.now().millisecondsSinceEpoch}.png');
+      if (savedFile.existsSync()) {
+        SafeGetx.debugTrace(
+          className: 'MyQrView',
+          method: '_saveQr',
+          feature: 'QrPayment',
+          status: 'SUCCESS',
+          durationMs: stopwatch.elapsedMilliseconds,
+        );
+        AppSnack.success('success'.tr, 'qr_saved'.tr);
+      }
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'MyQrView',
+        method: '_saveQr',
+        feature: 'QrPayment',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
+    }
   }
 }

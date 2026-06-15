@@ -1,9 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
-class LegalView extends StatelessWidget {
+class LegalView extends StatefulWidget {
   const LegalView({super.key});
+
+  @override
+  State<LegalView> createState() => _LegalViewState();
+}
+
+class _LegalViewState extends State<LegalView> {
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'LegalView',
+      method: 'initState',
+      feature: 'Profile',
+      status: 'INFO',
+      message: 'Legal content ready',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

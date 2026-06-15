@@ -1,3 +1,5 @@
+import 'package:kasby/core/utils/safe_getx.dart';
+
 class CurrencyModel {
   final String id;
   final String name;
@@ -24,7 +26,8 @@ class CurrencyModel {
   });
 
   factory CurrencyModel.fromJson(Map<String, dynamic> json) {
-    return CurrencyModel(
+    try {
+      return CurrencyModel(
       id: json['id'] as String,
       name: json['name'] as String,
       code: json['code'] as String,
@@ -37,7 +40,19 @@ class CurrencyModel {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
-    );
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'CurrencyModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'code': json['code']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

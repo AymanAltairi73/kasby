@@ -1,3 +1,5 @@
+import 'package:kasby/core/utils/safe_getx.dart';
+
 class LoanModel {
   final String id;
   final String userId;
@@ -9,7 +11,7 @@ class LoanModel {
   final double paidAmount;
   final String status; // pending, approved, active, partial_paid, paid, overdue, defaulted, rejected
   final DateTime? loanDate;
-  final DateTime repaymentDate;
+  final DateTime? repaymentDate;
   final String? approvedBy;
   final DateTime? approvedAt;
   final DateTime? paidAt;
@@ -26,7 +28,7 @@ class LoanModel {
     this.paidAmount = 0.0,
     this.status = 'pending',
     this.loanDate,
-    required this.repaymentDate,
+    this.repaymentDate,
     this.approvedBy,
     this.approvedAt,
     this.paidAt,
@@ -37,6 +39,13 @@ class LoanModel {
   /// Remaining amount to be paid.
   double get calculatedRemaining => (totalDue ?? amount) - paidAmount;
 
+  /// Best available remaining balance (handles NULL DB column).
+  double get effectiveRemaining {
+    final total = totalDue ?? amount;
+    if (remainingAmount > 0) return remainingAmount;
+    return (total - paidAmount).clamp(0.0, total);
+  }
+
   /// Payment progress as a fraction (0.0 to 1.0).
   double get paymentProgress {
     final total = totalDue ?? amount;
@@ -45,22 +54,22 @@ class LoanModel {
   }
 
   factory LoanModel.fromJson(Map<String, dynamic> json) {
-    return LoanModel(
+    try {
+      return LoanModel(
       id: json['id'] as String? ?? '',
       userId: json['user_id'] as String? ?? '',
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       interestRate: (json['interest_rate'] as num?)?.toDouble() ?? 0.0,
       totalDue: (json['total_due'] as num?)?.toDouble(),
-      remainingAmount: (json['remaining_amount'] as num?)?.toDouble() ?? 
-                       ((json['total_due'] as num?)?.toDouble() ?? (json['amount'] as num?)?.toDouble() ?? 0.0),
+      remainingAmount: _parseRemainingAmount(json),
       paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'pending',
       loanDate: json['loan_date'] != null
           ? DateTime.tryParse(json['loan_date'].toString())
           : null,
-      repaymentDate: json['repayment_date'] != null 
-          ? DateTime.tryParse(json['repayment_date'].toString()) ?? DateTime.now()
-          : DateTime.now(),
+      repaymentDate: json['repayment_date'] != null
+          ? DateTime.tryParse(json['repayment_date'].toString())
+          : null,
       approvedBy: json['approved_by'] as String?,
       approvedAt: json['approved_at'] != null
           ? DateTime.tryParse(json['approved_at'].toString())
@@ -70,7 +79,29 @@ class LoanModel {
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
       rejectionReason: json['rejection_reason'] as String?,
-    );
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'LoanModel',
+        method: 'fromJson',
+        feature: 'Core',
+        status: 'ERROR',
+        params: {'id': json['id']?.toString()},
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
+  }
+
+  static double _parseRemainingAmount(Map<String, dynamic> json) {
+    final stored = (json['remaining_amount'] as num?)?.toDouble();
+    if (stored != null && stored > 0) return stored;
+    final total = (json['total_due'] as num?)?.toDouble() ??
+        (json['amount'] as num?)?.toDouble() ??
+        0.0;
+    final paid = (json['paid_amount'] as num?)?.toDouble() ?? 0.0;
+    return (total - paid).clamp(0.0, total);
   }
 
   Map<String, dynamic> toJson() {
@@ -80,7 +111,7 @@ class LoanModel {
       'interest_rate': interestRate,
       'paid_amount': paidAmount,
       'status': status,
-      'repayment_date': repaymentDate.toIso8601String(),
+      'repayment_date': repaymentDate?.toIso8601String(),
       'rejection_reason': rejectionReason,
     };
   }

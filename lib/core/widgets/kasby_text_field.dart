@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -17,6 +18,7 @@ class KasbyTextField extends StatefulWidget {
   final bool autocorrect;
   final TextCapitalization textCapitalization;
   final VoidCallback? onTap;
+  final List<TextInputFormatter>? inputFormatters;
 
   const KasbyTextField({
     super.key,
@@ -34,6 +36,7 @@ class KasbyTextField extends StatefulWidget {
     this.autocorrect = true,
     this.textCapitalization = TextCapitalization.none,
     this.onTap,
+    this.inputFormatters,
   });
 
   @override
@@ -47,6 +50,14 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
   void initState() {
     super.initState();
     _obscureText = widget.isPassword;
+  }
+
+  @override
+  void didUpdateWidget(covariant KasbyTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isPassword != widget.isPassword) {
+      _obscureText = widget.isPassword;
+    }
   }
 
   @override
@@ -72,6 +83,7 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
               controller: widget.controller,
               obscureText: _obscureText,
               keyboardType: widget.keyboardType,
+              inputFormatters: widget.inputFormatters,
               onChanged: widget.onChanged,
               onTap: widget.onTap,
               validator: widget.validator,

@@ -74,7 +74,7 @@ class DeepLinkService extends GetxService {
         await AuthSecurityService.handleAuthCallback(uri);
         AppSnack.success('success'.tr, 'auth_link_success'.tr);
       } on AuthException catch (e) {
-        AppSnack.error('error'.tr, AuthSecurityService.translateAuthError(e.message));
+        AppSnack.error('error'.tr, AuthSecurityService.translateAuthError(e));
       } catch (e, stack) {
         SafeGetx.debugTrace(
           className: 'DeepLinkService',

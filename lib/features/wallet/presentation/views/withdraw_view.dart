@@ -6,13 +6,18 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/core/models/agent_model.dart';
+import 'package:kasby/core/services/account_restriction_service.dart';
+import 'package:kasby/core/services/agent_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
 import 'package:kasby/core/widgets/transaction_receipt.dart';
 import 'package:kasby/core/services/confetti_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
+import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class WithdrawView extends StatefulWidget {
   const WithdrawView({super.key});
@@ -46,27 +51,28 @@ class _WithdrawViewState extends State<WithdrawView> {
   Future<void> _fetchAgents() async {
     isLoadingAgents.value = true;
     try {
-      debugPrint('[DEBUG] Withdraw: Fetching agents (status: Active, available: true)...');
-      final response = await SupabaseService.client
-          .from('agents')
-          .select('*, profiles(*)')
-          .eq('status', 'active')
-          .eq('is_available_now', true)
-          .limit(10);
-
-      debugPrint('[DEBUG] Withdraw agents found: ${response.length}');
-      
-      agents.value = (response as List)
-          .map((json) => AgentModel.fromJson(json))
-          .toList();
-    } catch (e) {
-      debugPrint('[DEBUG] Withdraw Error: $e');
+      agents.value = await AgentService.fetchActiveAgents(limit: 20);
+      SafeGetx.debugTrace(
+        className: 'WithdrawView',
+        method: '_fetchAgents',
+        feature: 'Wallet',
+        status: 'SUCCESS',
+        params: {'count': agents.length},
+      );
+    } catch (_) {
+      // Logged by AgentService caller if needed.
     } finally {
       isLoadingAgents.value = false;
     }
   }
 
   Future<void> _handleWithdraw() async {
+    if (!AccountRestrictionService.to.checkWriteAccess()) return;
+    if (HomeController.to.dashboard.value?.isFrozen == true) {
+      Get.snackbar('error'.tr, 'wallet_frozen'.tr);
+      return;
+    }
+
     final amountText = _amountController.text.trim();
     
     // Check KYC Status
@@ -79,7 +85,7 @@ class _WithdrawViewState extends State<WithdrawView> {
         mainButton: TextButton(
           onPressed: () {
             Get.back(); // close snackbar
-            Get.toNamed('/kyc');
+            Get.toNamed(Routes.kyc);
           },
           child: Text('verify_now'.tr, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         ),
@@ -278,20 +284,31 @@ class _WithdrawViewState extends State<WithdrawView> {
 
     try {
       final selectedAgent = agents[selectedAgentIndex.value];
-      final result = await SupabaseService.client.rpc(
-        'create_withdrawal',
+      final result = await SafeGetx.traceAsync(
+        className: 'WithdrawView',
+        method: '_executeWithdrawal',
+        feature: 'Wallet',
         params: {
-          'p_amount': amount,
-          'p_agent_id': selectedAgent.id,
-          'p_idempotency_key': const Uuid().v4(),
-          'p_currency': 'USD',
+          'table': 'transactions',
+          'operation': 'RPC',
+          'rpc': 'create_withdrawal',
+          'amount': amount,
+          'agentId': selectedAgent.id,
         },
+        operation: () => SupabaseService.client.rpc(
+          'create_withdrawal',
+          params: {
+            'p_amount': amount,
+            'p_agent_id': selectedAgent.id,
+            'p_idempotency_key': const Uuid().v4(),
+            'p_currency': 'USD',
+          },
+        ),
       );
 
       final response = result as Map<String, dynamic>;
 
       if (response['success'] == true) {
-        // Celebrate success
         ConfettiService.to.celebrate();
 
         _showSuccessOverlay(
@@ -300,6 +317,13 @@ class _WithdrawViewState extends State<WithdrawView> {
           response['transaction_id']?.toString() ?? '',
         );
       } else {
+        SafeGetx.debugTrace(
+          className: 'WithdrawView',
+          method: '_executeWithdrawal',
+          feature: 'Wallet',
+          status: 'WARNING',
+          message: response['error']?.toString(),
+        );
         Get.snackbar(
           'error'.tr,
           response['error']?.toString() ?? 'withdraw_error'.tr,
@@ -307,8 +331,7 @@ class _WithdrawViewState extends State<WithdrawView> {
           colorText: Colors.white,
         );
       }
-    } catch (e) {
-      debugPrint('Withdrawal error: $e');
+    } catch (_) {
       Get.snackbar(
         'error'.tr,
         'withdraw_error'.tr,
@@ -342,7 +365,8 @@ class _WithdrawViewState extends State<WithdrawView> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,6 +505,7 @@ class _WithdrawViewState extends State<WithdrawView> {
                     onPressed: _handleWithdraw,
                   ),
           ],
+        ),
         ),
       ),
     );

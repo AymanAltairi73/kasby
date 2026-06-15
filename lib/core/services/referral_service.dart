@@ -1,6 +1,16 @@
-import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
+
+/// Result of a referral code lookup against the database.
+class ReferralCodeLookup {
+  final String referrerId;
+  final String canonicalCode;
+
+  const ReferralCodeLookup({
+    required this.referrerId,
+    required this.canonicalCode,
+  });
+}
 
 /// Service responsible for all referral-related operations:
 /// - Validating referral codes during registration
@@ -9,46 +19,95 @@ import 'package:kasby/core/services/supabase_service.dart';
 class ReferralService {
   ReferralService._();
 
-  static const String _logTag = '[REFERRAL]';
+  static final RegExp _codeFormat = RegExp(r'^K[A-Z0-9]{4,}$');
 
-  static void _log(String message, {bool isError = false, dynamic error}) {
-    debugPrint('$_logTag ${isError ? "❌" : "ℹ️"} $message');
-    if (error != null) debugPrint('$_logTag 🔴 Details: $error');
+  static void _log(
+    String message, {
+    required String method,
+    bool isError = false,
+    dynamic error,
+    Map<String, Object?>? params,
+  }) {
+    SafeGetx.debugTrace(
+      className: 'ReferralService',
+      method: method,
+      feature: 'Core',
+      status: isError ? 'ERROR' : 'INFO',
+      message: message,
+      params: params,
+      error: error,
+    );
+  }
+
+  /// Normalize referral code input (uppercase, strip hyphens for comparison).
+  static String normalizeCode(String code) {
+    return code.trim().toUpperCase().replaceAll('-', '');
+  }
+
+  /// Display format: K12345 (no hyphen), e.g. kXXXXX not k-XXXXX.
+  static String formatDisplayCode(String? code) {
+    if (code == null || code.trim().isEmpty) return '---';
+    return normalizeCode(code);
+  }
+
+  /// Validate K0001-style format: K + at least 4 alphanumeric chars.
+  static bool isValidFormat(String code) {
+    return _codeFormat.hasMatch(normalizeCode(code));
   }
 
   /// Validate a referral code before registration.
-  /// Returns the referrer's user ID if valid, null otherwise.
-  /// Also prevents self-referral (though at registration time the user doesn't exist yet,
-  /// this is mainly used as a safeguard).
-  static Future<String?> validateReferralCode(String code) async {
-    if (code.trim().isEmpty) return null;
+  /// Returns lookup details if valid, null otherwise.
+  static Future<ReferralCodeLookup?> validateReferralCode(String code) async {
+    final normalized = normalizeCode(code);
+    if (normalized.isEmpty || !isValidFormat(normalized)) return null;
 
     try {
-      final response = await SupabaseService.client
-          .from('profiles')
-          .select('id')
-          .eq('referral_code', code.trim().toUpperCase())
-          .maybeSingle();
+      final result = await SupabaseService.client.rpc(
+        'validate_referral_code',
+        params: {'p_code': code.trim()},
+      );
 
-      if (response == null) {
-        _log('Referral code not found: $code');
+      final payload = _coerceJsonMap(result);
+      if (payload == null || payload['valid'] != true) {
+        _log(
+          'Referral code not found',
+          method: 'validateReferralCode',
+          params: {
+            'codeLength': normalized.length,
+            'reason': payload?['reason'] ?? 'unknown',
+          },
+        );
         return null;
       }
 
-      final referrerId = response['id'] as String;
+      final referrerId = payload['referrer_id'] as String?;
+      final canonicalCode = payload['referral_code'] as String?;
+      if (referrerId == null || canonicalCode == null) return null;
 
-      // Prevent self-referral (safeguard for edge cases)
-      if (SupabaseService.userId != null && referrerId == SupabaseService.userId) {
-        _log('Self-referral attempt blocked');
-        return null;
-      }
-
-      _log('Referral code validated successfully: $code -> $referrerId');
-      return referrerId;
+      _log(
+        'Referral code validated',
+        method: 'validateReferralCode',
+        params: {'referrerId': referrerId},
+      );
+      return ReferralCodeLookup(
+        referrerId: referrerId,
+        canonicalCode: canonicalCode,
+      );
     } catch (e) {
-      _log('Error validating referral code', isError: true, error: e);
+      _log(
+        'Error validating referral code',
+        method: 'validateReferralCode',
+        isError: true,
+        error: e,
+      );
       return null;
     }
+  }
+
+  static Map<String, dynamic>? _coerceJsonMap(dynamic result) {
+    if (result is Map<String, dynamic>) return result;
+    if (result is Map) return result.cast<String, dynamic>();
+    return null;
   }
 
   /// Link a new user to a referrer after successful registration.
@@ -60,12 +119,18 @@ class ReferralService {
     try {
       await SupabaseService.client
           .from('profiles')
-          .update({'referred_by_id': referrerId})
+          .update({
+            'referred_by_id': referrerId,
+            'referred_by': referrerId,
+          })
           .eq('id', newUserId);
 
-      _log('User $newUserId linked to referrer $referrerId');
+      _log(
+        'User linked to referrer',
+        method: 'linkReferral',
+        params: {'newUserId': newUserId, 'referrerId': referrerId},
+      );
 
-      // Log the referral activity
       await SupabaseService.logActivity(
         action: 'REFERRAL_LINKED',
         details: 'User $newUserId was referred by $referrerId',
@@ -74,20 +139,17 @@ class ReferralService {
 
       return true;
     } catch (e) {
-      _log('Error linking referral', isError: true, error: e);
+      _log(
+        'Error linking referral',
+        method: 'linkReferral',
+        isError: true,
+        error: e,
+      );
       return false;
     }
   }
 
   /// Process referral commission when an investment is made.
-  /// This is called after a successful investment by a referred user.
-  /// 
-  /// The function:
-  /// 1. Checks if the investor has a referrer
-  /// 2. Calculates 2% commission
-  /// 3. Records it in referral_earnings (with investment_id for idempotency)
-  /// 4. Adds the commission to the referrer's wallet
-  /// 5. Sends a notification to the referrer
   static Future<void> processReferralCommission({
     required double investmentAmount,
     String? investmentId,
@@ -95,7 +157,6 @@ class ReferralService {
     if (!SupabaseService.isLoggedIn) return;
 
     try {
-      // Call the RPC function that handles everything atomically
       final result = await SupabaseService.client.rpc(
         'process_referral_commission',
         params: {
@@ -109,15 +170,25 @@ class ReferralService {
 
       if (response != null && response['success'] == true) {
         final commission = response['commission'] as num?;
-        final referrerName = response['referrer_name'] as String?;
-        _log('Referral commission processed: \$${commission?.toStringAsFixed(2)} to $referrerName');
+        _log(
+          'Referral commission processed',
+          method: 'processReferralCommission',
+          params: {'commission': commission?.toStringAsFixed(2)},
+        );
       } else {
-        // No referrer or already processed - this is normal, not an error
-        _log('No referral commission to process: ${response?['message'] ?? 'no referrer'}');
+        _log(
+          'No referral commission to process',
+          method: 'processReferralCommission',
+          params: {'message': response?['message'] ?? 'no referrer'},
+        );
       }
     } catch (e) {
-      // Don't throw - referral commission failure should not block the investment
-      _log('Error processing referral commission', isError: true, error: e);
+      _log(
+        'Error processing referral commission',
+        method: 'processReferralCommission',
+        isError: true,
+        error: e,
+      );
     }
   }
 
@@ -135,7 +206,12 @@ class ReferralService {
 
       return (response as List).cast<Map<String, dynamic>>();
     } catch (e) {
-      _log('Error fetching referral earnings', isError: true, error: e);
+      _log(
+        'Error fetching referral earnings',
+        method: 'fetchMyReferralEarnings',
+        isError: true,
+        error: e,
+      );
       return [];
     }
   }
@@ -156,20 +232,13 @@ class ReferralService {
       }
       return total;
     } catch (e) {
-      _log('Error fetching total referral earnings', isError: true, error: e);
+      _log(
+        'Error fetching total referral earnings',
+        method: 'fetchTotalReferralEarnings',
+        isError: true,
+        error: e,
+      );
       return 0.0;
     }
-  }
-
-  /// Generate a unique 5-character referral code (k-XXXXX).
-  /// Uses uppercase alphanumeric characters.
-  static String generateReferralCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluded similar looking chars O, 0, I, 1
-    final random = math.Random.secure();
-    String code = '';
-    for (int i = 0; i < 5; i++) {
-      code += chars[random.nextInt(chars.length)];
-    }
-    return 'K-$code';
   }
 }

@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class DailyCheckInView extends StatefulWidget {
   const DailyCheckInView({super.key});
@@ -30,18 +31,31 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
   @override
   void initState() {
     super.initState();
+    SafeGetx.debugTrace(
+      className: 'DailyCheckInView',
+      method: 'initState',
+      feature: 'Home',
+      status: 'INFO',
+    );
     _fetchCheckInStatus();
     _fetchCheckInHistory();
   }
 
   @override
   void dispose() {
+    SafeGetx.debugTrace(
+      className: 'DailyCheckInView',
+      method: 'dispose',
+      feature: 'Home',
+      status: 'INFO',
+    );
     _countdownTimer?.cancel();
     super.dispose();
   }
 
   /// Fetch check-in status from the SERVER (not local time).
   Future<void> _fetchCheckInStatus() async {
+    final stopwatch = Stopwatch()..start();
     try {
       final result = await SupabaseService.client.rpc('get_check_in_status');
       final response = result as Map<String, dynamic>;
@@ -67,12 +81,29 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
           FCMService.to.scheduleCheckInReminders(windowClose);
         }
       }
-    } catch (e) {
-      debugPrint('Error fetching check-in status: $e');
+      SafeGetx.debugTrace(
+        className: 'DailyCheckInView',
+        method: '_fetchCheckInStatus',
+        feature: 'Home',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'canCheckIn': _canCheckIn, 'streak': _currentStreak},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'DailyCheckInView',
+        method: '_fetchCheckInStatus',
+        feature: 'Home',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
   Future<void> _fetchCheckInHistory() async {
+    final stopwatch = Stopwatch()..start();
     try {
       final userId = SupabaseService.userId;
       if (userId == null) return;
@@ -89,8 +120,24 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
       setState(() {
         _history = list;
       });
-    } catch (e) {
-      debugPrint('Error fetching check-in history: $e');
+      SafeGetx.debugTrace(
+        className: 'DailyCheckInView',
+        method: '_fetchCheckInHistory',
+        feature: 'Home',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+        params: {'count': _history.length},
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'DailyCheckInView',
+        method: '_fetchCheckInHistory',
+        feature: 'Home',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       if (mounted) setState(() => _isLoadingHistory = false);
     }
@@ -122,6 +169,7 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
   Future<void> _handleCheckIn() async {
     if (!_canCheckIn || _isCheckingIn) return;
     setState(() => _isCheckingIn = true);
+    final stopwatch = Stopwatch()..start();
 
     try {
       final result = await SupabaseService.client.rpc('daily_check_in');
@@ -160,10 +208,25 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
           borderRadius: 15,
         );
 
-        // Refresh history
         _fetchCheckInHistory();
+        SafeGetx.debugTrace(
+          className: 'DailyCheckInView',
+          method: '_handleCheckIn',
+          feature: 'Home',
+          status: 'SUCCESS',
+          durationMs: stopwatch.elapsedMilliseconds,
+          params: {'streak': _currentStreak, 'points': response['points']},
+        );
       } else {
         final error = response['error'] ?? '';
+        SafeGetx.debugTrace(
+          className: 'DailyCheckInView',
+          method: '_handleCheckIn',
+          feature: 'Home',
+          status: 'WARN',
+          durationMs: stopwatch.elapsedMilliseconds,
+          message: error.toString(),
+        );
         if (error == 'already_checked_in') {
           // Update from server response
           final nextStr = response['next_check_in_at'] as String?;
@@ -189,8 +252,16 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
           );
         }
       }
-    } catch (e) {
-      debugPrint('Check-in error: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'DailyCheckInView',
+        method: '_handleCheckIn',
+        feature: 'Home',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       Get.snackbar(
         'error'.tr,
         'checkin_error'.tr,

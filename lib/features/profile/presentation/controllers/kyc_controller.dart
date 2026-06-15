@@ -5,6 +5,8 @@ import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class KycController extends GetxController {
   final ImagePicker _picker = ImagePicker();
@@ -28,6 +30,31 @@ class KycController extends GetxController {
 
   var isLoading = false.obs;
 
+  @override
+  void onInit() {
+    SafeGetx.debugTrace(
+      className: 'KycController',
+      method: 'onInit',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    super.onInit();
+  }
+
+  @override
+  void onClose() {
+    SafeGetx.debugTrace(
+      className: 'KycController',
+      method: 'onClose',
+      feature: 'Profile',
+      status: 'INFO',
+    );
+    nameController.dispose();
+    idNumberController.dispose();
+    dobController.dispose();
+    super.onClose();
+  }
+
   Future<void> pickImage(String type) async {
     final XFile? image = await _picker.pickImage(
       source: type == 'selfie' ? ImageSource.camera : ImageSource.gallery,
@@ -42,6 +69,13 @@ class KycController extends GetxController {
       } else if (type == 'selfie') {
         selfiePath.value = image.path;
       }
+      SafeGetx.debugTrace(
+        className: 'KycController',
+        method: 'pickImage',
+        feature: 'Profile',
+        status: 'SUCCESS',
+        params: {'type': type},
+      );
     }
   }
 
@@ -112,11 +146,18 @@ class KycController extends GetxController {
 
   Future<void> submitKyc() async {
     if (!SupabaseService.isLoggedIn) {
-      Get.snackbar('error'.tr, 'يجب تسجيل الدخول أولاً');
+      Get.snackbar('error'.tr, 'login_required'.tr);
       return;
     }
 
     isLoading.value = true;
+    final stopwatch = Stopwatch()..start();
+    SafeGetx.debugTrace(
+      className: 'KycController',
+      method: 'submitKyc',
+      feature: 'Profile',
+      status: 'INFO',
+    );
 
     try {
       final userId = SupabaseService.userId!;
@@ -178,7 +219,14 @@ class KycController extends GetxController {
 
       isLoading.value = false;
 
-      Get.offNamedUntil('/home', (route) => false);
+      SafeGetx.debugTrace(
+        className: 'KycController',
+        method: 'submitKyc',
+        feature: 'Profile',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+      Get.offAllNamed(Routes.home);
       Get.snackbar(
         'kyc_success_title'.tr,
         'kyc_success_desc'.tr,
@@ -186,12 +234,20 @@ class KycController extends GetxController {
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
       );
-    } catch (e) {
+    } catch (e, stack) {
       isLoading.value = false;
-      debugPrint('KYC submit error: $e');
+      SafeGetx.debugTrace(
+        className: 'KycController',
+        method: 'submitKyc',
+        feature: 'Profile',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
       Get.snackbar(
         'error'.tr,
-        'حدث خطأ أثناء رفع المستندات. حاول مرة أخرى.',
+        'kyc_upload_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withValues(alpha: 0.2),
       );
@@ -221,12 +277,5 @@ class KycController extends GetxController {
         .getPublicUrl(storagePath);
 
     return publicUrl;
-  }
-
-  @override
-  void onClose() {
-    nameController.dispose();
-    idNumberController.dispose();
-    super.onClose();
   }
 }

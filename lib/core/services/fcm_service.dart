@@ -1,17 +1,29 @@
+import 'dart:convert';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/services/notification_navigation_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kasby/core/utils/locale_helper.dart';
+import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import '../../firebase_options.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint('[FCM] Handling background message: ${message.messageId}');
+  SafeGetx.debugTrace(
+    className: 'FCMService',
+    method: 'firebaseMessagingBackgroundHandler',
+    feature: 'Core',
+    status: 'INFO',
+    params: {'messageId': message.messageId ?? 'unknown'},
+  );
 }
 
 class FCMService extends GetxService {
@@ -25,6 +37,8 @@ class FCMService extends GetxService {
   final RxBool isNotificationsEnabled = true.obs;
 
   Future<FCMService> init() async {
+    final stopwatch = Stopwatch()..start();
+    SafeGetx.debugTrace(className: 'FCMService', method: 'init', feature: 'Core', status: 'INFO');
     await _setupLocalNotifications();
     // Only setup FCM if enabled
     final prefs = await SharedPreferences.getInstance();
@@ -32,8 +46,35 @@ class FCMService extends GetxService {
     
     if (isNotificationsEnabled.value) {
       await _setupFCM();
+      await _handleColdStartMessage();
     }
+    SafeGetx.debugTrace(
+      className: 'FCMService',
+      method: 'init',
+      feature: 'Core',
+      status: 'SUCCESS',
+      params: {'notificationsEnabled': isNotificationsEnabled.value},
+      durationMs: stopwatch.elapsedMilliseconds,
+    );
     return this;
+  }
+
+  Future<void> _handleColdStartMessage() async {
+    final initialMessage = await _fcm.getInitialMessage();
+    if (initialMessage != null) {
+      SafeGetx.debugTrace(
+        className: 'FCMService',
+        method: '_handleColdStartMessage',
+        feature: 'Core',
+        status: 'INFO',
+        params: {'messageId': initialMessage.messageId ?? 'unknown'},
+      );
+      _handleOtpFromMessage(initialMessage);
+      await NotificationNavigationService.navigateFromPayload(
+        initialMessage.data,
+        fromUserTap: true,
+      );
+    }
   }
 
   Future<void> _setupLocalNotifications() async {
@@ -48,7 +89,8 @@ class FCMService extends GetxService {
     await _localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        debugPrint('[FCM] Notification tapped: ${details.payload}');
+        SafeGetx.debugTrace(className: 'FCMService', method: '_setupLocalNotifications', feature: 'Core', status: 'INFO', message: 'Local notification tapped');
+        NotificationNavigationService.navigateFromLocalPayload(details.payload);
       },
     );
 
@@ -76,13 +118,13 @@ class FCMService extends GetxService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint('[FCM] User granted permission');
+      SafeGetx.debugTrace(className: 'FCMService', method: '_setupFCM', feature: 'Core', status: 'SUCCESS', message: 'User granted permission');
       
       // Get token
       String? token = await _fcm.getToken();
       if (token != null) {
         fcmToken.value = token;
-        debugPrint('[FCM] Token: $token');
+        SafeGetx.debugTrace(className: 'FCMService', method: '_setupFCM', feature: 'Core', status: 'SUCCESS', params: {'tokenPresent': true});
         await syncTokenToServer(token);
       }
 
@@ -92,23 +134,30 @@ class FCMService extends GetxService {
         syncTokenToServer(newToken);
       });
 
-      // Handle background messages
-      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-      // Handle foreground messages
+      // Handle foreground messages (display only — navigate on tap)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('[FCM] Received message: ${message.notification?.title}');
+        SafeGetx.debugTrace(
+          className: 'FCMService',
+          method: 'onMessage',
+          feature: 'Core',
+          status: 'INFO',
+          params: {'title': message.notification?.title ?? 'none'},
+        );
+        _handleOtpFromMessage(message);
         NotificationService().playNotificationSound();
         _showLocalNotification(message);
-        _handleIncomingMessage(message);
       });
 
-      // Handle message when app is opened from notification
+      // Handle message when app is opened from notification (background tap)
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        _handleIncomingMessage(message);
+        _handleOtpFromMessage(message);
+        NotificationNavigationService.navigateFromPayload(
+          message.data,
+          fromUserTap: true,
+        );
       });
     } else {
-      debugPrint('[FCM] User declined or has not accepted permission');
+      SafeGetx.debugTrace(className: 'FCMService', method: '_setupFCM', feature: 'Core', status: 'WARN', message: 'User declined notification permission');
     }
   }
 
@@ -118,10 +167,10 @@ class FCMService extends GetxService {
     await prefs.setBool('notifications_enabled', enabled);
 
     if (enabled) {
-      debugPrint('[FCM] Enabling notifications...');
+      SafeGetx.debugTrace(className: 'FCMService', method: 'setNotificationsEnabled', feature: 'Core', status: 'INFO', params: {'enabled': enabled});
       await _setupFCM();
     } else {
-      debugPrint('[FCM] Disabling notifications...');
+      SafeGetx.debugTrace(className: 'FCMService', method: 'setNotificationsEnabled', feature: 'Core', status: 'INFO', message: 'Disabling notifications');
       await _fcm.deleteToken();
       fcmToken.value = '';
       // Also clear on server
@@ -135,18 +184,17 @@ class FCMService extends GetxService {
         await SupabaseService.client.from('profiles').update({
           'fcm_token': null,
         }).eq('id', SupabaseService.userId!);
-        debugPrint('[FCM] Token cleared from server');
+        SafeGetx.debugTrace(className: 'FCMService', method: '_clearTokenOnServer', feature: 'Core', status: 'SUCCESS');
       }
-    } catch (e) {
-      debugPrint('[FCM] Error clearing token from server: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'FCMService', method: '_clearTokenOnServer', feature: 'Core', status: 'ERROR', error: e, stackTrace: stack);
     }
   }
 
   void _showLocalNotification(RemoteMessage message) {
     RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
 
-    if (notification != null && android != null && !kIsWeb) {
+    if (notification != null && !kIsWeb) {
       _localNotifications.show(
         notification.hashCode,
         notification.title,
@@ -160,36 +208,20 @@ class FCMService extends GetxService {
             priority: Priority.high,
             icon: '@mipmap/ic_launcher',
           ),
+          iOS: DarwinNotificationDetails(),
         ),
-        payload: message.data.toString(),
+        payload: jsonEncode(message.data),
       );
     }
   }
 
-  void _handleIncomingMessage(RemoteMessage message) {
+  void _handleOtpFromMessage(RemoteMessage message) {
     if (message.data['type'] == 'otp_verification') {
       final otp = message.data['otp_code'];
       if (otp != null) {
         lastOtpCode.value = otp;
-        debugPrint('[FCM] OTP received: $otp');
+        SafeGetx.debugTrace(className: 'FCMService', method: '_handleOtpFromMessage', feature: 'Core', status: 'INFO', message: 'OTP received (redacted)');
       }
-    }
-    
-    // Deep Linking: If route is provided
-    final route = message.data['route'] as String?;
-    if (route != null) {
-      final targetUserId = message.data['target_user_id'] as String?;
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (Get.currentRoute == route) return;
-        if (route == '/social-chat' && targetUserId != null) {
-          Get.toNamed(
-            route,
-            arguments: {'friendId': targetUserId},
-          );
-        } else {
-          Get.toNamed(route);
-        }
-      });
     }
   }
 
@@ -204,10 +236,10 @@ class FCMService extends GetxService {
             'p_app_type': 'user',
           },
         );
-        debugPrint('[FCM] Token synced to server successfully via fn_register_device_token');
+        SafeGetx.debugTrace(className: 'FCMService', method: 'syncTokenToServer', feature: 'Core', status: 'SUCCESS');
       }
-    } catch (e) {
-      debugPrint('[FCM] Error syncing token to server: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'FCMService', method: 'syncTokenToServer', feature: 'Core', status: 'ERROR', error: e, stackTrace: stack);
     }
   }
 
@@ -255,8 +287,8 @@ class FCMService extends GetxService {
     if (fiveHBefore.isAfter(now)) {
       await _scheduleLocal(
         id: _checkIn5hId,
-        title: 'لا تنسَ تسجيل حضورك! 🎁',
-        body: 'لا تنس تسجيل حضورك اليومي للحصول على نقاط مجانية 🎁',
+        title: await LocaleHelper.translate('checkin_reminder_5h_title'),
+        body: await LocaleHelper.translate('checkin_reminder_5h'),
         scheduledDate: fiveHBefore,
       );
     }
@@ -266,8 +298,8 @@ class FCMService extends GetxService {
     if (threeHBefore.isAfter(now)) {
       await _scheduleLocal(
         id: _checkIn3hId,
-        title: 'تبقى 3 ساعات فقط! 💰',
-        body: 'تبقى 3 ساعات فقط! سجل حضورك الآن واحصل على مكافأتك 💰',
+        title: await LocaleHelper.translate('checkin_reminder_3h_title'),
+        body: await LocaleHelper.translate('checkin_reminder_3h'),
         scheduledDate: threeHBefore,
       );
     }
@@ -277,8 +309,8 @@ class FCMService extends GetxService {
     if (oneHBefore.isAfter(now)) {
       await _scheduleLocal(
         id: _checkIn1hId,
-        title: 'آخر فرصة اليوم! ⏳',
-        body: 'آخر فرصة اليوم! لا تفوت نقاطك المجانية ⏳',
+        title: await LocaleHelper.translate('checkin_reminder_1h_title'),
+        body: await LocaleHelper.translate('checkin_reminder_1h'),
         scheduledDate: oneHBefore,
       );
     }
@@ -318,6 +350,10 @@ class FCMService extends GetxService {
           ),
           iOS: DarwinNotificationDetails(),
         ),
+        payload: jsonEncode({
+          'type': 'check_in_reminder',
+          'route': Routes.dailyCheckIn,
+        }),
       );
     });
   }

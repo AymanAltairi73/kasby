@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -14,6 +15,7 @@ class InvestmentPlanCard extends StatefulWidget {
   final Color color;
   final List<String>? amounts;
   final double? rawProfitPercentage;
+  final String? duration;
 
   const InvestmentPlanCard({
     super.key,
@@ -25,6 +27,7 @@ class InvestmentPlanCard extends StatefulWidget {
     required this.color,
     this.amounts,
     this.rawProfitPercentage,
+    this.duration,
   });
 
   @override
@@ -44,18 +47,30 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => Get.toNamed(
-        Routes.investmentDetails,
-        arguments: {
-          'id': widget.id,
-          'title': widget.title.tr,
-          'profit': widget.profit,
-          'profit_percentage': widget.rawProfitPercentage,
-          'minAmount': widget.minAmount,
-          'color': widget.color,
-          'amounts': widget.amounts,
-        },
-      ),
+      onTap: () {
+        SafeGetx.debugTrace(
+          className: 'InvestmentPlanCard',
+          method: 'onTap',
+          feature: 'Investment',
+          status: 'INFO',
+          params: {
+            'planId': widget.id,
+            'title': widget.title,
+          },
+        );
+        Get.toNamed(
+          Routes.investmentDetails,
+          arguments: {
+            'id': widget.id,
+            'title': widget.title.tr,
+            'profit': widget.profit,
+            'profit_percentage': widget.rawProfitPercentage,
+            'minAmount': widget.minAmount,
+            'color': widget.color,
+            'amounts': widget.amounts,
+          },
+        );
+      },
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -161,7 +176,7 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                             children: [
                               _buildInfoItem(
                                 icon: Icons.timer_outlined,
-                                label: '30_months_2_5_years'.tr,
+                                label: widget.duration ?? '30_months_2_5_years'.tr,
                                 color: widget.color,
                               ),
                               const Spacer(),

@@ -105,45 +105,45 @@ class AuthController extends GetxController {
 
   void _setupReferralListener() {
     referralCodeController.addListener(() {
-      final code = referralCodeController.text.trim();
+      final code = ReferralService.normalizeCode(referralCodeController.text);
       if (code.isEmpty) {
         referralCodeValid.value = null;
+        _referralDebounceTimer?.cancel();
         return;
       }
 
-      // Debounce logic: clear after 500ms and check
       _debounceReferralCheck(code);
     });
   }
 
-  Worker? _referralWorker;
+  Timer? _referralDebounceTimer;
+
   void _debounceReferralCheck(String code) {
-    _referralWorker?.dispose();
-    _referralWorker = debounce(
-      RxString(code),
-      (String val) => checkReferralCode(val),
-      time: const Duration(milliseconds: 600),
-    );
+    _referralDebounceTimer?.cancel();
+    _referralDebounceTimer = Timer(const Duration(milliseconds: 600), () {
+      checkReferralCode(code);
+    });
   }
 
   Future<void> checkReferralCode(String code) async {
-    if (code.isEmpty) {
+    final normalized = ReferralService.normalizeCode(code);
+    if (normalized.isEmpty) {
       referralCodeValid.value = null;
+      return;
+    }
+
+    if (!ReferralService.isValidFormat(normalized)) {
+      referralCodeValid.value = false;
       return;
     }
 
     try {
       isCheckingReferral.value = true;
-      _log('Checking referral code: $code');
+      _log('Checking referral code: $normalized');
 
-      final response = await SupabaseService.client
-          .from('profiles')
-          .select('id')
-          .eq('referral_code', code)
-          .maybeSingle();
-
-      referralCodeValid.value = response != null;
-      _log('Referral code $code validity: ${referralCodeValid.value}');
+      final referrerId = await ReferralService.validateReferralCode(normalized);
+      referralCodeValid.value = referrerId != null;
+      _log('Referral code $normalized validity: ${referralCodeValid.value}');
     } catch (e) {
       _log('Error checking referral code', isError: true, error: e);
       referralCodeValid.value = false;
@@ -194,7 +194,7 @@ class AuthController extends GetxController {
   @override
   void onClose() {
     _authSubscription?.cancel();
-    _referralWorker?.dispose();
+    _referralDebounceTimer?.cancel();
     phoneController.dispose();
     passwordController.dispose();
     nameController.dispose();
@@ -302,8 +302,12 @@ class AuthController extends GetxController {
   Future<void> _loadPendingReferralCode() async {
     final code = await DeepLinkService.getPendingReferralCode();
     if (code != null && code.isNotEmpty) {
-      referralCodeController.text = code;
-      await checkReferralCode(code);
+      final normalized = ReferralService.normalizeCode(code);
+      referralCodeController.value = TextEditingValue(
+        text: normalized,
+        selection: TextSelection.collapsed(offset: normalized.length),
+      );
+      await checkReferralCode(normalized);
     }
   }
 
@@ -325,9 +329,14 @@ class AuthController extends GetxController {
 
   Future<void> resendVerificationEmail(String email, {String purpose = 'signup'}) async {
     _log('Resending verification ($purpose)');
-    final otpType =
-        purpose == 'email_change' ? OtpType.emailChange : OtpType.signup;
-    await AuthSecurityService.resendOtp(email: email, type: otpType);
+    if (purpose == 'signup') {
+      await AuthSecurityService.ensureSignupVerificationSent(email);
+      return;
+    }
+    await AuthSecurityService.resendOtp(
+      email: email,
+      type: OtpType.emailChange,
+    );
   }
 
   Future<bool> checkEmailVerificationStatus({
@@ -362,40 +371,46 @@ class AuthController extends GetxController {
   }) async {
     isLoading.value = true;
     try {
-      final otpType = purpose == 'email_change'
-          ? OtpType.emailChange
-          : OtpType.signup;
       _log('Verifying email OTP ($purpose)');
-      await AuthSecurityService.verifyOtpCode(
-        email: email,
-        token: code,
-        type: otpType,
-      );
       if (purpose == 'email_change') {
+        await AuthSecurityService.verifyOtpCode(
+          email: email,
+          token: code,
+          type: OtpType.emailChange,
+        );
         await AuthSecurityService.refreshUserProfileState();
         pendingVerificationEmail.value = null;
         AppSnack.success('success'.tr, 'email_changed_success'.tr);
         Get.offAllNamed(Routes.personalProfile);
-      } else {
-        authStatus.value = AuthStatus.authenticated;
-        pendingVerificationEmail.value = null;
-        await AuthSecurityService.refreshUserProfileState();
-        AppSnack.success('success'.tr, 'email_verified_success'.tr);
-        Get.offAllNamed(Routes.home);
+        return;
       }
+
+      await AuthSecurityService.confirmSignupEmailOtp(
+        email: email,
+        code: code,
+      );
+      await AuthSecurityService.signInAfterSignup(
+        email: email,
+        password: passwordController.text,
+      );
+      authStatus.value = AuthStatus.authenticated;
+      pendingVerificationEmail.value = null;
+      await AuthSecurityService.refreshUserProfileState();
+      AppSnack.success('success'.tr, 'email_verified_success'.tr);
+      Get.offAllNamed(Routes.home);
     } on AuthException catch (e, stack) {
       _log('Email OTP verification failed', isError: true, error: e.message, stack: stack);
-      throw AuthException(AuthSecurityService.translateOtpError(e.message));
+      throw AuthException(AuthSecurityService.translateOtpError(e));
     } finally {
       isLoading.value = false;
     }
   }
 
-  String translateAuthError(String message) =>
-      AuthSecurityService.translateAuthError(message);
+  String translateAuthError(Object error) =>
+      AuthSecurityService.translateAuthError(error);
 
-  String translateOtpError(String message) =>
-      AuthSecurityService.translateOtpError(message);
+  String translateOtpError(Object error) =>
+      AuthSecurityService.translateOtpError(error);
 
   void _goToVerifyEmail(String email, {String purpose = 'signup'}) {
     pendingVerificationEmail.value = email;
@@ -487,7 +502,7 @@ class AuthController extends GetxController {
       }
       Get.snackbar(
         'error'.tr,
-        translateAuthError(e.message),
+        translateAuthError(e),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withValues(alpha: 0.2),
       );
@@ -522,12 +537,12 @@ class AuthController extends GetxController {
           .toUpperCase();
 
       // Validate referral code if provided
-      String? referrerId;
+      ReferralCodeLookup? referralLookup;
       if (referralCodeInput.isNotEmpty) {
-        referrerId = await ReferralService.validateReferralCode(
+        referralLookup = await ReferralService.validateReferralCode(
           referralCodeInput,
         );
-        if (referrerId == null) {
+        if (referralLookup == null) {
           isLoading.value = false;
           Get.snackbar(
             'error'.tr,
@@ -557,8 +572,8 @@ class AuthController extends GetxController {
           'full_name': fullName,
           'phone': phone,
           'country_code': selectedCountry.value.code,
-          if (referralCodeInput.isNotEmpty)
-            'referred_by_code': referralCodeInput,
+          if (referralLookup != null)
+            'referred_by_code': referralLookup.canonicalCode,
         },
       );
 
@@ -575,12 +590,8 @@ class AuthController extends GetxController {
         );
       }
 
-      if (referrerId != null && response.user != null) {
-        await ReferralService.linkReferral(
-          newUserId: response.user!.id,
-          referrerId: referrerId,
-        );
-      }
+      // Referral is linked server-side via signup metadata (referred_by_code)
+      // while the user has no session yet — client UPDATE would fail RLS.
       await DeepLinkService.clearPendingReferralCode();
 
       isLoading.value = false;
@@ -590,20 +601,27 @@ class AuthController extends GetxController {
       final needsVerification = user != null &&
           (response.session == null || _requiresEmailVerification(user));
       if (needsVerification) {
-        if (user.confirmationSentAt == null) {
-          try {
-            await AuthSecurityService.ensureSignupVerificationSent(email);
-          } catch (e, stack) {
-            _log(
-              'Signup verification dispatch failed',
-              isError: true,
-              error: e,
-              stack: stack,
-            );
-          }
+        // Always dispatch signup OTP — GoTrue may return 200 for repeated
+        // signups without sending mail unless /resend is called explicitly.
+        try {
+          await AuthSecurityService.ensureSignupVerificationSent(email);
+          _goToVerifyEmail(email);
+          AppSnack.success('success'.tr, 'verification_email_sent'.tr);
+        } on AuthException catch (e, stack) {
+          _log(
+            'Signup verification dispatch failed',
+            isError: true,
+            error: e.message,
+            stack: stack,
+          );
+          _goToVerifyEmail(email);
+          Get.snackbar(
+            'error'.tr,
+            translateAuthError(e),
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.orange.withValues(alpha: 0.2),
+          );
         }
-        _goToVerifyEmail(email);
-        AppSnack.success('success'.tr, 'verification_email_sent'.tr);
       } else if (response.session != null) {
         authStatus.value = AuthStatus.authenticated;
         Get.offAllNamed(Routes.home);
@@ -618,7 +636,7 @@ class AuthController extends GetxController {
       );
       Get.snackbar(
         'error'.tr,
-        translateAuthError(e.message),
+        translateAuthError(e),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withValues(alpha: 0.2),
       );
@@ -666,40 +684,24 @@ class AuthController extends GetxController {
     isLoading.value = true;
     try {
       _log('Sending password reset email');
-      try {
-        await AuthSecurityService.sendPasswordResetEmail(sanitizedEmail);
-        AppSnack.success('success'.tr, 'reset_otp_sent'.tr);
-        Get.toNamed(
-          Routes.otp,
-          arguments: {
-            'identifier': sanitizedEmail,
-            'isPhone': false,
-            'isFreeOtp': false,
-            'type': OtpType.recovery,
-            'isRecovery': true,
-            'otpLength': AuthOtpConfig.lengthForOtpType(OtpType.recovery),
-          },
-        );
-      } on AuthException catch (e) {
-        if (!AuthSecurityService.isEmailDeliveryFailure(e.message)) {
-          rethrow;
-        }
-        _log(
-          'Supabase recovery email unavailable — using app OTP delivery',
-          isError: true,
-          error: e.message,
-        );
-        await sendEmailOtp(
-          sanitizedEmail,
-          isRecovery: true,
-          purpose: 'password_reset',
-        );
-      }
+      await AuthSecurityService.sendPasswordResetEmail(sanitizedEmail);
+      AppSnack.success('success'.tr, 'reset_otp_sent'.tr);
+      Get.toNamed(
+        Routes.otp,
+        arguments: {
+          'identifier': sanitizedEmail,
+          'isPhone': false,
+          'isFreeOtp': false,
+          'type': OtpType.recovery,
+          'isRecovery': true,
+          'otpLength': AuthOtpConfig.lengthForOtpType(OtpType.recovery),
+        },
+      );
     } on AuthException catch (e, stack) {
       _log('Password reset email failed', isError: true, error: e.message, stack: stack);
       Get.snackbar(
         'error'.tr,
-        translateAuthError(e.message),
+        translateAuthError(e),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withValues(alpha: 0.2),
       );

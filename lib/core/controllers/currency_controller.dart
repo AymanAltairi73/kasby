@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/models/currency_model.dart';
 import 'package:kasby/core/models/wallet_model.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CurrencyController extends GetxController {
@@ -20,29 +20,47 @@ class CurrencyController extends GetxController {
   final RxList<CurrencyModel> currencies = <CurrencyModel>[].obs;
 
   /// Hardcoded fallback data used only when DB is unreachable.
-  final Map<String, Map<String, dynamic>> _fallbackCurrencyData = {
-    'USD': {'flag': '🇺🇸', 'rate': 1.0, 'name': 'الدولار الأمريكي'},
-    'IQD': {'flag': '🇮🇶', 'rate': 1320.0, 'name': 'الدينار العراقي'},
-    'KWD': {'flag': '🇰🇼', 'rate': 0.3071, 'name': 'الدينار الكويتي'},
-    'SAR': {'flag': '🇸🇦', 'rate': 3.75, 'name': 'الريال السعودي'},
-    'AED': {'flag': '🇦🇪', 'rate': 3.6725, 'name': 'الدرهم الإماراتي'},
-    'JOD': {'flag': '🇯🇴', 'rate': 0.7090, 'name': 'الدينار الأردني'},
-    'EGP': {'flag': '🇪🇬', 'rate': 47.1, 'name': 'الجنيه المصري'},
-    'TRY': {'flag': '🇹🇷', 'rate': 15.59, 'name': 'الليرة التركية'},
-    'EUR': {'flag': '🇪🇺', 'rate': 0.8461, 'name': 'اليورو'},
-    'CHF': {'flag': '🇨🇭', 'rate': 0.7754, 'name': 'الفرنك السويسري'},
-    'JPY': {'flag': '🇯🇵', 'rate': 155.9, 'name': 'الين الياباني'},
+  static const Map<String, Map<String, dynamic>> _fallbackRates = {
+    'USD': {'flag': '🇺🇸', 'rate': 1.0, 'nameKey': 'currency_usd'},
+    'IQD': {'flag': '🇮🇶', 'rate': 1320.0, 'nameKey': 'currency_iqd'},
+    'KWD': {'flag': '🇰🇼', 'rate': 0.3071, 'nameKey': 'currency_kwd'},
+    'SAR': {'flag': '🇸🇦', 'rate': 3.75, 'nameKey': 'currency_sar'},
+    'AED': {'flag': '🇦🇪', 'rate': 3.6725, 'nameKey': 'currency_aed'},
+    'JOD': {'flag': '🇯🇴', 'rate': 0.7090, 'nameKey': 'currency_jod'},
+    'EGP': {'flag': '🇪🇬', 'rate': 47.1, 'nameKey': 'currency_egp'},
+    'TRY': {'flag': '🇹🇷', 'rate': 15.59, 'nameKey': 'currency_try'},
+    'EUR': {'flag': '🇪🇺', 'rate': 0.8461, 'nameKey': 'currency_eur'},
+    'CHF': {'flag': '🇨🇭', 'rate': 0.7754, 'nameKey': 'currency_chf'},
+    'JPY': {'flag': '🇯🇵', 'rate': 155.9, 'nameKey': 'currency_jpy'},
   };
 
   final RxBool isBalanceHidden = false.obs;
 
   @override
   void onInit() {
+    SafeGetx.debugTrace(
+      className: 'CurrencyController',
+      method: 'onInit',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     super.onInit();
     _loadBalancePrivacy();
     fetchCurrencies();
     fetchWalletBalances();
     _listenToWallet();
+  }
+
+  @override
+  void onReady() {
+    SafeGetx.debugTrace(
+      className: 'CurrencyController',
+      method: 'onReady',
+      feature: 'Wallet',
+      status: 'INFO',
+      params: {'currency': selectedCurrency.value},
+    );
+    super.onReady();
   }
 
   Future<void> _loadBalancePrivacy() async {
@@ -58,7 +76,15 @@ class CurrencyController extends GetxController {
 
   /// Get currency data (from DB or fallback).
   Map<String, Map<String, dynamic>> get currencyData {
-    if (currencies.isEmpty) return _fallbackCurrencyData;
+    if (currencies.isEmpty) {
+      return _fallbackRates.map(
+        (code, data) => MapEntry(code, {
+          'flag': data['flag'],
+          'rate': data['rate'],
+          'name': (data['nameKey'] as String).tr,
+        }),
+      );
+    }
 
     final Map<String, Map<String, dynamic>> data = {};
     for (final c in currencies) {
@@ -69,6 +95,7 @@ class CurrencyController extends GetxController {
 
   /// Fetch currencies from the database.
   Future<void> fetchCurrencies() async {
+    final stopwatch = Stopwatch()..start();
     try {
       final response = await SupabaseService.client
           .from('currencies')
@@ -79,8 +106,24 @@ class CurrencyController extends GetxController {
       currencies.value = (response as List)
           .map((json) => CurrencyModel.fromJson(json))
           .toList();
-    } catch (e) {
-      debugPrint('Error fetching currencies: $e');
+      SafeGetx.debugTrace(
+        className: 'CurrencyController',
+        method: 'fetchCurrencies',
+        feature: 'Wallet',
+        status: 'SUCCESS',
+        params: {'count': currencies.length},
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'CurrencyController',
+        method: 'fetchCurrencies',
+        feature: 'Wallet',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -89,6 +132,7 @@ class CurrencyController extends GetxController {
     if (!SupabaseService.isLoggedIn) return;
 
     isLoadingWallet.value = true;
+    final stopwatch = Stopwatch()..start();
     try {
       final response = await SupabaseService.client
           .from('wallets')
@@ -103,8 +147,24 @@ class CurrencyController extends GetxController {
         investedBalance.value = wallet.investedBalance;
         pendingBalance.value = wallet.pendingBalance;
       }
-    } catch (e) {
-      debugPrint('Error fetching wallet: $e');
+      SafeGetx.debugTrace(
+        className: 'CurrencyController',
+        method: 'fetchWalletBalances',
+        feature: 'Wallet',
+        status: 'SUCCESS',
+        params: {'hasWallet': response != null},
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'CurrencyController',
+        method: 'fetchWalletBalances',
+        feature: 'Wallet',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingWallet.value = false;
     }
@@ -112,6 +172,7 @@ class CurrencyController extends GetxController {
 
   /// Stream subscription for real-time wallet updates.
   StreamSubscription? _walletSubscription;
+  Timer? _walletReconnectTimer;
   
   void _listenToWallet() {
     if (!SupabaseService.isLoggedIn) return;
@@ -128,22 +189,52 @@ class CurrencyController extends GetxController {
           profitBalance.value = wallet.profitBalance;
           investedBalance.value = wallet.investedBalance;
           pendingBalance.value = wallet.pendingBalance;
-          debugPrint('Wallet updated via stream: ${wallet.availableBalance}');
+          SafeGetx.debugTrace(
+            className: 'CurrencyController',
+            method: '_listenToWallet',
+            feature: 'Wallet',
+            status: 'INFO',
+            message: 'Wallet updated via stream',
+          );
         }
-      }, onError: (e) {
-        debugPrint('Wallet stream error: $e');
-        Future.delayed(const Duration(seconds: 5), () => _listenToWallet());
+      }, onError: (e, stack) {
+        SafeGetx.debugTrace(
+          className: 'CurrencyController',
+          method: '_listenToWallet',
+          feature: 'Wallet',
+          status: 'ERROR',
+          error: e,
+          stackTrace: stack,
+        );
+        _walletReconnectTimer?.cancel();
+        _walletReconnectTimer = Timer(
+          const Duration(seconds: 5),
+          () => _listenToWallet(),
+        );
       });
   }
 
   @override
   void onClose() {
+    SafeGetx.debugTrace(
+      className: 'CurrencyController',
+      method: 'onClose',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
+    _walletReconnectTimer?.cancel();
     _walletSubscription?.cancel();
     super.onClose();
   }
 
   /// Resets all financial balances.
   void resetBalances() {
+    SafeGetx.debugTrace(
+      className: 'CurrencyController',
+      method: 'resetBalances',
+      feature: 'Wallet',
+      status: 'INFO',
+    );
     totalBalance.value = 0.0;
     profitBalance.value = 0.0;
     investedBalance.value = 0.0;
@@ -151,6 +242,13 @@ class CurrencyController extends GetxController {
   }
 
   void changeCurrency(String currencyCode) {
+    SafeGetx.debugTrace(
+      className: 'CurrencyController',
+      method: 'changeCurrency',
+      feature: 'Wallet',
+      status: 'INFO',
+      params: {'from': selectedCurrency.value, 'to': currencyCode},
+    );
     selectedCurrency.value = currencyCode;
   }
 

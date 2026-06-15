@@ -5,11 +5,15 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
+import 'package:kasby/core/services/account_restriction_service.dart';
+import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/services/session_service.dart';
 import 'package:kasby/core/widgets/transaction_receipt.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
+import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class TransferView extends StatefulWidget {
   const TransferView({super.key});
@@ -28,7 +32,6 @@ class _TransferViewState extends State<TransferView> {
   @override
   void initState() {
     super.initState();
-    // Handle arguments from QR scan
     final args = Get.arguments;
     if (args != null && args is Map<String, dynamic>) {
       if (args.containsKey('receiver_id')) {
@@ -36,6 +39,18 @@ class _TransferViewState extends State<TransferView> {
       }
       if (args.containsKey('amount')) {
         _amountController.text = args['amount'].toString();
+      }
+      if (args['funds_mode'] == true) {
+        isPoints = false;
+      }
+      if (args['from_qr_scan'] == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final amount = double.tryParse(args['amount']?.toString() ?? '');
+          if (amount != null && amount > 0 && _idController.text.isNotEmpty) {
+            _showConfirmationDialog(amount);
+          }
+        });
       }
     }
   }
@@ -61,32 +76,32 @@ class _TransferViewState extends State<TransferView> {
             icon: Icon(Icons.qr_code_scanner_rounded, color: AppColors.darkGold),
             onPressed: () {
               HapticFeedback.lightImpact();
-              Get.toNamed('/qr-scanner');
+              Get.toNamed(Routes.qrScanner);
             },
             tooltip: 'scan_qr'.tr,
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTypeToggle(),
-            // const SizedBox(height: 32),
-            // _buildMyCodePreview(),
-            const SizedBox(height: 32),
-            _buildTransferForm(),
-            const SizedBox(height: 16),
-            _buildRecentRecipients(),
-            const SizedBox(height: 40),
-            _isSubmitting
-                ? Center(
-                    child: CircularProgressIndicator(color: AppColors.darkGold),
-                  )
-                : KasbyButton(text: 'transfer'.tr, onPressed: _handleTransfer),
-          ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTypeToggle(),
+              const SizedBox(height: 32),
+              _buildTransferForm(),
+              const SizedBox(height: 16),
+              _buildRecentRecipients(),
+              const SizedBox(height: 40),
+              _isSubmitting
+                  ? Center(
+                      child: CircularProgressIndicator(color: AppColors.darkGold),
+                    )
+                  : KasbyButton(text: 'transfer'.tr, onPressed: _handleTransfer),
+            ],
+          ),
         ),
       ),
     );
@@ -237,7 +252,7 @@ class _TransferViewState extends State<TransferView> {
       children: [
         _buildInputField(
           'enter_receiver_id'.tr,
-          'k-XXXXX',
+          'kXXXXX',
           _idController,
           Icons.person_search_rounded,
         ),
@@ -408,6 +423,12 @@ class _TransferViewState extends State<TransferView> {
   }
 
   void _handleTransfer() async {
+    if (!AccountRestrictionService.to.checkWriteAccess()) return;
+    if (HomeController.to.dashboard.value?.isFrozen == true) {
+      Get.snackbar('error'.tr, 'wallet_frozen'.tr);
+      return;
+    }
+
     if (_idController.text.isEmpty || _amountController.text.isEmpty) {
       Get.snackbar('error'.tr, 'fill_all_data'.tr);
       return;
@@ -428,7 +449,10 @@ class _TransferViewState extends State<TransferView> {
     final myProfile = HomeController.to.profile.value;
     
     // Self-transfer check
-    if (myProfile != null && (myProfile.referralCode == receiverCode || myProfile.id == receiverCode)) {
+    if (myProfile != null &&
+        (ReferralService.normalizeCode(myProfile.referralCode ?? '') ==
+                ReferralService.normalizeCode(receiverCode) ||
+            myProfile.id == receiverCode)) {
       Get.snackbar(
         'error'.tr,
         'transfer_to_self_error'.tr,
@@ -533,19 +557,31 @@ class _TransferViewState extends State<TransferView> {
     setState(() => _isSubmitting = true);
 
     try {
-      final result = await SupabaseService.client.rpc(
-        'create_transfer',
+      final result = await SafeGetx.traceAsync(
+        className: 'TransferView',
+        method: '_executeTransfer',
+        feature: 'Wallet',
         params: {
-          'p_amount': amount,
-          'p_receiver_referral_code': _idController.text.trim(),
-          'p_transfer_type': isPoints ? 'points' : 'funds',
+          'table': 'transactions',
+          'operation': 'RPC',
+          'rpc': 'create_transfer',
+          'amount': amount,
+          'type': isPoints ? 'points' : 'funds',
         },
+        operation: () => SupabaseService.client.rpc(
+          'create_transfer',
+          params: {
+            'p_amount': amount,
+            'p_receiver_referral_code':
+                ReferralService.normalizeCode(_idController.text),
+            'p_transfer_type': isPoints ? 'points' : 'funds',
+          },
+        ),
       );
 
       final response = result as Map<String, dynamic>;
 
       if (response['success'] == true) {
-        // Refresh data after successful transfer
         HomeController.to.refreshAll();
         _showSuccessOverlay(
           response['receiver_name'] ?? '',
@@ -554,6 +590,13 @@ class _TransferViewState extends State<TransferView> {
           amount,
         );
       } else {
+        SafeGetx.debugTrace(
+          className: 'TransferView',
+          method: '_executeTransfer',
+          feature: 'Wallet',
+          status: 'WARNING',
+          message: response['error']?.toString(),
+        );
         Get.snackbar(
           'error'.tr,
           response['error']?.toString() ?? 'transfer_error'.tr,
@@ -561,8 +604,7 @@ class _TransferViewState extends State<TransferView> {
           colorText: Colors.white,
         );
       }
-    } catch (e) {
-      debugPrint('Transfer error: $e');
+    } catch (_) {
       Get.snackbar(
         'error'.tr,
         'transfer_error'.tr,
@@ -591,8 +633,7 @@ class _TransferViewState extends State<TransferView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
     ).then((_) {
-      Get.back();
-      Get.back();
+      Get.until((route) => route.settings.name == Routes.wallet || route.isFirst);
     });
   }
 }

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/utils/locale_helper.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 
 class OnboardingView extends StatefulWidget {
   const OnboardingView({super.key});
@@ -14,6 +17,29 @@ class OnboardingView extends StatefulWidget {
 class _OnboardingViewState extends State<OnboardingView> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    SafeGetx.debugTrace(
+      className: 'OnboardingView',
+      method: 'initState',
+      feature: 'Onboarding',
+      status: 'INFO',
+    );
+  }
+
+  @override
+  void dispose() {
+    SafeGetx.debugTrace(
+      className: 'OnboardingView',
+      method: 'dispose',
+      feature: 'Onboarding',
+      status: 'INFO',
+    );
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +61,8 @@ class _OnboardingViewState extends State<OnboardingView> {
       ),
     ];
     return Scaffold(
-      body: Stack(
+      body: SafeArea(
+        child: Stack(
         children: [
           PageView.builder(
             controller: _pageController,
@@ -96,8 +123,10 @@ class _OnboardingViewState extends State<OnboardingView> {
               onPressed: () {
                 if (Get.locale?.languageCode == 'ar') {
                   Get.updateLocale(const Locale('en', 'US'));
+                  LocaleHelper.saveLanguageCode('en');
                 } else {
                   Get.updateLocale(const Locale('ar', 'SA'));
+                  LocaleHelper.saveLanguageCode('ar');
                 }
               },
             ),
@@ -140,7 +169,7 @@ class _OnboardingViewState extends State<OnboardingView> {
                         curve: Curves.easeIn,
                       );
                     } else {
-                      Get.offNamed(Routes.login);
+                      _completeOnboarding();
                     }
                   },
                 ),
@@ -149,7 +178,34 @@ class _OnboardingViewState extends State<OnboardingView> {
           ),
         ],
       ),
+      ),
     );
+  }
+
+  Future<void> _completeOnboarding() async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_completed', true);
+      SafeGetx.debugTrace(
+        className: 'OnboardingView',
+        method: '_completeOnboarding',
+        feature: 'Onboarding',
+        status: 'SUCCESS',
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+      Get.offAllNamed(Routes.login);
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'OnboardingView',
+        method: '_completeOnboarding',
+        feature: 'Onboarding',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
+    }
   }
 }
 
