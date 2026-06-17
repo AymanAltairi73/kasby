@@ -6,7 +6,7 @@ import 'package:kasby/core/theme/app_theme.dart';
 import 'package:kasby/routes/app_pages.dart';
 import 'package:kasby/core/localization/kasby_translations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/controllers/theme_controller.dart';
@@ -36,6 +36,9 @@ import 'package:kasby/core/utils/safe_getx.dart';
 void main() async {
   final startupStopwatch = Stopwatch()..start();
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize locale-aware date/number symbol data (H7) for ar/en formatting.
+  await initializeDateFormatting();
 
   SafeGetx.debugTrace(
     className: 'main',
@@ -214,7 +217,9 @@ class _KasbyAppState extends State<KasbyApp> {
           return Stack(
             children: [
               AccountRestrictionBanner(
-                child: ConnectivityBanner(child: child ?? const SizedBox.shrink()),
+                child: ConnectivityBanner(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
               ConfettiService.to.buildConfetti(),
             ],

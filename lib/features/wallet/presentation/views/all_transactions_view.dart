@@ -10,6 +10,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/utils/date_helper.dart';
 
 class AllTransactionsView extends StatefulWidget {
   const AllTransactionsView({super.key});
@@ -22,6 +23,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
   final homeController = HomeController.to;
   final currencyController = CurrencyController.to;
   final ScrollController _scrollController = ScrollController();
+  DateTimeRange? _selectedDateRange;
 
   final List<Map<String, dynamic>> _filters = [
     {
@@ -118,23 +120,28 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
             color: isDark ? Colors.white : AppColors.onSurfaceLight,
           ),
         ),
-        // leading: IconButton(
-        //   icon: Icon(
-        //     Icons.arrow_back_ios_new_rounded,
-        //     color: isDark ? Colors.white : AppColors.onSurfaceLight,
-        //   ),
-        //   onPressed: () => ShellController.to.handleBack(),
-        // ),
+        actions: [
+          IconButton(
+            tooltip: 'download_statement'.tr,
+            icon: Icon(
+              Icons.download_rounded,
+              color: isDark ? Colors.white : AppColors.onSurfaceLight,
+            ),
+            onPressed: () => Get.toNamed(Routes.statements),
+          ),
+        ],
       ),
       body: Column(
         children: [
           // ── Filter Chips ────────────────────
           _buildFilterBar(isDark),
+          // ── Date Range Filter ───────────────
+          _buildDateRangeBar(isDark),
           const SizedBox(height: 8),
           // ── Transactions List ───────────────
           Expanded(
             child: Obx(() {
-              final transactions = homeController.allTransactions;
+              final transactions = _applyDateFilter(homeController.allTransactions);
               final isLoading = homeController.isLoadingAllTransactions.value;
 
               if (isLoading && transactions.isEmpty) {
@@ -267,6 +274,85 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
     ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.1, end: 0);
   }
 
+  Widget _buildDateRangeBar(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: _pickDateRange,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: _selectedDateRange != null
+                    ? AppColors.darkGold.withValues(alpha: 0.12)
+                    : (isDark ? AppColors.surface : AppColors.surfaceLight),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _selectedDateRange != null
+                      ? AppColors.darkGold
+                      : Colors.transparent,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.date_range_rounded,
+                    size: 16,
+                    color: _selectedDateRange != null
+                        ? AppColors.darkGold
+                        : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _selectedDateRange != null
+                        ? '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} – ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}'
+                        : 'filter_by_date'.tr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _selectedDateRange != null
+                          ? AppColors.darkGold
+                          : (isDark ? Colors.white70 : AppColors.textSecondaryLight),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_selectedDateRange != null) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => setState(() => _selectedDateRange = null),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surface : AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.close_rounded, size: 14, color: AppColors.error),
+                    const SizedBox(width: 4),
+                    Text(
+                      'clear_filters'.tr,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
   Widget _buildDateGroup(
     String label,
@@ -482,6 +568,41 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
         .slideX(begin: 0.05, end: 0);
   }
 
+  // ── Date Range Filter ────────────────────────────────
+
+  Future<void> _pickDateRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 2),
+      lastDate: now,
+      initialDateRange: _selectedDateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppColors.darkGold,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _selectedDateRange = picked);
+    }
+  }
+
+  List<TransactionModel> _applyDateFilter(List<TransactionModel> transactions) {
+    if (_selectedDateRange == null) return transactions;
+    final start = _selectedDateRange!.start;
+    final end = _selectedDateRange!.end.add(const Duration(days: 1));
+    return transactions.where((tx) {
+      if (tx.createdAt == null) return false;
+      return tx.createdAt!.isAfter(start) && tx.createdAt!.isBefore(end);
+    }).toList();
+  }
+
   // ── Helpers ──────────────────────────────────────────
 
   List<Map<String, dynamic>> _groupByDate(List<TransactionModel> transactions) {
@@ -518,12 +639,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
         .toList();
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    return '${hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} $period';
-  }
+  String _formatDate(DateTime? date) => DateHelper.time(date);
 
   Map<String, dynamic> _getTypeInfo(String type) {
     switch (type) {

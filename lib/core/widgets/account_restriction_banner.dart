@@ -51,7 +51,9 @@ class AccountRestrictionBanner extends StatelessWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'حسابك مقيد — وضع القراءة فقط. السبب: ${service.restrictionReason}',
+                            'account_restricted_readonly'.trParams({
+                              'reason': service.restrictionReason,
+                            }),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -63,9 +65,9 @@ class AccountRestrictionBanner extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () => Get.toNamed(Routes.support),
-                          child: const Text(
-                            'دعم',
-                            style: TextStyle(color: Colors.white),
+                          child: Text(
+                            'support'.tr,
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
                       ],

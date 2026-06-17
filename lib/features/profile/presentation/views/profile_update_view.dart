@@ -13,7 +13,9 @@ import 'package:kasby/features/auth/domain/models/country_model.dart';
 import 'package:kasby/features/auth/presentation/widgets/country_selector.dart';
 
 class ProfileUpdateView extends StatefulWidget {
-  const ProfileUpdateView({super.key});
+  final Map<String, dynamic>? embeddedArguments;
+
+  const ProfileUpdateView({super.key, this.embeddedArguments});
 
   @override
   State<ProfileUpdateView> createState() => _ProfileUpdateViewState();
@@ -31,10 +33,13 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
   bool get isEmailChange => type == 'email_change';
   String get label => isEmailChange ? 'new_email'.tr : 'new_phone'.tr;
 
+  bool get _isEmbedded => widget.embeddedArguments != null;
+
   @override
   void initState() {
     super.initState();
-    final args = Get.arguments as Map<String, dynamic>? ?? {};
+    final args = widget.embeddedArguments ??
+        (Get.arguments as Map<String, dynamic>? ?? {});
     type = args['type'] ?? 'email_change';
     currentValue = args['current_value'] ?? '';
 
@@ -85,35 +90,10 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final profileCtrl = ProfileUpdateController.to;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.background : AppColors.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () {
-            profileCtrl.resetFlow();
-            Get.back();
-          },
-          icon: Icon(
-            Icons.arrow_back_ios_rounded,
-            color: isDark ? Colors.white : Colors.black87,
-          ),
-        ),
-        title: Text(
-          isEmailChange ? 'change_email'.tr : 'change_phone'.tr,
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 20,
-            color: isDark ? Colors.white : Colors.black87,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Obx(() => Column(
+    final content = SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Obx(() => Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
@@ -277,6 +257,9 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                               await profileCtrl.requestEmailChange(newValue);
                           if (success) {
                             profileCtrl.resetFlow();
+                            if (_isEmbedded && context.mounted) {
+                              Navigator.of(context).pop();
+                            }
                             Get.toNamed(
                               Routes.verifyEmail,
                               arguments: {
@@ -349,7 +332,11 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                                 );
                                 if (success) {
                                   profileCtrl.resetFlow();
-                                  Get.offNamed(Routes.personalProfile);
+                                  if (_isEmbedded && context.mounted) {
+                                    Navigator.of(context).pop();
+                                  } else {
+                                    Get.offNamed(Routes.personalProfile);
+                                  }
                                 } else {
                                   AppSnack.warning(
                                     'change_email'.tr,
@@ -414,7 +401,11 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                                 );
                                 if (success) {
                                   profileCtrl.resetFlow();
-                                  Get.offNamed(Routes.personalProfile);
+                                  if (_isEmbedded && context.mounted) {
+                                    Navigator.of(context).pop();
+                                  } else {
+                                    Get.offNamed(Routes.personalProfile);
+                                  }
                                 }
                               },
                             ).animate().fadeIn(delay: 250.ms),
@@ -447,7 +438,82 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                 ],
               )),
         ),
+      );
+
+    if (_isEmbedded) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black26,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isEmailChange ? 'change_email'.tr : 'change_phone'.tr,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                  tooltip: 'close'.tr,
+                  onPressed: () {
+                    profileCtrl.resetFlow();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: content),
+        ],
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: isDark ? AppColors.background : AppColors.backgroundLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () {
+            profileCtrl.resetFlow();
+            Get.back();
+          },
+          icon: Icon(
+            Icons.arrow_back_ios_rounded,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+          tooltip: 'back'.tr,
+        ),
+        title: Text(
+          isEmailChange ? 'change_email'.tr : 'change_phone'.tr,
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        centerTitle: true,
       ),
+      body: content,
     );
   }
 

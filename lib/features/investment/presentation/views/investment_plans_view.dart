@@ -8,6 +8,8 @@ import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 // import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
+import 'package:kasby/core/widgets/error_state_widget.dart';
+import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 class InvestmentPlansView extends StatefulWidget {
@@ -20,6 +22,26 @@ class InvestmentPlansView extends StatefulWidget {
 class _InvestmentPlansViewState extends State<InvestmentPlansView> {
   final RxList<InvestmentPlanModel> plans = <InvestmentPlanModel>[].obs;
   final RxBool isLoading = true.obs;
+  final RxBool hasError = false.obs;
+  // Sort options: roi (default), amount, duration
+  final RxString sortBy = 'roi'.obs;
+
+  List<InvestmentPlanModel> get _sortedPlans {
+    final list = plans.toList();
+    switch (sortBy.value) {
+      case 'amount':
+        list.sort((a, b) => a.minAmount.compareTo(b.minAmount));
+        break;
+      case 'duration':
+        list.sort((a, b) => (a.durationDays ?? 0).compareTo(b.durationDays ?? 0));
+        break;
+      case 'roi':
+      default:
+        list.sort((a, b) => b.profitPercentage.compareTo(a.profitPercentage));
+        break;
+    }
+    return list;
+  }
 
   @override
   void initState() {
@@ -47,6 +69,7 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
   Future<void> _fetchPlans() async {
     final stopwatch = Stopwatch()..start();
     isLoading.value = true;
+    hasError.value = false;
     try {
       final response = await SupabaseService.client
           .from('investment_plans')
@@ -66,6 +89,7 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
         params: {'count': plans.length},
       );
     } catch (e, stack) {
+      hasError.value = true;
       SafeGetx.debugTrace(
         className: 'InvestmentPlansView',
         method: '_fetchPlans',
@@ -132,10 +156,6 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
     return Scaffold(
       appBar: AppBar(
         title: Text('investment_plans'.tr),
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back_ios_new_rounded),
-        //   onPressed: () => ShellController.to.handleBack(),
-        // ),
       ),
       body: RefreshIndicator(
         color: AppColors.darkGold,
@@ -147,6 +167,16 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
               itemCount: 3,
               separatorBuilder: (_, __) => const SizedBox(height: 20),
               itemBuilder: (_, __) => KasbyShimmer.investmentPlanCard(isDark: isDark),
+            );
+          }
+
+          if (hasError.value) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.7,
+                child: ErrorStateWidget(onRetry: _fetchPlans),
+              ),
             );
           }
 
@@ -164,38 +194,129 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
             );
           }
 
-          return ListView.separated(
+          final sorted = _sortedPlans;
+          return ListView(
             padding: const EdgeInsets.all(20),
-            itemCount: plans.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 20),
-            itemBuilder: (context, index) {
-              final plan = plans[index];
-              final amounts =
-                  plan.availableAmounts
-                      ?.map((e) => '\$${(e as num).toInt()}')
-                      .toList() ??
-                  [];
+            children: [
+              _buildSortBar(isDark),
+              const SizedBox(height: KasbySpacing.lg),
+              ...sorted.asMap().entries.map((entry) {
+                final index = entry.key;
+                final plan = entry.value;
+                final amounts = plan.availableAmounts
+                        ?.map((e) => '\$${(e as num).toInt()}')
+                        .toList() ??
+                    [];
 
-              return InvestmentPlanCard(
-                    id: plan.id,
-                    title: Get.locale?.languageCode == 'ar' ? plan.nameAr : (plan.nameEn ?? plan.nameAr),
-                    profit: _formatProfit(plan.profitPercentage),
-                    rawProfitPercentage: plan.profitPercentage.toDouble(),
-                    minAmount: '\$${plan.minAmount.toInt()}',
-                    imagePath: _getPlanImage(plan.nameEn ?? plan.nameAr),
-                    color: _planColor(plan.riskLevel),
-                    amounts: amounts,
-                    duration: _formatDuration(plan.durationDays),
-                  )
-                  .animate()
-                  .fadeIn(
-                    delay: Duration(milliseconds: index * 200),
-                    duration: 600.ms,
-                  )
-                  .slideY(begin: 0.2, end: 0);
-            },
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: InvestmentPlanCard(
+                        id: plan.id,
+                        title: Get.locale?.languageCode == 'ar'
+                            ? plan.nameAr
+                            : (plan.nameEn ?? plan.nameAr),
+                        profit: _formatProfit(plan.profitPercentage),
+                        rawProfitPercentage: plan.profitPercentage.toDouble(),
+                        minAmount: '\$${plan.minAmount.toInt()}',
+                        imagePath: _getPlanImage(plan.nameEn ?? plan.nameAr),
+                        color: _planColor(plan.riskLevel),
+                        amounts: amounts,
+                        duration: _formatDuration(plan.durationDays),
+                      )
+                      .animate()
+                      .fadeIn(
+                        delay: Duration(milliseconds: index * 120),
+                        duration: 500.ms,
+                      )
+                      .slideY(begin: 0.2, end: 0),
+                );
+              }),
+              _buildRiskDisclosure(isDark),
+            ],
           );
         }),
+      ),
+    );
+  }
+
+  Widget _buildSortBar(bool isDark) {
+    final options = <String, String>{
+      'roi': 'sort_roi'.tr,
+      'amount': 'sort_amount'.tr,
+      'duration': 'sort_duration'.tr,
+    };
+    return Row(
+      children: [
+        Icon(Icons.sort_rounded, size: 18, color: AppColors.textSecondary),
+        const SizedBox(width: KasbySpacing.sm),
+        Text(
+          '${'sort_by'.tr}:',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(width: KasbySpacing.sm),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: options.entries.map((e) {
+                final selected = sortBy.value == e.key;
+                return Padding(
+                  padding: const EdgeInsets.only(right: KasbySpacing.sm),
+                  child: ChoiceChip(
+                    label: Text(e.value),
+                    selected: selected,
+                    onSelected: (_) => sortBy.value = e.key,
+                    selectedColor: AppColors.darkGold.withValues(alpha: 0.2),
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight:
+                          selected ? FontWeight.bold : FontWeight.w500,
+                      color: selected
+                          ? AppColors.darkGold
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRiskDisclosure(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.all(KasbySpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.textSecondary.withValues(alpha: 0.06),
+        borderRadius: KasbyRadius.cardR,
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded,
+              size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: KasbySpacing.sm),
+          Expanded(
+            child: Text(
+              'risk_disclosure'.tr,
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.5,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

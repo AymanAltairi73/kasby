@@ -45,11 +45,7 @@ class AccountRestrictionService extends GetxService {
       'إذا كنت تعتقد أن هذا الإجراء تم بالخطأ، يرجى التواصل مع الدعم.';
 
   void onProfileUpdated() {
-    if (isRestricted) {
-      showRestrictionBanner.value = true;
-    } else {
-      showRestrictionBanner.value = false;
-    }
+    showRestrictionBanner.value = isRestricted;
   }
 
   bool checkWriteAccess({bool showDialog = true}) {

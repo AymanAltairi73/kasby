@@ -22,6 +22,8 @@ class AgentModel {
   final double availableCash;
   final double maxCapacity;
   final double totalCommissionEarned;
+  final double? latitude;
+  final double? longitude;
   final DateTime? lastActiveAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -48,6 +50,8 @@ class AgentModel {
     this.availableCash = 0.0,
     this.maxCapacity = 1000.0,
     this.totalCommissionEarned = 0.0,
+    this.latitude,
+    this.longitude,
     this.lastActiveAt,
     this.createdAt,
     this.updatedAt,
@@ -89,6 +93,8 @@ class AgentModel {
       availableCash: (json['available_cash'] as num?)?.toDouble() ?? 0.0,
       maxCapacity: (json['max_capacity'] as num?)?.toDouble() ?? 1000.0,
       totalCommissionEarned: (json['total_commission_earned'] as num?)?.toDouble() ?? 0.0,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       lastActiveAt: json['last_active_at'] != null
           ? DateTime.parse(json['last_active_at'])
           : null,
@@ -127,6 +133,8 @@ class AgentModel {
       'available_cash': availableCash,
       'max_capacity': maxCapacity,
       'total_commission_earned': totalCommissionEarned,
+      'latitude': latitude,
+      'longitude': longitude,
       'last_active_at': lastActiveAt?.toIso8601String(),
     };
   }
@@ -153,6 +161,8 @@ class AgentModel {
     double? availableCash,
     double? maxCapacity,
     double? totalCommissionEarned,
+    double? latitude,
+    double? longitude,
     DateTime? lastActiveAt,
   }) {
     return AgentModel(
@@ -177,6 +187,8 @@ class AgentModel {
       availableCash: availableCash ?? this.availableCash,
       maxCapacity: maxCapacity ?? this.maxCapacity,
       totalCommissionEarned: totalCommissionEarned ?? this.totalCommissionEarned,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
       createdAt: createdAt,
       updatedAt: updatedAt,

@@ -6,6 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
+const PROFILE_EDIT_DISABLED = {
+  error: "Admin profile editing is disabled. Users must update their own data.",
+}
+
 /** Ensure profile/wallet/points exist after auth user creation (trigger may fail silently). */
 async function ensureUserBootstrap(
   supabaseAdmin: ReturnType<typeof createClient>,
@@ -27,8 +31,14 @@ async function ensureUserBootstrap(
     email: email ?? metadata.email ?? '',
     phone: metadata.phone ?? null,
     country_code: metadata.country_code ?? null,
+    city: metadata.city ?? null,
+    whatsapp: metadata.whatsapp ?? null,
+    telegram: metadata.telegram ?? null,
+    avatar_url: metadata.avatar_url ?? null,
     role: metadata.role ?? 'user',
     status: 'active',
+    kyc_status: 'unverified',
+    account_tier: 'free',
   }
 
   if (!existing) {
@@ -60,25 +70,6 @@ async function ensureUserBootstrap(
     .catch(() => {})
 }
 
-/**
- * ADMIN PROXY — Secure Admin Operations Edge Function
- * 
- * Replaces direct service_role key usage in admin APK.
- * All admin operations are routed through this function which:
- * 1. Validates the caller is an authenticated admin
- * 2. Executes the privileged operation server-side using service_role
- * 3. Returns the result without exposing credentials
- * 
- * Supported operations:
- * - create_user: Create a new auth user
- * - delete_user: Delete an auth user
- * - update_user: Update auth user attributes
- * - list_users: List auth users (paginated)
- * - get_user: Get a single auth user by ID
- * - add_balance: Credit user wallet via fn_admin_add_balance
- * - deduct_balance: Debit user wallet via fn_admin_deduct_balance
- */
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -90,7 +81,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 1. Authenticate the caller
     const authHeader = req.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(
@@ -109,7 +99,6 @@ serve(async (req) => {
       )
     }
 
-    // 2. Load caller profile
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
@@ -124,8 +113,6 @@ serve(async (req) => {
     }
 
     const isAdmin = profile.role === 'admin'
-
-    // 3. Parse the operation
     const { operation, params } = await req.json()
 
     if (!operation) {
@@ -135,7 +122,6 @@ serve(async (req) => {
       )
     }
 
-    // All operations except self-delete require admin role
     if (!isAdmin && operation !== 'delete_user') {
       return new Response(
         JSON.stringify({ error: 'Forbidden: Admin access required' }),
@@ -162,12 +148,7 @@ serve(async (req) => {
           email_confirm: true,
         })
         if (error) throw error
-        await ensureUserBootstrap(
-          supabaseAdmin,
-          data.user.id,
-          data.user.email,
-          meta,
-        )
+        await ensureUserBootstrap(supabaseAdmin, data.user.id, data.user.email, meta)
         result = { user: { id: data.user.id, email: data.user.email } }
         break
       }
@@ -187,7 +168,6 @@ serve(async (req) => {
           )
         }
 
-        // Notify user before purge (profile still exists)
         await supabaseAdmin.rpc('fn_create_notification', {
           p_user_id: user_id,
           p_title: 'تم حذف حسابك',
@@ -260,43 +240,16 @@ serve(async (req) => {
         break
       }
 
-      case 'update_user_profile': {
-        const { user_id, updates } = params || {}
-        if (!user_id || !updates) {
-          return new Response(
-            JSON.stringify({ error: 'user_id and updates are required' }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          )
-        }
-        const { data, error } = await supabaseAdmin.rpc('fn_admin_update_user_profile', {
-          p_target_user_id: user_id,
-          p_updates: updates,
-        })
-        if (error) throw error
-        result = { success: true, profile: data }
-        break
-      }
-
-      case 'update_user': {
-        const { user_id, attributes } = params || {}
-        if (!user_id || !attributes) {
-          return new Response(
-            JSON.stringify({ error: 'user_id and attributes are required' }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          )
-        }
-        const { data, error } = await supabaseAdmin.auth.admin.updateUserById(user_id, attributes)
-        if (error) throw error
-        result = { user: { id: data.user.id, email: data.user.email } }
-        break
-      }
+      case 'update_user_profile':
+      case 'update_user':
+        return new Response(
+          JSON.stringify(PROFILE_EDIT_DISABLED),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
 
       case 'list_users': {
         const { page = 1, per_page = 50 } = params || {}
-        const { data, error } = await supabaseAdmin.auth.admin.listUsers({
-          page,
-          perPage: per_page,
-        })
+        const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: per_page })
         if (error) throw error
         result = {
           users: data.users.map((u: any) => ({
@@ -389,7 +342,6 @@ serve(async (req) => {
         )
     }
 
-    // 4. Audit log
     await supabaseAdmin.from('system_logs').insert({
       actor_id: user.id,
       actor_role: isAdmin ? 'admin' : 'user',
@@ -407,8 +359,13 @@ serve(async (req) => {
 
   } catch (err: any) {
     console.error('[ADMIN_PROXY] Error:', err)
+    const message =
+      err?.message ??
+      err?.error_description ??
+      err?.msg ??
+      (typeof err === 'string' ? err : JSON.stringify(err))
     return new Response(
-      JSON.stringify({ error: err.message || 'Internal error' }),
+      JSON.stringify({ error: message || 'Internal error' }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
   }

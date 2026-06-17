@@ -93,6 +93,7 @@ class _LoanViewState extends State<LoanView>
         title: Text('salefni_kasby'.tr),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          tooltip: 'back'.tr,
           onPressed: () => Get.safeBack(),
         ),
         bottom: TabBar(
@@ -516,6 +517,7 @@ class _LoanViewState extends State<LoanView>
                   Icons.remove_circle_outline_rounded,
                   color: AppColors.textSecondary,
                 ),
+                tooltip: 'Decrease',
                 onPressed: _decrementAmount,
               ),
               IconButton(
@@ -523,6 +525,7 @@ class _LoanViewState extends State<LoanView>
                   Icons.add_circle_outline_rounded,
                   color: AppColors.darkGold,
                 ),
+                tooltip: 'Increase',
                 onPressed: _incrementAmount,
               ),
             ],

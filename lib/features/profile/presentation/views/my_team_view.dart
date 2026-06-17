@@ -10,6 +10,7 @@ import 'package:kasby/features/home/presentation/controllers/home_controller.dar
 import 'package:share_plus/share_plus.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/routes/app_routes.dart';
 
 class MyTeamView extends StatefulWidget {
   const MyTeamView({super.key});
@@ -164,6 +165,13 @@ class _MyTeamViewState extends State<MyTeamView> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Get.back(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.leaderboard_rounded),
+            tooltip: 'referral_analytics'.tr,
+            onPressed: () => Get.toNamed(Routes.referralAnalytics),
+          ),
+        ],
       ),
       body: _isLoading
           ? _buildLoadingSkeleton()

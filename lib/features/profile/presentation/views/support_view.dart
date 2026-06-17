@@ -4,6 +4,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/services/supabase_service.dart';
 
 class SupportView extends StatefulWidget {
   const SupportView({super.key});
@@ -19,7 +20,7 @@ class _SupportViewState extends State<SupportView> {
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
-  final List<Map<String, String>> _allFaqs = [
+  List<Map<String, String>> _allFaqs = [
     {'question': 'faq_q1'.tr, 'answer': 'faq_a1'.tr, 'category': 'account'},
     {'question': 'faq_q2'.tr, 'answer': 'faq_a2'.tr, 'category': 'wallet'},
     {'question': 'faq_q3'.tr, 'answer': 'faq_a3'.tr, 'category': 'investment'},
@@ -36,6 +37,29 @@ class _SupportViewState extends State<SupportView> {
       feature: 'Profile',
       status: 'INFO',
     );
+    _fetchFaqs();
+  }
+
+  Future<void> _fetchFaqs() async {
+    try {
+      final response = await SupabaseService.client
+          .from('faqs')
+          .select()
+          .eq('is_active', true)
+          .order('sort_order', ascending: true);
+
+      if ((response as List).isNotEmpty) {
+        setState(() {
+          _allFaqs = response.map<Map<String, String>>((faq) => {
+            'question': (faq['question'] ?? faq['question_ar'] ?? '').toString(),
+            'answer': (faq['answer'] ?? faq['answer_ar'] ?? '').toString(),
+            'category': (faq['category'] ?? 'general').toString(),
+          }).toList();
+        });
+      }
+    } catch (_) {
+      // Keep hardcoded FAQs as fallback
+    }
   }
 
   @override

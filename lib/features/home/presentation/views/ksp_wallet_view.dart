@@ -13,6 +13,10 @@ import 'package:kasby/core/models/ksp_category.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/utils/date_helper.dart';
+import 'package:kasby/core/widgets/error_state_widget.dart';
+import 'package:kasby/core/widgets/kasby_shimmer.dart';
+import 'package:kasby/core/widgets/mini_charts.dart';
 
 class KspWalletView extends StatefulWidget {
   const KspWalletView({super.key});
@@ -24,6 +28,7 @@ class KspWalletView extends StatefulWidget {
 class _KspWalletViewState extends State<KspWalletView> {
   final RxList<TransactionModel> pointsHistory = <TransactionModel>[].obs;
   final RxBool isLoading = true.obs;
+  final RxBool hasError = false.obs;
 
   @override
   void initState() {
@@ -52,6 +57,7 @@ class _KspWalletViewState extends State<KspWalletView> {
     if (!SupabaseService.isLoggedIn) return;
     final stopwatch = Stopwatch()..start();
     isLoading.value = true;
+    hasError.value = false;
     try {
       // Refresh points and metrics from centralized controller
       await HomeController.to.fetchPoints();
@@ -85,6 +91,7 @@ class _KspWalletViewState extends State<KspWalletView> {
         params: {'historyCount': pointsHistory.length},
       );
     } catch (e, stack) {
+      hasError.value = true;
       SafeGetx.debugTrace(
         className: 'KspWalletView',
         method: '_fetchPointsData',
@@ -138,6 +145,8 @@ class _KspWalletViewState extends State<KspWalletView> {
               _buildBalanceCard(),
               const SizedBox(height: 24),
               _buildMetricsRow(),
+              const SizedBox(height: 20),
+              _buildEarnSpendSparklines(),
               const SizedBox(height: 28),
               _buildQuickActions(),
               const SizedBox(height: 28),
@@ -282,6 +291,103 @@ class _KspWalletViewState extends State<KspWalletView> {
     );
   }
 
+  Widget _buildEarnSpendSparklines() {
+    return Obx(() {
+      if (pointsHistory.isEmpty) return const SizedBox.shrink();
+
+      final earnData = pointsHistory
+          .where((tx) => tx.type == 'earn')
+          .map((tx) => tx.amount)
+          .toList()
+          .reversed
+          .toList();
+      final spendData = pointsHistory
+          .where((tx) => tx.type == 'spend' || tx.type == 'redeem')
+          .map((tx) => tx.amount.abs())
+          .toList()
+          .reversed
+          .toList();
+
+      if (earnData.length < 2 && spendData.length < 2) {
+        return const SizedBox.shrink();
+      }
+
+      return KasbyCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'ksp_earn_spend_trend'.tr,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (earnData.length >= 2) ...[
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.softGreen,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'ksp_earned'.tr,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              KasbySparkline(
+                data: earnData,
+                lineColor: AppColors.softGreen,
+                height: 48,
+              ),
+            ],
+            if (spendData.length >= 2) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'ksp_spent'.tr,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              KasbySparkline(
+                data: spendData,
+                lineColor: AppColors.error,
+                height: 48,
+              ),
+            ],
+          ],
+        ),
+      );
+    });
+  }
+
   Widget _buildQuickActions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,11 +473,21 @@ class _KspWalletViewState extends State<KspWalletView> {
         const SizedBox(height: 12),
         Obx(() {
           if (isLoading.value) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.darkGold),
+            return Column(
+              children: List.generate(
+                4,
+                (_) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: KasbyShimmer.transactionItem(isDark: isDark),
+                ),
               ),
+            );
+          }
+
+          if (hasError.value) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: ErrorStateWidget(onRetry: _fetchPointsData),
             );
           }
 
@@ -473,7 +589,7 @@ class _KspWalletViewState extends State<KspWalletView> {
                           if (tx.createdAt != null) ...[
                             const SizedBox(height: 4),
                             Text(
-                              '${tx.createdAt!.day}/${tx.createdAt!.month}/${tx.createdAt!.year}',
+                              DateHelper.date(tx.createdAt),
                               style: TextStyle(
                                 color: isDark ? Colors.white38 : Colors.grey.shade600,
                                 fontSize: 10,
@@ -553,7 +669,7 @@ class _KspWalletViewState extends State<KspWalletView> {
             _buildDetailRow('ksp_amount'.tr, '${tx.type == 'earn' ? '+' : '-'}${tx.amount.toInt()} KSP', color: tx.type == 'earn' ? AppColors.softGreen : AppColors.error),
             _buildDetailRow('usd_equivalent'.tr, '\$${KspConverter.kspToUsd(tx.amount).toStringAsFixed(2)}'),
             if (tx.createdAt != null)
-              _buildDetailRow('date'.tr, '${tx.createdAt!.day.toString().padLeft(2, '0')}/${tx.createdAt!.month.toString().padLeft(2, '0')}/${tx.createdAt!.year} ${tx.createdAt!.hour.toString().padLeft(2, '0')}:${tx.createdAt!.minute.toString().padLeft(2, '0')}'),
+              _buildDetailRow('date'.tr, DateHelper.dateTime(tx.createdAt)),
             _buildDetailRow('reference_id'.tr, tx.id),
             _buildDetailRow('description'.tr, tx.description ?? 'N/A', isLast: true),
             const SizedBox(height: 20),

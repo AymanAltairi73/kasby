@@ -43,4 +43,13 @@ abstract class Routes {
   static const profileUpdate = '/profile-update';
   static const qrScanner = '/qr-scanner';
   static const myQr = '/my-qr';
+  static const securityCenter = '/security-center';
+  static const statements = '/statements';
+  static const portfolioAnalytics = '/portfolio-analytics';
+  static const guidedTour = '/guided-tour';
+  static const globalSearch = '/global-search';
+  static const recurringInvestments = '/recurring-investments';
+  static const createRecurringInvestment = '/create-recurring-investment';
+  static const referralAnalytics = '/referral-analytics';
+  static const notificationPreferences = '/notification-preferences';
 }

@@ -387,6 +387,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
         title: Text('social_network'.tr),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          tooltip: 'back'.tr,
           onPressed: () => Get.safeBack(),
         ),
         bottom: TabBar(
@@ -660,6 +661,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                   );
                 },
                 icon: Icon(Icons.copy, color: AppColors.darkGold),
+                tooltip: 'copy'.tr,
               ),
               IconButton(
                 onPressed: () {
@@ -670,6 +672,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                   );
                 },
                 icon: Icon(Icons.share_rounded, color: AppColors.darkGold),
+                tooltip: 'Share',
               ),
             ],
           ),
@@ -757,6 +760,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
             ),
             IconButton(
               icon: Icon(Icons.chat_bubble_outline_rounded, color: AppColors.darkGold, size: 22),
+              tooltip: 'send_message'.tr,
               onPressed: () {
                 Get.toNamed(
                   Routes.socialChat,
@@ -769,6 +773,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
             ),
             IconButton(
               icon: const Icon(Icons.person_remove_rounded, color: Colors.redAccent, size: 20),
+              tooltip: 'remove_friend'.tr,
               onPressed: () => _removeFriend(friend['id'] as String),
             ),
           ],

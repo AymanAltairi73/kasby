@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/referral_service.dart';
+import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/routes/app_routes.dart';
@@ -107,6 +110,85 @@ class QrPaymentController extends GetxController {
     }
   }
 
+  /// Shows a confirmation sheet with the scanned recipient before transferring.
+  Future<bool?> _confirmRecipient(
+    String name,
+    dynamic amount,
+    String code,
+  ) {
+    final hasAmount = amount != null && (double.tryParse(amount.toString()) ?? 0) > 0;
+    return Get.dialog<bool>(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.darkGold.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.qr_code_scanner_rounded,
+                  color: AppColors.darkGold, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('confirm_payment'.tr,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 18)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('scan_verify_desc'.tr,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const SizedBox(height: 16),
+            if (name.isNotEmpty)
+              Row(
+                children: [
+                  Icon(Icons.person_rounded,
+                      size: 18, color: AppColors.darkGold),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(name,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            if (hasAmount) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.payments_rounded,
+                      size: 18, color: AppColors.darkGold),
+                  const SizedBox(width: 8),
+                  Text('\$$amount',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('cancel'.tr,
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          KasbyButton(
+            width: 130,
+            text: 'confirm'.tr,
+            onPressed: () => Get.back(result: true),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
   /// Process the scanned data and navigate to transfer for payment.
   /// Returns true when navigation to transfer succeeds.
   Future<bool> handleScanResult(String rawData) async {
@@ -139,6 +221,11 @@ class QrPaymentController extends GetxController {
         data['referral_code']?.toString() ?? scannedUserId ?? '',
       );
       final amount = data['amount'];
+      final recipientName = data['name']?.toString() ?? '';
+
+      // C17: explicit confirmation step before proceeding to transfer.
+      final confirmed = await _confirmRecipient(recipientName, amount, referralCode);
+      if (confirmed != true) return false;
 
       await Get.offNamed(
         Routes.transfer,

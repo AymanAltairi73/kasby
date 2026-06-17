@@ -57,6 +57,12 @@ class _OnboardingViewState extends State<OnboardingView> {
       OnboardingData(
         title: 'ob3_title'.tr,
         description: 'ob3_desc'.tr,
+        icon: Icons.trending_up_rounded,
+      ),
+      // 4th slide — security messaging (audit M8)
+      OnboardingData(
+        title: 'security_matters_title'.tr,
+        description: 'security_matters_desc'.tr,
         icon: Icons.shield_rounded,
       ),
     ];
@@ -98,6 +104,21 @@ class _OnboardingViewState extends State<OnboardingView> {
                 ),
               );
             },
+          ),
+          // Skip for returning installs (audit: add "Skip")
+          Positioned(
+            top: 50,
+            left: 20,
+            child: TextButton(
+              onPressed: _completeOnboarding,
+              child: Text(
+                'skip'.tr,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
           Positioned(
             top: 50,

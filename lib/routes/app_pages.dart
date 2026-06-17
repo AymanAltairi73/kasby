@@ -45,6 +45,15 @@ import '../features/profile/presentation/views/agent_dashboard_view.dart';
 import '../features/profile/presentation/views/profile_update_view.dart';
 import '../features/qr_payment/presentation/views/qr_scanner_view.dart';
 import '../features/qr_payment/presentation/views/my_qr_view.dart';
+import '../features/profile/presentation/views/security_center_view.dart';
+import '../features/wallet/presentation/views/statements_view.dart';
+import '../features/investment/presentation/views/recurring_investments_view.dart';
+import '../features/investment/presentation/views/create_recurring_investment_view.dart';
+import '../features/referral/presentation/views/referral_analytics_view.dart';
+import '../features/onboarding/presentation/views/guided_tour_view.dart';
+import '../features/portfolio/presentation/views/portfolio_analytics_view.dart';
+import '../features/search/presentation/views/global_search_view.dart';
+import '../features/home/presentation/views/notification_preferences_view.dart';
 
 class AppPages {
   static const initial = Routes.splash;
@@ -225,5 +234,48 @@ class AppPages {
     ),
     _route(Routes.qrScanner, 'QrScannerView', () => const QrScannerView()),
     _route(Routes.myQr, 'MyQrView', () => const MyQrView()),
+    _route(
+      Routes.securityCenter,
+      'SecurityCenterView',
+      () => const SecurityCenterView(),
+    ),
+    _route(Routes.statements, 'StatementsView', () => const StatementsView()),
+    _route(
+      Routes.portfolioAnalytics,
+      'PortfolioAnalyticsView',
+      () => const PortfolioAnalyticsView(),
+    ),
+    _route(
+      Routes.guidedTour,
+      'GuidedTourView',
+      () => const GuidedTourView(),
+      transition: Transition.fadeIn,
+    ),
+    _route(
+      Routes.globalSearch,
+      'GlobalSearchView',
+      () => const GlobalSearchView(),
+      transition: Transition.fadeIn,
+    ),
+    _route(
+      Routes.referralAnalytics,
+      'ReferralAnalyticsView',
+      () => const ReferralAnalyticsView(),
+    ),
+    _route(
+      Routes.recurringInvestments,
+      'RecurringInvestmentsView',
+      () => const RecurringInvestmentsView(),
+    ),
+    _route(
+      Routes.createRecurringInvestment,
+      'CreateRecurringInvestmentView',
+      () => const CreateRecurringInvestmentView(),
+    ),
+    _route(
+      Routes.notificationPreferences,
+      'NotificationPreferencesView',
+      () => const NotificationPreferencesView(),
+    ),
   ];
 }

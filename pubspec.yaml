@@ -70,6 +70,8 @@ dependencies:
   qr_flutter: ^4.1.0
   mobile_scanner: ^6.0.4
   app_links: ^6.4.0
+  flutter_map: ^8.3.0
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:

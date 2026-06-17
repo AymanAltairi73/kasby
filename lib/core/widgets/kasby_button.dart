@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_design.dart';
 
 class KasbyButton extends StatefulWidget {
   final String text;
@@ -74,7 +75,8 @@ class _KasbyButtonState extends State<KasbyButton>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final motionEnabled = KasbyMotion.enabled(context);
+    final core = GestureDetector(
       onTapDown: _handleTapDown,
       onTapUp: _handleTapUp,
       onTapCancel: _handleTapCancel,
@@ -168,6 +170,8 @@ class _KasbyButtonState extends State<KasbyButton>
           ),
         ),
       ),
-    ).animate().fadeIn(duration: 400.ms);
+    );
+    if (!motionEnabled) return core;
+    return core.animate().fadeIn(duration: 400.ms);
   }
 }

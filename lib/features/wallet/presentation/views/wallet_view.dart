@@ -261,6 +261,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                             size: 18,
                                           ),
                                         ),
+                                        tooltip: 'Toggle Balance',
                                         onPressed: () =>
                                             currencyController
                                                 .toggleBalancePrivacy(),
@@ -588,13 +589,16 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
     required VoidCallback onTap,
     bool isLocked = false,
   }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      child: Container(
-        height: 140,
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Container(
+          height: 140,
         decoration: BoxDecoration(
           color: isDark ? AppColors.surface : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(28),
@@ -629,6 +633,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -639,12 +644,15 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
     required VoidCallback onTap,
     bool isLocked = false,
   }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      child: Container(
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
         decoration: BoxDecoration(
           color: isDark ? AppColors.surface : AppColors.surfaceLight,
@@ -679,6 +687,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -784,9 +793,12 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            GestureDetector(
-              onTap: () => Get.toNamed(Routes.allTransactions),
-              child: Row(
+            Semantics(
+              button: true,
+              label: 'see_all'.tr,
+              child: GestureDetector(
+                onTap: () => Get.toNamed(Routes.allTransactions),
+                child: Row(
                 children: [
                   Text(
                     'see_all'.tr,
@@ -803,6 +815,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                     size: 12,
                   ),
                 ],
+                ),
               ),
             ),
           ],

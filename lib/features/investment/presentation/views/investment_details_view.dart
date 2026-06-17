@@ -6,6 +6,7 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
@@ -293,36 +294,90 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
 
   void _showConfirmationDialog() {
     if (amountController.text.isEmpty) {
-      Get.snackbar(
-        'error'.tr,
-        'fill_all_data'.tr,
-        backgroundColor: AppColors.error.withValues(alpha: 0.7),
-        colorText: Colors.white,
-      );
+      AppSnack.error('error'.tr, 'fill_all_data'.tr);
       return;
     }
 
+    bool termsAccepted = false;
     Get.dialog(
-      AlertDialog(
-        backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
-        title: Text('confirm_investment'.tr),
-        content: Text(
-          'invest_confirm_msg'.trParams({
-            'amount': '\$${amountController.text}',
-            'plan': plan['title'].toString(),
-          }),
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.safeBack(), child: Text('cancel'.tr)),
-          KasbyButton(
-            width: 120,
-            text: 'confirm'.tr,
-            onPressed: () {
-              Get.safeBack();
-              _executeInvestment();
-            },
-          ),
-        ],
+      StatefulBuilder(
+        builder: (context, setLocalState) {
+          return AlertDialog(
+            backgroundColor:
+                isDark ? AppColors.surface : AppColors.surfaceLight,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Text('confirm_investment'.tr),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'invest_confirm_msg'.trParams({
+                    'amount': '\$${amountController.text}',
+                    'plan': plan['title'].toString(),
+                  }),
+                ),
+                const SizedBox(height: 12),
+                // C8: risk disclosure + explicit terms acceptance before purchase.
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'risk_disclosure'.tr,
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.4,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () =>
+                      setLocalState(() => termsAccepted = !termsAccepted),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Checkbox(
+                        value: termsAccepted,
+                        activeColor: AppColors.darkGold,
+                        onChanged: (v) =>
+                            setLocalState(() => termsAccepted = v ?? false),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            'accept_plan_terms'.tr,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Get.safeBack(), child: Text('cancel'.tr)),
+              KasbyButton(
+                width: 120,
+                text: 'confirm'.tr,
+                onPressed: termsAccepted
+                    ? () {
+                        Get.safeBack();
+                        _executeInvestment();
+                      }
+                    : null,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -343,12 +398,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           status: 'WARNING',
           message: 'Plan ID is null',
         );
-        Get.snackbar(
-          'error'.tr,
-          'plan_data_incomplete'.tr,
-          backgroundColor: AppColors.error.withValues(alpha: 0.7),
-          colorText: Colors.white,
-        );
+        AppSnack.error('error'.tr, 'plan_data_incomplete'.tr);
         return;
       }
 
@@ -403,20 +453,10 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           status: 'WARNING',
           message: response['error']?.toString(),
         );
-        Get.snackbar(
-          'error'.tr,
-          response['error'] ?? 'unexpected_error'.tr,
-          backgroundColor: AppColors.error.withValues(alpha: 0.7),
-          colorText: Colors.white,
-        );
+        AppSnack.error('error'.tr, response['error'] ?? 'unexpected_error'.tr);
       }
     } catch (_) {
-      Get.snackbar(
-        'error'.tr,
-        'error_executing_operation'.tr,
-        backgroundColor: AppColors.error.withValues(alpha: 0.7),
-        colorText: Colors.white,
-      );
+      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

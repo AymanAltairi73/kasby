@@ -240,6 +240,7 @@ class _SupportChatViewState extends State<SupportChatView> {
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded),
+        tooltip: 'back'.tr,
         onPressed: () => Get.safeBack(),
       ),
       title: Row(
@@ -359,6 +360,7 @@ class _SupportChatViewState extends State<SupportChatView> {
       actions: [
         IconButton(
           icon: const Icon(Icons.search_rounded),
+          tooltip: 'Search',
           onPressed: () {
             setState(() => _showSearch = !_showSearch);
           },
@@ -394,6 +396,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                 prefixIcon: Icon(Icons.search, color: AppColors.darkGold),
                 suffixIcon: IconButton(
                   icon: Icon(Icons.close, color: Colors.white54),
+                  tooltip: 'close'.tr,
                   onPressed: () {
                     _searchController.clear();
                     _chatController.searchMessages('');
@@ -418,6 +421,7 @@ class _SupportChatViewState extends State<SupportChatView> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.keyboard_arrow_up, color: Colors.white),
+                  tooltip: 'back'.tr,
                   onPressed: _chatController.previousSearchResult,
                 ),
                 Text(
@@ -426,6 +430,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                  tooltip: 'next'.tr,
                   onPressed: _chatController.nextSearchResult,
                 ),
               ],
@@ -452,6 +457,7 @@ class _SupportChatViewState extends State<SupportChatView> {
           ),
           IconButton(
             icon: const Icon(Icons.close, size: 20),
+            tooltip: 'close'.tr,
             onPressed: () {
               setState(() {
                 _editingMessage = null;
@@ -1139,6 +1145,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                               Icons.add_circle_outline_rounded,
                               color: AppColors.darkGold.withValues(alpha: 0.8),
                             ),
+                            tooltip: 'Attach',
                             onPressed: () => _showAttachmentMenu(),
                           ),
                           Expanded(
@@ -1158,6 +1165,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                                     Icons.emoji_emotions_outlined,
                                     color: AppColors.darkGold.withValues(alpha: 0.6),
                                   ),
+                                  tooltip: 'Emoji',
                                   onPressed: () {},
                                 ),
                               ),
@@ -1176,7 +1184,10 @@ class _SupportChatViewState extends State<SupportChatView> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  GestureDetector(
+                  Semantics(
+                    button: true,
+                    label: 'Send',
+                    child: GestureDetector(
                         onTap: () {
                           HapticFeedback.mediumImpact();
                           _sendMessage(_messageController.text);
@@ -1204,6 +1215,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                             size: 22,
                           ),
                         ),
+                      ),
                       )
                       .animate(onPlay: (c) => c.repeat(reverse: true))
                       .shimmer(
@@ -1399,9 +1411,12 @@ class _SupportChatViewState extends State<SupportChatView> {
 
   // ─── Scroll-to-Bottom FAB ───
   Widget _buildScrollToBottomButton() {
-    return GestureDetector(
-      onTap: _scrollToBottom,
-      child: Container(
+    return Semantics(
+      button: true,
+      label: 'Scroll to bottom',
+      child: GestureDetector(
+        onTap: _scrollToBottom,
+        child: Container(
         height: 44,
         width: 44,
         decoration: BoxDecoration(
@@ -1451,6 +1466,7 @@ class _SupportChatViewState extends State<SupportChatView> {
             }),
           ],
         ),
+      ),
       ),
     )
     .animate()
@@ -1577,6 +1593,7 @@ class _SupportChatViewState extends State<SupportChatView> {
           ),
           IconButton(
             icon: const Icon(Icons.close_rounded, size: 20, color: Colors.white60),
+            tooltip: 'close'.tr,
             onPressed: () => _chatController.clearReply(),
           ),
         ],

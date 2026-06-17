@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
+import 'package:kasby/core/widgets/password_strength_meter.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/auth/presentation/widgets/country_selector.dart';
 import 'package:kasby/features/auth/presentation/widgets/referral_code_formatter.dart';
@@ -17,6 +18,7 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
+  bool _ageConfirmed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +123,9 @@ class _RegisterViewState extends State<RegisterView> {
                 },
               ),
 
+              // Live password strength meter (M9)
+              PasswordStrengthMeter(controller: controller.passwordController),
+
               const SizedBox(height: 20),
 
               // Referral Code (Optional)
@@ -186,6 +191,72 @@ class _RegisterViewState extends State<RegisterView> {
                 ),
               ),
 
+              const SizedBox(height: 12),
+
+              // Age confirmation (C9 — regulatory/age gate)
+              Row(
+                children: [
+                  Checkbox(
+                    value: _ageConfirmed,
+                    onChanged: (v) => setState(() => _ageConfirmed = v ?? false),
+                    activeColor: AppColors.darkGold,
+                    side: BorderSide(
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLight,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'age_confirmation'.tr,
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLight,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Regulatory investment disclaimer (C9)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.darkGold.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.darkGold.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        size: 16, color: AppColors.darkGold),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'investment_disclaimer'.tr,
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.textSecondary
+                              : AppColors.textSecondaryLight,
+                          fontSize: 11,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 32),
 
               Obx(
@@ -197,7 +268,8 @@ class _RegisterViewState extends State<RegisterView> {
                       )
                     : KasbyButton(
                         text: 'register'.tr,
-                        onPressed: controller.termsAccepted.value
+                        onPressed:
+                            controller.termsAccepted.value && _ageConfirmed
                             ? () {
                                 if (_formKey.currentState?.validate() ?? false) {
                                   controller.register(skipFormValidation: true);

@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/utils/country_data.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
@@ -17,6 +16,7 @@ import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/auth_security_service.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
 import 'package:kasby/core/services/deep_link_service.dart';
+import 'package:kasby/core/services/tour_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -397,7 +397,12 @@ class AuthController extends GetxController {
       pendingVerificationEmail.value = null;
       await AuthSecurityService.refreshUserProfileState();
       AppSnack.success('success'.tr, 'email_verified_success'.tr);
-      Get.offAllNamed(Routes.home);
+      final tourDone = await TourService.isTourCompleted();
+      if (!tourDone) {
+        Get.offAllNamed(Routes.guidedTour);
+      } else {
+        Get.offAllNamed(Routes.home);
+      }
     } on AuthException catch (e, stack) {
       _log('Email OTP verification failed', isError: true, error: e.message, stack: stack);
       throw AuthException(AuthSecurityService.translateOtpError(e));
@@ -436,7 +441,7 @@ class AuthController extends GetxController {
     if (!skipFormValidation && !loginFormKey.currentState!.validate()) return;
 
     if (phoneController.text.trim().isEmpty) {
-      Get.snackbar('error'.tr, 'email_or_phone'.tr);
+      AppSnack.error('error'.tr, 'email_or_phone'.tr);
       return;
     }
 
@@ -500,27 +505,18 @@ class AuthController extends GetxController {
         _goToVerifyEmail(loginId);
         return;
       }
-      Get.snackbar(
-        'error'.tr,
-        translateAuthError(e),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withValues(alpha: 0.2),
-      );
+      AppSnack.error('error'.tr, translateAuthError(e));
     } catch (e, stack) {
       isLoading.value = false;
       _log('Login failed (Unexpected)', isError: true, error: e, stack: stack);
-      Get.snackbar(
-        'error'.tr,
-        'حدث خطأ غير متوقع. حاول مرة أخرى.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppSnack.error('error'.tr, 'حدث خطأ غير متوقع. حاول مرة أخرى.');
     }
   }
 
   Future<void> register({bool skipFormValidation = false}) async {
     if (!skipFormValidation && !registerFormKey.currentState!.validate()) return;
     if (!termsAccepted.value) {
-      Get.snackbar('error'.tr, 'agree_error'.tr);
+      AppSnack.error('error'.tr, 'agree_error'.tr);
       return;
     }
 
@@ -544,12 +540,7 @@ class AuthController extends GetxController {
         );
         if (referralLookup == null) {
           isLoading.value = false;
-          Get.snackbar(
-            'error'.tr,
-            'invalid_referral_code'.tr,
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.red.withValues(alpha: 0.2),
-          );
+          AppSnack.error('error'.tr, 'invalid_referral_code'.tr);
           return;
         }
       }
@@ -615,16 +606,16 @@ class AuthController extends GetxController {
             stack: stack,
           );
           _goToVerifyEmail(email);
-          Get.snackbar(
-            'error'.tr,
-            translateAuthError(e),
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.orange.withValues(alpha: 0.2),
-          );
+          AppSnack.error('error'.tr, translateAuthError(e));
         }
       } else if (response.session != null) {
         authStatus.value = AuthStatus.authenticated;
-        Get.offAllNamed(Routes.home);
+        final tourDone = await TourService.isTourCompleted();
+        if (!tourDone) {
+          Get.offAllNamed(Routes.guidedTour);
+        } else {
+          Get.offAllNamed(Routes.home);
+        }
       }
     } on AuthException catch (e, stack) {
       isLoading.value = false;
@@ -634,12 +625,7 @@ class AuthController extends GetxController {
         error: e.message,
         stack: stack,
       );
-      Get.snackbar(
-        'error'.tr,
-        translateAuthError(e),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withValues(alpha: 0.2),
-      );
+      AppSnack.error('error'.tr, translateAuthError(e));
     } catch (e, stack) {
       isLoading.value = false;
       _log(
@@ -648,11 +634,7 @@ class AuthController extends GetxController {
         error: e,
         stack: stack,
       );
-      Get.snackbar(
-        'error'.tr,
-        'حدث خطأ غير متوقع. حاول مرة أخرى.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppSnack.error('error'.tr, 'حدث خطأ غير متوقع. حاول مرة أخرى.');
     }
   }
 
@@ -672,12 +654,12 @@ class AuthController extends GetxController {
     final sanitizedEmail = email.trim().toLowerCase();
 
     if (sanitizedEmail.isEmpty) {
-      Get.snackbar('error'.tr, 'enter_email_hint'.tr);
+      AppSnack.error('error'.tr, 'enter_email_hint'.tr);
       return;
     }
 
     if (!GetUtils.isEmail(sanitizedEmail)) {
-      Get.snackbar('error'.tr, 'invalid_email'.tr);
+      AppSnack.error('error'.tr, 'invalid_email'.tr);
       return;
     }
 
@@ -699,16 +681,11 @@ class AuthController extends GetxController {
       );
     } on AuthException catch (e, stack) {
       _log('Password reset email failed', isError: true, error: e.message, stack: stack);
-      Get.snackbar(
-        'error'.tr,
-        translateAuthError(e),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withValues(alpha: 0.2),
-      );
+      AppSnack.error('error'.tr, translateAuthError(e));
       rethrow;
     } catch (e, stack) {
       _log('Password reset email failed', isError: true, error: e, stack: stack);
-      Get.snackbar('error'.tr, 'unexpected_error'.tr);
+      AppSnack.error('error'.tr, 'unexpected_error'.tr);
       rethrow;
     } finally {
       isLoading.value = false;
@@ -717,7 +694,7 @@ class AuthController extends GetxController {
 
   Future<void> sendPasswordResetOTP(String phone) async {
     if (phone.isEmpty) {
-      Get.snackbar('error'.tr, 'enter_phone_hint'.tr);
+      AppSnack.error('error'.tr, 'enter_phone_hint'.tr);
       return;
     }
 
@@ -780,7 +757,7 @@ class AuthController extends GetxController {
       );
     } catch (e, stack) {
       _log('Failed to send phone OTP', isError: true, error: e, stack: stack);
-      Get.snackbar('error'.tr, e.toString());
+      AppSnack.error('error'.tr, e.toString());
     } finally {
       isLoading.value = false;
     }
@@ -823,7 +800,7 @@ class AuthController extends GetxController {
       );
     } catch (e, stack) {
       _log('Failed to send email OTP', isError: true, error: e, stack: stack);
-      Get.snackbar('error'.tr, e.toString());
+      AppSnack.error('error'.tr, e.toString());
     } finally {
       isLoading.value = false;
     }
@@ -848,24 +825,24 @@ class AuthController extends GetxController {
 
       // Default navigation for signup/login verification
       if (purpose == 'verification' || purpose == 'signup') {
-        Get.offAllNamed(Routes.home);
+        final tourDone = await TourService.isTourCompleted();
+        if (!tourDone) {
+          Get.offAllNamed(Routes.guidedTour);
+        } else {
+          Get.offAllNamed(Routes.home);
+        }
       }
 
-      Get.snackbar(
-        'success'.tr,
-        'تم التحقق بنجاح',
-        backgroundColor: AppColors.softGreen,
-        colorText: Colors.white,
-      );
+      AppSnack.success('success'.tr, 'تم التحقق بنجاح');
     } catch (e, stack) {
       _log('OTP verification failed', isError: true, error: e, stack: stack);
       if (e is OTPVerificationException && e.remainingAttempts != null) {
-        Get.snackbar(
+        AppSnack.error(
           'error'.tr,
           '${e.message}\n${'remaining_attempts'.tr}: ${e.remainingAttempts}',
         );
       } else {
-        Get.snackbar('error'.tr, e.toString());
+        AppSnack.error('error'.tr, e.toString());
       }
     } finally {
       isLoading.value = false;

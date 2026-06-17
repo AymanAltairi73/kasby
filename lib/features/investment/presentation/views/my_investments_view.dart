@@ -5,11 +5,14 @@ import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/widgets/investment_plan_card.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
+import 'package:kasby/core/widgets/mini_charts.dart';
+import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/models/investment_plan_model.dart';
 import 'package:kasby/core/models/user_investment_model.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/routes/app_routes.dart';
 
 class MyInvestmentsView extends StatelessWidget {
   const MyInvestmentsView({super.key});
@@ -25,6 +28,18 @@ class MyInvestmentsView extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => Get.back(),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.repeat_rounded),
+              tooltip: 'recurring_investments'.tr,
+              onPressed: () => Get.toNamed(Routes.recurringInvestments),
+            ),
+            IconButton(
+              icon: const Icon(Icons.analytics_outlined),
+              tooltip: 'portfolio_analytics'.tr,
+              onPressed: () => Get.toNamed(Routes.portfolioAnalytics),
+            ),
+          ],
           bottom: TabBar(
             indicatorColor: AppColors.darkGold,
             labelColor: AppColors.darkGold,
@@ -325,9 +340,16 @@ class _InvestmentsListState extends State<_InvestmentsList> {
         color: AppColors.darkGold,
         child: ListView.separated(
           padding: const EdgeInsets.all(20),
-          itemCount: investments.length,
+          itemCount: investments.length + 1,
           separatorBuilder: (_, __) => const SizedBox(height: 16),
-          itemBuilder: (context, index) {
+          itemBuilder: (context, rawIndex) {
+            if (rawIndex == 0) {
+              return _buildPortfolioSummary()
+                  .animate()
+                  .fadeIn(duration: 400.ms)
+                  .slideY(begin: 0.05, end: 0);
+            }
+            final index = rawIndex - 1;
             final inv = investments[index];
             final isActive = inv.status == 'active';
             final dailyProfit = (inv.amount * inv.profitPercentage / 100 / 30);
@@ -453,6 +475,124 @@ class _InvestmentsListState extends State<_InvestmentsList> {
             color: valueColor,
             fontWeight: FontWeight.bold,
             fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Portfolio performance summary (audit C20): totals, return trend sparkline
+  /// and an asset allocation bar derived from the user's active investments.
+  Widget _buildPortfolioSummary() {
+    final palette = <Color>[
+      AppColors.darkGold,
+      AppColors.softGreen,
+      const Color(0xFF2196F3),
+      const Color(0xFF9C27B0),
+      const Color(0xFFE91E63),
+      Colors.teal,
+    ];
+
+    double totalInvested = 0;
+    double totalReturns = 0;
+    final segments = <AllocationSegment>[];
+    final trend = <double>[];
+    double cumulative = 0;
+
+    for (var i = 0; i < investments.length; i++) {
+      final inv = investments[i];
+      totalInvested += inv.amount;
+      final profit = inv.actualProfit ?? inv.expectedProfit;
+      totalReturns += profit;
+      cumulative += inv.amount;
+      trend.add(cumulative);
+      segments.add(
+        AllocationSegment(
+          label: '\$${inv.amount.toStringAsFixed(0)}',
+          value: inv.amount,
+          color: palette[i % palette.length],
+        ),
+      );
+    }
+
+    return KasbyCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'total_portfolio_value'.tr,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '\$${(totalInvested + totalReturns).toStringAsFixed(2)}',
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: KasbySpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryStat(
+                  'total_invested'.tr,
+                  '\$${totalInvested.toStringAsFixed(2)}',
+                  AppColors.darkGold,
+                ),
+              ),
+              Expanded(
+                child: _buildSummaryStat(
+                  'total_returns'.tr,
+                  '+\$${totalReturns.toStringAsFixed(2)}',
+                  AppColors.softGreen,
+                ),
+              ),
+            ],
+          ),
+          if (trend.length >= 2) ...[
+            const SizedBox(height: KasbySpacing.lg),
+            Text(
+              'portfolio_trend_7d'.tr,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: KasbySpacing.sm),
+            KasbySparkline(data: trend, lineColor: AppColors.softGreen),
+          ],
+          if (segments.length >= 2) ...[
+            const SizedBox(height: KasbySpacing.lg),
+            Text(
+              'asset_allocation'.tr,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: KasbySpacing.md),
+            KasbyAllocationBar(segments: segments),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryStat(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
         ),
       ],

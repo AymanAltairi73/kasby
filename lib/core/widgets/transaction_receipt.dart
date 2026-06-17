@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -87,7 +88,7 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
         error: e,
         stackTrace: stackTrace,
       );
-      Get.snackbar('error'.tr, 'share_error'.tr);
+      AppSnack.error('error'.tr, 'share_error'.tr);
     } finally {
       setState(() => _isExporting = false);
     }
@@ -173,7 +174,7 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
         ),
       );
 
-      Get.snackbar('success'.tr, 'pdf_saved'.tr);
+      AppSnack.success('success'.tr, 'pdf_saved'.tr);
     } catch (e, stackTrace) {
       SafeGetx.debugTrace(
         className: 'TransactionReceipt',
@@ -183,7 +184,7 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
         error: e,
         stackTrace: stackTrace,
       );
-      Get.snackbar('error'.tr, 'pdf_error'.tr);
+      AppSnack.error('error'.tr, 'pdf_error'.tr);
     } finally {
       setState(() => _isExporting = false);
     }
@@ -465,13 +466,7 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                   );
                   Clipboard.setData(ClipboardData(text: value));
                   HapticFeedback.mediumImpact();
-                  Get.snackbar(
-                    'copied'.tr,
-                    'transaction_id_copied'.tr,
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: AppColors.darkGold.withValues(alpha: 0.8),
-                    colorText: Colors.black,
-                  );
+                  AppSnack.success('copied'.tr, 'transaction_id_copied'.tr);
                 },
               ),
           ],

@@ -5,6 +5,8 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/utils/date_helper.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class TransactionDetailsView extends StatefulWidget {
@@ -63,8 +65,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
   @override
   Widget build(BuildContext context) {
     if (!_hasValidArgs) {
-      return const Scaffold(
-        body: Center(child: Text("Invalid transaction arguments")),
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text('couldnt_load_data'.tr)),
       );
     }
 
@@ -480,16 +483,14 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
           _buildDivider(isDark),
           _buildDetailRow(
             'transaction_date'.tr,
-            tx.createdAt != null
-                ? '${_formatDate(tx.createdAt!)}  ${_formatTime(tx.createdAt!)}'
-                : '—',
+            tx.createdAt != null ? DateHelper.dateTime(tx.createdAt) : '—',
             isDark,
           ),
           if (tx.processedAt != null) ...[
             _buildDivider(isDark),
             _buildDetailRow(
               'processed_at'.tr,
-              '${_formatDate(tx.processedAt!)}  ${_formatTime(tx.processedAt!)}',
+              DateHelper.dateTime(tx.processedAt),
               isDark,
             ),
           ],
@@ -656,15 +657,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
           },
         );
         Clipboard.setData(ClipboardData(text: tx.id));
-        Get.snackbar(
+        AppSnack.success(
           'success_copy'.tr,
           '${'transaction_id'.tr}: ${tx.id.substring(0, 8)}...',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColors.darkGold,
-          colorText: Colors.black,
-          margin: const EdgeInsets.all(20),
-          borderRadius: 16,
-          duration: const Duration(seconds: 2),
         );
       },
       child: Container(
@@ -720,16 +715,6 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
   }
 
   // ── Helpers ──────────────────────────────────────────
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
-
-  String _formatTime(DateTime date) {
-    final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    return '${hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} $period';
-  }
 
   List<Map<String, dynamic>> _getTimelineSteps(TransactionModel tx) {
     final statusOrder = ['pending', 'processing', 'completed'];

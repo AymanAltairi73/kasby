@@ -13,7 +13,7 @@ import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
-import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/features/profile/presentation/views/profile_update_view.dart';
 import 'dart:io';
 
 class EditProfileView extends StatefulWidget {
@@ -401,13 +401,10 @@ class _EditProfileViewState extends State<EditProfileView> {
             'email_address'.tr,
             profile.email ?? '---',
             Icons.email_outlined,
-            onEdit: () {
-              ProfileUpdateController.to.resetFlow();
-              Get.toNamed(Routes.profileUpdate, arguments: {
-                'type': 'email_change',
-                'current_value': profile.email ?? '',
-              });
-            },
+            onEdit: () => _showSecureChangeSheet(
+              type: 'email_change',
+              currentValue: profile.email ?? '',
+            ),
           ),
           const SizedBox(height: 24),
           _buildInfoRow(
@@ -415,13 +412,10 @@ class _EditProfileViewState extends State<EditProfileView> {
             'phone_number'.tr,
             profile.phone ?? '---',
             Icons.phone_android_rounded,
-            onEdit: () {
-              ProfileUpdateController.to.resetFlow();
-              Get.toNamed(Routes.profileUpdate, arguments: {
-                'type': 'phone_change',
-                'current_value': profile.phone ?? '',
-              });
-            },
+            onEdit: () => _showSecureChangeSheet(
+              type: 'phone_change',
+              currentValue: profile.phone ?? '',
+            ),
           ),
           const SizedBox(height: 24),
           _buildReferralRow(context),
@@ -559,6 +553,35 @@ class _EditProfileViewState extends State<EditProfileView> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showSecureChangeSheet({
+    required String type,
+    required String currentValue,
+  }) {
+    ProfileUpdateController.to.resetFlow();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.background : AppColors.backgroundLight,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: ProfileUpdateView(
+            embeddedArguments: {
+              'type': type,
+              'current_value': currentValue,
+            },
+          ),
+        ),
+      ),
     );
   }
 

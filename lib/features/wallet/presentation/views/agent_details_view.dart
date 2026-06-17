@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -25,6 +26,17 @@ class _AgentDetailsViewState extends State<AgentDetailsView> {
       status: 'INFO',
       params: {'hasArgs': Get.arguments != null},
     );
+    // C7: never render placeholder data — redirect when launched without args.
+    if (Get.arguments is! Map) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Get.back();
+        AppSnack.error(
+          'something_went_wrong'.tr,
+          'couldnt_load_data'.tr,
+        );
+      });
+    }
   }
 
   @override
@@ -40,17 +52,21 @@ class _AgentDetailsViewState extends State<AgentDetailsView> {
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> agent =
-        Get.arguments ??
-        {
-          'name': 'Agent Name',
-          'country': 'iraq'.tr,
-          'location': 'enter_city'.tr,
-          'rate': '98%',
-          'availability_status': 'available',
-        };
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Guard: redirect handled in initState; render a neutral loader meanwhile.
+    if (Get.arguments is! Map) {
+      return Scaffold(
+        backgroundColor:
+            isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.darkGold),
+        ),
+      );
+    }
+
+    final Map<String, dynamic> agent =
+        Get.arguments as Map<String, dynamic>;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,

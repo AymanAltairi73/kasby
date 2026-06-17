@@ -16,6 +16,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/core/services/notification_navigation_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 /// Central controller for the Home & Wallet screens.
@@ -1020,11 +1021,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         await fetchAll();
         HapticFeedback.heavyImpact();
       } else {
-        Get.snackbar(
+        AppSnack.error(
           'error'.tr,
           response['error']?.toString() ?? 'no_rewards_ready'.tr,
-          backgroundColor: AppColors.error,
-          colorText: Colors.white,
         );
       }
     } catch (e, stack) {

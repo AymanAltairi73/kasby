@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
+import 'package:kasby/core/widgets/directional_chevron.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
@@ -14,7 +15,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/utils/ksp_converter.dart';
+import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/widgets/mini_charts.dart';
 
 
 
@@ -115,7 +118,6 @@ class _HomeViewState extends State<HomeView> {
           ],
         ),
       ),
-      floatingActionButton: _FloatingActionMasterpiece(),
     );
   }
 
@@ -243,6 +245,14 @@ class _HomeViewState extends State<HomeView> {
         ],
       ),
       actions: [
+        IconButton(
+          icon: Icon(
+            Icons.search_rounded,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
+          ),
+          tooltip: 'global_search'.tr,
+          onPressed: () => Get.toNamed(Routes.globalSearch),
+        ),
         Stack(
           children: [
             IconButton(
@@ -369,14 +379,15 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildBalanceCard() {
+    final motion = KasbyMotion.enabled(context);
     return Stack(
       children: [
-        // Background Glow Orbs
+        // Background Glow Orbs (decorative — disabled under reduce-motion)
         Positioned(
           top: -20,
           right: -20,
-          child:
-              Container(
+          child: motion
+              ? Container(
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
@@ -390,13 +401,14 @@ class _HomeViewState extends State<HomeView> {
                     begin: const Offset(1, 1),
                     end: const Offset(1.4, 1.4),
                   )
-                  .blurXY(begin: 40, end: 80),
+                  .blurXY(begin: 40, end: 80)
+              : const SizedBox.shrink(),
         ),
         Positioned(
           bottom: -30,
           left: -10,
-          child:
-              Container(
+          child: motion
+              ? Container(
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
@@ -410,7 +422,8 @@ class _HomeViewState extends State<HomeView> {
                     begin: const Offset(1, 1),
                     end: const Offset(1.3, 1.3),
                   )
-                  .blurXY(begin: 30, end: 60),
+                  .blurXY(begin: 30, end: 60)
+              : const SizedBox.shrink(),
         ),
 
         // Glass Card
@@ -428,9 +441,7 @@ class _HomeViewState extends State<HomeView> {
               width: 1.5,
             ),
             hasShadow: true,
-            child: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Column(
+            child: Column(
                 children: [
                   // ─── TOP: KSP Coin Header ───
                   Row(
@@ -614,8 +625,7 @@ class _HomeViewState extends State<HomeView> {
                             ],
                           ),
                           const SizedBox(width: 8),
-                          Icon(
-                            Icons.arrow_forward_ios_rounded,
+                          DirectionalChevron(
                             size: 12,
                             color: AppColors.darkGold,
                           ),
@@ -755,6 +765,60 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  // Portfolio Trend Sparkline (C20)
+                  Obx(() {
+                    final investments = homeController.myInvestments;
+                    if (investments.isEmpty) return const SizedBox.shrink();
+
+                    final sorted = [...investments]
+                      ..sort((a, b) {
+                        final aDate = a.startDate ?? a.createdAt;
+                        final bDate = b.startDate ?? b.createdAt;
+                        if (aDate == null && bDate == null) return 0;
+                        if (aDate == null) return -1;
+                        if (bDate == null) return 1;
+                        return aDate.compareTo(bDate);
+                      });
+
+                    double cumulative = 0;
+                    final dataPoints = <double>[];
+                    for (final inv in sorted) {
+                      cumulative += inv.amount;
+                      dataPoints.add(cumulative);
+                    }
+
+                    // Append profit from recent transactions
+                    for (final tx in homeController.recentTransactions) {
+                      if (tx.type == 'profit' || tx.type == 'investment_return') {
+                        cumulative += tx.amount;
+                        dataPoints.add(cumulative);
+                      }
+                    }
+
+                    if (dataPoints.length < 2) return const SizedBox.shrink();
+
+                    return KasbyCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'portfolio_trend_7d'.tr,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          KasbySparkline(
+                            data: dataPoints,
+                            height: 64,
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                   const SizedBox(height: 12),
                   // Portfolio Distribution
                   Obx(() {
@@ -946,18 +1010,12 @@ class _HomeViewState extends State<HomeView> {
                               color: AppColors.softGreen,
                               icon: Icons.auto_awesome_rounded,
                             ),
-                          ).animate(onPlay: (c) => c.repeat()).shimmer(duration: const Duration(seconds: 2)).scale(
-                                begin: const Offset(1, 1),
-                                end: const Offset(1.05, 1.05),
-                                duration: const Duration(seconds: 1),
-                                curve: Curves.easeInOut,
-                              ),
+                          ),
                       ],
                     );
                   }),
                 ],
               ),
-            ),
           ),
         ),
       ],
@@ -966,13 +1024,48 @@ class _HomeViewState extends State<HomeView> {
 
 
 
+  /// Secondary actions surfaced in the "More" bottom sheet (H4: keep the home
+  /// grid to 6 primary tiles, move the rest into a discoverable sheet).
+  List<Map<String, dynamic>> get _secondaryActions => [
+    {
+      'icon': Icons.analytics_rounded,
+      'label': 'portfolio_analytics'.tr,
+      'onTap': () => Get.toNamed(Routes.portfolioAnalytics),
+    },
+    {
+      'icon': Icons.repeat_rounded,
+      'label': 'recurring_investments'.tr,
+      'onTap': () => Get.toNamed(Routes.recurringInvestments),
+    },
+    {
+      'icon': Icons.leaderboard_rounded,
+      'label': 'referral_analytics'.tr,
+      'onTap': () => Get.toNamed(Routes.referralAnalytics),
+    },
+    {
+      'icon': Icons.people_outline_rounded,
+      'label': 'social_network'.tr,
+      'onTap': () => Get.toNamed(Routes.friendRequests),
+    },
+    {
+      'icon': Icons.card_membership_rounded,
+      'label': 'investments'.tr,
+      'onTap': () => Get.toNamed(Routes.subscription),
+    },
+    {
+      'icon': Icons.casino_rounded,
+      'label': 'spin_wheel'.tr,
+      'onTap': () => Get.toNamed(Routes.spinWheel),
+    },
+    {
+      'icon': Icons.calendar_today_rounded,
+      'label': 'check_in'.tr,
+      'onTap': () => Get.toNamed(Routes.dailyCheckIn),
+    },
+  ];
+
   Widget _buildQuickActions() {
     final List<Map<String, dynamic>> actions = [
-      {
-        'icon': Icons.people_outline_rounded,
-        'label': 'social_network'.tr,
-        'onTap': () => Get.toNamed(Routes.friendRequests),
-      },
       {
         'icon': Icons.swap_horizontal_circle_rounded,
         'label': 'p2p_transfer'.tr,
@@ -982,11 +1075,6 @@ class _HomeViewState extends State<HomeView> {
         'icon': Icons.groups_rounded,
         'label': 'authorized_agents'.tr,
         'onTap': () => Get.toNamed(Routes.agents),
-      },
-      {
-        'icon': Icons.card_membership_rounded,
-        'label': 'investments'.tr,
-        'onTap': () => Get.toNamed(Routes.subscription),
       },
       {
         'icon': Icons.pie_chart_rounded,
@@ -999,14 +1087,14 @@ class _HomeViewState extends State<HomeView> {
         'onTap': () => Get.toNamed(Routes.loan),
       },
       {
-        'icon': Icons.casino_rounded,
-        'label': 'spin_wheel'.tr,
-        'onTap': () => Get.toNamed(Routes.spinWheel),
+        'icon': Icons.account_balance_wallet_rounded,
+        'label': 'ksp_wallet'.tr,
+        'onTap': () => Get.toNamed(Routes.kspWallet),
       },
       {
-        'icon': Icons.calendar_today_rounded,
-        'label': 'check_in'.tr,
-        'onTap': () => Get.toNamed(Routes.dailyCheckIn),
+        'icon': Icons.grid_view_rounded,
+        'label': 'more'.tr,
+        'onTap': _showMoreActions,
       },
     ];
 
@@ -1014,10 +1102,10 @@ class _HomeViewState extends State<HomeView> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+        crossAxisCount: 3,
         mainAxisSpacing: 20,
         crossAxisSpacing: 10,
-        mainAxisExtent: 125,
+        mainAxisExtent: 110,
       ),
       itemCount: actions.length,
       itemBuilder: (context, index) {
@@ -1030,47 +1118,102 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildActionItem(IconData icon, String label, VoidCallback onPressed) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onPressed();
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surface : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.05),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+  void _showMoreActions() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
+      shape: RoundedRectangleBorder(borderRadius: KasbyRadius.sheetR),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(KasbySpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'more'.tr,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
-            child: Icon(icon, color: AppColors.darkGold, size: 28),
+              ),
+              const SizedBox(height: KasbySpacing.xl),
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 4,
+                mainAxisSpacing: 20,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.8,
+                children: _secondaryActions
+                    .map(
+                      (a) => _buildActionItem(
+                        a['icon'] as IconData,
+                        a['label'] as String,
+                        () {
+                          Get.back();
+                          (a['onTap'] as VoidCallback)();
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionItem(IconData icon, String label, VoidCallback onPressed) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onPressed();
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surface : AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: AppColors.darkGold, size: 28),
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Expanded(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1191,7 +1334,7 @@ class _HomeViewState extends State<HomeView> {
                             const SizedBox(height: 4),
                             Text(
                               tx.createdAt != null
-                                  ? '${tx.createdAt!.day}/${tx.createdAt!.month}, ${tx.createdAt!.hour}:${tx.createdAt!.minute.toString().padLeft(2, '0')}'
+                                  ? DateHelper.dateTime(tx.createdAt)
                                   : '',
                               style: TextStyle(
                                 color: isDark
@@ -1219,9 +1362,8 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 16,
+                      DirectionalChevron(
+                        size: 14,
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.3)
                             : Colors.black.withValues(alpha: 0.3),
@@ -1569,107 +1711,3 @@ class _HomeSliderState extends State<_HomeSlider> {
   }
 }
 
-class _FloatingActionMasterpiece extends StatefulWidget {
-  const _FloatingActionMasterpiece();
-
-  @override
-  State<_FloatingActionMasterpiece> createState() =>
-      _FloatingActionMasterpieceState();
-}
-
-class _FloatingActionMasterpieceState extends State<_FloatingActionMasterpiece>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.darkGold.withValues(alpha: 0.3),
-                    blurRadius:
-                        20 + (5 * math.sin(_controller.value * 2 * math.pi)),
-                    spreadRadius:
-                        2 + (2 * math.sin(_controller.value * 2 * math.pi)),
-                  ),
-                ],
-              ),
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.mediumImpact();
-                  Get.toNamed(Routes.investmentPlans);
-                },
-                child: Container(
-                  width: 65,
-                  height: 65,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.darkGold,
-                        Color.lerp(AppColors.darkGold, Colors.white, 0.3)!,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: (isDark ? Colors.white : Colors.black).withValues(
-                        alpha: 0.2,
-                      ),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: RotationTransition(
-                      turns: Tween(begin: 0.0, end: 1.0).animate(
-                        CurvedAnimation(
-                          parent: _controller,
-                          curve: const Interval(
-                            0.0,
-                            0.5,
-                            curve: Curves.easeInOut,
-                          ),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.add_rounded,
-                        color: isDark ? Colors.black : Colors.white,
-                        size: 36,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            )
-            .animate(onPlay: (c) => c.repeat(reverse: true))
-            .scale(
-              begin: const Offset(1, 1),
-              end: const Offset(1.08, 1.08),
-              duration: const Duration(seconds: 2),
-              curve: Curves.easeInOutSine,
-            );
-      },
-    );
-  }
-}

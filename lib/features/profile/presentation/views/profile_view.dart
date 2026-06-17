@@ -3,17 +3,18 @@ import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
+import 'package:kasby/core/widgets/directional_chevron.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/controllers/theme_controller.dart';
 import '../../../support/presentation/controllers/support_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 // import 'package:kasby/core/controllers/shell_controller.dart';
-import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/services/tour_service.dart';
 
 
 class ProfileView extends StatefulWidget {
@@ -78,14 +79,15 @@ class _ProfileViewState extends State<ProfileView> {
                       AppColors.darkGold,
                       () => Get.toNamed(Routes.kspWallet),
                     ),
-                    // _buildProfileItem(
-                    //   context,
-                    //   isDark,
-                    //   Icons.people_outline_rounded,
-                    //   'social_network'.tr,
-                    //   Colors.orangeAccent,
-                    //   () => Get.toNamed(Routes.friendRequests),
-                    // ),
+                    // H9: social network now consistently enabled in profile
+                    _buildProfileItem(
+                      context,
+                      isDark,
+                      Icons.people_outline_rounded,
+                      'social_network'.tr,
+                      Colors.orangeAccent,
+                      () => Get.toNamed(Routes.friendRequests),
+                    ),
                     _buildProfileItem(
                       context,
                       isDark,
@@ -93,6 +95,50 @@ class _ProfileViewState extends State<ProfileView> {
                       'my_team'.tr,
                       Colors.cyanAccent,
                       () => Get.toNamed(Routes.myTeam),
+                    ),
+                    _buildProfileItem(
+                      context,
+                      isDark,
+                      Icons.analytics_rounded,
+                      'portfolio_analytics'.tr,
+                      Colors.blueAccent,
+                      () => Get.toNamed(Routes.portfolioAnalytics),
+                    ),
+                    _buildProfileItem(
+                      context,
+                      isDark,
+                      Icons.leaderboard_rounded,
+                      'referral_analytics'.tr,
+                      Colors.greenAccent,
+                      () => Get.toNamed(Routes.referralAnalytics),
+                    ),
+                    _buildProfileItem(
+                      context,
+                      isDark,
+                      Icons.tour_rounded,
+                      'guided_tour'.tr,
+                      Colors.amberAccent,
+                      () async {
+                        await TourService.resetTour();
+                        Get.toNamed(Routes.guidedTour);
+                      },
+                    ),
+                    _buildProfileItem(
+                      context,
+                      isDark,
+                      Icons.security_rounded,
+                      'security_center'.tr,
+                      Colors.redAccent,
+                      () => Get.toNamed(Routes.securityCenter),
+                    ),
+                    // C11: Statements entry
+                    _buildProfileItem(
+                      context,
+                      isDark,
+                      Icons.description_outlined,
+                      'statements'.tr,
+                      Colors.tealAccent,
+                      () => Get.toNamed(Routes.statements),
                     ),
                     _buildProfileItem(
                       context,
@@ -183,14 +229,7 @@ class _ProfileViewState extends State<ProfileView> {
                       Icons.notifications_none_rounded,
                       'notification_settings'.tr,
                       Colors.orangeAccent,
-                      () {
-                        FCMService.to.setNotificationsEnabled(!FCMService.to.isNotificationsEnabled.value);
-                      },
-                      trailing: Obx(() => Switch(
-                        value: FCMService.to.isNotificationsEnabled.value,
-                        onChanged: (val) => FCMService.to.setNotificationsEnabled(val),
-                        activeThumbColor: AppColors.darkGold,
-                      )),
+                      () => Get.toNamed(Routes.notificationPreferences),
                     ),
                     _buildProfileItem(
                       context,
@@ -555,8 +594,7 @@ class _ProfileViewState extends State<ProfileView> {
                   : Colors.black.withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.arrow_forward_ios,
+            child: DirectionalChevron(
               size: 12,
               color: isDark ? Colors.white54 : Colors.black38,
             ),

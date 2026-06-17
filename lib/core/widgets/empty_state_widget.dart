@@ -25,7 +25,10 @@ class EmptyStateWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Center(
+    return Semantics(
+      container: true,
+      label: '$title. $description',
+      child: Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -78,6 +81,7 @@ class EmptyStateWidget extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 
