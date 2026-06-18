@@ -9,6 +9,8 @@ import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/features/wallet/presentation/controllers/loan_controller.dart';
 import 'package:kasby/core/models/loan_model.dart';
+import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/utils/date_helper.dart';
 class LoanView extends StatefulWidget {
   const LoanView({super.key});
 
@@ -228,13 +230,9 @@ class _LoanViewState extends State<LoanView>
           ),
           // Body
           ...loanController.loanHistory.map((loan) {
-            final createdAt = loan.createdAt;
-            final dateStr = createdAt != null
-                ? '${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}'
-                : '---';
             return TableRow(
               children: [
-                _buildTableCell(dateStr),
+                _buildTableCell(DateHelper.date(loan.createdAt)),
                 Obx(
                   () => _buildTableCell(
                     currencyController.formatAmount(loan.amount),
@@ -859,24 +857,17 @@ class _LoanViewState extends State<LoanView>
 
   void _handleSubmit() {
     if (loanController.activeInvestmentValue.value <= 0) {
-      Get.snackbar(
-        'error'.tr,
-        'must_have_active_investments'.tr,
-        backgroundColor: AppColors.error.withValues(alpha: 0.7),
-        colorText: Colors.white,
-      );
+      AppSnack.error('error'.tr, 'must_have_active_investments'.tr);
       return;
     }
 
     if (currentLoanAmount < minLoanAmount || currentLoanAmount > maxLoanAmount) {
-      Get.snackbar(
+      AppSnack.error(
         'error'.tr,
         'amount_must_be_between'.trParams({
           'min': minLoanAmount.toStringAsFixed(0),
           'max': maxLoanAmount.toStringAsFixed(0),
         }),
-        backgroundColor: AppColors.error.withValues(alpha: 0.7),
-        colorText: Colors.white,
       );
       return;
     }
@@ -1049,7 +1040,7 @@ class _LoanViewState extends State<LoanView>
           ...loanController.repaymentHistory.map((rep) {
             return TableRow(
               children: [
-                _buildTableCell('${rep.createdAt.year}-${rep.createdAt.month}-${rep.createdAt.day}'),
+                _buildTableCell(DateHelper.date(rep.createdAt)),
                 _buildTableCell(currencyController.formatAmount(rep.amount)),
                 _buildTableCell(rep.type == 'full' ? 'full'.tr : 'partial'.tr),
               ],
@@ -1113,7 +1104,7 @@ class _LoanViewState extends State<LoanView>
                   : () {
                 final amount = double.tryParse(partialAmountController.text.replaceAll(',', '')) ?? 0.0;
                 if (amount <= 0 || amount > loan.effectiveRemaining) {
-                  Get.snackbar('error'.tr, 'invalid_amount'.tr);
+                  AppSnack.error('error'.tr, 'invalid_amount'.tr);
                   return;
                 }
                 Get.back();

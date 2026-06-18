@@ -477,29 +477,67 @@ class _AgentsViewState extends State<AgentsView> {
         .where((a) => a.latitude == null || a.longitude == null)
         .toList();
 
+    final mapCenter = agentsWithCoords.isNotEmpty
+        ? LatLng(agentsWithCoords.first.latitude!, agentsWithCoords.first.longitude!)
+        : LatLng(33.3, 44.4);
+
     return Column(
       children: [
         Expanded(
           flex: 3,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: FlutterMap(
-                options: MapOptions(
-                  initialCenter: LatLng(33.3, 44.4),
-                  initialZoom: 10,
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.kasby.app',
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: FlutterMap(
+                    options: MapOptions(
+                      initialCenter: mapCenter,
+                      initialZoom: agentsWithCoords.isNotEmpty ? 10 : 5,
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.kasby.app',
+                      ),
+                      MarkerLayer(markers: _buildMarkers(agentsWithCoords)),
+                    ],
                   ),
-                  MarkerLayer(markers: _buildMarkers(agentsWithCoords)),
-                ],
+                ),
               ),
-            ),
+              if (agentsWithCoords.isEmpty)
+                Positioned.fill(
+                  child: Center(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: (isDark ? AppColors.surface : Colors.white).withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.location_off_rounded, color: AppColors.textSecondary, size: 20),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'no_agent_locations'.tr,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
         if (agentsWithoutCoords.isNotEmpty) ...[
@@ -508,7 +546,7 @@ class _AgentsViewState extends State<AgentsView> {
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: Text(
-                '${agentsWithoutCoords.length} ${_searchQuery.isEmpty ? 'agents_list'.tr : 'no_results_found'.tr}',
+                '${agentsWithoutCoords.length} ${'agents_without_location'.tr}',
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,

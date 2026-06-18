@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
@@ -23,7 +24,10 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
   final homeController = HomeController.to;
   final currencyController = CurrencyController.to;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   DateTimeRange? _selectedDateRange;
+  String _searchQuery = '';
+  bool _isSearching = false;
 
   final List<Map<String, dynamic>> _filters = [
     {
@@ -93,6 +97,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
       status: 'INFO',
     );
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -113,14 +118,46 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(
-          'all_transactions'.tr,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.onSurfaceLight,
-          ),
-        ),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.onSurfaceLight,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'search_transactions_hint'.tr,
+                  hintStyle: TextStyle(
+                    color: isDark ? Colors.white54 : Colors.black38,
+                  ),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+              )
+            : Text(
+                'all_transactions'.tr,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.onSurfaceLight,
+                ),
+              ),
         actions: [
+          IconButton(
+            tooltip: _isSearching ? 'close'.tr : 'search'.tr,
+            icon: Icon(
+              _isSearching ? Icons.close_rounded : Icons.search_rounded,
+              color: isDark ? Colors.white : AppColors.onSurfaceLight,
+            ),
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }
+                _isSearching = !_isSearching;
+              });
+            },
+          ),
           IconButton(
             tooltip: 'download_statement'.tr,
             icon: Icon(
@@ -141,7 +178,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
           // ── Transactions List ───────────────
           Expanded(
             child: Obx(() {
-              final transactions = _applyDateFilter(homeController.allTransactions);
+              final transactions = _applySearchFilter(_applyDateFilter(homeController.allTransactions));
               final isLoading = homeController.isLoadingAllTransactions.value;
 
               if (isLoading && transactions.isEmpty) {
@@ -213,7 +250,11 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
           itemBuilder: (context, index) {
             final filter = _filters[index];
             final isActive = activeFilter == filter['key'];
-            return GestureDetector(
+            return Semantics(
+              button: true,
+              label: filter['label'] as String,
+              selected: isActive,
+              child: GestureDetector(
               onTap: () => homeController.filterTransactions(filter['key']),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
@@ -267,11 +308,12 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                   ],
                 ),
               ),
+            ),
             );
           },
         );
       }),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.1, end: 0);
+    ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(duration: KasbyMotion.duration(context, 400.ms)).slideY(begin: -0.1, end: 0);
   }
 
   Widget _buildDateRangeBar(bool isDark) {
@@ -279,7 +321,10 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Row(
         children: [
-          GestureDetector(
+          Semantics(
+            button: true,
+            label: 'filter_by_date'.tr,
+            child: GestureDetector(
             onTap: _pickDateRange,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -307,7 +352,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                   const SizedBox(width: 6),
                   Text(
                     _selectedDateRange != null
-                        ? '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} – ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}'
+                        ? '${DateHelper.date(_selectedDateRange!.start)} – ${DateHelper.date(_selectedDateRange!.end)}'
                         : 'filter_by_date'.tr,
                     style: TextStyle(
                       fontSize: 12,
@@ -320,6 +365,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                 ],
               ),
             ),
+          ),
           ),
           if (_selectedDateRange != null) ...[
             const SizedBox(width: 8),
@@ -560,10 +606,10 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
             ),
           ),
         )
-        .animate()
+        .animate(autoPlay: KasbyMotion.enabled(context))
         .fadeIn(
-          delay: Duration(milliseconds: 60 * itemIndex),
-          duration: 400.ms,
+          delay: KasbyMotion.duration(context, Duration(milliseconds: 60 * itemIndex)),
+          duration: KasbyMotion.duration(context, 400.ms),
         )
         .slideX(begin: 0.05, end: 0);
   }
@@ -591,6 +637,14 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
     if (picked != null) {
       setState(() => _selectedDateRange = picked);
     }
+  }
+
+  List<TransactionModel> _applySearchFilter(List<TransactionModel> transactions) {
+    if (_searchQuery.isEmpty) return transactions;
+    return transactions.where((tx) {
+      final desc = (tx.description ?? tx.type).toLowerCase();
+      return desc.contains(_searchQuery);
+    }).toList();
   }
 
   List<TransactionModel> _applyDateFilter(List<TransactionModel> transactions) {
@@ -627,7 +681,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
           }()) {
           key = 'yesterday'.tr;
         } else {
-          key = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+          key = DateHelper.date(date);
         }
       }
       groups.putIfAbsent(key, () => []);

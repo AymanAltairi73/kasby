@@ -18,6 +18,7 @@ import 'package:kasby/core/services/notification_navigation_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/services/fee_service.dart';
 
 /// Central controller for the Home & Wallet screens.
 /// Fetches profile data, recent transactions, and notification count.
@@ -451,6 +452,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       fetchPendingRewards(),
       CurrencyController.to.fetchCurrencies(),
       CurrencyController.to.fetchWalletBalances(),
+      FeeService.load(),
     ]);
     SafeGetx.debugTrace(
       className: 'HomeController',

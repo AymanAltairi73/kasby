@@ -5,6 +5,8 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/auth_security_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -256,17 +258,7 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                           final success =
                               await profileCtrl.requestEmailChange(newValue);
                           if (success) {
-                            profileCtrl.resetFlow();
-                            if (_isEmbedded && context.mounted) {
-                              Navigator.of(context).pop();
-                            }
-                            Get.toNamed(
-                              Routes.verifyEmail,
-                              arguments: {
-                                'email': newValue,
-                                'purpose': 'email_change',
-                              },
-                            );
+                            currentStep.value = 2;
                           }
                         } else {
                           await profileCtrl.sendUpdateOtp(
@@ -315,6 +307,18 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                           color: isDark ? Colors.white54 : Colors.black45,
                         ),
                       ).animate().fadeIn(delay: 150.ms),
+                      const SizedBox(height: 20),
+                      KasbyTextField(
+                        key: const ValueKey('email_change_otp'),
+                        controller: otpController,
+                        hint: 'enter_otp'.tr,
+                        isPassword: false,
+                        prefixIcon: Icon(
+                          Icons.security_rounded,
+                          color: AppColors.darkGold,
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
                       const SizedBox(height: 32),
                       profileCtrl.isLoading.value
                           ? const Center(
@@ -324,27 +328,69 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                               ),
                             )
                           : KasbyButton(
-                              text: 'check_verification_status'.tr,
+                              text: 'verify'.tr,
                               onPressed: () async {
-                                final success =
-                                    await profileCtrl.checkEmailChangeComplete(
-                                  _buildTargetValue(),
-                                );
-                                if (success) {
+                                final code = otpController.text.trim();
+                                if (code.isEmpty) return;
+                                try {
+                                  await AuthSecurityService.verifyOtpCode(
+                                    email: _buildTargetValue(),
+                                    token: code,
+                                    type: OtpType.emailChange,
+                                  );
+                                  await AuthSecurityService
+                                      .refreshUserProfileState();
+                                  AppSnack.success(
+                                    'success'.tr,
+                                    'email_changed_success'.tr,
+                                  );
                                   profileCtrl.resetFlow();
                                   if (_isEmbedded && context.mounted) {
                                     Navigator.of(context).pop();
                                   } else {
                                     Get.offNamed(Routes.personalProfile);
                                   }
-                                } else {
-                                  AppSnack.warning(
-                                    'change_email'.tr,
-                                    'email_not_verified_yet'.tr,
+                                } catch (e) {
+                                  AppSnack.error(
+                                    'error'.tr,
+                                    AuthSecurityService.translateOtpError(e),
                                   );
                                 }
                               },
                             ).animate().fadeIn(delay: 250.ms),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: TextButton(
+                          onPressed: profileCtrl.isLoading.value
+                              ? null
+                              : () async {
+                                  final success = await profileCtrl
+                                      .checkEmailChangeComplete(
+                                    _buildTargetValue(),
+                                  );
+                                  if (success) {
+                                    profileCtrl.resetFlow();
+                                    if (_isEmbedded && context.mounted) {
+                                      Navigator.of(context).pop();
+                                    } else {
+                                      Get.offNamed(Routes.personalProfile);
+                                    }
+                                  } else {
+                                    AppSnack.warning(
+                                      'change_email'.tr,
+                                      'email_not_verified_yet'.tr,
+                                    );
+                                  }
+                                },
+                          child: Text(
+                            'check_verification_status'.tr,
+                            style: TextStyle(
+                              color: AppColors.darkGold,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
                     ] else ...[
                       Text(
                         'verify_otp_title'.tr,

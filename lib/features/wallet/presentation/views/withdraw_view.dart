@@ -18,6 +18,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/services/fee_service.dart';
 
 class WithdrawView extends StatefulWidget {
   const WithdrawView({super.key});
@@ -38,6 +39,7 @@ class _WithdrawViewState extends State<WithdrawView> {
   @override
   void initState() {
     super.initState();
+    FeeService.load();
     _fetchAgents();
   }
 
@@ -114,8 +116,21 @@ class _WithdrawViewState extends State<WithdrawView> {
       return;
     }
 
+    final limitError = FeeService.validateAmount(amount, 'withdraw');
+    if (limitError != null) {
+      Get.snackbar(
+        'error'.tr,
+        limitError,
+        backgroundColor: AppColors.error.withValues(alpha: 0.7),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final fee = FeeService.totalFee('withdraw', amount);
+    final totalDeducted = amount + fee;
     final totalBalance = CurrencyController.to.totalBalance.value;
-    if (amount > totalBalance) {
+    if (totalDeducted > totalBalance) {
       Get.snackbar(
         'error'.tr,
         'insufficient_balance'.tr,
@@ -140,6 +155,8 @@ class _WithdrawViewState extends State<WithdrawView> {
 
   void _showConfirmationDialog(double amount) {
     final agent = agents[selectedAgentIndex.value];
+    final fee = FeeService.totalFee('withdraw', amount);
+    final netAmount = amount - fee;
     Get.dialog(
       AlertDialog(
         backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
@@ -179,7 +196,11 @@ class _WithdrawViewState extends State<WithdrawView> {
                   : Colors.black.withValues(alpha: 0.1),
               height: 24,
             ),
-            _buildConfirmRow('expected_fee'.tr, '\$0.00', null),
+            _buildConfirmRow(
+              'expected_fee'.tr,
+              fee > 0 ? '-\$${fee.toStringAsFixed(2)}' : '\$0.00',
+              fee > 0 ? AppColors.error : null,
+            ),
             Divider(
               color: isDark
                   ? Colors.white10
@@ -188,7 +209,7 @@ class _WithdrawViewState extends State<WithdrawView> {
             ),
             _buildConfirmRow(
               'net_amount'.tr,
-              '\$${amount.toStringAsFixed(2)}',
+              '\$${netAmount.toStringAsFixed(2)}',
               AppColors.softGreen,
             ),
             Divider(

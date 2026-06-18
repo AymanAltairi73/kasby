@@ -14,6 +14,7 @@ import 'package:kasby/core/widgets/transaction_receipt.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/services/fee_service.dart';
 
 class TransferView extends StatefulWidget {
   const TransferView({super.key});
@@ -32,6 +33,7 @@ class _TransferViewState extends State<TransferView> {
   @override
   void initState() {
     super.initState();
+    FeeService.load();
     final args = Get.arguments;
     if (args != null && args is Map<String, dynamic>) {
       if (args.containsKey('receiver_id')) {
@@ -445,6 +447,19 @@ class _TransferViewState extends State<TransferView> {
       return;
     }
 
+    if (!isPoints) {
+      final limitError = FeeService.validateAmount(amount, 'transfer');
+      if (limitError != null) {
+        Get.snackbar(
+          'error'.tr,
+          limitError,
+          backgroundColor: AppColors.error.withValues(alpha: 0.7),
+          colorText: Colors.white,
+        );
+        return;
+      }
+    }
+
     final receiverCode = _idController.text.trim();
     final myProfile = HomeController.to.profile.value;
     
@@ -504,6 +519,8 @@ class _TransferViewState extends State<TransferView> {
   }
 
   void _showConfirmationDialog(double amount) {
+    final fee = isPoints ? 0.0 : FeeService.totalFee('transfer', amount);
+    final netAmount = amount - fee;
     Get.dialog(
       AlertDialog(
         backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
@@ -525,6 +542,21 @@ class _TransferViewState extends State<TransferView> {
             Text(
               '${'transfer_type_label'.tr}: ${isPoints ? 'send_points'.tr : 'send_funds'.tr}',
             ),
+            if (fee > 0) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${'expected_fee'.tr}: -\$${fee.toStringAsFixed(2)}',
+                style: TextStyle(color: AppColors.error, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${'net_amount'.tr}: \$${netAmount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  color: AppColors.softGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ],
         ),
         actions: [

@@ -76,8 +76,8 @@ class _HomeViewState extends State<HomeView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const _HomeSlider()
-                        .animate()
-                        .fadeIn(duration: const Duration(milliseconds: 600))
+                        .animate(autoPlay: KasbyMotion.enabled(context))
+                        .fadeIn(duration: KasbyMotion.duration(context, const Duration(milliseconds: 600)))
                         .slideY(begin: 0.1, end: 0),
                     const SizedBox(height: 24),
                     Obx(() {
@@ -91,25 +91,25 @@ class _HomeViewState extends State<HomeView> {
                       return const SizedBox.shrink();
                     }),
                     _buildBalanceCard()
-                        .animate()
-                        .fadeIn(delay: const Duration(milliseconds: 400))
+                        .animate(autoPlay: KasbyMotion.enabled(context))
+                        .fadeIn(delay: KasbyMotion.duration(context, const Duration(milliseconds: 400)))
                         .scale(begin: const Offset(0.95, 0.95)),
                     const SizedBox(height: 24),
 
-                    _buildQuickActions().animate().fadeIn(
-                      delay: const Duration(milliseconds: 800),
+                    _buildQuickActions().animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(
+                      delay: KasbyMotion.duration(context, const Duration(milliseconds: 800)),
                     ),
                     const SizedBox(height: 32),
                     _buildSectionHeader(
                       'recent_transactions'.tr,
                       onSeeAll: () => Get.toNamed(Routes.allTransactions),
-                    ).animate().fadeIn(
-                      delay: const Duration(milliseconds: 1000),
+                    ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(
+                      delay: KasbyMotion.duration(context, const Duration(milliseconds: 1000)),
                     ),
                     const SizedBox(height: 16),
                     _buildRecentTransactions()
-                        .animate()
-                        .fadeIn(delay: const Duration(milliseconds: 1100))
+                        .animate(autoPlay: KasbyMotion.enabled(context))
+                        .fadeIn(delay: KasbyMotion.duration(context, const Duration(milliseconds: 1100)))
                         .slideY(begin: 0.1, end: 0),
                   ],
                 ),
@@ -152,7 +152,10 @@ class _HomeViewState extends State<HomeView> {
       ),
       title: Row(
         children: [
-          GestureDetector(
+          Semantics(
+            button: true,
+            label: 'personal_info'.tr,
+            child: GestureDetector(
             onTap: () => Get.toNamed(Routes.profile),
             child: Hero(
               tag: 'profile_avatar',
@@ -198,49 +201,57 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
           ),
+          ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Obx(
-                () => Text(
-                  'hi_name'.trParams({
-                    'name': homeController.profileName.isEmpty
-                        ? ''
-                        : homeController.profileName,
-                  }),
-                  style: Get.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Obx(
+                  () => Text(
+                    'hi_name'.trParams({
+                      'name': homeController.profileName.isEmpty
+                          ? ''
+                          : homeController.profileName,
+                    }),
+                    style: Get.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.softGreen,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Obx(
-                    () => Text(
-                      'enum_tier_${homeController.accountTier}'.tr,
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondaryLight,
-                        fontSize: 12,
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.softGreen,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Obx(
+                        () => Text(
+                          'enum_tier_${homeController.accountTier}'.tr,
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -262,6 +273,7 @@ class _HomeViewState extends State<HomeView> {
                   context,
                 ).colorScheme.onSurface.withValues(alpha: 0.9),
               ),
+              tooltip: 'notifications'.tr,
               onPressed: () => Get.toNamed(Routes.notifications),
             ),
             Obx(
@@ -500,7 +512,7 @@ class _HomeViewState extends State<HomeView> {
                             ],
                           ),
                         ),
-                      ).animate().fadeIn().slideX(),
+                      ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn().slideX(),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -536,15 +548,18 @@ class _HomeViewState extends State<HomeView> {
                             color: Theme.of(context).colorScheme.onSurface,
                             letterSpacing: -1,
                           ),
-                        ).animate().shimmer(
-                          duration: const Duration(seconds: 3),
+                        ).animate(autoPlay: KasbyMotion.enabled(context)).shimmer(
+                          duration: KasbyMotion.duration(context, const Duration(seconds: 3)),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
                   // ─── KSP BALANCE CARD ───
-                  GestureDetector(
+                  Semantics(
+                    button: true,
+                    label: 'ksp_wallet'.tr,
+                    child: GestureDetector(
                     onTap: () {
                       HapticFeedback.mediumImpact();
                       Get.toNamed(Routes.kspWallet);
@@ -632,7 +647,8 @@ class _HomeViewState extends State<HomeView> {
                         ],
                       ),
                     ),
-                  ).animate().fadeIn().slideY(begin: 0.1),
+                  ),
+                  ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn().slideY(begin: 0.1),
                   const SizedBox(height: 24),
                   // ─── DUAL METRICS: Daily Profit + Currency ───
                   Row(
@@ -752,6 +768,7 @@ class _HomeViewState extends State<HomeView> {
                                         ),
                                       )
                                       .animate(
+                                        autoPlay: KasbyMotion.enabled(context),
                                         key: ValueKey(
                                           currencyController
                                               .selectedCurrency
@@ -766,7 +783,7 @@ class _HomeViewState extends State<HomeView> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Portfolio Trend Sparkline (C20)
+                  // Portfolio Growth Sparkline (C20)
                   Obx(() {
                     final investments = homeController.myInvestments;
                     if (investments.isEmpty) return const SizedBox.shrink();
@@ -788,7 +805,6 @@ class _HomeViewState extends State<HomeView> {
                       dataPoints.add(cumulative);
                     }
 
-                    // Append profit from recent transactions
                     for (final tx in homeController.recentTransactions) {
                       if (tx.type == 'profit' || tx.type == 'investment_return') {
                         cumulative += tx.amount;
@@ -803,7 +819,7 @@ class _HomeViewState extends State<HomeView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'portfolio_trend_7d'.tr,
+                            'investment_growth'.tr,
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 13,
@@ -999,7 +1015,7 @@ class _HomeViewState extends State<HomeView> {
                                 ),
                               ),
                             ],
-                          ).animate().fadeIn(),
+                          ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(),
                         if (canClaim)
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1275,7 +1291,12 @@ class _HomeViewState extends State<HomeView> {
       return Column(
         children: transactions.map((tx) {
           final isOut = tx.isDebit;
-          return GestureDetector(
+          return Semantics(
+            button: true,
+            label: (tx.description != null && tx.description!.isNotEmpty)
+                ? tx.description!.tr
+                : 'enum_txn_${tx.type}'.tr,
+            child: GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
               Get.toNamed(
@@ -1371,6 +1392,7 @@ class _HomeViewState extends State<HomeView> {
                     ],
                   ),
                 ),
+          ),
           );
         }).toList(),
       );
@@ -1591,12 +1613,13 @@ class _HomeSliderState extends State<_HomeSlider> {
                                                 overflow: TextOverflow.ellipsis,
                                               )
                                               .animate(
+                                                autoPlay: KasbyMotion.enabled(context),
                                                 key: ValueKey(
                                                   'title_${ad.id}_$_currentPage',
                                                 ),
                                               )
                                               .fadeIn(
-                                                duration: 600.ms,
+                                                duration: KasbyMotion.duration(context, 600.ms),
                                                 curve: Curves.easeOut,
                                               ),
                                           if ((Get.locale?.languageCode == 'en'
@@ -1631,20 +1654,21 @@ class _HomeSliderState extends State<_HomeSlider> {
                                                       TextOverflow.ellipsis,
                                                 )
                                                 .animate(
+                                                  autoPlay: KasbyMotion.enabled(context),
                                                   key: ValueKey(
                                                     'desc_${ad.id}_$_currentPage',
                                                   ),
                                                 )
                                                 .fadeIn(
-                                                  delay: 300.ms,
-                                                  duration: 500.ms,
+                                                  delay: KasbyMotion.duration(context, 300.ms),
+                                                  duration: KasbyMotion.duration(context, 500.ms),
                                                   curve: Curves.easeOut,
                                                 )
                                                 .slideX(
                                                   begin: -0.15,
                                                   end: 0,
-                                                  delay: 300.ms,
-                                                  duration: 700.ms,
+                                                  delay: KasbyMotion.duration(context, 300.ms),
+                                                  duration: KasbyMotion.duration(context, 700.ms),
                                                   curve: Curves.easeOutCubic,
                                                 ),
                                           ],
@@ -1656,9 +1680,12 @@ class _HomeSliderState extends State<_HomeSlider> {
                               ),
                             ),
                           )
-                          .animate(onPlay: (c) => c.repeat())
+                          .animate(
+                            autoPlay: KasbyMotion.enabled(context),
+                            onPlay: (c) => c.repeat(),
+                          )
                           .shimmer(
-                            duration: 3000.ms,
+                            duration: KasbyMotion.duration(context, 3000.ms),
                             color: (isDark ? Colors.white : Colors.black)
                                 .withValues(alpha: 0.1),
                           ),

@@ -10,6 +10,7 @@ import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/services/snack_service.dart';
 
 class SocialNetworkView extends StatefulWidget {
   const SocialNetworkView({super.key});
@@ -212,14 +213,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
             'referral_code': accepted['referral_code'],
           });
         });
-        Get.snackbar(
-          'success'.tr,
-          'request_accepted'.tr,
-          backgroundColor: AppColors.softGreen.withValues(alpha: 0.9),
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(20),
-        );
+        AppSnack.success('success'.tr, 'request_accepted'.tr);
       }
     } catch (e) {
       debugPrint('Error accepting request: $e');
@@ -241,14 +235,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
       if (response['success'] == true) {
         setState(() => _requests.removeAt(index));
         HapticFeedback.lightImpact();
-        Get.snackbar(
-          'success'.tr,
-          'request_rejected'.tr,
-          backgroundColor: AppColors.error.withValues(alpha: 0.7),
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(20),
-        );
+        AppSnack.info('success'.tr, 'request_rejected'.tr);
       }
     } catch (e) {
       debugPrint('Error rejecting request: $e');
@@ -269,14 +256,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
       final response = result as Map<String, dynamic>;
       if (response['success'] == true) {
         HapticFeedback.lightImpact();
-        Get.snackbar(
-          'success'.tr,
-          'friend_request_sent'.tr,
-          backgroundColor: AppColors.softGreen.withValues(alpha: 0.9),
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(20),
-        );
+        AppSnack.success('success'.tr, 'friend_request_sent'.tr);
 
         if (response['auto_accepted'] == true) {
           // Move from suggestions to friends
@@ -292,12 +272,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
       } else {
         // Revert on error
         setState(() => _sentRequestIds.remove(receiverId));
-        Get.snackbar(
-          'error'.tr,
-          response['error'] ?? 'error'.tr,
-          backgroundColor: AppColors.error.withValues(alpha: 0.7),
-          colorText: Colors.white,
-        );
+        AppSnack.error('error'.tr, response['error'] ?? 'error'.tr);
       }
     } catch (e) {
       setState(() => _sentRequestIds.remove(receiverId));
@@ -320,14 +295,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
           _sentRequestIds.remove(receiverId);
         });
         HapticFeedback.lightImpact();
-        Get.snackbar(
-          'success'.tr,
-          'request_cancelled'.tr,
-          backgroundColor: AppColors.error.withValues(alpha: 0.7),
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(20),
-        );
+        AppSnack.info('success'.tr, 'request_cancelled'.tr);
       }
     } catch (e) {
       debugPrint('Error cancelling request: $e');
@@ -653,12 +621,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: 'https://kasby.app/join?ref=$referralCode'));
                   HapticFeedback.lightImpact();
-                  Get.snackbar(
-                    'success'.tr,
-                    'invite_link_copied'.tr,
-                    backgroundColor: AppColors.softGreen.withValues(alpha: 0.8),
-                    colorText: Colors.white,
-                  );
+                  AppSnack.success('success'.tr, 'invite_link_copied'.tr);
                 },
                 icon: Icon(Icons.copy, color: AppColors.darkGold),
                 tooltip: 'copy'.tr,
@@ -710,7 +673,15 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
               ),
             ),
             if (isProcessing)
-              SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.darkGold))
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: KasbyShimmer(
+                  width: 24,
+                  height: 24,
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+              )
             else
               Row(
                 children: [

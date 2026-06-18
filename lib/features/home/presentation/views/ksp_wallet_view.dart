@@ -133,29 +133,50 @@ class _KspWalletViewState extends State<KspWalletView> {
         backgroundColor: Colors.transparent,
         systemOverlayStyle: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       ),
-      body: RefreshIndicator(
-        onRefresh: _fetchPointsData,
-        color: AppColors.darkGold,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildBalanceCard(),
-              const SizedBox(height: 24),
-              _buildMetricsRow(),
-              const SizedBox(height: 20),
-              _buildEarnSpendSparklines(),
-              const SizedBox(height: 28),
-              _buildQuickActions(),
-              const SizedBox(height: 28),
-              _buildHistorySection(),
-              const SizedBox(height: 40),
-            ],
+      body: Obx(() {
+        if (isLoading.value && pointsHistory.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Column(
+              children: List.generate(
+                5,
+                (_) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: KasbyShimmer.transactionItem(isDark: isDark),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (hasError.value && pointsHistory.isEmpty) {
+          return ErrorStateWidget(onRetry: _fetchPointsData);
+        }
+
+        return RefreshIndicator(
+          onRefresh: _fetchPointsData,
+          color: AppColors.darkGold,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildBalanceCard(),
+                const SizedBox(height: 24),
+                _buildMetricsRow(),
+                const SizedBox(height: 20),
+                _buildEarnSpendSparklines(),
+                const SizedBox(height: 28),
+                _buildQuickActions(),
+                const SizedBox(height: 28),
+                _buildHistorySection(),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 

@@ -13,6 +13,7 @@ class PortfolioController extends GetxController {
   static PortfolioController get to => Get.find();
 
   final RxBool isLoading = true.obs;
+  final RxBool hasError = false.obs;
   final Rx<PortfolioPeriod> selectedPeriod = PortfolioPeriod.d30.obs;
 
   // Computed metrics
@@ -77,6 +78,7 @@ class PortfolioController extends GetxController {
   void _computeAll() {
     final stopwatch = Stopwatch()..start();
     isLoading.value = true;
+    hasError.value = false;
 
     try {
       _computeMetrics();
@@ -85,6 +87,7 @@ class PortfolioController extends GetxController {
       _computePeriodPerformance();
       _generateInsights();
     } catch (e, stack) {
+      hasError.value = true;
       SafeGetx.debugTrace(
         className: 'PortfolioController',
         method: '_computeAll',

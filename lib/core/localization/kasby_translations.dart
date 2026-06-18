@@ -17,6 +17,7 @@ class KasbyTranslations extends Translations {
       'pending_balance': 'Pending',
       'total_portfolio_value': 'Total Portfolio Value',
       'portfolio_trend_7d': '7-day trend',
+      'investment_growth': 'Investment Growth',
       'asset_allocation': 'Asset Allocation',
       'restoring_session': 'Restoring your session…',
       'security_matters_title': 'Your security matters',
@@ -128,7 +129,10 @@ class KasbyTranslations extends Translations {
       'filter_profit': 'Profit',
       'filter_reward': 'Reward',
       'filter_points': 'KSP',
-      'ksp_wallet': 'KSP Wallet',
+      'filter_short_duration': '< 30 Days',
+      'filter_medium_duration': '30–90 Days',
+      'filter_long_duration': '90+ Days',
+      'ksp_wallet': 'Rewards Wallet (KSP)',
       'ksp_balance': 'KSP Balance',
       'ksp_usd_equivalent': 'USD Equivalent',
       'ksp_total_earned': 'Total Earned',
@@ -161,12 +165,12 @@ class KasbyTranslations extends Translations {
       // Onboarding
       'onboarding_title_1': 'Welcome to Kasby',
       'onboarding_desc_1':
-          'Your professional gateway to vetted and transparent investment opportunities.',
+          'Invest with transparency. Track every dollar, every reward, every return.',
       'onboarding_title_2': 'Diverse Investments',
-      'onboarding_desc_2': 'Invest in Gold, Silver, and Real Estate with ease.',
+      'onboarding_desc_2': 'Diversified plans across gold, real estate, and more — tailored to your goals.',
       'onboarding_title_3': 'Rewards & Growth',
       'onboarding_desc_3':
-          'Earn rewards, track profits, and grow your wealth daily.',
+          'Bank-grade security with biometric protection and encrypted transactions.',
       'get_started': 'Get Started',
       'next': 'Next',
       // Auth
@@ -638,7 +642,7 @@ class KasbyTranslations extends Translations {
       'estimated_profit': 'Estimated Profit:',
       'slide_to_invest': 'Slide to Invest Now',
       'confirm_investment': 'Confirm Investment',
-      'invest_confirm_msg': 'Are you sure you want to invest @amount in @plan?',
+      'invest_confirm_msg': 'By confirming, you agree to the plan terms and lock-in period.',
       'confirm': 'Confirm',
       'investment_success': 'Investment placed successfully!',
       'my_investments': 'My Investments',
@@ -906,6 +910,7 @@ class KasbyTranslations extends Translations {
       'currency_omr': 'Omani Rial',
       // All Transactions & Details
       'all_transactions': 'All Transactions',
+      'search_transactions_hint': 'Search by ID, amount, description...',
       'transaction_type': 'Type',
       'transaction_amount': 'Amount',
       'transaction_fee': 'Fee',
@@ -1161,7 +1166,7 @@ class KasbyTranslations extends Translations {
       'kyc_required_title': 'Identity Verification Required',
       'kyc_required_desc': 'Please verify your identity (KYC) to unlock withdrawals and full account features.',
       'validation_error_title': 'Missing Information',
-      'validation_error_desc': 'Please fill in all required fields before proceeding.',
+      'validation_error_desc': 'Please enter a valid amount to continue.',
       'deposit_min_title': 'Minimum Amount Not Met',
       'deposit_min_desc': 'The minimum deposit amount is \$10. Please enter a higher amount.',
       'deposit_error_title': 'Deposit Failed',
@@ -1218,6 +1223,8 @@ class KasbyTranslations extends Translations {
       'security': 'Security',
       'loan_applied_successfully': 'Loan request submitted successfully!',
       'no_agents': 'No agents available at the moment',
+      'no_agent_locations': 'No agents have location data',
+      'agents_without_location': 'agents without location',
       'unknown_error': 'An unexpected error occurred. Please try again.',
       // ── Secure Profile Update (Password + OTP Flow) ──
       'enter_current_password_to_verify': 'Enter your current password to verify your identity',
@@ -1251,7 +1258,7 @@ class KasbyTranslations extends Translations {
       // New keys from audit remediation
       'login_required': 'You must be logged in first',
       'kyc_upload_error': 'An error occurred while uploading documents. Please try again.',
-      'wallet_frozen': 'Your wallet is frozen. Please contact support.',
+      'wallet_frozen': 'Your wallet is temporarily restricted. Contact support for assistance.',
       'wallet_frozen_title': 'Wallet Frozen',
       'wallet_frozen_desc': 'Your wallet has been frozen. All financial operations are disabled. Please contact support for assistance.',
       'expired_qr': 'Expired QR Code',
@@ -1367,6 +1374,9 @@ class KasbyTranslations extends Translations {
 
       // ── Global Search ──
       'global_search': 'Search',
+      'search': 'Search',
+      'attach': 'Attach',
+      'emoji': 'Emoji',
       'search_placeholder': 'Search investments, transactions...',
       'recent_searches': 'Recent Searches',
       'clear_all': 'Clear All',
@@ -1455,6 +1465,7 @@ class KasbyTranslations extends Translations {
       'pending_balance': 'قيد المعالجة',
       'total_portfolio_value': 'إجمالي قيمة المحفظة',
       'portfolio_trend_7d': 'اتجاه 7 أيام',
+      'investment_growth': 'نمو الاستثمار',
       'asset_allocation': 'توزيع الأصول',
       'restoring_session': 'جارٍ استعادة جلستك…',
       'security_matters_title': 'أمانك يهمنا',
@@ -1575,7 +1586,10 @@ class KasbyTranslations extends Translations {
       'subscription_active_title':'لديك بالفعل اشتراك نشط',
       'filter_reward': 'مكافأة',
       'filter_points': 'KSP',
-      'ksp_wallet': 'محفظة KSP',
+      'filter_short_duration': '< 30 يوم',
+      'filter_medium_duration': '30–90 يوم',
+      'filter_long_duration': '+90 يوم',
+      'ksp_wallet': 'محفظة المكافآت (KSP)',
       'ksp_balance': 'رصيد KSP',
       'ksp_usd_equivalent': 'ما يعادله بالدولار',
       'ksp_total_earned': 'إجمالي المكتسب',
@@ -1607,11 +1621,11 @@ class KasbyTranslations extends Translations {
       'no_transactions_desc': 'قم بإيداع أو استثمار للبدء.',
       // Onboarding
       'onboarding_title_1': 'مرحباً بك في كاسبي',
-      'onboarding_desc_1': 'بوابتك الاحترافية لاستثمارات شفافة وموثوقة.',
+      'onboarding_desc_1': 'استثمر بشفافية. تتبع كل مبلغ، كل مكافأة، وكل عائد.',
       'onboarding_title_2': 'استثمارات متنوعة',
-      'onboarding_desc_2': 'استثمر في الذهب والفضة والعقارات بكل سهولة.',
+      'onboarding_desc_2': 'خطط متنوعة في الذهب والعقارات وأكثر — مصممة لأهدافك.',
       'onboarding_title_3': 'مكافآت ونمو',
-      'onboarding_desc_3': 'احصل على مكافآت، تتبع أرباحك، ونمِ ثروتك يومياً.',
+      'onboarding_desc_3': 'أمان بمعايير مصرفية مع حماية بيومترية وتشفير لكل معاملة.',
       'get_started': 'ابدأ الآن',
       'next': 'التالي',
       // Auth
@@ -2112,7 +2126,7 @@ class KasbyTranslations extends Translations {
       'estimated_profit': 'الربح التقديري:',
       'slide_to_invest': 'اسحب للاستثمار الآن',
       'confirm_investment': 'تأكيد الاستثمار',
-      'invest_confirm_msg': 'هل أنت متأكد أنك تريد استثمار @amount في @plan؟',
+      'invest_confirm_msg': 'بالتأكيد، فإنك توافق على شروط الخطة وفترة الإغلاق.',
       'confirm': 'تأكيد',
       'investment_success': 'تم الاستثمار بنجاح!',
       'my_investments': 'استثماراتي',
@@ -2360,6 +2374,7 @@ class KasbyTranslations extends Translations {
       'currency_omr': 'الريال العماني',
       // All Transactions & Details
       'all_transactions': 'جميع المعاملات',
+      'search_transactions_hint': 'بحث بالمعرّف، المبلغ، الوصف...',
       'transaction_type': 'النوع',
       'transaction_amount': 'المبلغ',
       'transaction_fee': 'الرسوم',
@@ -2474,7 +2489,7 @@ class KasbyTranslations extends Translations {
       'kyc_required_title': 'مطلوب التحقق من الهوية',
       'kyc_required_desc': 'يرجى التحقق من هويتك (KYC) لتتمكن من السحب والوصول لجميع ميزات الحساب.',
       'validation_error_title': 'معلومات ناقصة',
-      'validation_error_desc': 'يرجى ملء جميع الحقول المطلوبة قبل المتابعة.',
+      'validation_error_desc': 'يرجى إدخال مبلغ صالح للمتابعة.',
       'deposit_min_title': 'أقل من الحد الأدنى',
       'deposit_min_desc': 'الحد الأدنى للإيداع هو 10\$. يرجى إدخال مبلغ أعلى.',
       'deposit_error_title': 'فشل الإيداع',
@@ -2529,6 +2544,8 @@ class KasbyTranslations extends Translations {
       'security': 'الأمان',
       'loan_applied_successfully': 'تم تقديم طلب القرض بنجاح!',
       'no_agents': 'لا يوجد وكلاء متاحون حالياً',
+      'no_agent_locations': 'لا يوجد بيانات موقع للوكلاء',
+      'agents_without_location': 'وكلاء بدون موقع',
 
       // Notifications
       'no_notifications_desc':
@@ -2665,7 +2682,7 @@ class KasbyTranslations extends Translations {
       // New keys from audit remediation
       'login_required': 'يجب تسجيل الدخول أولاً',
       'kyc_upload_error': 'حدث خطأ أثناء رفع المستندات. حاول مرة أخرى.',
-      'wallet_frozen': 'محفظتك مجمّدة. يرجى التواصل مع الدعم.',
+      'wallet_frozen': 'محفظتك مقيّدة مؤقتاً. تواصل مع الدعم للمساعدة.',
       'wallet_frozen_title': 'المحفظة مجمّدة',
       'wallet_frozen_desc': 'تم تجميد محفظتك. جميع العمليات المالية معطلة. يرجى التواصل مع الدعم للمساعدة.',
       'expired_qr': 'رمز QR منتهي الصلاحية',
@@ -2781,6 +2798,9 @@ class KasbyTranslations extends Translations {
 
       // ── البحث الشامل ──
       'global_search': 'البحث',
+      'search': 'بحث',
+      'attach': 'إرفاق',
+      'emoji': 'رموز تعبيرية',
       'search_placeholder': 'ابحث في الاستثمارات، المعاملات...',
       'recent_searches': 'عمليات البحث الأخيرة',
       'clear_all': 'مسح الكل',

@@ -1,113 +1,91 @@
-import { serve } from "std/http/server.ts"
-import { createClient } from "supabase"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 }
 
-async function sha256Hex(value: string): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
-  )
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("")
+async function hashOtp(code: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode(code)
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
 }
 
-serve(async (req: Request) => {
+serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
   }
 
   try {
-    const apikey = req.headers.get("apikey")
-    if (!apikey) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: corsHeaders,
-      })
-    }
-
     const { email, otp_code } = await req.json()
+
     if (!email || !otp_code) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: corsHeaders,
-      })
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: corsHeaders },
+      )
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase()
-    const normalizedOtp = String(otp_code).replace(/\D/g, "")
-
-    if (normalizedOtp.length !== 6) {
-      return new Response(JSON.stringify({ error: "Invalid OTP format" }), {
-        status: 400,
-        headers: corsHeaders,
-      })
-    }
+    const sanitizedEmail = String(email).trim().toLowerCase()
+    const normalizedCode = String(otp_code).replace(/\D/g, "")
+    const providedHash = await hashOtp(normalizedCode)
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     )
 
-    const otpHash = await sha256Hex(normalizedOtp)
-
-    const { data: otp, error: otpError } = await supabaseAdmin
+    const { data: otp, error } = await supabaseAdmin
       .from("otp_verifications")
       .select("*")
-      .eq("target", normalizedEmail)
+      .eq("target", sanitizedEmail)
       .eq("target_type", "email")
-      .eq("purpose", "signup")
-      .eq("otp_hash", otpHash)
-      .eq("is_used", false)
+      .eq("type", "signup")
+      .eq("code_hash", providedHash)
+      .is("used_at", null)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    if (otpError || !otp) {
-      return new Response(JSON.stringify({
-        error: "Invalid or expired OTP",
-        code: "INVALID_OTP",
-      }), { status: 400, headers: corsHeaders })
+    if (error || !otp) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired OTP", code: "INVALID_OTP" }),
+        { status: 400, headers: corsHeaders },
+      )
     }
 
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("email", normalizedEmail)
-      .maybeSingle()
-
-    if (profileError || !profile?.id) {
-      return new Response(JSON.stringify({
-        error: "User profile not found",
-        code: "USER_NOT_FOUND",
-      }), { status: 404, headers: corsHeaders })
+    if (otp.attempts >= otp.max_attempts) {
+      return new Response(
+        JSON.stringify({ error: "Too many attempts", code: "MAX_ATTEMPTS" }),
+        { status: 403, headers: corsHeaders },
+      )
     }
 
-    const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
-      profile.id,
-      { email_confirm: true },
-    )
-
-    if (confirmError) {
-      throw confirmError
-    }
-
-    await supabaseAdmin
+    const { error: markUsedError } = await supabaseAdmin
       .from("otp_verifications")
-      .update({ is_used: true })
+      .update({
+        used_at: new Date().toISOString(),
+        verified_at: new Date().toISOString(),
+      })
       .eq("id", otp.id)
+
+    if (markUsedError) throw markUsedError
+
+    const { error: confirmError } = await supabaseAdmin.auth.admin
+      .updateUserById(otp.user_id, { email_confirm: true })
+
+    if (confirmError) throw confirmError
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: corsHeaders,
     })
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal Error"
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal Error"
     console.error("[confirm-signup-email] Error:", message)
     return new Response(JSON.stringify({ error: message }), {
       status: 500,

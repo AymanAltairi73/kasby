@@ -8,6 +8,7 @@ import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/widgets/mini_charts.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
+import 'package:kasby/core/widgets/error_state_widget.dart';
 import 'package:kasby/features/portfolio/presentation/controllers/portfolio_controller.dart';
 
 class PortfolioAnalyticsView extends StatelessWidget {
@@ -30,6 +31,10 @@ class PortfolioAnalyticsView extends StatelessWidget {
       body: Obx(() {
         if (controller.isLoading.value) {
           return _buildShimmer();
+        }
+
+        if (controller.hasError.value) {
+          return ErrorStateWidget(onRetry: controller.refresh);
         }
 
         if (!controller.hasData) {

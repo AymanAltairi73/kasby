@@ -12,8 +12,8 @@ import 'package:kasby/core/widgets/kasby_shimmer.dart';
 // import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
 import 'package:kasby/core/models/transaction_model.dart';
-import 'package:intl/intl.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/utils/date_helper.dart';
 
 class WalletView extends StatefulWidget {
   const WalletView({super.key});
@@ -904,7 +904,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
       } else if (txDate == yesterday) {
         title = 'yesterday'.tr.toUpperCase();
       } else {
-        title = DateFormat('MMMM d, y').format(txDate).toUpperCase();
+        title = DateHelper.date(txDate).toUpperCase();
       }
 
       final existingGroup = groups.firstWhereOrNull((g) => g.title == title);
@@ -957,7 +957,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      DateFormat('hh:mm a').format(tx.createdAt ?? DateTime.now()),
+                      DateHelper.time(tx.createdAt),
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 11,

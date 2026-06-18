@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/directional_chevron.dart';
@@ -294,23 +295,25 @@ class _ProfileViewState extends State<ProfileView> {
               top: 40,
               left: -30,
               child:
-                  Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.blueAccent.withValues(
-                            alpha: isDark ? 0.1 : 0.06,
-                          ),
-                        ),
-                      )
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scale(
-                        duration: const Duration(seconds: 4),
-                        begin: const Offset(1, 1),
-                        end: const Offset(1.3, 1.3),
-                      )
-                      .blurXY(begin: 30, end: 60),
+                  KasbyMotion.enabled(context)
+                      ? Container(
+                            width: 150,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.blueAccent.withValues(
+                                alpha: isDark ? 0.1 : 0.06,
+                              ),
+                            ),
+                          )
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .scale(
+                            duration: const Duration(seconds: 4),
+                            begin: const Offset(1, 1),
+                            end: const Offset(1.3, 1.3),
+                          )
+                          .blurXY(begin: 30, end: 60)
+                      : const SizedBox.shrink(),
             ),
             // Profile Info Header
             Column(
@@ -351,7 +354,7 @@ class _ProfileViewState extends State<ProfileView> {
                       );
                     }),
                   ),
-                ).animate().scale(delay: 200.ms, curve: Curves.easeOutBack),
+                ).animate(autoPlay: KasbyMotion.enabled(context)).scale(delay: KasbyMotion.duration(context, 200.ms), curve: Curves.easeOutBack),
                 const SizedBox(height: 20),
                 Obx(
                   () => Text(
@@ -365,7 +368,7 @@ class _ProfileViewState extends State<ProfileView> {
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                ).animate().fadeIn(delay: 400.ms),
+                ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(delay: KasbyMotion.duration(context, 400.ms)),
                 Obx(
                   () => Text(
                     HomeController.to.profileEmail.isNotEmpty
@@ -378,7 +381,7 @@ class _ProfileViewState extends State<ProfileView> {
                       letterSpacing: 0.5,
                     ),
                   ),
-                ).animate().fadeIn(delay: 500.ms),
+                ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(delay: KasbyMotion.duration(context, 500.ms)),
                 const SizedBox(height: 40),
               ],
             ),
@@ -389,7 +392,10 @@ class _ProfileViewState extends State<ProfileView> {
                 final unreadCount = supportController.unreadCount;
                 return Column(
                   children: [
-                    GestureDetector(
+                    Semantics(
+                      button: true,
+                      label: 'support_prompt'.tr,
+                      child: GestureDetector(
                           onTap: () => Get.toNamed(Routes.supportChat),
                           child: Container(
                             padding: const EdgeInsets.all(2),
@@ -478,17 +484,24 @@ class _ProfileViewState extends State<ProfileView> {
                             ),
                           ),
                         )
-                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .animate(
+                          autoPlay: KasbyMotion.enabled(context),
+                          onPlay: (c) => c.repeat(reverse: true),
+                        )
                         .scale(
-                          duration: 2000.ms,
+                          duration: KasbyMotion.duration(context, 2000.ms),
                           begin: const Offset(1, 1),
                           end: const Offset(1.1, 1.1),
                         )
-                        .animate(onPlay: (c) => c.repeat())
+                        .animate(
+                          autoPlay: KasbyMotion.enabled(context),
+                          onPlay: (c) => c.repeat(),
+                        )
                         .shimmer(
-                          duration: 3000.ms,
+                          duration: KasbyMotion.duration(context, 3000.ms),
                           color: Colors.white.withValues(alpha: 0.3),
                         ),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                           'support_prompt'.tr,
@@ -499,11 +512,17 @@ class _ProfileViewState extends State<ProfileView> {
                             letterSpacing: 0.5,
                           ),
                         )
-                        .animate(onPlay: (c) => c.repeat())
-                        .shimmer(duration: 2000.ms, color: Colors.white)
-                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .animate(
+                          autoPlay: KasbyMotion.enabled(context),
+                          onPlay: (c) => c.repeat(),
+                        )
+                        .shimmer(duration: KasbyMotion.duration(context, 2000.ms), color: Colors.white)
+                        .animate(
+                          autoPlay: KasbyMotion.enabled(context),
+                          onPlay: (c) => c.repeat(reverse: true),
+                        )
                         .scale(
-                          duration: 1000.ms,
+                          duration: KasbyMotion.duration(context, 1000.ms),
                           begin: const Offset(1, 1),
                           end: const Offset(1.05, 1.05),
                         ),
@@ -554,7 +573,7 @@ class _ProfileViewState extends State<ProfileView> {
         borderRadius: BorderRadius.circular(32),
         child: Column(children: children),
       ),
-    ).animate().fadeIn().slideY(begin: 0.1);
+    ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn().slideY(begin: 0.1);
   }
 
   Widget _buildProfileItem(
@@ -566,40 +585,44 @@ class _ProfileViewState extends State<ProfileView> {
     VoidCallback onTap, {
     Widget? trailing,
   }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: isDark ? 0.1 : 0.08),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: color, size: 22),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-      trailing:
-          trailing ??
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.05),
-              shape: BoxShape.circle,
-            ),
-            child: DirectionalChevron(
-              size: 12,
-              color: isDark ? Colors.white54 : Colors.black38,
-            ),
+    return Semantics(
+      button: true,
+      label: title,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: isDark ? 0.1 : 0.08),
+            borderRadius: BorderRadius.circular(12),
           ),
-      onTap: onTap,
+          child: Icon(icon, color: color, size: 22),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        trailing:
+            trailing ??
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+              child: DirectionalChevron(
+                size: 12,
+                color: isDark ? Colors.white54 : Colors.black38,
+              ),
+            ),
+        onTap: onTap,
+      ),
     );
   }
 
@@ -614,7 +637,7 @@ class _ProfileViewState extends State<ProfileView> {
         }
         AuthController.to.logout();
       },
-    ).animate().fadeIn(delay: 600.ms);
+    ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(delay: KasbyMotion.duration(context, 600.ms));
   }
 
   Widget _buildDeleteAccountButton(BuildContext context) {
@@ -764,7 +787,11 @@ class _ProfileViewState extends State<ProfileView> {
     String countryCode,
     bool isSelected,
   ) {
-    return InkWell(
+    return Semantics(
+      button: true,
+      label: title,
+      selected: isSelected,
+      child: InkWell(
       onTap: () async {
         Get.updateLocale(Locale(langCode, countryCode));
         await LocaleHelper.saveLanguageCode(langCode);
@@ -800,6 +827,7 @@ class _ProfileViewState extends State<ProfileView> {
           ],
         ),
       ),
+    ),
     );
   }
 

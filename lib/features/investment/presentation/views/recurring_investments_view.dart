@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:kasby/core/models/recurring_investment_model.dart';
+import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
@@ -111,7 +111,6 @@ class _RecurringInvestmentTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dateFormat = DateFormat.yMMMd(Get.locale?.toString());
 
     return KasbyCard(
       child: Column(
@@ -164,9 +163,7 @@ class _RecurringInvestmentTile extends StatelessWidget {
 
           _InfoRow(
             label: 'next_execution'.tr,
-            value: item.nextExecutionDate != null
-                ? dateFormat.format(item.nextExecutionDate!)
-                : '—',
+            value: DateHelper.date(item.nextExecutionDate),
           ),
           const SizedBox(height: KasbySpacing.sm),
           _InfoRow(

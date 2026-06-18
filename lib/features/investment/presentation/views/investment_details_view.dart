@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/widgets/kasby_shimmer.dart';
 
 class InvestmentDetailsView extends StatefulWidget {
   const InvestmentDetailsView({super.key});
@@ -60,6 +61,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
         title: Text(plan['title']),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          tooltip: 'back'.tr,
           onPressed: () => Get.safeBack(),
         ),
       ),
@@ -233,12 +235,18 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
               ),
             const SizedBox(height: 48),
             _isSubmitting
-                ? Center(
-                    child: CircularProgressIndicator(color: AppColors.darkGold),
+                ? const KasbyShimmer(
+                    width: double.infinity,
+                    height: 52,
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
                   )
-                : KasbyButton(
-                    text: 'invest_now'.tr,
-                    onPressed: () => _showConfirmationDialog(),
+                : Semantics(
+                    button: true,
+                    label: 'invest_now'.tr,
+                    child: KasbyButton(
+                      text: 'invest_now'.tr,
+                      onPressed: () => _showConfirmationDialog(),
+                    ),
                   ),
             const SizedBox(height: 24),
             Center(

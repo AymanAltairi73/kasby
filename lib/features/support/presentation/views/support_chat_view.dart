@@ -14,6 +14,7 @@ import '../../data/models/chat_message_model.dart';
 import '../controllers/support_chat_controller.dart';
 import '../widgets/chat_attachment_image.dart';
 import 'package:kasby/core/utils/chat_attachment_helper.dart';
+import 'package:kasby/core/services/snack_service.dart';
 
 class SupportChatView extends StatefulWidget {
   const SupportChatView({super.key});
@@ -155,13 +156,7 @@ class _SupportChatViewState extends State<SupportChatView> {
   void _copyMessage(String text) {
     Clipboard.setData(ClipboardData(text: text));
     HapticFeedback.lightImpact();
-    Get.snackbar(
-      'copied'.tr,
-      'copied_to_clipboard'.tr,
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 1),
-      backgroundColor: AppColors.darkGold.withValues(alpha: 0.2),
-    );
+    AppSnack.success('copied'.tr, 'copied_to_clipboard'.tr);
   }
 
 
@@ -360,7 +355,7 @@ class _SupportChatViewState extends State<SupportChatView> {
       actions: [
         IconButton(
           icon: const Icon(Icons.search_rounded),
-          tooltip: 'Search',
+          tooltip: 'search'.tr,
           onPressed: () {
             setState(() => _showSearch = !_showSearch);
           },
@@ -371,7 +366,7 @@ class _SupportChatViewState extends State<SupportChatView> {
             PopupMenuItem(
               child: Text('clear_conversation'.tr),
               onTap: () {
-                Get.snackbar('soon'.tr, 'feature_soon_desc'.tr);
+                AppSnack.info('soon'.tr, 'feature_soon_desc'.tr);
               },
             ),
           ],
@@ -1145,7 +1140,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                               Icons.add_circle_outline_rounded,
                               color: AppColors.darkGold.withValues(alpha: 0.8),
                             ),
-                            tooltip: 'Attach',
+                            tooltip: 'attach'.tr,
                             onPressed: () => _showAttachmentMenu(),
                           ),
                           Expanded(
@@ -1165,7 +1160,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                                     Icons.emoji_emotions_outlined,
                                     color: AppColors.darkGold.withValues(alpha: 0.6),
                                   ),
-                                  tooltip: 'Emoji',
+                                  tooltip: 'emoji'.tr,
                                   onPressed: () {},
                                 ),
                               ),

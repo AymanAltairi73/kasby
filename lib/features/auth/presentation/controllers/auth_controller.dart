@@ -319,8 +319,11 @@ class AuthController extends GetxController {
     const skipRoutes = {
       Routes.home,
       Routes.profileUpdate,
+      Routes.editProfile,
+      Routes.personalProfile,
       Routes.changePassword,
       Routes.verifyEmail,
+      Routes.securityCenter,
     };
     if (!skipRoutes.contains(Get.currentRoute)) {
       Get.offAllNamed(Routes.home);
@@ -589,11 +592,26 @@ class AuthController extends GetxController {
       _log('Registration successful for: $email');
 
       final user = response.user;
+
+      // Supabase returns an empty identities array on repeated signup to
+      // prevent enumeration — no confirmation email is sent in that case.
+      final isRepeatedSignup = user != null &&
+          response.session == null &&
+          (user.identities == null || user.identities!.isEmpty);
+
+      if (isRepeatedSignup) {
+        _log('Repeated signup detected — account already exists');
+        AppSnack.info(
+          'info'.tr,
+          'auth_error_user_exists'.tr,
+        );
+        Get.offAllNamed(Routes.login);
+        return;
+      }
+
       final needsVerification = user != null &&
           (response.session == null || _requiresEmailVerification(user));
       if (needsVerification) {
-        // Always dispatch signup OTP — GoTrue may return 200 for repeated
-        // signups without sending mail unless /resend is called explicitly.
         try {
           await AuthSecurityService.ensureSignupVerificationSent(email);
           _goToVerifyEmail(email);

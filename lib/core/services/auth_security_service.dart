@@ -409,30 +409,34 @@ class AuthSecurityService {
 
   /// Ensures signup confirmation OTP/email is dispatched after registration.
   ///
-  /// Primary path: Resend via [send-otp] edge function (works when Supabase SMTP
-  /// is misconfigured). Falls back to native GoTrue resend if Resend fails.
+  /// Primary path: native GoTrue resend (matches Supabase "Confirm sign up").
+  /// Falls back to [send-otp] edge function when SMTP delivery fails.
   static Future<void> ensureSignupVerificationSent(String email) async {
     final sanitized = email.trim().toLowerCase();
     _log('ensureSignupVerificationSent', 'Sending signup verification');
 
     try {
-      await _sendSignupOtpViaResend(sanitized);
+      await resendOtp(email: sanitized, type: OtpType.signup);
       _log(
         'ensureSignupVerificationSent',
-        'Signup OTP sent via Resend edge function',
+        'Signup OTP sent via Supabase Auth',
       );
       return;
     } catch (e, stack) {
       _log(
         'ensureSignupVerificationSent',
-        'Resend edge function failed, trying Supabase auth resend',
+        'Supabase auth resend failed, trying Resend edge function',
         status: 'WARN',
         error: e,
         stackTrace: stack,
       );
     }
 
-    await resendOtp(email: sanitized, type: OtpType.signup);
+    await _sendSignupOtpViaResend(sanitized);
+    _log(
+      'ensureSignupVerificationSent',
+      'Signup OTP sent via Resend edge function',
+    );
   }
 
   /// Verify signup OTP delivered by [send-otp] and mark email confirmed server-side.
@@ -449,6 +453,24 @@ class AuthSecurityService {
       );
     }
 
+    try {
+      await verifyOtpCode(
+        email: sanitized,
+        token: normalized,
+        type: OtpType.signup,
+      );
+      _log('confirmSignupEmailOtp', 'Signup email confirmed via Supabase Auth');
+      return;
+    } catch (e, stack) {
+      _log(
+        'confirmSignupEmailOtp',
+        'Native signup OTP failed, trying edge function',
+        status: 'WARN',
+        error: e,
+        stackTrace: stack,
+      );
+    }
+
     _log('confirmSignupEmailOtp', 'Confirming signup OTP via edge function');
     final response = await _invokeEdgeFunction(
       'confirm-signup-email',
@@ -459,13 +481,16 @@ class AuthSecurityService {
     );
 
     final data = jsonDecode(response.body);
-    if (response.statusCode != 200) {
-      final message = data is Map ? (data['error'] ?? 'invalid_otp'.tr) : 'invalid_otp'.tr;
+    if (response.statusCode != 200 ||
+        data is! Map ||
+        data['success'] != true) {
+      final message =
+          data is Map ? (data['error'] ?? 'invalid_otp'.tr) : 'invalid_otp'.tr;
       throw AuthException(translateOtpError(message));
     }
 
     await _syncUserAfterOtpVerification();
-    _log('confirmSignupEmailOtp', 'Signup email confirmed');
+    _log('confirmSignupEmailOtp', 'Signup email confirmed via edge function');
   }
 
   /// Sign in immediately after signup email confirmation (no session yet).
@@ -494,7 +519,9 @@ class AuthSecurityService {
     );
 
     final data = jsonDecode(response.body);
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 ||
+        data is! Map ||
+        data['success'] != true) {
       final message = data is Map
           ? (data['error']?.toString() ?? 'auth_error_email_delivery'.tr)
           : 'auth_error_email_delivery'.tr;

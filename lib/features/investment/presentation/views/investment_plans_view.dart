@@ -23,11 +23,26 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
   final RxList<InvestmentPlanModel> plans = <InvestmentPlanModel>[].obs;
   final RxBool isLoading = true.obs;
   final RxBool hasError = false.obs;
-  // Sort options: roi (default), amount, duration
   final RxString sortBy = 'roi'.obs;
+  final RxString filterBy = 'all'.obs;
+
+  List<InvestmentPlanModel> get _filteredPlans {
+    final list = plans.toList();
+    switch (filterBy.value) {
+      case 'short':
+        return list.where((p) => (p.durationDays ?? 0) > 0 && (p.durationDays ?? 0) < 30).toList();
+      case 'medium':
+        return list.where((p) => (p.durationDays ?? 0) >= 30 && (p.durationDays ?? 0) <= 90).toList();
+      case 'long':
+        return list.where((p) => (p.durationDays ?? 0) > 90).toList();
+      case 'all':
+      default:
+        return list;
+    }
+  }
 
   List<InvestmentPlanModel> get _sortedPlans {
-    final list = plans.toList();
+    final list = _filteredPlans;
     switch (sortBy.value) {
       case 'amount':
         list.sort((a, b) => a.minAmount.compareTo(b.minAmount));
@@ -199,6 +214,8 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
             padding: const EdgeInsets.all(20),
             children: [
               _buildSortBar(isDark),
+              const SizedBox(height: KasbySpacing.md),
+              _buildFilterChips(isDark),
               const SizedBox(height: KasbySpacing.lg),
               ...sorted.asMap().entries.map((entry) {
                 final index = entry.key;
@@ -208,13 +225,17 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
                         .toList() ??
                     [];
 
+                final planTitle = Get.locale?.languageCode == 'ar'
+                    ? plan.nameAr
+                    : (plan.nameEn ?? plan.nameAr);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 20),
-                  child: InvestmentPlanCard(
+                  child: Semantics(
+                    button: true,
+                    label: planTitle,
+                    child: InvestmentPlanCard(
                         id: plan.id,
-                        title: Get.locale?.languageCode == 'ar'
-                            ? plan.nameAr
-                            : (plan.nameEn ?? plan.nameAr),
+                        title: planTitle,
                         profit: _formatProfit(plan.profitPercentage),
                         rawProfitPercentage: plan.profitPercentage.toDouble(),
                         minAmount: '\$${plan.minAmount.toInt()}',
@@ -222,11 +243,11 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
                         color: _planColor(plan.riskLevel),
                         amounts: amounts,
                         duration: _formatDuration(plan.durationDays),
-                      )
-                      .animate()
+                      ),
+                  ).animate(autoPlay: KasbyMotion.enabled(context))
                       .fadeIn(
-                        delay: Duration(milliseconds: index * 120),
-                        duration: 500.ms,
+                        delay: KasbyMotion.duration(context, Duration(milliseconds: index * 120)),
+                        duration: KasbyMotion.duration(context, 500.ms),
                       )
                       .slideY(begin: 0.2, end: 0),
                 );
@@ -286,6 +307,38 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFilterChips(bool isDark) {
+    final filters = <String, String>{
+      'all': 'filter_all'.tr,
+      'short': 'filter_short_duration'.tr,
+      'medium': 'filter_medium_duration'.tr,
+      'long': 'filter_long_duration'.tr,
+    };
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: filters.entries.map((e) {
+          final selected = filterBy.value == e.key;
+          return Padding(
+            padding: const EdgeInsets.only(right: KasbySpacing.sm),
+            child: FilterChip(
+              label: Text(e.value),
+              selected: selected,
+              onSelected: (_) => filterBy.value = e.key,
+              selectedColor: AppColors.darkGold.withValues(alpha: 0.2),
+              checkmarkColor: AppColors.darkGold,
+              labelStyle: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                color: selected ? AppColors.darkGold : AppColors.textSecondary,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 

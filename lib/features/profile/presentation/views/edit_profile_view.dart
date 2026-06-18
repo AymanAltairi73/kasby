@@ -14,6 +14,7 @@ import 'package:kasby/core/services/referral_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
 import 'package:kasby/features/profile/presentation/views/profile_update_view.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'dart:io';
 
 class EditProfileView extends StatefulWidget {
@@ -87,12 +88,7 @@ class _EditProfileViewState extends State<EditProfileView> {
 
   Future<void> _saveProfile() async {
     if (_nameController.text.trim().isEmpty) {
-      Get.snackbar(
-        'error'.tr,
-        'fill_all_data'.tr,
-        backgroundColor: AppColors.error.withValues(alpha: 0.7),
-        colorText: Colors.white,
-      );
+      AppSnack.error('error'.tr, 'fill_all_data'.tr);
       return;
     }
 
@@ -153,12 +149,7 @@ class _EditProfileViewState extends State<EditProfileView> {
       );
       if (mounted) {
         Get.safeBack();
-        Get.snackbar(
-          'success'.tr,
-          'save_changes'.tr,
-          backgroundColor: AppColors.softGreen.withValues(alpha: 0.8),
-          colorText: Colors.white,
-        );
+        AppSnack.success('success'.tr, 'save_changes'.tr);
       }
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -177,12 +168,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           errorMessage = 'phone_already_used'.tr;
         }
 
-        Get.snackbar(
-          'error'.tr,
-          errorMessage,
-          backgroundColor: AppColors.error.withValues(alpha: 0.7),
-          colorText: Colors.white,
-        );
+        AppSnack.error('error'.tr, errorMessage);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -541,12 +527,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                 tooltip: 'copy_referral'.tr,
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: _referralCode));
-                  Get.snackbar(
-                    'success'.tr,
-                    'success_copy'.tr,
-                    backgroundColor: AppColors.darkGold.withValues(alpha: 0.8),
-                    colorText: Colors.black,
-                  );
+                  AppSnack.success('success'.tr, 'success_copy'.tr);
                 },
               ),
             ],
