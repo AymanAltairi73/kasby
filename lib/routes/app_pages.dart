@@ -10,7 +10,6 @@ import '../features/auth/presentation/views/register_view.dart';
 import '../features/auth/presentation/views/otp_view.dart';
 import '../features/auth/presentation/views/forgot_password_view.dart';
 import '../features/auth/presentation/views/verify_email_view.dart';
-import '../features/auth/presentation/views/phone_auth_view.dart';
 import '../features/home/presentation/views/main_shell_view.dart';
 import '../features/investment/presentation/views/investment_plans_view.dart';
 import '../features/investment/presentation/views/investment_details_view.dart';
@@ -210,11 +209,6 @@ class AppPages {
       Routes.personalProfile,
       'PersonalProfileView',
       () => const PersonalProfileView(),
-    ),
-    _route(
-      Routes.phoneVerification,
-      'PhoneAuthView',
-      () => const PhoneAuthView(),
     ),
     _route(
       Routes.lockScreen,

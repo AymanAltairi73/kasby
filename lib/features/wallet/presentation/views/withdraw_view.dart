@@ -8,6 +8,7 @@ import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/core/models/agent_model.dart';
 import 'package:kasby/core/services/account_restriction_service.dart';
 import 'package:kasby/core/services/agent_service.dart';
+import 'package:kasby/core/services/sensitive_operation_guard.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
 import 'package:kasby/core/widgets/transaction_receipt.dart';
@@ -149,6 +150,11 @@ class _WithdrawViewState extends State<WithdrawView> {
       );
       return;
     }
+
+    final otpVerified = await SensitiveOperationGuard.requirePhoneOtp(
+      purpose: 'wallet_withdraw',
+    );
+    if (!otpVerified) return;
 
     _showConfirmationDialog(amount);
   }

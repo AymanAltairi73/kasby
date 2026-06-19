@@ -36,7 +36,6 @@ abstract class Routes {
   static const changePassword = '/change-password';
   static const allTransactions = '/all-transactions';
   static const transactionDetails = '/transaction-details';
-  static const phoneVerification = '/phone-verification';
   static const personalProfile = '/personal-profile';
   static const lockScreen = '/lock-screen';
   static const agentDashboard = '/agent-dashboard';

@@ -11,12 +11,13 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/features/auth/domain/models/country_model.dart';
 import 'package:kasby/features/auth/domain/services/otp_service.dart';
-import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/auth_security_service.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
+import 'package:kasby/features/auth/domain/utils/login_identifier_utils.dart';
 import 'package:kasby/core/services/deep_link_service.dart';
 import 'package:kasby/core/services/tour_service.dart';
+import 'package:kasby/core/services/sensitive_operation_guard.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -77,15 +78,21 @@ class AuthController extends GetxController {
       RxnBool(); // null = initial, true = valid, false = invalid
   final RxBool isCheckingReferral = false.obs;
   final RxnString pendingVerificationEmail = RxnString();
+  final RxnString pendingVerificationPhone = RxnString();
 
   StreamSubscription<AuthState>? _authSubscription;
 
   // Text Controllers
-  final phoneController = TextEditingController();
+  final loginIdentifierController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final referralCodeController = TextEditingController();
+
+  /// E.164 phone captured from the registration international phone field.
+  final RxString registerPhoneE164 = ''.obs;
+  final RxString registerCountryCode = 'YE'.obs;
 
   // Keys
   final GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
@@ -175,6 +182,9 @@ class AuthController extends GetxController {
         if (_requiresEmailVerification(session.user)) {
           pendingVerificationEmail.value = session.user.email;
           authStatus.value = AuthStatus.unauthenticated;
+        } else if (_requiresPhoneVerification(session.user)) {
+          pendingVerificationPhone.value = AuthSecurityService.getUserPhone();
+          authStatus.value = AuthStatus.unauthenticated;
         } else {
           authStatus.value = AuthStatus.authenticated;
           if (Get.isRegistered<HomeController>()) {
@@ -195,8 +205,9 @@ class AuthController extends GetxController {
   void onClose() {
     _authSubscription?.cancel();
     _referralDebounceTimer?.cancel();
-    phoneController.dispose();
+    loginIdentifierController.dispose();
     passwordController.dispose();
+    confirmPasswordController.dispose();
     nameController.dispose();
     emailController.dispose();
     referralCodeController.dispose();
@@ -225,9 +236,19 @@ class AuthController extends GetxController {
             }
             break;
           }
+          if (session != null && _requiresPhoneVerification(session.user)) {
+            final phone = AuthSecurityService.getUserPhone();
+            pendingVerificationPhone.value = phone;
+            authStatus.value = AuthStatus.unauthenticated;
+            if (Get.currentRoute != Routes.otp && phone != null) {
+              _goToPhoneVerification(phone, purpose: 'phone_confirm');
+            }
+            break;
+          }
 
           authStatus.value = AuthStatus.authenticated;
           pendingVerificationEmail.value = null;
+          pendingVerificationPhone.value = null;
 
           if (Get.isRegistered<HomeController>()) {
             HomeController.to.fetchAll();
@@ -243,6 +264,7 @@ class AuthController extends GetxController {
         case AuthChangeEvent.signedOut:
           _log('User signed out');
           authStatus.value = AuthStatus.unauthenticated;
+          SensitiveOperationGuard.clearStepUp();
 
           // Clear data
           if (Get.isRegistered<HomeController>()) {
@@ -291,7 +313,7 @@ class AuthController extends GetxController {
       await _storage.delete(key: 'saved_password');
 
       if (savedLoginId != null) {
-        phoneController.text = savedLoginId;
+        loginIdentifierController.text = savedLoginId;
         rememberMe.value = true;
       }
     } catch (e, stack) {
@@ -313,6 +335,30 @@ class AuthController extends GetxController {
 
   bool _requiresEmailVerification(User user) {
     return AuthSecurityService.isEmailVerificationRequired(user);
+  }
+
+  bool _requiresPhoneVerification(User user) {
+    return AuthSecurityService.isPhoneVerificationRequired(user);
+  }
+
+  void _goToPhoneVerification(
+    String phone, {
+    String purpose = 'login',
+    bool isRecovery = false,
+  }) {
+    pendingVerificationPhone.value = phone;
+    Get.toNamed(
+      Routes.otp,
+      arguments: {
+        'identifier': phone,
+        'isPhone': true,
+        'isFreeOtp': false,
+        'type': OtpType.sms,
+        'purpose': purpose,
+        'isRecovery': isRecovery,
+        'otpLength': AuthSecurityService.phoneOtpLength,
+      },
+    );
   }
 
   void _navigateAfterAuthentication() {
@@ -443,34 +489,24 @@ class AuthController extends GetxController {
   Future<void> login({bool skipFormValidation = false}) async {
     if (!skipFormValidation && !loginFormKey.currentState!.validate()) return;
 
-    if (phoneController.text.trim().isEmpty) {
+    final loginId = loginIdentifierController.text.trim();
+    if (loginId.isEmpty) {
       AppSnack.error('error'.tr, 'email_or_phone'.tr);
       return;
     }
 
     isLoading.value = true;
-    final loginId = phoneController.text.trim();
 
     try {
       final password = passwordController.text;
 
-      // Determine if user is logging in with email or phone
-      if (loginId.contains('@')) {
-        // Email login
-        _log('🔑 Login attempt via EMAIL: $loginId');
-        await SupabaseService.auth.signInWithPassword(
-          email: loginId,
-          password: password,
-        );
-      } else {
-        // Phone login
-        final fullPhone = '${selectedCountry.value.dialCode}$loginId';
-        _log('🔑 Login attempt via PHONE: $fullPhone');
-        await SupabaseService.auth.signInWithPassword(
-          phone: fullPhone,
-          password: password,
-        );
-      }
+      _log(
+        '🔑 Login attempt via ${LoginIdentifierUtils.isEmail(loginId) ? 'EMAIL' : 'PHONE'}: $loginId',
+      );
+      await AuthSecurityService.signInWithIdentifier(
+        identifier: loginId,
+        password: password,
+      );
 
       final user = SupabaseService.currentUser;
       if (kDebugMode && user != null) {
@@ -495,6 +531,14 @@ class AuthController extends GetxController {
 
       if (user != null && _requiresEmailVerification(user)) {
         _goToVerifyEmail(user.email ?? loginId);
+      } else if (user != null && _requiresPhoneVerification(user)) {
+        final phone = AuthSecurityService.getUserPhone() ??
+            (LoginIdentifierUtils.isEmail(loginId)
+                ? null
+                : LoginIdentifierUtils.toE164(loginId));
+        if (phone != null) {
+          _goToPhoneVerification(phone, purpose: 'phone_confirm');
+        }
       }
     } on AuthException catch (e, stack) {
       isLoading.value = false;
@@ -504,7 +548,8 @@ class AuthController extends GetxController {
         error: e.message,
         stack: stack,
       );
-      if (e.message.contains('Email not confirmed') && loginId.contains('@')) {
+      if (e.message.contains('Email not confirmed') &&
+          LoginIdentifierUtils.isEmail(loginId)) {
         _goToVerifyEmail(loginId);
         return;
       }
@@ -512,7 +557,7 @@ class AuthController extends GetxController {
     } catch (e, stack) {
       isLoading.value = false;
       _log('Login failed (Unexpected)', isError: true, error: e, stack: stack);
-      AppSnack.error('error'.tr, 'حدث خطأ غير متوقع. حاول مرة أخرى.');
+      AppSnack.error('error'.tr, 'unexpected_error'.tr);
     }
   }
 
@@ -529,8 +574,12 @@ class AuthController extends GetxController {
       final email = emailController.text.trim();
       final password = passwordController.text;
       final fullName = nameController.text.trim();
-      final phone =
-          '${selectedCountry.value.dialCode}${phoneController.text.trim()}';
+      final phone = registerPhoneE164.value.trim();
+      if (phone.isEmpty) {
+        isLoading.value = false;
+        AppSnack.error('error'.tr, 'invalid_phone'.tr);
+        return;
+      }
       final referralCodeInput = referralCodeController.text
           .trim()
           .toUpperCase();
@@ -555,7 +604,7 @@ class AuthController extends GetxController {
         status: 'INFO',
         params: {
           'hasReferral': referralCodeInput.isNotEmpty,
-          'countryCode': selectedCountry.value.code,
+          'countryCode': registerCountryCode.value,
         },
       );
 
@@ -565,7 +614,7 @@ class AuthController extends GetxController {
         data: {
           'full_name': fullName,
           'phone': phone,
-          'country_code': selectedCountry.value.code,
+          'country_code': registerCountryCode.value,
           if (referralLookup != null)
             'referred_by_code': referralLookup.canonicalCode,
         },
@@ -661,10 +710,74 @@ class AuthController extends GetxController {
       await SupabaseService.auth.signOut();
       await _storage.delete(key: 'saved_login_id');
       await _storage.delete(key: 'saved_password');
+      SensitiveOperationGuard.clearStepUp();
+      pendingVerificationPhone.value = null;
       _log('Logout successful');
       // Navigation is handled by the signedOut auth-state listener.
     } catch (e, stack) {
       _log('Logout error', isError: true, error: e, stack: stack);
+    }
+  }
+
+  /// Resend Supabase SMS OTP to a phone number (verification / step-up flows).
+  Future<void> resendPhoneOtp(
+    String phoneNumber, {
+    OtpType type = OtpType.sms,
+    String purpose = 'login',
+  }) async {
+    _log('Resending phone OTP ($purpose)');
+    try {
+      await AuthSecurityService.resendPhoneOtp(phone: phoneNumber, type: type);
+      _log('Phone OTP resent');
+      AppSnack.success('success'.tr, 'otp_resend_success'.tr);
+    } on AuthException catch (e, stack) {
+      _log('Phone OTP resend failed', isError: true, error: e.message, stack: stack);
+      AppSnack.error('error'.tr, translateOtpError(e));
+      rethrow;
+    }
+  }
+
+  /// Verify Supabase SMS OTP and complete authentication.
+  Future<bool> verifyPhoneOtpCode({
+    required String phone,
+    required String otp,
+    OtpType type = OtpType.sms,
+    String purpose = 'login',
+  }) async {
+    isLoading.value = true;
+    _log('Verifying phone OTP ($purpose)');
+    try {
+      await AuthSecurityService.verifyPhoneOtpCode(
+        phone: phone,
+        token: otp,
+        type: type,
+      );
+      _log('Phone OTP verified — authentication completed');
+      pendingVerificationPhone.value = null;
+      authStatus.value = AuthStatus.authenticated;
+      await AuthSecurityService.refreshUserProfileState();
+
+      if (purpose == 'signup' || purpose == 'login' || purpose == 'phone_confirm') {
+        final tourDone = await TourService.isTourCompleted();
+        if (!tourDone) {
+          Get.offAllNamed(Routes.guidedTour);
+        } else {
+          Get.offAllNamed(Routes.home);
+        }
+      }
+
+      AppSnack.success('success'.tr, 'otp_verified_success'.tr);
+      return true;
+    } on AuthException catch (e, stack) {
+      _log('OTP verification failed', isError: true, error: e.message, stack: stack);
+      AppSnack.error('error'.tr, translateOtpError(e));
+      return false;
+    } catch (e, stack) {
+      _log('OTP verification failed', isError: true, error: e, stack: stack);
+      AppSnack.error('error'.tr, 'invalid_otp'.tr);
+      return false;
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -710,75 +823,37 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> sendPasswordResetOTP(String phone) async {
-    if (phone.isEmpty) {
-      AppSnack.error('error'.tr, 'enter_phone_hint'.tr);
+  /// Sends SMS OTP to verify the signed-in user's phone number.
+  Future<void> startPhoneVerification() async {
+    final phone = AuthSecurityService.getUserPhone();
+    if (phone == null || phone.trim().isEmpty) {
+      AppSnack.error('error'.tr, 'phone_verification_required'.tr);
       return;
     }
 
-    _log('Routing phone password reset to custom FCM OTP: $phone');
-    await sendPhoneOtp(phone, isRecovery: true, purpose: 'password_reset');
-  }
-
-  Future<void> verifyPasswordResetOTP(String phone, String token) async {
     isLoading.value = true;
-    _log('Legacy native verification bypassed for custom OTP.');
-    isLoading.value = false;
-  }
-
-  void goToLegal() {
-    Get.toNamed(Routes.legal);
-  }
-
-  Future<void> sendPhoneOtp(
-    String phoneNumber, {
-    bool isRecovery = false,
-    String purpose = 'verification',
-  }) async {
-    isLoading.value = true;
-    _log('Sending phone OTP via FCM to: $phoneNumber');
-
     try {
-      final fcmToken = FCMService.to.fcmToken.value;
-      if (fcmToken.isEmpty) {
-        throw Exception(
-          'FCM Token not available. Please enable notifications.',
-        );
-      }
-
-      final bool success = await Get.find<OTPService>().sendOtp(
-        target: phoneNumber,
-        targetType: 'phone',
-        fcmToken: fcmToken,
-        purpose: purpose,
+      await AuthSecurityService.sendPhoneOtp(
+        phone: phone,
+        shouldCreateUser: false,
       );
-
-      _log('Phone OTP request finished. Success: $success');
-
-      if (success) {
-        AppSnack.success(
-          'success'.tr,
-          'تم إرسال رمز التحقق بنجاح',
-        );
-      }
-
-      Get.toNamed(
-        Routes.otp,
-        arguments: {
-          'identifier': phoneNumber,
-          'isPhone': true,
-          'isFreeOtp': true,
-          'isRecovery': isRecovery,
-          'purpose': purpose,
-          'otpLength': AuthOtpConfig.fcmOtpLength,
-        },
-      );
-    } catch (e, stack) {
-      _log('Failed to send phone OTP', isError: true, error: e, stack: stack);
-      AppSnack.error('error'.tr, e.toString());
+      AppSnack.success('success'.tr, 'otp_sent_success'.tr);
+      _goToPhoneVerification(phone, purpose: 'phone_confirm');
+    } on AuthException catch (e, stack) {
+      _log('Phone verification OTP failed', isError: true, error: e.message, stack: stack);
+      AppSnack.error('error'.tr, translateOtpError(e));
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void updateRegisterPhone(String completeNumber, String countryCode) {
+    registerPhoneE164.value = completeNumber;
+    registerCountryCode.value = countryCode;
+  }
+
+  void goToLegal({int initialTab = 0}) {
+    Get.toNamed(Routes.legal, arguments: {'initialTab': initialTab});
   }
 
   /// Send OTP to an email address via the hardened edge function (Resend).
@@ -819,49 +894,6 @@ class AuthController extends GetxController {
     } catch (e, stack) {
       _log('Failed to send email OTP', isError: true, error: e, stack: stack);
       AppSnack.error('error'.tr, e.toString());
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  Future<void> verifyPhoneOtp(
-    String target,
-    String otp, {
-    String targetType = 'phone',
-    String purpose = 'verification',
-  }) async {
-    isLoading.value = true;
-    _log('Verifying $targetType OTP: $otp for $target ($purpose)');
-
-    try {
-      await Get.find<OTPService>().verifyOtp(
-        target: target,
-        targetType: targetType,
-        otpCode: otp,
-      );
-      _log('$targetType verified successfully via Edge Function');
-
-      // Default navigation for signup/login verification
-      if (purpose == 'verification' || purpose == 'signup') {
-        final tourDone = await TourService.isTourCompleted();
-        if (!tourDone) {
-          Get.offAllNamed(Routes.guidedTour);
-        } else {
-          Get.offAllNamed(Routes.home);
-        }
-      }
-
-      AppSnack.success('success'.tr, 'تم التحقق بنجاح');
-    } catch (e, stack) {
-      _log('OTP verification failed', isError: true, error: e, stack: stack);
-      if (e is OTPVerificationException && e.remainingAttempts != null) {
-        AppSnack.error(
-          'error'.tr,
-          '${e.message}\n${'remaining_attempts'.tr}: ${e.remainingAttempts}',
-        );
-      } else {
-        AppSnack.error('error'.tr, e.toString());
-      }
     } finally {
       isLoading.value = false;
     }

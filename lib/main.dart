@@ -22,6 +22,7 @@ import 'package:kasby/core/services/network_service.dart';
 import 'package:kasby/core/services/account_restriction_service.dart';
 import 'package:kasby/core/widgets/account_restriction_banner.dart';
 import 'package:kasby/core/widgets/connectivity_banner.dart';
+import 'package:kasby/core/services/sensitive_operation_guard.dart';
 import 'package:kasby/core/services/session_service.dart';
 import 'package:kasby/core/services/confetti_service.dart';
 import 'package:kasby/features/qr_payment/presentation/controllers/qr_payment_controller.dart';
@@ -134,6 +135,7 @@ void main() async {
   await Get.putAsync(() => NetworkService().init());
   await Get.putAsync(() => PresenceService().init(), permanent: true);
   Get.put(OTPService(), permanent: true);
+  Get.put(SensitiveOperationGuardService(), permanent: true);
 
   Get.put(CurrencyController());
   Get.put(HomeController(), permanent: true);

@@ -261,12 +261,31 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                             currentStep.value = 2;
                           }
                         } else {
-                          await profileCtrl.sendUpdateOtp(
+                          final success = await profileCtrl.sendUpdateOtp(
                             target: newValue,
                             type: type,
                           );
-                          if (profileCtrl.resendTimer.value > 0) {
-                            currentStep.value = 2;
+                          if (success) {
+                            final verified = await Get.toNamed<bool>(
+                              Routes.otp,
+                              arguments: {
+                                'identifier': newValue,
+                                'isPhone': true,
+                                'isFreeOtp': false,
+                                'type': OtpType.phoneChange,
+                                'purpose': 'phone_change',
+                                'otpLength':
+                                    AuthSecurityService.phoneOtpLength,
+                              },
+                            );
+                            if (verified == true) {
+                              profileCtrl.resetFlow();
+                              if (_isEmbedded && context.mounted) {
+                                Navigator.of(context).pop();
+                              } else {
+                                Get.offNamed(Routes.personalProfile);
+                              }
+                            }
                           }
                         }
                       },

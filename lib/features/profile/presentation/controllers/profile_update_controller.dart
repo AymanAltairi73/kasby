@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:get/get.dart';
-import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/features/auth/domain/services/otp_service.dart';
@@ -89,42 +88,35 @@ class ProfileUpdateController extends GetxController {
     if (resendTimer.value > 0 || isLoading.value) return false;
 
     isLoading.value = true;
-    
-    // Ensure session is fresh for sensitive operation
+
     await SupabaseService.hardRefreshSession();
     try {
-      final targetType = type == 'email_change' ? 'email' : 'phone';
       final isEmailChange = type == 'email_change';
-      String? fcmToken;
 
-      if (!isEmailChange) {
-        fcmToken = Get.find<FCMService>().fcmToken.value;
-        if (fcmToken.isEmpty) {
-          AppSnack.error('error'.tr, 'enable_notifications_error'.tr);
-          return false;
-        }
-      }
-
-      final bool success = await OTPService.to.sendOtp(
-        target: target,
-        targetType: targetType,
-        purpose: type,
-        fcmToken: isEmailChange ? null : fcmToken,
-      );
-
-      _startResendTimer();
-      
-      if (success) {
-        AppSnack.success(
-          'success'.tr,
-          isEmailChange ? 'otp_sent_email'.tr : 'otp_sent_notification'.tr,
+      if (isEmailChange) {
+        final bool success = await OTPService.to.sendOtp(
+          target: target,
+          targetType: 'email',
+          purpose: type,
         );
+        _startResendTimer();
+        if (success) {
+          AppSnack.success('success'.tr, 'otp_sent_email'.tr);
+        }
+        return success;
       }
-      
-      return success;
+
+      // Phone change via Supabase Auth (Twilio SMS)
+      await AuthSecurityService.requestPhoneChange(target);
+      _startResendTimer();
+      AppSnack.success('success'.tr, 'otp_sent_sms'.tr);
+      return true;
     } catch (e) {
       _log('Error sending update OTP', method: 'sendUpdateOtp', isError: true, error: e, params: {'type': type});
       String msg = e.toString().replaceAll('Exception:', '').trim();
+      if (e is AuthException) {
+        msg = AuthSecurityService.translateOtpError(e);
+      }
       if (e.toString().contains('RATE_LIMIT')) msg = 'rate_limit_exceeded_friend'.tr;
       AppSnack.error('error'.tr, msg);
       return false;

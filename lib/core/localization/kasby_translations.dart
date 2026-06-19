@@ -32,7 +32,6 @@ class KasbyTranslations extends Translations {
       'accept_terms_prefix': 'I agree to the',
       'accept_terms_link': 'Terms & Privacy Policy',
       'accept_terms_required': 'Please accept the Terms & Privacy Policy to continue.',
-      'age_confirmation': 'I confirm I am 18 years or older.',
       'investment_disclaimer':
           'Investments carry risk. Returns are not guaranteed and your capital may be at risk.',
       'risk_disclosure': 'Risk Disclosure',
@@ -192,6 +191,18 @@ class KasbyTranslations extends Translations {
       'referral_code_optional': 'Referral Code (Optional)',
       'enter_referral_code': 'Enter referral code',
       'register': 'Register',
+      'confirm_password': 'Confirm Password',
+      'confirm_password_hint': 'Re-enter your password',
+      'invalid_login_identifier':
+          'Enter a valid email address or phone number with country code (e.g. +966...)',
+      'weak_password': 'Password must be at least 8 characters',
+      'invalid_phone': 'Enter a valid phone number for the selected country',
+      'privacy_policy': 'Privacy Policy',
+      'terms_intro':
+          'Please read these Terms & Conditions carefully before using Kasby. They govern your relationship with our investment and financial services platform.',
+      'privacy_intro':
+          'This Privacy Policy describes how Kasby collects, uses, and protects your personal information across our investment, wallet, marketplace, and rewards services.',
+      'and': 'and',
       'already_have_account': 'Already have an account?',
       'forgot_password_title': 'Forgot Password',
       'forgot_password_desc':
@@ -227,6 +238,13 @@ class KasbyTranslations extends Translations {
       'email_change_verify_desc':
           'Enter the @count-digit verification code sent to your new email address.',
       'otp_verified_success': 'Code verified successfully',
+      'login_with_phone': 'Sign in with Phone OTP',
+      'register_with_phone': 'Register with Phone',
+      'phone_register_desc': 'We will send a 6-digit verification code via SMS to create your account.',
+      'phone_verification_desc': 'We will send a 6-digit verification code via SMS to verify your identity.',
+      'phone_verification_required': 'A verified phone number is required for this action.',
+      'phone_updated_success': 'Phone number updated successfully.',
+      'otp_sent_sms': 'Verification code sent via SMS.',
       'check_verification_status': 'Check Verification Status',
       'email_verified_success': 'Email verified successfully!',
       'email_not_verified_yet':
@@ -1286,6 +1304,8 @@ class KasbyTranslations extends Translations {
       'auth_error_invalid_email': 'Email address not registered or invalid',
       'auth_error_user_not_found': 'This account does not exist',
       'auth_error_signups_not_allowed': 'This account is not registered in the system',
+      'auth_error_phone_not_registered':
+          'No account found for this phone number. Please register first.',
       'auth_error_duplicate_contact': 'Phone number or email already registered',
       'auth_error_email_delivery':
           'Unable to send email right now. Please try again later or use phone verification.',
@@ -1480,7 +1500,6 @@ class KasbyTranslations extends Translations {
       'accept_terms_prefix': 'أوافق على',
       'accept_terms_link': 'الشروط وسياسة الخصوصية',
       'accept_terms_required': 'يرجى الموافقة على الشروط وسياسة الخصوصية للمتابعة.',
-      'age_confirmation': 'أؤكد أن عمري 18 عاماً أو أكثر.',
       'investment_disclaimer':
           'تنطوي الاستثمارات على مخاطر. العوائد غير مضمونة وقد يكون رأس مالك عرضة للمخاطر.',
       'risk_disclosure': 'الإفصاح عن المخاطر',
@@ -1651,6 +1670,18 @@ class KasbyTranslations extends Translations {
       'referral_code_optional': 'كود الإحالة (اختياري)',
       'enter_referral_code': 'أدخل كود الإحالة',
       'register': 'تسجيل',
+      'confirm_password': 'تأكيد كلمة المرور',
+      'confirm_password_hint': 'أعد إدخال كلمة المرور',
+      'invalid_login_identifier':
+          'أدخل بريداً إلكترونياً صالحاً أو رقم هاتف مع رمز الدولة (مثل +966...)',
+      'weak_password': 'يجب أن تكون كلمة المرور 8 أحرف على الأقل',
+      'invalid_phone': 'أدخل رقم هاتف صالحاً للدولة المختارة',
+      'privacy_policy': 'سياسة الخصوصية',
+      'terms_intro':
+          'يرجى قراءة الشروط والأحكام بعناية قبل استخدام كاسبي. تحكم علاقتك بمنصة الاستثمار والخدمات المالية.',
+      'privacy_intro':
+          'توضح سياسة الخصوصية كيف تجمع كاسبي معلوماتك الشخصية وتستخدمها وتحميها عبر الاستثمار والمحفظة والسوق والمكافآت.',
+      'and': 'و',
       'already_have_account': 'لديك حساب بالفعل؟',
       'forgot_password_title': 'نسيت كلمة المرور',
       'recipient':'المستلم',
@@ -1688,6 +1719,13 @@ class KasbyTranslations extends Translations {
       'email_change_verify_desc':
           'أدخل رمز التحقق المكوّن من @count أرقام المرسل إلى بريدك الجديد.',
       'otp_verified_success': 'تم التحقق من الرمز بنجاح',
+      'login_with_phone': 'تسجيل الدخول برقم الهاتف',
+      'register_with_phone': 'التسجيل برقم الهاتف',
+      'phone_register_desc': 'سنرسل رمز تحقق مكون من 6 أرقام عبر SMS لإنشاء حسابك.',
+      'phone_verification_desc': 'سنرسل رمز تحقق مكون من 6 أرقام عبر SMS للتحقق من هويتك.',
+      'phone_verification_required': 'رقم هاتف موثق مطلوب لهذا الإجراء.',
+      'phone_updated_success': 'تم تحديث رقم الهاتف بنجاح.',
+      'otp_sent_sms': 'تم إرسال رمز التحقق عبر SMS.',
       'check_verification_status': 'التحقق من حالة التفعيل',
       'email_verified_success': 'تم تفعيل البريد الإلكتروني بنجاح!',
       'email_not_verified_yet':
@@ -2710,6 +2748,8 @@ class KasbyTranslations extends Translations {
       'auth_error_invalid_email': 'البريد الإلكتروني غير مسجل في النظام أو غير صالح',
       'auth_error_user_not_found': 'هذا الحساب غير موجود لدينا',
       'auth_error_signups_not_allowed': 'هذا الحساب غير مسجل مسبقاً في النظام',
+      'auth_error_phone_not_registered':
+          'لا يوجد حساب لهذا الرقم. يرجى التسجيل أولاً.',
       'auth_error_duplicate_contact': 'رقم الهاتف أو البريد الإلكتروني مسجل مسبقاً',
       'auth_error_email_delivery':
           'تعذّر إرسال البريد حالياً. حاول لاحقاً أو استخدم التحقق عبر الهاتف.',

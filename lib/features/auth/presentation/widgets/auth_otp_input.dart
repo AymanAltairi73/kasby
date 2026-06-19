@@ -12,12 +12,14 @@ class AuthOtpInput extends StatefulWidget {
     required this.onCompleted,
     this.onChanged,
     this.enabled = true,
+    this.enableSmsAutofill = false,
   });
 
   final int length;
   final ValueChanged<String> onCompleted;
   final ValueChanged<String>? onChanged;
   final bool enabled;
+  final bool enableSmsAutofill;
 
   @override
   AuthOtpInputState createState() => AuthOtpInputState();
@@ -31,6 +33,9 @@ class AuthOtpInputState extends State<AuthOtpInput> {
   void initState() {
     super.initState();
     _initFields(widget.length);
+    if (widget.enableSmsAutofill && widget.length > 0) {
+      _focusNodes.first.requestFocus();
+    }
   }
 
   @override
@@ -141,6 +146,20 @@ class AuthOtpInputState extends State<AuthOtpInput> {
 
     return Column(
       children: [
+        if (widget.enableSmsAutofill)
+          SizedBox(
+            height: 0,
+            width: 0,
+            child: TextField(
+              autofillHints: const [AutofillHints.oneTimeCode],
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                if (value.length >= widget.length) {
+                  fillCode(value);
+                }
+              },
+            ),
+          ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: List.generate(widget.length, (index) {
@@ -154,6 +173,10 @@ class AuthOtpInputState extends State<AuthOtpInput> {
                 keyboardType: TextInputType.number,
                 maxLength: widget.length,
                 enabled: widget.enabled,
+                autofocus: index == 0,
+                autofillHints: widget.enableSmsAutofill && index == 0
+                    ? const [AutofillHints.oneTimeCode]
+                    : null,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: TextStyle(
                   fontSize: fontSize,

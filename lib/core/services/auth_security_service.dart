@@ -221,7 +221,17 @@ class AuthSecurityService {
     if (lower.contains('rate limit') || lower.contains('too many')) {
       return 'auth_error_rate_limit'.tr;
     }
+    if (isPhoneAccountNotFoundError(message)) {
+      return 'auth_error_phone_not_registered'.tr;
+    }
     return message;
+  }
+
+  /// True when phone login OTP was sent with [shouldCreateUser: false] but no
+  /// auth user exists for that phone yet.
+  static bool isPhoneAccountNotFoundError(Object error) {
+    final message = extractAuthErrorMessage(error).toLowerCase();
+    return message.contains('signups not allowed') && message.contains('otp');
   }
 
   /// Maps general Supabase auth errors (login, signup, links).
@@ -570,6 +580,253 @@ class AuthSecurityService {
       password: password,
       data: data,
       emailRedirectTo: authRedirectUrl,
+    );
+  }
+
+  // ─── PHONE AUTH (Supabase + Twilio) ───────────────────────
+
+  /// Configured SMS OTP length (Supabase dashboard: 6 digits).
+  static int get phoneOtpLength =>
+      AuthOtpConfig.lengthForOtpType(OtpType.sms);
+
+  /// Returns E.164 phone from auth user or profile metadata.
+  static String? getUserPhone() {
+    final user = SupabaseService.currentUser;
+    if (user == null) return null;
+    final authPhone = user.phone?.trim();
+    if (authPhone != null && authPhone.isNotEmpty) return authPhone;
+    final metaPhone = user.userMetadata?['phone']?.toString().trim();
+    if (metaPhone != null && metaPhone.isNotEmpty) return metaPhone;
+    return null;
+  }
+
+  /// Whether the user must confirm their phone before accessing the app.
+  static bool isPhoneVerificationRequired(User? user) {
+    if (user == null) return false;
+    final phone = user.phone?.trim();
+    if (phone == null || phone.isEmpty) return false;
+    return user.phoneConfirmedAt == null;
+  }
+
+  /// Whether email or phone verification is pending.
+  static bool isIdentityVerificationRequired(User? user) {
+    if (user == null) return false;
+    if (isEmailVerificationRequired(user)) return true;
+    if (isPhoneVerificationRequired(user)) return true;
+    return false;
+  }
+
+  /// Send Supabase SMS OTP for login or registration.
+  static Future<void> sendPhoneOtp({
+    required String phone,
+    bool shouldCreateUser = false,
+    Map<String, dynamic>? data,
+  }) async {
+    final normalized = _normalizePhone(phone);
+    _log('sendPhoneOtp', 'Sending Supabase SMS OTP', params: {
+      'shouldCreateUser': shouldCreateUser,
+      'phone': normalized,
+    });
+    await SupabaseService.auth.signInWithOtp(
+      phone: normalized,
+      shouldCreateUser: shouldCreateUser,
+      data: data ?? {},
+    );
+    _log('sendPhoneOtp', 'OTP sent via Supabase SMS');
+  }
+
+  /// Resend Supabase SMS OTP.
+  static Future<void> resendPhoneOtp({
+    required String phone,
+    OtpType type = OtpType.sms,
+  }) async {
+    final normalized = _normalizePhone(phone);
+    _log('resendPhoneOtp', 'Resending phone OTP', params: {'type': type.name});
+    await SupabaseService.auth.resend(type: type, phone: normalized);
+    _log('resendPhoneOtp', 'Phone OTP resent');
+  }
+
+  /// Verify a Supabase SMS OTP and establish/refresh session.
+  static Future<AuthResponse> verifyPhoneOtpCode({
+    required String phone,
+    required String token,
+    OtpType type = OtpType.sms,
+  }) async {
+    final normalized = _normalizePhone(phone);
+    final normalizedToken = AuthOtpConfig.normalize(token);
+    final expectedLength = type == OtpType.phoneChange
+        ? AuthOtpConfig.lengthForOtpType(OtpType.phoneChange)
+        : phoneOtpLength;
+    if (normalizedToken.length != expectedLength) {
+      throw AuthException(
+        'otp_length_mismatch'.trParams({'count': '$expectedLength'}),
+      );
+    }
+
+    _log('verifyPhoneOtpCode', 'Verifying phone OTP', params: {
+      'type': type.name,
+      'length': expectedLength,
+    });
+
+    try {
+      final response = await SupabaseService.auth.verifyOTP(
+        type: type,
+        token: normalizedToken,
+        phone: normalized,
+      );
+      await _syncUserAfterOtpVerification();
+      _log('verifyPhoneOtpCode', 'Phone OTP verified', params: {
+        'type': type.name,
+      });
+      return response;
+    } on AuthException catch (e, stack) {
+      _log(
+        'verifyPhoneOtpCode',
+        'Phone OTP verification failed',
+        status: 'ERROR',
+        error: e.message,
+        stackTrace: stack,
+      );
+      rethrow;
+    }
+  }
+
+  /// Request phone number change — sends confirmation OTP to new number.
+  static Future<void> requestPhoneChange(String newPhone) async {
+    final normalized = _normalizePhone(newPhone);
+    _log('requestPhoneChange', 'Requesting phone change');
+    await SupabaseService.auth.updateUser(UserAttributes(phone: normalized));
+    _log('requestPhoneChange', 'Phone change OTP sent');
+  }
+
+  /// Verify pending phone change OTP.
+  static Future<void> confirmPhoneChange({
+    required String phone,
+    required String token,
+  }) async {
+    await verifyPhoneOtpCode(
+      phone: phone,
+      token: token,
+      type: OtpType.phoneChange,
+    );
+    await refreshUserProfileState();
+    _log('confirmPhoneChange', 'Phone updated successfully');
+  }
+
+  /// Sends step-up reauthentication OTP to the signed-in user's phone/email.
+  static Future<void> requestStepUpOtp() async {
+    _log('requestStepUpOtp', 'Requesting step-up reauthentication OTP');
+    await SupabaseService.auth.reauthenticate();
+    _log('requestStepUpOtp', 'Step-up OTP sent');
+  }
+
+  /// Verify step-up OTP after [requestStepUpOtp].
+  static Future<void> verifyStepUpOtp({
+    required String token,
+    String? phone,
+  }) async {
+    final targetPhone = phone ?? getUserPhone();
+    if (targetPhone == null || targetPhone.isEmpty) {
+      throw AuthException('phone_verification_required'.tr);
+    }
+    await verifyPhoneOtpCode(phone: targetPhone, token: token);
+    _log('verifyStepUpOtp', 'Step-up verification complete');
+  }
+
+  /// Reauthenticate with password (email) or phone OTP path.
+  static Future<void> reauthenticateForSensitiveAction(String password) async {
+    final user = SupabaseService.currentUser;
+    if (user == null) throw AuthException('cannot_verify_identity'.tr);
+
+    final email = user.email?.trim();
+    if (email != null && email.isNotEmpty) {
+      await reauthenticateWithPassword(password);
+      return;
+    }
+
+    final phone = getUserPhone();
+    if (phone != null && phone.isNotEmpty) {
+      await requestStepUpOtp();
+      return;
+    }
+
+    throw AuthException('cannot_verify_identity'.tr);
+  }
+
+  /// Normalizes to the format GoTrue stores in auth.users (E.164 without '+').
+  static String normalizePhone(String phone) {
+    var normalized = phone.trim().replaceAll(RegExp(r'[\s\-()]'), '');
+    if (normalized.startsWith('+')) {
+      normalized = normalized.substring(1);
+    }
+    return normalized;
+  }
+
+  static String _normalizePhone(String phone) => normalizePhone(phone);
+
+  /// Looks up the email associated with a phone number for password login.
+  static Future<String?> lookupEmailByPhone(String phone) async {
+    final normalized = normalizePhone(phone);
+    if (normalized.isEmpty) return null;
+
+    _log('lookupEmailByPhone', 'Resolving login email by phone');
+    final response = await SupabaseService.client.rpc(
+      'lookup_login_by_phone',
+      params: {'p_phone': normalized},
+    );
+
+    if (response is! Map) return null;
+    if (response['found'] != true) return null;
+    final email = response['email']?.toString().trim().toLowerCase();
+    if (email == null || email.isEmpty) return null;
+    return email;
+  }
+
+  /// Signs in with email or phone + password, resolving phone to email when needed.
+  static Future<void> signInWithIdentifier({
+    required String identifier,
+    required String password,
+  }) async {
+    final trimmed = identifier.trim();
+    final trimmedPassword = password.trim();
+
+    if (trimmed.contains('@')) {
+      _log('signInWithIdentifier', 'Signing in with email');
+      await SupabaseService.auth.signInWithPassword(
+        email: trimmed.toLowerCase(),
+        password: trimmedPassword,
+      );
+      return;
+    }
+
+    final normalizedPhone = normalizePhone(trimmed);
+    _log('signInWithIdentifier', 'Signing in with phone', params: {
+      'phone': normalizedPhone,
+    });
+
+    try {
+      await SupabaseService.auth.signInWithPassword(
+        phone: normalizedPhone,
+        password: trimmedPassword,
+      );
+      return;
+    } on AuthException catch (e) {
+      final message = extractAuthErrorMessage(e).toLowerCase();
+      final retriable = message.contains('invalid login credentials') ||
+          message.contains('invalid credentials') ||
+          message.contains('user not found');
+      if (!retriable) rethrow;
+    }
+
+    final email = await lookupEmailByPhone(normalizedPhone);
+    if (email == null) {
+      throw AuthException('auth_error_invalid_credentials'.tr);
+    }
+
+    _log('signInWithIdentifier', 'Retrying sign-in with resolved email');
+    await SupabaseService.auth.signInWithPassword(
+      email: email,
+      password: trimmedPassword,
     );
   }
 }

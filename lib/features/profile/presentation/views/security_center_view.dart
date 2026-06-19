@@ -5,8 +5,10 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/services/session_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/services/auth_security_service.dart';
 import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
+import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -52,10 +54,12 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = SupabaseService.currentUser;
     final emailVerified = user?.emailConfirmedAt != null;
+    final hasPhone = AuthSecurityService.getUserPhone() != null;
+    final phoneVerified = hasPhone && user?.phoneConfirmedAt != null;
     final kycVerified = HomeController.to.kycStatus == 'verified';
 
-    // Account health score: KYC + email + biometric.
-    final steps = <bool>[kycVerified, emailVerified, _biometricEnabled];
+    // Account health score: KYC + email + phone + biometric.
+    final steps = <bool>[kycVerified, emailVerified, phoneVerified, _biometricEnabled];
     final completed = steps.where((s) => s).length;
     final healthPct = (completed / steps.length);
 
@@ -86,6 +90,19 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
                   Icons.alternate_email_rounded,
                   'email_address'.tr,
                   emailVerified,
+                ),
+                _buildCheckRow(
+                  Icons.phone_android_rounded,
+                  'phone_number'.tr,
+                  phoneVerified,
+                  onTap: phoneVerified
+                      ? null
+                      : () {
+                          final phone = AuthSecurityService.getUserPhone();
+                          if (phone != null) {
+                            AuthController.to.startPhoneVerification();
+                          }
+                        },
                 ),
                 const SizedBox(height: KasbySpacing.xl),
                 Text(

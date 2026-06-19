@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/core/services/account_restriction_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
+import 'package:kasby/core/services/sensitive_operation_guard.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/services/session_service.dart';
@@ -513,6 +514,11 @@ class _TransferViewState extends State<TransferView> {
       );
       return;
     }
+
+    final otpVerified = await SensitiveOperationGuard.requirePhoneOtp(
+      purpose: 'wallet_transfer',
+    );
+    if (!otpVerified) return;
 
     // Show confirmation dialog
     _showConfirmationDialog(amount);

@@ -41,6 +41,9 @@ class AuthOtpConfig {
         return _fromEnv('AUTH_OTP_LENGTH_EMAIL_CHANGE', 6);
       case OtpType.recovery:
         return _fromEnv('AUTH_OTP_LENGTH_RECOVERY', defaultLength);
+      case OtpType.sms:
+      case OtpType.phoneChange:
+        return _fromEnv('AUTH_OTP_LENGTH_SMS', defaultLength);
       case OtpType.signup:
         return _fromEnv('AUTH_OTP_LENGTH_SIGNUP', defaultLength);
       default:
