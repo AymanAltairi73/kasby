@@ -31,6 +31,7 @@ import 'package:kasby/core/services/app_version_service.dart';
 import 'package:kasby/core/services/deep_link_service.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/widgets/app_error_widget.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
@@ -66,6 +67,7 @@ void main() async {
   // Initialize Firebase
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await CrashReportingService.init(firebaseReady: true);
     SafeGetx.debugTrace(
       className: 'main',
       method: 'initFirebase',

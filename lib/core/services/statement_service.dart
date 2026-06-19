@@ -1,15 +1,16 @@
+import 'dart:io';
+
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 /// Generates and shares a PDF account statement (audit C11).
 ///
-/// Dependency-light: reuses the already-bundled `pdf` + `printing` packages and
-/// formats numbers/dates with `intl`. No backend changes required — operates on
-/// the transactions already loaded in the app.
+/// Uses `pdf` for document generation and `share_plus` for cross-platform export.
 class StatementService {
   StatementService._();
 
@@ -72,10 +73,16 @@ class StatementService {
         );
 
         final bytes = await doc.save();
-        await Printing.sharePdf(
-          bytes: bytes,
-          filename:
-              'kasby_statement_${df.format(from)}_${df.format(to)}.pdf',
+        final filename =
+            'kasby_statement_${df.format(from)}_${df.format(to)}.pdf';
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(bytes);
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path)],
+            subject: 'Kasby Account Statement',
+          ),
         );
       },
     );
