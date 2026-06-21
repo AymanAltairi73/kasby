@@ -27,7 +27,6 @@ import '../features/profile/presentation/views/profile_view.dart';
 import '../features/profile/presentation/views/support_view.dart';
 import '../features/profile/presentation/views/legal_view.dart';
 import '../features/investment/presentation/views/my_investments_view.dart';
-import '../features/home/presentation/views/ksp_wallet_view.dart';
 import '../features/wallet/presentation/views/loan_view.dart';
 import '../features/profile/presentation/views/edit_profile_view.dart';
 import '../features/profile/presentation/views/personal_profile_view.dart';
@@ -46,8 +45,6 @@ import '../features/qr_payment/presentation/views/qr_scanner_view.dart';
 import '../features/qr_payment/presentation/views/my_qr_view.dart';
 import '../features/profile/presentation/views/security_center_view.dart';
 import '../features/wallet/presentation/views/statements_view.dart';
-import '../features/investment/presentation/views/recurring_investments_view.dart';
-import '../features/investment/presentation/views/create_recurring_investment_view.dart';
 import '../features/referral/presentation/views/referral_analytics_view.dart';
 import '../features/onboarding/presentation/views/guided_tour_view.dart';
 import '../features/portfolio/presentation/views/portfolio_analytics_view.dart';
@@ -131,7 +128,6 @@ class AppPages {
     _route(Routes.profile, 'ProfileView', () => const ProfileView()),
     _route(Routes.support, 'SupportView', () => const SupportView()),
     _route(Routes.legal, 'LegalView', () => const LegalView()),
-    _route(Routes.kspWallet, 'KspWalletView', () => const KspWalletView()),
     _route(
       Routes.agentDetails,
       'AgentDetailsView',
@@ -255,16 +251,6 @@ class AppPages {
       Routes.referralAnalytics,
       'ReferralAnalyticsView',
       () => const ReferralAnalyticsView(),
-    ),
-    _route(
-      Routes.recurringInvestments,
-      'RecurringInvestmentsView',
-      () => const RecurringInvestmentsView(),
-    ),
-    _route(
-      Routes.createRecurringInvestment,
-      'CreateRecurringInvestmentView',
-      () => const CreateRecurringInvestmentView(),
     ),
     _route(
       Routes.notificationPreferences,

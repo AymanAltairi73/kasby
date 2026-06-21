@@ -210,40 +210,6 @@ class _RegisterViewState extends State<RegisterView> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.darkGold.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.darkGold.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 16,
-                        color: AppColors.darkGold,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'investment_disclaimer'.tr,
-                          style: TextStyle(
-                            color: isDark
-                                ? AppColors.textSecondary
-                                : AppColors.textSecondaryLight,
-                            fontSize: 11,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 const SizedBox(height: 32),
                 Obx(
                   () => controller.isLoading.value

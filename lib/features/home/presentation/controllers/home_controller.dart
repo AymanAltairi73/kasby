@@ -17,6 +17,7 @@ import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/core/services/notification_navigation_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/fee_service.dart';
 
@@ -95,7 +96,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   String get kycStatus =>
       dashboard.value?.kycStatus ?? profile.value?.kycStatus ?? 'none';
   int get pointsBalance => userPoints.value;
-  double get dailyProfit => dashboard.value?.dailyProfit ?? 0.0;
+  double get dailyProfit {
+    final fromDashboard = dashboard.value?.dailyProfit;
+    if (fromDashboard != null && fromDashboard > 0) return fromDashboard;
+    if (Get.isRegistered<CurrencyController>()) {
+      return CurrencyController.to.profitBalance.value;
+    }
+    return 0.0;
+  }
   double get profitPercentage => dashboard.value?.profitPercentage ?? 0.0;
   String get referralCode =>
       ReferralService.formatDisplayCode(profile.value?.referralCode);
@@ -506,6 +514,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
       if (response != null) {
         profile.value = ProfileModel.fromJson(response);
+        unawaited(CrashReportingService.syncUserContextFromProfile());
         if (Get.isRegistered<AccountRestrictionService>()) {
           AccountRestrictionService.to.onProfileUpdated();
         }

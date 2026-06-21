@@ -280,6 +280,10 @@ class AuthSecurityService {
     return message;
   }
 
+  static bool isEmailDeliveryFailureError(Object error) {
+    return isEmailDeliveryFailure(extractAuthErrorMessage(error));
+  }
+
   static bool isEmailDeliveryFailure(String message) {
     final lower = message.toLowerCase();
     return lower.contains('error sending') ||
@@ -417,10 +421,10 @@ class AuthSecurityService {
         SupabaseService.auth.currentSession!.refreshToken!.isNotEmpty;
   }
 
-  /// Ensures signup confirmation OTP/email is dispatched after registration.
+  /// Ensures signup confirmation OTP/email is dispatched (resend only).
   ///
-  /// Primary path: native GoTrue resend (matches Supabase "Confirm sign up").
-  /// Falls back to [send-otp] edge function when SMTP delivery fails.
+  /// Initial signup email is sent automatically by GoTrue on [signUp].
+  /// Calling this immediately after registration invalidates the first OTP.
   static Future<void> ensureSignupVerificationSent(String email) async {
     final sanitized = email.trim().toLowerCase();
     _log('ensureSignupVerificationSent', 'Sending signup verification');

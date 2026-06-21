@@ -40,11 +40,25 @@ async function resolveUserId(
   }
 
   if (purpose === "signup" && targetType === "email") {
-    const { data: authData } = await supabaseAdmin.auth.admin.listUsers()
-    const match = authData.users.find(
-      (u) => u.email?.toLowerCase() === target.toLowerCase(),
-    )
-    if (match?.id) return match.id
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .ilike("email", target)
+      .maybeSingle()
+    if (profile?.id) return profile.id
+
+    let page = 1
+    while (page <= 5) {
+      const { data: authData, error: listError } = await supabaseAdmin.auth.admin
+        .listUsers({ page, perPage: 200 })
+      if (listError) break
+      const match = authData.users.find(
+        (u) => u.email?.toLowerCase() === target.toLowerCase(),
+      )
+      if (match?.id) return match.id
+      if (authData.users.length < 200) break
+      page++
+    }
   }
 
   return null

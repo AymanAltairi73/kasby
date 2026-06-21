@@ -9,6 +9,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CurrencyController extends GetxController {
   static CurrencyController get to => Get.find();
 
+  /// Kasby points conversion: 1 USD = 1,000 KSP.
+  static const double kspPerUsd = 1000;
+
   final RxString selectedCurrency = 'USD'.obs;
   final RxDouble totalBalance = 0.0.obs;
   final RxDouble profitBalance = 0.0.obs;
@@ -260,6 +263,19 @@ class CurrencyController extends GetxController {
           (Match m) => '${m[1]},',
         );
     return '\$$formatted';
+  }
+
+  double usdToKsp(double usdAmount) => usdAmount * kspPerUsd;
+
+  String formatKspFromUsd(double usdAmount) => formatKspAmount(usdToKsp(usdAmount));
+
+  String formatKspAmount(double kspAmount) {
+    final rounded = kspAmount.round();
+    final formatted = rounded.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        );
+    return '$formatted KSP';
   }
 
   String formatAmount(double usdAmount) {

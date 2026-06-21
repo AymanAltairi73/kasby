@@ -1,7 +1,13 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
-import 'package:kasby/core/services/account_restriction_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:kasby/core/services/account_restriction_service.dart';
+import 'package:kasby/core/services/crash_reporting/crash_breadcrumb.dart';
+import 'package:kasby/core/services/crash_reporting_service.dart';
 
 /// Safe wrappers around GetX navigation/snackbar APIs.
 ///
@@ -44,22 +50,25 @@ class SafeGetx {
   static String? _lastRouteLogKey;
 
   static void logRoute(Routing? routing) {
-    if (!kDebugMode || routing == null) return;
+    if (routing == null) return;
     final key =
         '${routing.current}|${routing.previous}|${_safeArgs(routing.args)}';
-    if (_lastRouteLogKey == key) return;
-    _lastRouteLogKey = key;
-    debugTrace(
-      className: 'Navigation',
-      method: 'routeChange',
-      feature: 'Navigation',
-      status: 'INFO',
-      params: {
-        'current': routing.current,
-        'previous': routing.previous,
-        'args': _safeArgs(routing.args),
-      },
-    );
+    if (kDebugMode) {
+      if (_lastRouteLogKey == key) return;
+      _lastRouteLogKey = key;
+      debugTrace(
+        className: 'Navigation',
+        method: 'routeChange',
+        feature: 'Navigation',
+        status: 'INFO',
+        params: {
+          'current': routing.current,
+          'previous': routing.previous,
+          'args': _safeArgs(routing.args),
+        },
+      );
+    }
+    unawaited(CrashReportingService.updateRouteContext(routing.current));
   }
 
   static String _safeArgs(dynamic args) {
@@ -77,41 +86,44 @@ class SafeGetx {
     Map<String, Object?>? params,
     Map<String, Object?>? Function(T result)? onSuccessParams,
   }) async {
-    if (!kDebugMode) return operation();
     final stopwatch = Stopwatch()..start();
-    debugTrace(
-      className: className,
-      method: method,
-      feature: feature ?? className,
-      status: 'INFO',
-      message: 'Operation started',
-      params: params,
-    );
-    try {
-      final result = await operation();
-      stopwatch.stop();
-      final successParams = <String, Object?>{
-        ...?params,
-        ...?onSuccessParams?.call(result),
-      };
+    if (kDebugMode) {
       debugTrace(
         className: className,
         method: method,
         feature: feature ?? className,
-        status: 'SUCCESS',
-        durationMs: stopwatch.elapsedMilliseconds,
-        params: successParams.isEmpty ? null : successParams,
+        status: 'INFO',
+        message: 'Operation started',
+        params: params,
       );
-      if (stopwatch.elapsedMilliseconds > 2000) {
+    }
+    try {
+      final result = await operation();
+      stopwatch.stop();
+      if (kDebugMode) {
+        final successParams = <String, Object?>{
+          ...?params,
+          ...?onSuccessParams?.call(result),
+        };
         debugTrace(
           className: className,
           method: method,
-          feature: 'Performance',
-          status: 'WARNING',
-          message: 'Slow operation detected',
+          feature: feature ?? className,
+          status: 'SUCCESS',
           durationMs: stopwatch.elapsedMilliseconds,
-          params: params,
+          params: successParams.isEmpty ? null : successParams,
         );
+        if (stopwatch.elapsedMilliseconds > 2000) {
+          debugTrace(
+            className: className,
+            method: method,
+            feature: 'Performance',
+            status: 'WARNING',
+            message: 'Slow operation detected',
+            durationMs: stopwatch.elapsedMilliseconds,
+            params: params,
+          );
+        }
       }
       return result;
     } catch (e, st) {
@@ -120,16 +132,49 @@ class SafeGetx {
           Get.isRegistered<AccountRestrictionService>()) {
         AccountRestrictionService.to.showRestrictionDialog();
       }
-      debugTrace(
-        className: className,
-        method: method,
-        feature: feature ?? className,
-        status: 'FAILED',
-        durationMs: stopwatch.elapsedMilliseconds,
-        params: params,
-        error: e,
-        stackTrace: st,
-      );
+      if (kDebugMode) {
+        debugTrace(
+          className: className,
+          method: method,
+          feature: feature ?? className,
+          status: 'FAILED',
+          durationMs: stopwatch.elapsedMilliseconds,
+          params: params,
+          error: e,
+          stackTrace: st,
+        );
+      } else {
+        final category = CrashReportingService.categoryFromFeature(feature);
+        if (e is PostgrestException ||
+            e is AuthException ||
+            e is FunctionException) {
+          unawaited(CrashReportingService.recordSupabaseError(
+            e,
+            stack: st,
+            operation: '$className.$method',
+            category: category,
+          ));
+        } else if (e is SocketException || e is TimeoutException) {
+          unawaited(CrashReportingService.recordNetworkError(
+            e,
+            st,
+            operation: '$className.$method',
+            isTimeout: e is TimeoutException,
+          ));
+        } else {
+          unawaited(CrashReportingService.recordException(
+            e,
+            st,
+            reason: '$className.$method',
+            category: category,
+            context: {
+              'className': className,
+              'method': method,
+              ...?params,
+            },
+          ));
+        }
+      }
       rethrow;
     }
   }
@@ -281,6 +326,13 @@ class _TrackedScreenState extends State<TrackedScreen> {
         'hasArgs': Get.arguments != null,
       },
     );
+    unawaited(CrashReportingService.updateRouteContext(
+      Get.currentRoute,
+      screenName: widget.screenName,
+    ));
+    unawaited(CrashReportingService.log(
+      '${CrashBreadcrumb.screenOpened}: ${widget.screenName}',
+    ));
   }
 
   @override

@@ -20,6 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/fee_service.dart';
+import 'package:kasby/core/widgets/fee_breakdown_card.dart';
 
 class WithdrawView extends StatefulWidget {
   const WithdrawView({super.key});
@@ -34,6 +35,7 @@ class _WithdrawViewState extends State<WithdrawView> {
   final RxInt selectedAgentIndex = 0.obs;
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  final RxDouble _amountPreview = 0.0.obs;
   bool _isSubmitting = false;
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -42,6 +44,11 @@ class _WithdrawViewState extends State<WithdrawView> {
     super.initState();
     FeeService.load();
     _fetchAgents();
+    _amountController.addListener(_syncAmountPreview);
+  }
+
+  void _syncAmountPreview() {
+    _amountPreview.value = double.tryParse(_amountController.text.trim()) ?? 0;
   }
 
   @override
@@ -204,7 +211,9 @@ class _WithdrawViewState extends State<WithdrawView> {
             ),
             _buildConfirmRow(
               'expected_fee'.tr,
-              fee > 0 ? '-\$${fee.toStringAsFixed(2)}' : '\$0.00',
+              fee > 0
+                  ? '-\$${fee.toStringAsFixed(2)} (${FeeService.feeRateLabel('withdraw')})'
+                  : '\$0.00',
               fee > 0 ? AppColors.error : null,
             ),
             Divider(
@@ -460,48 +469,10 @@ class _WithdrawViewState extends State<WithdrawView> {
               ),
             ),
             const SizedBox(height: 24),
-            // Estimated fee preview
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: (isDark ? AppColors.surface : AppColors.surfaceLight)
-                    .withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.05)
-                      : Colors.black.withValues(alpha: 0.05),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'expected_fee'.tr,
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '\$0.00',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.softGreen,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+            Obx(
+              () => FeeBreakdownCard(
+                category: 'withdraw',
+                amount: _amountPreview.value,
               ),
             ),
             const SizedBox(height: 24),

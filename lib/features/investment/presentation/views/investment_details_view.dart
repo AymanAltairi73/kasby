@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/services/crash_reporting/crash_breadcrumb.dart';
+import 'package:kasby/core/services/crash_reporting/crash_error_category.dart';
+import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
@@ -248,18 +253,6 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                       onPressed: () => _showConfirmationDialog(),
                     ),
                   ),
-            const SizedBox(height: 24),
-            Center(
-              child: Text(
-                'risk_disclaimer'.tr,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
             const SizedBox(height: 20),
           ],
         ),
@@ -441,6 +434,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
 
       if (response['success'] == true) {
         HapticFeedback.heavyImpact();
+        unawaited(CrashReportingService.log(CrashBreadcrumb.investmentCreated));
 
         // Process referral commission asynchronously
         ReferralService.processReferralCommission(
@@ -461,6 +455,15 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           status: 'WARNING',
           message: response['error']?.toString(),
         );
+        unawaited(CrashReportingService.recordBusinessError(
+          Exception(response['error']?.toString() ?? 'Investment RPC failed'),
+          category: CrashErrorCategory.investments,
+          operation: 'create_investment',
+          context: {
+            CrashCustomKey.investmentPlan: planId,
+            'amount_range': CrashReportingService.balanceRange(amount),
+          },
+        ));
         AppSnack.error('error'.tr, response['error'] ?? 'unexpected_error'.tr);
       }
     } catch (_) {

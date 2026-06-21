@@ -21,7 +21,6 @@ abstract class Routes {
   static const profile = '/profile';
   static const support = '/support';
   static const legal = '/legal';
-  static const kspWallet = '/ksp-wallet';
   static const agentDetails = '/agent-details';
   static const transfer = '/transfer';
   static const services = '/services';
@@ -47,8 +46,6 @@ abstract class Routes {
   static const portfolioAnalytics = '/portfolio-analytics';
   static const guidedTour = '/guided-tour';
   static const globalSearch = '/global-search';
-  static const recurringInvestments = '/recurring-investments';
-  static const createRecurringInvestment = '/create-recurring-investment';
   static const referralAnalytics = '/referral-analytics';
   static const notificationPreferences = '/notification-preferences';
 }

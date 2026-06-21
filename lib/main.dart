@@ -35,7 +35,11 @@ import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/widgets/app_error_widget.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
-void main() async {
+void main() {
+  CrashReportingService.runAppWithCrashGuards(_bootstrap);
+}
+
+Future<void> _bootstrap() async {
   final startupStopwatch = Stopwatch()..start();
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -50,24 +54,12 @@ void main() async {
     message: 'App startup initiated',
   );
 
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    SafeGetx.debugTrace(
-      className: 'FlutterError',
-      method: 'onError',
-      feature: 'ErrorHandling',
-      status: 'FAILED',
-      error: details.exceptionAsString(),
-      stackTrace: details.stack,
-    );
-  };
-
   ErrorWidget.builder = (details) => AppErrorWidget(details: details);
 
   // Initialize Firebase
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    await CrashReportingService.init(firebaseReady: true);
+    await CrashReportingService.initialize(firebaseReady: true);
     SafeGetx.debugTrace(
       className: 'main',
       method: 'initFirebase',

@@ -30,11 +30,6 @@ class MyInvestmentsView extends StatelessWidget {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.repeat_rounded),
-              tooltip: 'recurring_investments'.tr,
-              onPressed: () => Get.toNamed(Routes.recurringInvestments),
-            ),
-            IconButton(
               icon: const Icon(Icons.analytics_outlined),
               tooltip: 'portfolio_analytics'.tr,
               onPressed: () => Get.toNamed(Routes.portfolioAnalytics),

@@ -13,9 +13,11 @@ import 'package:kasby/features/home/presentation/controllers/home_controller.dar
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/auth_security_service.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/tour_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 class ProfileView extends StatefulWidget {
@@ -71,23 +73,6 @@ class _ProfileViewState extends State<ProfileView> {
                       'personal_info'.tr,
                       Colors.blueAccent,
                       () => Get.toNamed(Routes.personalProfile),
-                    ),
-                    _buildProfileItem(
-                      context,
-                      isDark,
-                      Icons.toll_rounded,
-                      'ksp_wallet'.tr,
-                      AppColors.darkGold,
-                      () => Get.toNamed(Routes.kspWallet),
-                    ),
-                    // H9: social network now consistently enabled in profile
-                    _buildProfileItem(
-                      context,
-                      isDark,
-                      Icons.people_outline_rounded,
-                      'social_network'.tr,
-                      Colors.orangeAccent,
-                      () => Get.toNamed(Routes.friendRequests),
                     ),
                     _buildProfileItem(
                       context,
@@ -654,79 +639,139 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
-    final confirmController = TextEditingController();
+    final passwordController = TextEditingController();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    var isDeleting = false;
 
     Get.dialog(
-      AlertDialog(
-        backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'delete_account'.tr,
-          style: TextStyle(
-            color: AppColors.error,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'delete_account_confirm'.tr,
-              style: TextStyle(
-                color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: confirmController,
-              decoration: InputDecoration(
-                hintText: 'type_delete_confirm'.tr,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('cancel'.tr),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (confirmController.text.trim().toUpperCase() != 'DELETE') {
-                return;
-              }
-              Get.back();
-              try {
-                final userId = SupabaseService.userId;
-                if (userId != null) {
-                  await SupabaseService.client.functions.invoke(
-                    'admin-proxy',
-                    body: {
-                      'operation': 'delete_user',
-                      'params': {'user_id': userId},
-                    },
-                  );
-                }
-                await SupabaseService.auth.signOut();
-                if (Get.isRegistered<HomeController>()) {
-                  HomeController.to.clearData();
-                }
-                Get.offAllNamed(Routes.login);
-                AppSnack.success('success'.tr, 'account_deleted'.tr);
-              } catch (e) {
-                AppSnack.error('error'.tr, e.toString());
-              }
-            },
-            child: Text(
+      StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(
               'delete_account'.tr,
-              style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'delete_account_confirm'.tr,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  enabled: !isDeleting,
+                  decoration: InputDecoration(
+                    hintText: 'enter_current_password'.tr,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isDeleting ? null : () => Get.back(),
+                child: Text('cancel'.tr),
+              ),
+              TextButton(
+                onPressed: isDeleting
+                    ? null
+                    : () async {
+                        final password = passwordController.text.trim();
+                        if (password.isEmpty) {
+                          AppSnack.error(
+                            'error'.tr,
+                            'enter_current_password'.tr,
+                          );
+                          return;
+                        }
+
+                        setState(() => isDeleting = true);
+                        try {
+                          await _verifyPasswordForDelete(password);
+
+                          final userId = SupabaseService.userId;
+                          if (userId != null) {
+                            await SupabaseService.client.functions.invoke(
+                              'admin-proxy',
+                              body: {
+                                'operation': 'delete_user',
+                                'params': {'user_id': userId},
+                              },
+                            );
+                          }
+                          Get.back();
+                          await SupabaseService.auth.signOut();
+                          if (Get.isRegistered<HomeController>()) {
+                            HomeController.to.clearData();
+                          }
+                          Get.offAllNamed(Routes.login);
+                          AppSnack.success('success'.tr, 'account_deleted'.tr);
+                        } on AuthException {
+                          setState(() => isDeleting = false);
+                          AppSnack.error('error'.tr, 'incorrect_password'.tr);
+                        } catch (e) {
+                          setState(() => isDeleting = false);
+                          AppSnack.error('error'.tr, e.toString());
+                        }
+                      },
+                child: isDeleting
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.error,
+                        ),
+                      )
+                    : Text(
+                        'delete_account'.tr,
+                        style: TextStyle(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  Future<void> _verifyPasswordForDelete(String password) async {
+    final email = SupabaseService.currentUser?.email;
+    if (email != null && email.isNotEmpty) {
+      await AuthSecurityService.reauthenticateWithPassword(password);
+      return;
+    }
+
+    final phone = Get.isRegistered<HomeController>()
+        ? HomeController.to.profile.value?.phone
+        : null;
+    final resolvedPhone = phone ?? AuthSecurityService.getUserPhone();
+    if (resolvedPhone != null && resolvedPhone.isNotEmpty) {
+      await AuthSecurityService.signInWithIdentifier(
+        identifier: resolvedPhone,
+        password: password,
+      );
+      return;
+    }
+
+    throw AuthException('cannot_verify_identity'.tr);
   }
 
   void _showLanguageSelector(BuildContext context, bool isDark) {

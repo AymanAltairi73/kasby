@@ -18,6 +18,8 @@ import 'package:kasby/features/auth/domain/utils/login_identifier_utils.dart';
 import 'package:kasby/core/services/deep_link_service.dart';
 import 'package:kasby/core/services/tour_service.dart';
 import 'package:kasby/core/services/sensitive_operation_guard.dart';
+import 'package:kasby/core/services/crash_reporting/crash_breadcrumb.dart';
+import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -51,6 +53,13 @@ class AuthController extends GetxController {
         details: '$message: ${error ?? ""}',
         severity: 'critical',
       );
+      if (error != null) {
+        unawaited(CrashReportingService.recordAuthError(
+          error,
+          stack: stack,
+          expectedFailure: error is AuthException,
+        ));
+      }
     }
   }
 
@@ -250,6 +259,7 @@ class AuthController extends GetxController {
           pendingVerificationEmail.value = null;
           pendingVerificationPhone.value = null;
 
+          unawaited(CrashReportingService.log(CrashBreadcrumb.loginCompleted));
           if (Get.isRegistered<HomeController>()) {
             HomeController.to.fetchAll();
             HomeController.to.reconnectStreams();
@@ -258,11 +268,14 @@ class AuthController extends GetxController {
             CurrencyController.to.fetchWalletBalances();
           }
 
+          unawaited(CrashReportingService.syncUserContextFromProfile());
           _navigateAfterAuthentication();
           break;
 
         case AuthChangeEvent.signedOut:
           _log('User signed out');
+          unawaited(CrashReportingService.log(CrashBreadcrumb.logout));
+          unawaited(CrashReportingService.clearUser());
           authStatus.value = AuthStatus.unauthenticated;
           SensitiveOperationGuard.clearStepUp();
 
@@ -417,6 +430,7 @@ class AuthController extends GetxController {
     required String email,
     required String code,
     String purpose = 'signup',
+    String? signupPassword,
   }) async {
     isLoading.value = true;
     try {
@@ -438,10 +452,18 @@ class AuthController extends GetxController {
         email: email,
         code: code,
       );
-      await AuthSecurityService.signInAfterSignup(
-        email: email,
-        password: passwordController.text,
-      );
+
+      if (SupabaseService.auth.currentSession == null) {
+        final password = signupPassword ?? passwordController.text;
+        if (password.trim().isEmpty) {
+          throw AuthException('enter_current_password'.tr);
+        }
+        await AuthSecurityService.signInAfterSignup(
+          email: email,
+          password: password,
+        );
+      }
+
       authStatus.value = AuthStatus.authenticated;
       pendingVerificationEmail.value = null;
       await AuthSecurityService.refreshUserProfileState();
@@ -466,11 +488,19 @@ class AuthController extends GetxController {
   String translateOtpError(Object error) =>
       AuthSecurityService.translateOtpError(error);
 
-  void _goToVerifyEmail(String email, {String purpose = 'signup'}) {
+  void _goToVerifyEmail(
+    String email, {
+    String purpose = 'signup',
+    String? password,
+  }) {
     pendingVerificationEmail.value = email;
     Get.offAllNamed(
       Routes.verifyEmail,
-      arguments: {'email': email, 'purpose': purpose},
+      arguments: {
+        'email': email,
+        'purpose': purpose,
+        if (password != null && password.isNotEmpty) 'password': password,
+      },
     );
   }
 
@@ -496,6 +526,7 @@ class AuthController extends GetxController {
     }
 
     isLoading.value = true;
+    unawaited(CrashReportingService.log(CrashBreadcrumb.loginStarted));
 
     try {
       final password = passwordController.text;
@@ -661,20 +692,10 @@ class AuthController extends GetxController {
       final needsVerification = user != null &&
           (response.session == null || _requiresEmailVerification(user));
       if (needsVerification) {
-        try {
-          await AuthSecurityService.ensureSignupVerificationSent(email);
-          _goToVerifyEmail(email);
-          AppSnack.success('success'.tr, 'verification_email_sent'.tr);
-        } on AuthException catch (e, stack) {
-          _log(
-            'Signup verification dispatch failed',
-            isError: true,
-            error: e.message,
-            stack: stack,
-          );
-          _goToVerifyEmail(email);
-          AppSnack.error('error'.tr, translateAuthError(e));
-        }
+        // GoTrue already sends the "Confirm sign up" email on signUp().
+        // Avoid an immediate resend — it invalidates the active OTP.
+        _goToVerifyEmail(email, password: password);
+        AppSnack.success('success'.tr, 'verification_email_sent'.tr);
       } else if (response.session != null) {
         authStatus.value = AuthStatus.authenticated;
         final tourDone = await TourService.isTourCompleted();
@@ -686,6 +707,32 @@ class AuthController extends GetxController {
       }
     } on AuthException catch (e, stack) {
       isLoading.value = false;
+      final email = emailController.text.trim();
+      final password = passwordController.text;
+
+      if (AuthSecurityService.isEmailDeliveryFailureError(e)) {
+        _log(
+          'Signup SMTP failed — trying Resend fallback',
+          isError: true,
+          error: e.message,
+          stack: stack,
+        );
+        try {
+          await AuthSecurityService.ensureSignupVerificationSent(email);
+          await DeepLinkService.clearPendingReferralCode();
+          _goToVerifyEmail(email, password: password);
+          AppSnack.success('success'.tr, 'verification_email_sent'.tr);
+          return;
+        } catch (fallbackError, fallbackStack) {
+          _log(
+            'Resend fallback failed after signup SMTP error',
+            isError: true,
+            error: fallbackError,
+            stack: fallbackStack,
+          );
+        }
+      }
+
       _log(
         'Registration failed (AuthException)',
         isError: true,

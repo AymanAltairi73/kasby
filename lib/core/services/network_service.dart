@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 /// حالة الاتصال بالإنترنت
@@ -385,6 +386,11 @@ class NetworkService extends GetxService with WidgetsBindingObserver {
         error: e,
         stackTrace: stack,
       );
+      unawaited(CrashReportingService.recordNetworkError(
+        e,
+        stack,
+        operation: 'NetworkService.guardedRequest',
+      ));
       unawaited(_checkConnection());
       return null;
     } on TimeoutException catch (e, stack) {
@@ -398,6 +404,12 @@ class NetworkService extends GetxService with WidgetsBindingObserver {
         error: e,
         stackTrace: stack,
       );
+      unawaited(CrashReportingService.recordNetworkError(
+        e,
+        stack,
+        operation: 'NetworkService.guardedRequest',
+        isTimeout: true,
+      ));
       return null;
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -409,6 +421,12 @@ class NetworkService extends GetxService with WidgetsBindingObserver {
         error: e,
         stackTrace: stack,
       );
+      unawaited(CrashReportingService.recordException(
+        e,
+        stack,
+        reason: 'NetworkService.guardedRequest',
+        category: CrashReportingService.categoryFromFeature('network'),
+      ));
       rethrow;
     }
   }

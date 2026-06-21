@@ -57,6 +57,15 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
         _auth.emailController.text.trim();
   }
 
+  String? get _signupPassword {
+    final args = Get.arguments;
+    if (args is Map && args['password'] is String) {
+      final password = (args['password'] as String).trim();
+      return password.isEmpty ? null : password;
+    }
+    return null;
+  }
+
   String get _title =>
       _isEmailChange ? 'confirm_new_email'.tr : 'verify_email'.tr;
 
@@ -203,6 +212,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
         email: _email,
         code: code,
         purpose: _purpose,
+        signupPassword: _signupPassword,
       );
     } on AuthException catch (e) {
       AppSnack.error('error'.tr, _auth.translateOtpError(e));

@@ -474,19 +474,6 @@ class SearchService {
     );
 
     if (matched) {
-      final home = _homeController;
-      final points = home?.userPoints.value ?? 0;
-
-      items.add(SearchResultItem(
-        id: 'ksp_wallet',
-        title: 'ksp_wallet'.tr,
-        subtitle: '${'points_balance'.tr}: $points KSP',
-        category: 'ksp',
-        icon: Icons.stars_rounded,
-        color: const Color(0xFFC9A24D),
-        route: Routes.kspWallet,
-      ));
-
       items.add(SearchResultItem(
         id: 'ksp_spin',
         title: 'spin_wheel'.tr,

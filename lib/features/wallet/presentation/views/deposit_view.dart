@@ -17,6 +17,8 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/services/fee_service.dart';
+import 'package:kasby/core/widgets/fee_breakdown_card.dart';
 
 class DepositView extends StatefulWidget {
   const DepositView({super.key});
@@ -30,13 +32,20 @@ class _DepositViewState extends State<DepositView> {
   final RxBool isLoading = true.obs;
   final RxInt selectedAgent = 0.obs;
   final TextEditingController _amountController = TextEditingController();
+  final RxDouble _amountPreview = 0.0.obs;
   bool _isSubmitting = false;
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void initState() {
     super.initState();
+    FeeService.load();
     _fetchAgents();
+    _amountController.addListener(_syncAmountPreview);
+  }
+
+  void _syncAmountPreview() {
+    _amountPreview.value = double.tryParse(_amountController.text.trim()) ?? 0;
   }
 
   @override
@@ -101,6 +110,8 @@ class _DepositViewState extends State<DepositView> {
 
   void _showConfirmationDialog(double amount) {
     final agent = agents[selectedAgent.value];
+    final fee = FeeService.totalFee('deposit', amount);
+    final rateLabel = FeeService.feeRateLabel('deposit');
     Get.dialog(
       AlertDialog(
         backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
@@ -134,6 +145,24 @@ class _DepositViewState extends State<DepositView> {
               '\$${amount.toStringAsFixed(2)}',
               AppColors.softGreen,
             ),
+            if (fee > 0) ...[
+              Divider(
+                color: isDark
+                    ? Colors.white10
+                    : Colors.black.withValues(alpha: 0.1),
+                height: 24,
+              ),
+              _buildConfirmRow(
+                'expected_fee'.tr,
+                '-\$${fee.toStringAsFixed(2)}${rateLabel.isNotEmpty ? ' ($rateLabel)' : ''}',
+                AppColors.error,
+              ),
+              _buildConfirmRow(
+                'net_amount'.tr,
+                '\$${(amount - fee).toStringAsFixed(2)}',
+                AppColors.softGreen,
+              ),
+            ],
             Divider(
               color: isDark
                   ? Colors.white10
@@ -367,6 +396,13 @@ class _DepositViewState extends State<DepositView> {
               prefixIcon: Icon(
                 Icons.attach_money_rounded,
                 color: AppColors.darkGold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Obx(
+              () => FeeBreakdownCard(
+                category: 'deposit',
+                amount: _amountPreview.value,
               ),
             ),
             const SizedBox(height: 32),

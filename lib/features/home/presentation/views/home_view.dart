@@ -14,7 +14,6 @@ import 'package:kasby/features/home/presentation/controllers/ad_controller.dart'
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
-import 'package:kasby/core/utils/ksp_converter.dart';
 import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/widgets/mini_charts.dart';
@@ -539,117 +538,75 @@ class _HomeViewState extends State<HomeView> {
                       ),
                       const SizedBox(height: 4),
                       Obx(
-                        () => Text(
-                          currencyController.formatToUSD(
-                            currencyController.totalBalance.value,
-                          ),
-                          style: Get.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            letterSpacing: -1,
-                          ),
-                        ).animate(autoPlay: KasbyMotion.enabled(context)).shimmer(
-                          duration: KasbyMotion.duration(context, const Duration(seconds: 3)),
-                        ),
+                        () {
+                          final balance = currencyController.totalBalance.value;
+                          final hidden = currencyController.isBalanceHidden.value;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                hidden ? '••••••' : currencyController.formatToUSD(balance),
+                                style: Get.textTheme.displaySmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  letterSpacing: -1,
+                                ),
+                              ).animate(autoPlay: KasbyMotion.enabled(context)).shimmer(
+                                duration: KasbyMotion.duration(context, const Duration(seconds: 3)),
+                              ),
+                              if (!hidden) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.darkGold.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: AppColors.darkGold.withValues(alpha: 0.18),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Image.asset(
+                                        'assets/images/ksp_coin.png',
+                                        width: 18,
+                                        height: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'ksp_equivalent'.trParams({
+                                          'amount': currencyController.formatKspFromUsd(balance),
+                                        }),
+                                        style: TextStyle(
+                                          color: AppColors.darkGold,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 14,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'ksp_rate_hint'.tr,
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // ─── KSP BALANCE CARD ───
-                  Semantics(
-                    button: true,
-                    label: 'ksp_wallet'.tr,
-                    child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      Get.toNamed(Routes.kspWallet);
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.darkGold.withValues(alpha: 0.15),
-                            AppColors.darkGold.withValues(alpha: 0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.darkGold.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Image.asset(
-                            'assets/images/ksp_coin.png',
-                            width: 32,
-                            height: 32,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'KSP',
-                                  style: TextStyle(
-                                    color: AppColors.darkGold,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 11,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                                Obx(
-                                  () => Text(
-                                    KspConverter.formatKsp(homeController.pointsBalance),
-                                    style: TextStyle(
-                                      color: AppColors.darkGold,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // USD Equivalent
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'USD',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 11,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                              Obx(
-                                () => Text(
-                                  currencyController.formatToUSD(
-                                    KspConverter.kspToUsd(homeController.pointsBalance.toDouble()),
-                                  ),
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 8),
-                          DirectionalChevron(
-                            size: 12,
-                            color: AppColors.darkGold,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn().slideY(begin: 0.1),
-                  const SizedBox(height: 24),
                   // ─── DUAL METRICS: Daily Profit + Currency ───
                   Row(
                     children: [
@@ -677,16 +634,35 @@ class _HomeViewState extends State<HomeView> {
                             ),
                             const SizedBox(height: 4),
                             Obx(
-                              () => Text(
-                                currencyController.formatToUSD(
-                                  homeController.dailyProfit,
-                                ),
-                                style: TextStyle(
-                                  color: AppColors.softGreen,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 18,
-                                ),
-                              ),
+                              () {
+                                final profit = homeController.dailyProfit;
+                                final hidden = currencyController.isBalanceHidden.value;
+                                return Column(
+                                  children: [
+                                    Text(
+                                      hidden
+                                          ? '••••'
+                                          : currencyController.formatToUSD(profit),
+                                      style: TextStyle(
+                                        color: AppColors.softGreen,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    if (!hidden && profit > 0) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        currencyController.formatKspFromUsd(profit),
+                                        style: TextStyle(
+                                          color: AppColors.darkGold,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -1040,8 +1016,7 @@ class _HomeViewState extends State<HomeView> {
 
 
 
-  /// Secondary actions surfaced in the "More" bottom sheet (H4: keep the home
-  /// grid to 6 primary tiles, move the rest into a discoverable sheet).
+  /// Secondary actions surfaced in the "More" bottom sheet.
   List<Map<String, dynamic>> get _secondaryActions => [
     {
       'icon': Icons.analytics_rounded,
@@ -1049,34 +1024,59 @@ class _HomeViewState extends State<HomeView> {
       'onTap': () => Get.toNamed(Routes.portfolioAnalytics),
     },
     {
-      'icon': Icons.repeat_rounded,
-      'label': 'recurring_investments'.tr,
-      'onTap': () => Get.toNamed(Routes.recurringInvestments),
-    },
-    {
       'icon': Icons.leaderboard_rounded,
       'label': 'referral_analytics'.tr,
       'onTap': () => Get.toNamed(Routes.referralAnalytics),
     },
     {
-      'icon': Icons.people_outline_rounded,
-      'label': 'social_network'.tr,
-      'onTap': () => Get.toNamed(Routes.friendRequests),
-    },
-    {
-      'icon': Icons.card_membership_rounded,
-      'label': 'investments'.tr,
-      'onTap': () => Get.toNamed(Routes.subscription),
-    },
-    {
-      'icon': Icons.casino_rounded,
-      'label': 'spin_wheel'.tr,
-      'onTap': () => Get.toNamed(Routes.spinWheel),
-    },
-    {
       'icon': Icons.calendar_today_rounded,
       'label': 'check_in'.tr,
       'onTap': () => Get.toNamed(Routes.dailyCheckIn),
+    },
+    {
+      'icon': Icons.trending_up_rounded,
+      'label': 'investment_plans'.tr,
+      'onTap': () => Get.toNamed(Routes.investmentPlans),
+    },
+    {
+      'icon': Icons.add_circle_outline_rounded,
+      'label': 'deposit'.tr,
+      'onTap': () => Get.toNamed(Routes.deposit),
+    },
+    {
+      'icon': Icons.remove_circle_outline_rounded,
+      'label': 'withdraw'.tr,
+      'onTap': () => Get.toNamed(Routes.withdraw),
+    },
+    {
+      'icon': Icons.verified_user_outlined,
+      'label': 'kyc_verification'.tr,
+      'onTap': () => Get.toNamed(Routes.kyc),
+    },
+    {
+      'icon': Icons.qr_code_scanner_rounded,
+      'label': 'scan_qr'.tr,
+      'onTap': () => Get.toNamed(Routes.qrScanner),
+    },
+    {
+      'icon': Icons.search_rounded,
+      'label': 'search'.tr,
+      'onTap': () => Get.toNamed(Routes.globalSearch),
+    },
+    {
+      'icon': Icons.notifications_none_rounded,
+      'label': 'notifications'.tr,
+      'onTap': () => Get.toNamed(Routes.notifications),
+    },
+    {
+      'icon': Icons.groups_rounded,
+      'label': 'my_team'.tr,
+      'onTap': () => Get.toNamed(Routes.myTeam),
+    },
+    {
+      'icon': Icons.description_outlined,
+      'label': 'statements'.tr,
+      'onTap': () => Get.toNamed(Routes.statements),
     },
   ];
 
@@ -1093,6 +1093,11 @@ class _HomeViewState extends State<HomeView> {
         'onTap': () => Get.toNamed(Routes.agents),
       },
       {
+        'icon': Icons.chat_bubble_outline_rounded,
+        'label': 'communication'.tr,
+        'onTap': () => Get.toNamed(Routes.supportChat),
+      },
+      {
         'icon': Icons.pie_chart_rounded,
         'label': 'my_investments'.tr,
         'onTap': () => Get.toNamed(Routes.myInvestments),
@@ -1103,9 +1108,14 @@ class _HomeViewState extends State<HomeView> {
         'onTap': () => Get.toNamed(Routes.loan),
       },
       {
-        'icon': Icons.account_balance_wallet_rounded,
-        'label': 'ksp_wallet'.tr,
-        'onTap': () => Get.toNamed(Routes.kspWallet),
+        'icon': Icons.card_membership_rounded,
+        'label': 'investments'.tr,
+        'onTap': () => Get.toNamed(Routes.subscription),
+      },
+      {
+        'icon': Icons.casino_rounded,
+        'label': 'spin_wheel'.tr,
+        'onTap': () => Get.toNamed(Routes.spinWheel),
       },
       {
         'icon': Icons.grid_view_rounded,
@@ -1118,10 +1128,10 @@ class _HomeViewState extends State<HomeView> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 20,
-        crossAxisSpacing: 10,
-        mainAxisExtent: 110,
+        crossAxisCount: 4,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 8,
+        mainAxisExtent: 100,
       ),
       itemCount: actions.length,
       itemBuilder: (context, index) {

@@ -123,6 +123,41 @@ class FeeService {
     return total;
   }
 
+  /// Human-readable fee lines for UI (percentage + fixed parts).
+  static List<String> feeDescriptionLines(String category, double amount) {
+    final lines = <String>[];
+    for (final fee in feesFor(category)) {
+      final value = fee.calculate(amount);
+      if (value <= 0) continue;
+      final parts = <String>[];
+      if (fee.percentage > 0) {
+        parts.add('${fee.percentage.toStringAsFixed(fee.percentage % 1 == 0 ? 0 : 2)}%');
+      }
+      if (fee.fixedAmount > 0) {
+        parts.add('\$${fee.fixedAmount.toStringAsFixed(2)}');
+      }
+      final rateLabel = parts.isEmpty ? '' : ' (${parts.join(' + ')})';
+      final label = fee.label.isNotEmpty ? fee.label : category;
+      lines.add('$label$rateLabel: \$${value.toStringAsFixed(2)}');
+    }
+    return lines;
+  }
+
+  static String feeRateLabel(String category) {
+    final applicable = feesFor(category);
+    if (applicable.isEmpty) return '';
+    final parts = <String>[];
+    for (final fee in applicable) {
+      if (fee.percentage > 0) {
+        parts.add('${fee.percentage.toStringAsFixed(fee.percentage % 1 == 0 ? 0 : 2)}%');
+      }
+      if (fee.fixedAmount > 0) {
+        parts.add('\$${fee.fixedAmount.toStringAsFixed(2)}');
+      }
+    }
+    return parts.join(' + ');
+  }
+
   static double? minLimit(String category, {String tier = 'normal'}) {
     final match = _limits.where((l) =>
         l.category == category &&

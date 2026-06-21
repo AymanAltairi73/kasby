@@ -226,20 +226,95 @@ class _AgentsViewState extends State<AgentsView> {
 
   Widget _buildHeader(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.darkGold.withValues(alpha: isDark ? 0.12 : 0.08),
+            Colors.transparent,
+          ],
+        ),
+      ),
       child: Column(
         children: [
-          Text(
-            'agency_desc'.tr,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-              height: 1.5,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.darkGold.withValues(alpha: 0.18),
+                  AppColors.darkGold.withValues(alpha: 0.05),
+                ],
+              ),
+              border: Border.all(
+                color: AppColors.darkGold.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.darkGold.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.verified_user_rounded,
+                    color: AppColors.darkGold,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'authorized_agents'.tr,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                          color: isDark ? Colors.white : AppColors.textBodyLight,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'agency_desc'.tr,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-          // ─── SEARCH BAR ──────────────────────────────────────
+          const SizedBox(height: 16),
+          Obx(
+            () => Row(
+              children: [
+                _buildStatChip(
+                  Icons.groups_rounded,
+                  '${agents.length}',
+                  'agents_list'.tr,
+                ),
+                const SizedBox(width: 10),
+                _buildStatChip(
+                  Icons.map_rounded,
+                  '${agents.where((a) => a.latitude != null).length}',
+                  'agents_map'.tr,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           Container(
             decoration: BoxDecoration(
               color: isDark ? AppColors.surface : AppColors.surfaceLight,
@@ -252,7 +327,7 @@ class _AgentsViewState extends State<AgentsView> {
               controller: _searchController,
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
-                hintText: 'search_agent_hint'.tr, // Search by agent name or city...
+                hintText: 'search_agent_hint'.tr,
                 hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                 prefixIcon: Icon(Icons.search_rounded, color: AppColors.darkGold),
                 suffixIcon: Obx(() => _searchQuery.isNotEmpty
@@ -269,36 +344,96 @@ class _AgentsViewState extends State<AgentsView> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          Obx(() => Row(
-            children: [
-              Expanded(
-                child: _buildTabButton(
-                  _showMap.value ? 'agents_list_view'.tr : 'agents_list'.tr,
-                  isSelected: !_showMap.value,
-                  onTap: () => _showMap.value = false,
+          const SizedBox(height: 16),
+          Obx(
+            () => Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surface : AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildTabButton(
+                      'agents_list'.tr,
+                      isSelected: !_showMap.value,
+                      onTap: () => _showMap.value = false,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildTabButton(
+                      'agents_map'.tr,
+                      isSelected: _showMap.value,
+                      onTap: () => _showMap.value = true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Get.toNamed(Routes.agencyApply),
+              icon: Icon(Icons.workspace_premium_rounded, color: AppColors.darkGold),
+              label: Text(
+                'apply_agency'.tr,
+                style: TextStyle(
+                  color: AppColors.darkGold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTabButton(
-                  'agents_map'.tr,
-                  isSelected: _showMap.value,
-                  onTap: () => _showMap.value = true,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                side: BorderSide(color: AppColors.darkGold.withValues(alpha: 0.5)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTabButton(
-                  'apply_agency'.tr,
-                  isSelected: false,
-                  onTap: () => Get.toNamed(Routes.agencyApply),
-                  isGlow: true,
-                ),
-              ),
-            ],
-          )),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatChip(IconData icon, String value, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surface : AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.darkGold.withValues(alpha: 0.15),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: AppColors.darkGold),
+            const SizedBox(width: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: isDark ? Colors.white : AppColors.textBodyLight,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -307,41 +442,27 @@ class _AgentsViewState extends State<AgentsView> {
     String label, {
     required bool isSelected,
     required VoidCallback onTap,
-    bool isGlow = false,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        height: 50,
+        height: 44,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.darkGold
-              : (isDark ? AppColors.surface : AppColors.surfaceLight)
-                    .withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(16),
-          border: isGlow
-              ? Border.all(color: AppColors.darkGold.withValues(alpha: 0.5))
-              : null,
-          boxShadow: isGlow && !isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.darkGold.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: isSelected
                 ? Colors.black
-                : (isDark ? Colors.white : AppColors.textBodyLight),
+                : (isDark ? Colors.white70 : AppColors.textBodyLight),
             fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontSize: 13,
           ),
         ),
       ),
@@ -378,17 +499,28 @@ class _AgentsViewState extends State<AgentsView> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor:
-                      isDark ? AppColors.surface : AppColors.surfaceLight,
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.darkGold.withValues(alpha: 0.25),
+                        AppColors.darkGold.withValues(alpha: 0.05),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: AppColors.darkGold.withValues(alpha: 0.35),
+                    ),
+                  ),
                   child: Icon(
-                    Icons.person,
+                    Icons.support_agent_rounded,
                     color: AppColors.darkGold,
-                    size: 30,
+                    size: 28,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -401,7 +533,7 @@ class _AgentsViewState extends State<AgentsView> {
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 17,
                                 fontWeight: FontWeight.bold,
                                 color: isDark
                                     ? Colors.white
@@ -419,46 +551,93 @@ class _AgentsViewState extends State<AgentsView> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '${agent.city}, ${agent.country}',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              '${agent.city}, ${agent.country}',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(agent.availabilityStatus)
-                              .withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _getStatusText(agent.availabilityStatus),
-                          style: TextStyle(
-                            color: _getStatusColor(agent.availabilityStatus),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(agent.availabilityStatus)
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _getStatusText(agent.availabilityStatus),
+                              style: TextStyle(
+                                color: _getStatusColor(agent.availabilityStatus),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
+                          if (agent.successRate > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.softGreen.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'success_rate'.trParams({
+                                  'rate': '${agent.successRate.toStringAsFixed(0)}%',
+                                }),
+                                style: TextStyle(
+                                  color: AppColors.softGreen,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: Icon(
-                    Icons.chat_bubble_outline_rounded,
-                    color: AppColors.darkGold,
-                  ),
-                  tooltip: 'send_message'.tr,
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    _startAgentChat(agent);
-                  },
+                Column(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: AppColors.darkGold,
+                      ),
+                      tooltip: 'send_message'.tr,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        _startAgentChat(agent);
+                      },
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -491,18 +670,64 @@ class _AgentsViewState extends State<AgentsView> {
                 borderRadius: BorderRadius.circular(16),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: FlutterMap(
-                    options: MapOptions(
-                      initialCenter: mapCenter,
-                      initialZoom: agentsWithCoords.isNotEmpty ? 10 : 5,
-                    ),
+                  child: Stack(
                     children: [
-                      TileLayer(
-                        urlTemplate:
-                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.kasby.app',
+                      FlutterMap(
+                        options: MapOptions(
+                          initialCenter: mapCenter,
+                          initialZoom: agentsWithCoords.isNotEmpty ? 10 : 5,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.kasby.app',
+                          ),
+                          MarkerLayer(markers: _buildMarkers(agentsWithCoords)),
+                        ],
                       ),
-                      MarkerLayer(markers: _buildMarkers(agentsWithCoords)),
+                      if (agentsWithCoords.isNotEmpty)
+                        Positioned(
+                          top: 12,
+                          left: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: (isDark ? AppColors.surface : Colors.white)
+                                  .withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.place_rounded,
+                                  size: 16,
+                                  color: AppColors.darkGold,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${agentsWithCoords.length}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    color: isDark
+                                        ? Colors.white
+                                        : AppColors.textBodyLight,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),

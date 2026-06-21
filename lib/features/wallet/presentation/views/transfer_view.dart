@@ -16,6 +16,7 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/fee_service.dart';
+import 'package:kasby/core/widgets/fee_breakdown_card.dart';
 
 class TransferView extends StatefulWidget {
   const TransferView({super.key});
@@ -28,6 +29,7 @@ class _TransferViewState extends State<TransferView> {
   bool isPoints = true;
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  final RxDouble _amountPreview = 0.0.obs;
   bool _isSubmitting = false;
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -35,6 +37,7 @@ class _TransferViewState extends State<TransferView> {
   void initState() {
     super.initState();
     FeeService.load();
+    _amountController.addListener(_syncAmountPreview);
     final args = Get.arguments;
     if (args != null && args is Map<String, dynamic>) {
       if (args.containsKey('receiver_id')) {
@@ -56,6 +59,10 @@ class _TransferViewState extends State<TransferView> {
         });
       }
     }
+  }
+
+  void _syncAmountPreview() {
+    _amountPreview.value = double.tryParse(_amountController.text.trim()) ?? 0;
   }
 
   @override
@@ -280,6 +287,14 @@ class _TransferViewState extends State<TransferView> {
                 ),
         ),
         const SizedBox(height: 16),
+        if (!isPoints)
+          Obx(
+            () => FeeBreakdownCard(
+              category: 'transfer',
+              amount: _amountPreview.value,
+            ),
+          ),
+        if (!isPoints) const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -527,6 +542,7 @@ class _TransferViewState extends State<TransferView> {
   void _showConfirmationDialog(double amount) {
     final fee = isPoints ? 0.0 : FeeService.totalFee('transfer', amount);
     final netAmount = amount - fee;
+    final rateLabel = isPoints ? '' : FeeService.feeRateLabel('transfer');
     Get.dialog(
       AlertDialog(
         backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
@@ -551,7 +567,7 @@ class _TransferViewState extends State<TransferView> {
             if (fee > 0) ...[
               const SizedBox(height: 8),
               Text(
-                '${'expected_fee'.tr}: -\$${fee.toStringAsFixed(2)}',
+                '${'expected_fee'.tr}: -\$${fee.toStringAsFixed(2)}${rateLabel.isNotEmpty ? ' ($rateLabel)' : ''}',
                 style: TextStyle(color: AppColors.error, fontSize: 13),
               ),
               const SizedBox(height: 4),
@@ -560,6 +576,15 @@ class _TransferViewState extends State<TransferView> {
                 style: TextStyle(
                   color: AppColors.softGreen,
                   fontWeight: FontWeight.bold,
+                ),
+              ),
+            ] else if (!isPoints) ...[
+              const SizedBox(height: 8),
+              Text(
+                'no_fee_applied'.tr,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
                 ),
               ),
             ],

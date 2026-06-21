@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
+import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../controllers/agency_apply_controller.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -162,66 +163,85 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'agency_form_desc'.tr,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-                height: 1.5,
+            _buildHeroSection(),
+            const SizedBox(height: 24),
+            _buildBenefitsRow(),
+            const SizedBox(height: 28),
+            KasbyCard(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('personal_info'.tr),
+                  const SizedBox(height: 16),
+                  KasbyTextField(
+                    controller: _nameController,
+                    label: 'full_name'.tr,
+                    hint: 'enter_full_name'.tr,
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.darkGold),
+                  ),
+                  const SizedBox(height: 16),
+                  KasbyTextField(
+                    controller: _phoneController,
+                    label: 'phone_number'.tr,
+                    hint: 'enter_phone_hint'.tr,
+                    prefixIcon: Icon(Icons.phone_outlined, color: AppColors.darkGold),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 16),
+                  KasbyTextField(
+                    controller: _whatsappController,
+                    label: 'whatsapp_number'.tr,
+                    hint: 'enter_phone_hint'.tr,
+                    prefixIcon: Icon(Icons.chat_outlined, color: AppColors.darkGold),
+                    keyboardType: TextInputType.phone,
+                  ),
+                ],
               ),
-            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1),
+            ),
+            const SizedBox(height: 16),
+            KasbyCard(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('location'.tr),
+                  const SizedBox(height: 16),
+                  KasbyTextField(
+                    controller: _countryController,
+                    label: 'country'.tr,
+                    hint: 'select_country'.tr,
+                    prefixIcon: Icon(Icons.public_rounded, color: AppColors.darkGold),
+                  ),
+                  const SizedBox(height: 16),
+                  KasbyTextField(
+                    controller: _cityController,
+                    label: 'prov_city'.tr,
+                    hint: 'enter_city'.tr,
+                    prefixIcon: Icon(Icons.location_city_rounded, color: AppColors.darkGold),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            KasbyCard(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('has_office'.tr),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(child: _buildRadioOption('yes'.tr, 'yes')),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildRadioOption('no'.tr, 'no')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 32),
-            _buildSectionTitle('personal_info'.tr),
-            const SizedBox(height: 16),
-            KasbyTextField(
-              controller: _nameController,
-              label: 'full_name'.tr,
-              hint: 'enter_full_name'.tr,
-              prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.darkGold),
-            ),
-            const SizedBox(height: 16),
-            KasbyTextField(
-              controller: _phoneController,
-              label: 'phone_number'.tr,
-              hint: 'enter_phone_hint'.tr,
-              prefixIcon: Icon(Icons.phone_outlined, color: AppColors.darkGold),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 16),
-            KasbyTextField(
-              controller: _whatsappController,
-              label: 'whatsapp_number'.tr,
-              hint: 'enter_phone_hint'.tr,
-              prefixIcon: Icon(Icons.chat_outlined, color: AppColors.darkGold),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('location'.tr),
-            const SizedBox(height: 16),
-            KasbyTextField(
-              controller: _countryController,
-              label: 'country'.tr,
-              hint: 'select_country'.tr,
-              prefixIcon: Icon(Icons.public_rounded, color: AppColors.darkGold),
-            ),
-            const SizedBox(height: 16),
-            KasbyTextField(
-              controller: _cityController,
-              label: 'prov_city'.tr,
-              hint: 'enter_city'.tr,
-              prefixIcon: Icon(Icons.location_city_rounded, color: AppColors.darkGold),
-            ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('has_office'.tr),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _buildRadioOption('yes'.tr, 'yes')),
-                const SizedBox(width: 16),
-                Expanded(child: _buildRadioOption('no'.tr, 'no')),
-              ],
-            ),
-            const SizedBox(height: 48),
             SizedBox(
               width: double.infinity,
               child: KasbyButton(
@@ -243,6 +263,104 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
             const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeroSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.darkGold.withValues(alpha: 0.22),
+            AppColors.darkGold.withValues(alpha: 0.06),
+          ],
+        ),
+        border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.darkGold.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.workspace_premium_rounded,
+              color: AppColors.darkGold,
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'agency_form_title'.tr,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: isDark ? Colors.white : AppColors.textBodyLight,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'agency_form_desc'.tr,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.08);
+  }
+
+  Widget _buildBenefitsRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildBenefitChip(Icons.payments_rounded, 'deposit_funds'.tr),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildBenefitChip(Icons.outbox_rounded, 'withdraw_funds'.tr),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBenefitChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.darkGold),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : AppColors.textBodyLight,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
