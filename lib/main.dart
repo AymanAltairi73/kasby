@@ -24,6 +24,8 @@ import 'package:kasby/core/widgets/account_restriction_banner.dart';
 import 'package:kasby/core/widgets/connectivity_banner.dart';
 import 'package:kasby/core/services/sensitive_operation_guard.dart';
 import 'package:kasby/core/services/session_service.dart';
+import 'package:kasby/core/services/biometric_login_service.dart';
+import 'package:kasby/core/utils/accessibility_utils.dart';
 import 'package:kasby/core/services/confetti_service.dart';
 import 'package:kasby/features/qr_payment/presentation/controllers/qr_payment_controller.dart';
 import 'package:kasby/core/services/presence_service.dart';
@@ -34,6 +36,7 @@ import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/widgets/app_error_widget.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/features/marketplace/domain/services/marketplace_api_service.dart';
 
 void main() {
   CrashReportingService.runAppWithCrashGuards(_bootstrap);
@@ -138,7 +141,9 @@ Future<void> _bootstrap() async {
   Get.put(ThemeController(), permanent: true);
   Get.put(ShellController(), permanent: true);
   Get.put(SessionService(), permanent: true);
+  Get.put(BiometricLoginService(), permanent: true);
   Get.put(ConfettiService(), permanent: true);
+  await Get.putAsync(() => MarketplaceApiService().init(), permanent: true);
   Get.lazyPut(() => AgentController());
   Get.lazyPut(() => QrPaymentController(), fenix: true);
   Get.put(AppVersionService(), permanent: true);
@@ -210,15 +215,18 @@ class _KasbyAppState extends State<KasbyApp> {
         ],
         defaultTransition: Transition.fade,
         builder: (context, child) {
-          return Stack(
-            children: [
-              AccountRestrictionBanner(
-                child: ConnectivityBanner(
-                  child: child ?? const SizedBox.shrink(),
+          return MediaQuery(
+            data: AccessibilityUtils.clampTextScale(context),
+            child: Stack(
+              children: [
+                AccountRestrictionBanner(
+                  child: ConnectivityBanner(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 ),
-              ),
-              ConfettiService.to.buildConfetti(),
-            ],
+                ConfettiService.to.buildConfetti(),
+              ],
+            ),
           );
         },
       );

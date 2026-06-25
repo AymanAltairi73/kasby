@@ -4,10 +4,10 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
+import 'package:kasby/features/auth/domain/services/otp_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 /// Centralized Supabase Auth security operations (verification, reset, reauth).
 class AuthSecurityService {
@@ -21,6 +21,15 @@ class AuthSecurityService {
       return fromEnv.trim();
     }
     return defaultRedirect;
+  }
+
+  static OTPService get _otp => OTPService.to;
+
+  static String _otpErrorMessage(Object error) {
+    if (error is OTPDispatchException || error is OTPVerificationException) {
+      return error.toString();
+    }
+    return extractAuthErrorMessage(error);
   }
 
   static void _log(
@@ -103,9 +112,9 @@ class AuthSecurityService {
     }
   }
 
-  /// Resend signup confirmation email.
+  /// Resend signup verification OTP via Twilio Verify platform.
   static Future<void> resendSignupVerification(String email) async {
-    await resendOtp(email: email, type: OtpType.signup);
+    await ensureSignupVerificationSent(email);
   }
 
   /// Resend or send OTP for a given auth flow type.
@@ -294,7 +303,26 @@ class AuthSecurityService {
         lower.contains('unexpected_failure') ||
         lower.contains('badcredentials') ||
         lower.contains('username and password not accepted') ||
-        lower.contains('535 5.7.8');
+        lower.contains('535 5.7.8') ||
+        lower.contains('resend_api_key') ||
+        lower.contains('resend delivery failed');
+  }
+
+  /// Maps edge-function OTP dispatch failures to a user-facing delivery message.
+  static String normalizeOtpDispatchError(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('resend_api_key') ||
+        lower.contains('resend delivery failed') ||
+        isEmailDeliveryFailure(message)) {
+      return 'auth_error_email_delivery'.tr;
+    }
+    if (lower.contains('user not found')) {
+      return 'auth_error_email_delivery'.tr;
+    }
+    if (lower.contains('rate_limit')) {
+      return 'rate_limit_exceeded_friend'.tr;
+    }
+    return message;
   }
 
   static bool _isOtpRelatedAuthError(String message) {
@@ -311,9 +339,9 @@ class AuthSecurityService {
         lower.contains('verification code');
   }
 
-  /// Resend password recovery OTP / email.
+  /// Resend password recovery OTP via Resend (unified with phone reset path).
   static Future<void> resendPasswordRecovery(String email) async {
-    await resendOtp(email: email, type: OtpType.recovery);
+    await sendPasswordResetOtpViaResend(email);
   }
 
   /// Refresh session when possible; returns verification status.
@@ -336,15 +364,44 @@ class AuthSecurityService {
     return verified;
   }
 
-  /// Send native Supabase password reset email.
+  /// Send password reset OTP via Resend (not Supabase SMTP magic link).
   static Future<void> sendPasswordResetEmail(String email) async {
+    await sendPasswordResetOtpViaResend(email);
+  }
+
+  /// Dispatches a password-reset OTP through Twilio Verify platform.
+  static Future<void> sendPasswordResetOtpViaResend(String email) async {
     final sanitized = email.trim().toLowerCase();
-    _log('sendPasswordResetEmail', 'Sending password reset email');
-    await SupabaseService.auth.resetPasswordForEmail(
-      sanitized,
-      redirectTo: authRedirectUrl,
-    );
-    _log('sendPasswordResetEmail', 'Password reset email sent');
+    _log('sendPasswordResetOtpViaResend', 'Sending password reset OTP');
+    try {
+      await _otp.sendEmailOtp(email: sanitized, purpose: 'password_reset');
+    } catch (e) {
+      throw AuthException(normalizeOtpDispatchError(_otpErrorMessage(e)));
+    }
+    _log('sendPasswordResetOtpViaResend', 'Password reset OTP dispatched');
+  }
+
+  /// Creates auth user when signup SMTP fails, then sends signup OTP.
+  static Future<void> provisionSignupAndSendOtp({
+    required String email,
+    required String password,
+    Map<String, dynamic>? metadata,
+  }) async {
+    final sanitized = email.trim().toLowerCase();
+    _log('provisionSignupAndSendOtp', 'Provisioning user and sending signup OTP');
+    try {
+      await _otp.sendEmailOtp(
+        email: sanitized,
+        purpose: 'signup',
+        provision: {
+          'provision_password': password,
+          if (metadata != null) 'provision_metadata': metadata,
+        },
+      );
+    } catch (e) {
+      throw AuthException(normalizeOtpDispatchError(_otpErrorMessage(e)));
+    }
+    _log('provisionSignupAndSendOtp', 'Signup OTP dispatched after provision');
   }
 
   /// Reauthenticate with current password (required before sensitive updates).
@@ -421,90 +478,52 @@ class AuthSecurityService {
         SupabaseService.auth.currentSession!.refreshToken!.isNotEmpty;
   }
 
-  /// Ensures signup confirmation OTP/email is dispatched (resend only).
-  ///
-  /// Initial signup email is sent automatically by GoTrue on [signUp].
-  /// Calling this immediately after registration invalidates the first OTP.
+  /// Ensures signup verification OTP is dispatched via Twilio Verify platform.
   static Future<void> ensureSignupVerificationSent(String email) async {
     final sanitized = email.trim().toLowerCase();
-    _log('ensureSignupVerificationSent', 'Sending signup verification');
-
+    _log('ensureSignupVerificationSent', 'Sending signup verification OTP');
     try {
-      await resendOtp(email: sanitized, type: OtpType.signup);
-      _log(
-        'ensureSignupVerificationSent',
-        'Signup OTP sent via Supabase Auth',
-      );
-      return;
+      await _otp.sendEmailOtp(email: sanitized, purpose: 'signup');
+      _log('ensureSignupVerificationSent', 'Signup OTP sent');
     } catch (e, stack) {
       _log(
         'ensureSignupVerificationSent',
-        'Supabase auth resend failed, trying Resend edge function',
-        status: 'WARN',
+        'Signup OTP dispatch failed',
+        status: 'ERROR',
         error: e,
         stackTrace: stack,
       );
+      throw AuthException(normalizeOtpDispatchError(_otpErrorMessage(e)));
     }
-
-    await _sendSignupOtpViaResend(sanitized);
-    _log(
-      'ensureSignupVerificationSent',
-      'Signup OTP sent via Resend edge function',
-    );
   }
 
-  /// Verify signup OTP delivered by [send-otp] and mark email confirmed server-side.
+  /// Verify signup OTP and mark email confirmed server-side.
   static Future<void> confirmSignupEmailOtp({
     required String email,
     required String code,
   }) async {
     final sanitized = email.trim().toLowerCase();
     final normalized = AuthOtpConfig.normalize(code);
-    final expectedLength = AuthOtpConfig.lengthForOtpType(OtpType.signup);
-    if (normalized.length != expectedLength) {
+    if (normalized.length != AuthOtpConfig.unifiedOtpLength) {
       throw AuthException(
-        'otp_length_mismatch'.trParams({'count': '$expectedLength'}),
+        'otp_length_mismatch'.trParams({
+          'count': '${AuthOtpConfig.unifiedOtpLength}',
+        }),
       );
     }
 
+    _log('confirmSignupEmailOtp', 'Confirming signup OTP');
     try {
-      await verifyOtpCode(
+      await _otp.verifyEmailOtp(
         email: sanitized,
-        token: normalized,
-        type: OtpType.signup,
+        code: normalized,
+        purpose: 'signup',
       );
-      _log('confirmSignupEmailOtp', 'Signup email confirmed via Supabase Auth');
-      return;
-    } catch (e, stack) {
-      _log(
-        'confirmSignupEmailOtp',
-        'Native signup OTP failed, trying edge function',
-        status: 'WARN',
-        error: e,
-        stackTrace: stack,
-      );
+    } catch (e) {
+      throw AuthException(translateOtpError(e));
     }
-
-    _log('confirmSignupEmailOtp', 'Confirming signup OTP via edge function');
-    final response = await _invokeEdgeFunction(
-      'confirm-signup-email',
-      body: {
-        'email': sanitized,
-        'otp_code': normalized,
-      },
-    );
-
-    final data = jsonDecode(response.body);
-    if (response.statusCode != 200 ||
-        data is! Map ||
-        data['success'] != true) {
-      final message =
-          data is Map ? (data['error'] ?? 'invalid_otp'.tr) : 'invalid_otp'.tr;
-      throw AuthException(translateOtpError(message));
-    }
-
     await _syncUserAfterOtpVerification();
-    _log('confirmSignupEmailOtp', 'Signup email confirmed via edge function');
+    _log('confirmSignupEmailOtp', 'Signup email confirmed');
   }
 
   /// Sign in immediately after signup email confirmation (no session yet).
@@ -522,69 +541,116 @@ class AuthSecurityService {
     _log('signInAfterSignup', 'Session created');
   }
 
-  static Future<void> _sendSignupOtpViaResend(String email) async {
-    final response = await _invokeEdgeFunction(
-      'send-otp',
-      body: {
-        'target': email,
-        'target_type': 'email',
-        'purpose': 'signup',
-      },
-    );
-
-    final data = jsonDecode(response.body);
-    if (response.statusCode != 200 ||
-        data is! Map ||
-        data['success'] != true) {
-      final message = data is Map
-          ? (data['error']?.toString() ?? 'auth_error_email_delivery'.tr)
-          : 'auth_error_email_delivery'.tr;
-      throw AuthException(message);
-    }
-  }
-
-  static Future<http.Response> _invokeEdgeFunction(
-    String functionName, {
-    required Map<String, dynamic> body,
+  /// Sends phone verification OTP via Twilio Verify (SMS).
+  static Future<void> ensurePhoneVerificationSent({
+    required String phone,
+    String purpose = 'verification',
   }) async {
-    if (!dotenv.isInitialized) {
-      throw AuthException('auth_error_email_delivery'.tr);
+    final e164 = _phoneForOtpLookup(_normalizePhone(phone));
+    _log('ensurePhoneVerificationSent', 'Sending phone verification OTP', params: {
+      'phone': e164,
+      'purpose': purpose,
+    });
+    try {
+      await _otp.sendPhoneOtp(phone: e164, purpose: purpose);
+      _log('ensurePhoneVerificationSent', 'Phone OTP sent via Twilio Verify');
+    } catch (e) {
+      throw AuthException(translateOtpError(e));
     }
-
-    final supabaseUrl = dotenv.env['SUPABASE_URL'];
-    final anonKey = dotenv.env['SUPABASE_ANON_KEY'];
-    if (supabaseUrl == null ||
-        supabaseUrl.isEmpty ||
-        anonKey == null ||
-        anonKey.isEmpty) {
-      throw AuthException('auth_error_email_delivery'.tr);
-    }
-
-    final url = Uri.parse('$supabaseUrl/functions/v1/$functionName');
-    return http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': anonKey,
-      },
-      body: jsonEncode(body),
-    );
   }
 
-  /// Native Supabase sign-up with email confirmation redirect configured.
+  /// Sends OTP for profile email/phone change via Twilio Verify platform.
+  static Future<void> sendProfileChangeOtp({
+    required String target,
+    required String targetType,
+    required String purpose,
+  }) async {
+    final normalizedTarget = targetType == 'email'
+        ? target.trim().toLowerCase()
+        : _phoneForOtpLookup(normalizePhone(target.trim()));
+
+    _log('sendProfileChangeOtp', 'Sending profile change OTP', params: {
+      'targetType': targetType,
+      'purpose': purpose,
+    });
+
+    try {
+      if (targetType == 'email') {
+        await _otp.sendEmailOtp(email: normalizedTarget, purpose: purpose);
+      } else {
+        await _otp.sendPhoneOtp(phone: normalizedTarget, purpose: purpose);
+      }
+      _log('sendProfileChangeOtp', 'Profile change OTP sent');
+    } catch (e) {
+      throw AuthException(
+        targetType == 'email'
+            ? normalizeOtpDispatchError(_otpErrorMessage(e))
+            : translateOtpError(e),
+      );
+    }
+  }
+
+  // ─── PHONE AUTH (Twilio Verify) ───────────────────────
   static Future<AuthResponse> signUpWithEmailVerification({
     required String email,
     required String password,
     required Map<String, dynamic> data,
-  }) {
+  }) async {
     final sanitized = email.trim().toLowerCase();
     _log('signUpWithEmailVerification', 'Registering user');
-    return SupabaseService.auth.signUp(
-      email: sanitized,
-      password: password,
-      data: data,
-      emailRedirectTo: authRedirectUrl,
-    );
+
+    try {
+      if (AuthOtpConfig.tempSkipEmailVerification) {
+        return await SupabaseService.auth.signUp(
+          email: sanitized,
+          password: password,
+          data: data,
+        );
+      }
+      return await SupabaseService.auth.signUp(
+        email: sanitized,
+        password: password,
+        data: data,
+        emailRedirectTo: authRedirectUrl,
+      );
+    } on AuthException catch (e) {
+      if (AuthOtpConfig.tempSkipEmailVerification &&
+          isEmailDeliveryFailureError(e)) {
+        _log(
+          'signUpWithEmailVerification',
+          'Signup email failed — attempting direct sign-in',
+          status: 'WARN',
+        );
+        return await SupabaseService.auth.signInWithPassword(
+          email: sanitized,
+          password: password.trim(),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Creates a session after signup when email verification is temporarily skipped.
+  static Future<bool> completeRegistrationSession({
+    required String email,
+    required String password,
+  }) async {
+    final sanitized = email.trim().toLowerCase();
+    if (SupabaseService.auth.currentSession != null) return true;
+
+    try {
+      await signInAfterSignup(email: sanitized, password: password);
+      return SupabaseService.auth.currentSession != null;
+    } on AuthException catch (e, stack) {
+      _log(
+        'completeRegistrationSession',
+        'Sign-in after signup failed',
+        status: 'ERROR',
+        error: e.message,
+        stackTrace: stack,
+      );
+      return false;
+    }
   }
 
   // ─── PHONE AUTH (Supabase + Twilio) ───────────────────────
@@ -620,86 +686,117 @@ class AuthSecurityService {
     return false;
   }
 
-  /// Send Supabase SMS OTP for login or registration.
+  /// Send phone OTP via Twilio Verify (SMS).
   static Future<void> sendPhoneOtp({
     required String phone,
     bool shouldCreateUser = false,
     Map<String, dynamic>? data,
+    String purpose = 'signup',
   }) async {
-    final normalized = _normalizePhone(phone);
-    _log('sendPhoneOtp', 'Sending Supabase SMS OTP', params: {
-      'shouldCreateUser': shouldCreateUser,
-      'phone': normalized,
+    final e164 = _phoneForOtpLookup(_normalizePhone(phone));
+    _log('sendPhoneOtp', 'Sending Twilio phone OTP', params: {
+      'phone': e164,
+      'purpose': purpose,
     });
-    await SupabaseService.auth.signInWithOtp(
-      phone: normalized,
-      shouldCreateUser: shouldCreateUser,
-      data: data ?? {},
-    );
-    _log('sendPhoneOtp', 'OTP sent via Supabase SMS');
+    try {
+      await _otp.sendPhoneOtp(
+        phone: e164,
+        purpose: purpose,
+        provision: shouldCreateUser && data != null
+            ? {'provision_metadata': data}
+            : null,
+      );
+    } catch (e) {
+      throw AuthException(translateOtpError(e));
+    }
+    _log('sendPhoneOtp', 'OTP sent via Twilio Verify');
   }
 
-  /// Resend Supabase SMS OTP.
+  /// Resend phone OTP via Twilio Verify.
   static Future<void> resendPhoneOtp({
     required String phone,
     OtpType type = OtpType.sms,
+    String purpose = 'verification',
   }) async {
-    final normalized = _normalizePhone(phone);
-    _log('resendPhoneOtp', 'Resending phone OTP', params: {'type': type.name});
-    await SupabaseService.auth.resend(type: type, phone: normalized);
+    final e164 = _phoneForOtpLookup(_normalizePhone(phone));
+    final resolvedPurpose = type == OtpType.phoneChange ? 'phone_change' : purpose;
+    _log('resendPhoneOtp', 'Resending phone OTP', params: {
+      'type': type.name,
+      'purpose': resolvedPurpose,
+    });
+    try {
+      await _otp.sendPhoneOtp(phone: e164, purpose: resolvedPurpose);
+    } catch (e) {
+      throw AuthException(translateOtpError(e));
+    }
     _log('resendPhoneOtp', 'Phone OTP resent');
   }
 
-  /// Verify a Supabase SMS OTP and establish/refresh session.
+  static String _purposeFromOtpType(OtpType type, String fallback) {
+    switch (type) {
+      case OtpType.phoneChange:
+        return 'phone_change';
+      case OtpType.recovery:
+        return 'password_reset';
+      case OtpType.signup:
+        return 'signup';
+      default:
+        return fallback;
+    }
+  }
+
+  /// Verify phone OTP via Twilio Verify and refresh session state.
   static Future<AuthResponse> verifyPhoneOtpCode({
     required String phone,
     required String token,
     OtpType type = OtpType.sms,
+    String purpose = 'verification',
+    String? newValue,
   }) async {
-    final normalized = _normalizePhone(phone);
+    final e164 = _phoneForOtpLookup(_normalizePhone(phone));
     final normalizedToken = AuthOtpConfig.normalize(token);
-    final expectedLength = type == OtpType.phoneChange
-        ? AuthOtpConfig.lengthForOtpType(OtpType.phoneChange)
-        : phoneOtpLength;
-    if (normalizedToken.length != expectedLength) {
+    if (normalizedToken.length != AuthOtpConfig.unifiedOtpLength) {
       throw AuthException(
-        'otp_length_mismatch'.trParams({'count': '$expectedLength'}),
+        'otp_length_mismatch'.trParams({
+          'count': '${AuthOtpConfig.unifiedOtpLength}',
+        }),
       );
     }
 
+    final resolvedPurpose = _purposeFromOtpType(type, purpose);
     _log('verifyPhoneOtpCode', 'Verifying phone OTP', params: {
       'type': type.name,
-      'length': expectedLength,
+      'purpose': resolvedPurpose,
     });
 
     try {
-      final response = await SupabaseService.auth.verifyOTP(
-        type: type,
-        token: normalizedToken,
-        phone: normalized,
+      await _otp.verifyPhoneOtp(
+        phone: e164,
+        code: normalizedToken,
+        purpose: resolvedPurpose,
+        newValue: newValue,
       );
-      await _syncUserAfterOtpVerification();
-      _log('verifyPhoneOtpCode', 'Phone OTP verified', params: {
-        'type': type.name,
-      });
-      return response;
-    } on AuthException catch (e, stack) {
-      _log(
-        'verifyPhoneOtpCode',
-        'Phone OTP verification failed',
-        status: 'ERROR',
-        error: e.message,
-        stackTrace: stack,
-      );
-      rethrow;
+    } catch (e) {
+      throw AuthException(translateOtpError(e));
     }
+
+    await _syncUserAfterOtpVerification();
+    _log('verifyPhoneOtpCode', 'Phone OTP verified');
+    return AuthResponse(
+      session: SupabaseService.auth.currentSession,
+      user: SupabaseService.auth.currentUser,
+    );
   }
 
-  /// Request phone number change — sends confirmation OTP to new number.
+  /// Request phone number change — sends OTP to new number via Twilio.
   static Future<void> requestPhoneChange(String newPhone) async {
-    final normalized = _normalizePhone(newPhone);
-    _log('requestPhoneChange', 'Requesting phone change');
-    await SupabaseService.auth.updateUser(UserAttributes(phone: normalized));
+    final e164 = _phoneForOtpLookup(_normalizePhone(newPhone));
+    _log('requestPhoneChange', 'Requesting phone change OTP');
+    try {
+      await _otp.sendPhoneOtp(phone: e164, purpose: 'phone_change');
+    } catch (e) {
+      throw AuthException(translateOtpError(e));
+    }
     _log('requestPhoneChange', 'Phone change OTP sent');
   }
 
@@ -712,15 +809,28 @@ class AuthSecurityService {
       phone: phone,
       token: token,
       type: OtpType.phoneChange,
+      purpose: 'phone_change',
+      newValue: _phoneForOtpLookup(_normalizePhone(phone)),
     );
     await refreshUserProfileState();
     _log('confirmPhoneChange', 'Phone updated successfully');
   }
 
-  /// Sends step-up reauthentication OTP to the signed-in user's phone/email.
+  /// Sends step-up OTP to the signed-in user's phone via Twilio Verify.
   static Future<void> requestStepUpOtp() async {
-    _log('requestStepUpOtp', 'Requesting step-up reauthentication OTP');
-    await SupabaseService.auth.reauthenticate();
+    final phone = getUserPhone();
+    if (phone == null || phone.isEmpty) {
+      throw AuthException('phone_verification_required'.tr);
+    }
+    _log('requestStepUpOtp', 'Requesting step-up OTP');
+    try {
+      await _otp.sendPhoneOtp(
+        phone: _phoneForOtpLookup(phone),
+        purpose: 'sensitive_action',
+      );
+    } catch (e) {
+      throw AuthException(translateOtpError(e));
+    }
     _log('requestStepUpOtp', 'Step-up OTP sent');
   }
 
@@ -733,7 +843,11 @@ class AuthSecurityService {
     if (targetPhone == null || targetPhone.isEmpty) {
       throw AuthException('phone_verification_required'.tr);
     }
-    await verifyPhoneOtpCode(phone: targetPhone, token: token);
+    await verifyPhoneOtpCode(
+      phone: targetPhone,
+      token: token,
+      purpose: 'sensitive_action',
+    );
     _log('verifyStepUpOtp', 'Step-up verification complete');
   }
 
@@ -767,6 +881,12 @@ class AuthSecurityService {
   }
 
   static String _normalizePhone(String phone) => normalizePhone(phone);
+
+  static String _phoneForOtpLookup(String phone) {
+    final trimmed = phone.trim();
+    if (trimmed.startsWith('+')) return trimmed;
+    return '+$trimmed';
+  }
 
   /// Looks up the email associated with a phone number for password login.
   static Future<String?> lookupEmailByPhone(String phone) async {

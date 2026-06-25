@@ -54,6 +54,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   final RxList<Map<String, String>> recentRecipients =
       <Map<String, String>>[].obs;
 
+  // Portfolio insights (home dashboard sparkline)
+  final RxString portfolioPeriod = '7D'.obs;
+
   // Pending Rewards & Investment Timers
   final RxList<Map<String, dynamic>> pendingRewards =
       <Map<String, dynamic>>[].obs;
@@ -107,6 +110,97 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   double get profitPercentage => dashboard.value?.profitPercentage ?? 0.0;
   String get referralCode =>
       ReferralService.formatDisplayCode(profile.value?.referralCode);
+
+  int get _portfolioPeriodDays {
+    switch (portfolioPeriod.value) {
+      case '30D':
+        return 30;
+      case '90D':
+        return 90;
+      default:
+        return 7;
+    }
+  }
+
+  double get _currentPortfolioValue {
+    if (!Get.isRegistered<CurrencyController>()) return 0;
+    final c = CurrencyController.to;
+    return c.totalBalance.value +
+        c.investedBalance.value +
+        c.profitBalance.value;
+  }
+
+  /// Cumulative portfolio value curve for the selected period.
+  List<double> get portfolioSparklineData {
+    final days = _portfolioPeriodDays;
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+    final current = _currentPortfolioValue;
+
+    final txs = recentTransactions
+        .where(
+          (t) =>
+              t.createdAt != null &&
+              !t.createdAt!.isBefore(cutoff) &&
+              t.status == 'completed',
+        )
+        .toList()
+      ..sort((a, b) => a.createdAt!.compareTo(b.createdAt!));
+
+    if (txs.isEmpty) {
+      if (current <= 0) return const [0, 0];
+      const points = 8;
+      final start = current * 0.92;
+      return List.generate(
+        points,
+        (i) => start + (current - start) * i / (points - 1),
+      );
+    }
+
+    var running = current;
+    final values = <double>[running];
+    for (final tx in txs.reversed) {
+      running -= tx.isCredit ? tx.amount : -tx.amount;
+      values.add(running);
+    }
+    final points = values.reversed.toList();
+
+    if (points.length < 2) {
+      return [points.first * 0.95, points.first];
+    }
+    return points;
+  }
+
+  double get portfolioGrowthPercent {
+    final data = portfolioSparklineData;
+    if (data.length < 2) return 0;
+    final first = data.first;
+    final last = data.last;
+    if (first.abs() < 0.001) return last > 0 ? 100 : 0;
+    return ((last - first) / first.abs()) * 100;
+  }
+
+  /// Translation key for the personalized financial insight card.
+  String get financialInsightKey {
+    if (kycStatus != 'verified') return 'complete_kyc_desc';
+
+    if (!Get.isRegistered<CurrencyController>()) {
+      return 'portfolio_insight_growth';
+    }
+
+    final c = CurrencyController.to;
+    final available = c.totalBalance.value;
+    final invested = c.investedBalance.value;
+
+    if (available > 50 && invested < available * 0.3) {
+      return 'portfolio_insight_reinvest';
+    }
+    if (myInvestments.length >= 3) return 'portfolio_insight_diversify';
+    if (portfolioGrowthPercent > 0.5) return 'portfolio_insight_growth';
+    if (myInvestments.isEmpty && available > 0) {
+      return 'portfolio_insight_reinvest';
+    }
+    return 'portfolio_insight_growth';
+  }
 
   @override
   void onInit() {
@@ -497,6 +591,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     nextRewardRelease.value = null;
     rewardCountdownText.value = '';
     canClaimRewards.value = false;
+    portfolioPeriod.value = '7D';
   }
 
   // ─── PROFILE ──────────────────────────────────────────

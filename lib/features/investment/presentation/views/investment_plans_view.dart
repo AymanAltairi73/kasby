@@ -241,6 +241,7 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
                         minAmount: '\$${plan.minAmount.toInt()}',
                         imagePath: _getPlanImage(plan.nameEn ?? plan.nameAr),
                         color: _planColor(plan.riskLevel),
+                        riskLevel: plan.riskLevel,
                         amounts: amounts,
                         duration: _formatDuration(plan.durationDays),
                       ),

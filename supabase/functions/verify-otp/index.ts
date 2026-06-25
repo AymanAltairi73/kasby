@@ -47,26 +47,55 @@ serve(async (req) => {
       }), { status: 429, headers: corsHeaders })
     }
 
-    // 2. Hash the provided code for comparison
-    const msgUint8 = new TextEncoder().encode(otp_code)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const providedHashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    const hashOtp = async (value: string): Promise<string> => {
+      const msgUint8 = new TextEncoder().encode(value)
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    }
 
-    // 3. Find and validate the OTP record
-    const { data: otp, error } = await supabaseAdmin
-      .from('otp_verifications')
-      .select('*')
-      .eq('target', target)
-      .eq('target_type', target_type)
-      .eq('code_hash', providedHashHex)
-      .is('used_at', null)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    const providedHashHex = await hashOtp(otp_code)
 
-    if (error || !otp) {
+    const targetVariants = target_type === 'phone'
+      ? [...new Set([
+          String(target).trim(),
+          String(target).trim().startsWith('+')
+            ? String(target).trim().slice(1)
+            : `+${String(target).trim()}`,
+        ])]
+      : [String(target).trim()]
+
+    let otp: Record<string, unknown> | null = null
+    for (const targetVariant of targetVariants) {
+      const { data: candidates, error: lookupError } = await supabaseAdmin
+        .from('otp_verifications')
+        .select('*')
+        .eq('target', targetVariant)
+        .eq('target_type', target_type)
+        .is('used_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      if (!lookupError && candidates) {
+        for (const record of candidates) {
+          if (record.code_hash === providedHashHex) {
+            otp = record
+            break
+          }
+          if (record.hash_salt) {
+            const saltedHash = await hashOtp(`${record.hash_salt}${otp_code}`)
+            if (record.code_hash === saltedHash) {
+              otp = record
+              break
+            }
+          }
+        }
+      }
+      if (otp) break
+    }
+
+    if (!otp) {
       // Logic for failed attempt: increment attempts on the most recent valid-looking record
       const { data: recentRecord } = await supabaseAdmin
         .from('otp_verifications')
@@ -100,22 +129,38 @@ serve(async (req) => {
     }
 
     // Check attempts on the found record too (just in case)
-    if (otp.attempts >= otp.max_attempts) {
+    const attempts = Number(otp.attempts ?? 0)
+    const maxAttempts = Number(otp.max_attempts ?? 5)
+    if (attempts >= maxAttempts) {
       return new Response(JSON.stringify({ 
         error: 'Too many attempts', 
         code: 'MAX_ATTEMPTS' 
       }), { status: 403, headers: corsHeaders })
     }
 
-    // 4. Mark as Verified (but NOT used yet, if the operation happens separately)
-    // For profile updates, they use 'secure-profile-update' which does its own check.
-    // For password reset, the next step needs to know it was verified.
     const { error: updateError } = await supabaseAdmin
       .from('otp_verifications')
-      .update({ verified_at: new Date().toISOString() })
+      .update({
+        verified_at: new Date().toISOString(),
+        used_at: new Date().toISOString(),
+      })
       .eq('id', otp.id)
 
     if (updateError) throw updateError
+
+    if (
+      target_type === 'phone' &&
+      (otp.type === 'verification' || otp.type === 'phone_change') &&
+      otp.user_id
+    ) {
+      const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
+        String(otp.user_id),
+        { phone_confirm: true },
+      )
+      if (confirmError) {
+        console.error('[OTP] Failed to confirm phone:', confirmError.message)
+      }
+    }
 
     return new Response(JSON.stringify({ 
       success: true, 

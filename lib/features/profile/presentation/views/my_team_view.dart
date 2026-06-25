@@ -142,7 +142,7 @@ class _MyTeamViewState extends State<MyTeamView> {
       );
       if (mounted) {
         setState(() {
-          _errorMessage = 'unknown_error'.tr;
+          _errorMessage = 'team_load_error'.tr;
         });
       }
     } finally {

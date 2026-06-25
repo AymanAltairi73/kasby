@@ -50,6 +50,18 @@ import '../features/onboarding/presentation/views/guided_tour_view.dart';
 import '../features/portfolio/presentation/views/portfolio_analytics_view.dart';
 import '../features/search/presentation/views/global_search_view.dart';
 import '../features/home/presentation/views/notification_preferences_view.dart';
+import '../features/marketplace/presentation/views/marketplace_home_view.dart';
+import '../features/marketplace/presentation/views/marketplace_category_view.dart';
+import '../features/marketplace/presentation/views/marketplace_product_detail_view.dart';
+import '../features/marketplace/presentation/views/marketplace_cart_view.dart';
+import '../features/marketplace/presentation/views/marketplace_checkout_view.dart';
+import '../features/marketplace/presentation/views/marketplace_orders_view.dart';
+import '../features/marketplace/presentation/views/marketplace_order_detail_view.dart';
+import '../features/marketplace/presentation/views/marketplace_rewards_view.dart';
+import '../features/marketplace/presentation/views/marketplace_search_view.dart';
+import '../features/marketplace/presentation/views/marketplace_wishlist_view.dart';
+import '../features/marketplace/presentation/views/marketplace_notifications_view.dart';
+import '../features/marketplace/presentation/views/marketplace_health_view.dart';
 
 class AppPages {
   static const initial = Routes.splash;
@@ -257,5 +269,17 @@ class AppPages {
       'NotificationPreferencesView',
       () => const NotificationPreferencesView(),
     ),
+    _route(Routes.marketplace, 'MarketplaceHomeView', () => const MarketplaceHomeView()),
+    _route(Routes.marketplaceCategory, 'MarketplaceCategoryView', () => const MarketplaceCategoryView()),
+    _route(Routes.marketplaceProduct, 'MarketplaceProductDetailView', () => const MarketplaceProductDetailView()),
+    _route(Routes.marketplaceCart, 'MarketplaceCartView', () => const MarketplaceCartView()),
+    _route(Routes.marketplaceCheckout, 'MarketplaceCheckoutView', () => const MarketplaceCheckoutView()),
+    _route(Routes.marketplaceOrders, 'MarketplaceOrdersView', () => const MarketplaceOrdersView()),
+    _route(Routes.marketplaceOrderDetail, 'MarketplaceOrderDetailView', () => const MarketplaceOrderDetailView()),
+    _route(Routes.marketplaceRewards, 'MarketplaceRewardsView', () => const MarketplaceRewardsView()),
+    _route(Routes.marketplaceSearch, 'MarketplaceSearchView', () => const MarketplaceSearchView()),
+    _route(Routes.marketplaceWishlist, 'MarketplaceWishlistView', () => const MarketplaceWishlistView()),
+    _route(Routes.marketplaceNotifications, 'MarketplaceNotificationsView', () => const MarketplaceNotificationsView()),
+    _route(Routes.marketplaceHealth, 'MarketplaceHealthView', () => const MarketplaceHealthView()),
   ];
 }

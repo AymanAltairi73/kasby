@@ -16,11 +16,15 @@ class SupportView extends StatefulWidget {
 class _SupportViewState extends State<SupportView> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
-  String _selectedCategory = "all";
+  String _selectedCategory = "general";
+  bool _isLoadingFaqs = true;
+
+  List<Map<String, String>> _allFaqs = [];
+  List<Map<String, String>> _fallbackFaqs = [];
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
-  List<Map<String, String>> _allFaqs = [
+  List<Map<String, String>> _buildFallbackFaqs() => [
     {'question': 'faq_q1'.tr, 'answer': 'faq_a1'.tr, 'category': 'account'},
     {'question': 'faq_q2'.tr, 'answer': 'faq_a2'.tr, 'category': 'wallet'},
     {'question': 'faq_q3'.tr, 'answer': 'faq_a3'.tr, 'category': 'investment'},
@@ -37,7 +41,21 @@ class _SupportViewState extends State<SupportView> {
       feature: 'Profile',
       status: 'INFO',
     );
+    _fallbackFaqs = _buildFallbackFaqs();
+    _allFaqs = List.from(_fallbackFaqs);
     _fetchFaqs();
+  }
+
+  String _pickLocalizedField(Map<String, dynamic> faq, String base) {
+    final isAr = Get.locale?.languageCode == 'ar';
+    final keys = isAr
+        ? ['${base}_ar', base, '${base}_en']
+        : ['${base}_en', base, '${base}_ar'];
+    for (final key in keys) {
+      final value = faq[key]?.toString().trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return '';
   }
 
   Future<void> _fetchFaqs() async {
@@ -48,17 +66,36 @@ class _SupportViewState extends State<SupportView> {
           .eq('is_active', true)
           .order('sort_order', ascending: true);
 
-      if ((response as List).isNotEmpty) {
+      final mapped = (response as List)
+          .map<Map<String, String>>((faq) {
+            final row = Map<String, dynamic>.from(faq as Map);
+            return {
+              'question': _pickLocalizedField(row, 'question'),
+              'answer': _pickLocalizedField(row, 'answer'),
+              'category': (row['category'] ?? 'general').toString().toLowerCase().trim(),
+            };
+          })
+          .where((faq) =>
+              faq['question']!.isNotEmpty && faq['answer']!.isNotEmpty)
+          .toList();
+
+      if (mounted) {
         setState(() {
-          _allFaqs = response.map<Map<String, String>>((faq) => {
-            'question': (faq['question'] ?? faq['question_ar'] ?? '').toString(),
-            'answer': (faq['answer'] ?? faq['answer_ar'] ?? '').toString(),
-            'category': (faq['category'] ?? 'general').toString(),
-          }).toList();
+          if (mapped.isNotEmpty) {
+            _allFaqs = mapped;
+          } else {
+            _allFaqs = List.from(_fallbackFaqs);
+          }
+          _isLoadingFaqs = false;
         });
       }
     } catch (_) {
-      // Keep hardcoded FAQs as fallback
+      if (mounted) {
+        setState(() {
+          _allFaqs = List.from(_fallbackFaqs);
+          _isLoadingFaqs = false;
+        });
+      }
     }
   }
 
@@ -79,8 +116,9 @@ class _SupportViewState extends State<SupportView> {
       final matchesSearch =
           faq['question']!.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           faq['answer']!.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory =
-          _selectedCategory == "all" || faq['category'] == _selectedCategory;
+      final matchesCategory = _selectedCategory == 'general' ||
+          _selectedCategory == 'all' ||
+          faq['category'] == _selectedCategory;
       return matchesSearch && matchesCategory;
     }).toList();
   }
@@ -124,17 +162,26 @@ class _SupportViewState extends State<SupportView> {
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                final faq = _filteredFaqs[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildFaqItem(faq['question']!, faq['answer']!),
-                );
-              }, childCount: _filteredFaqs.length),
-            ),
+            sliver: _isLoadingFaqs
+                ? SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: CircularProgressIndicator(color: AppColors.darkGold),
+                      ),
+                    ),
+                  )
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final faq = _filteredFaqs[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildFaqItem(faq['question']!, faq['answer']!),
+                      );
+                    }, childCount: _filteredFaqs.length),
+                  ),
           ),
-          if (_filteredFaqs.isEmpty)
+          if (!_isLoadingFaqs && _filteredFaqs.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(
@@ -219,7 +266,7 @@ class _SupportViewState extends State<SupportView> {
 
   Widget _buildCategories() {
     final categories = [
-      {'id': 'all', 'label': 'all'.tr, 'icon': Icons.grid_view_rounded},
+      {'id': 'general', 'label': 'all'.tr, 'icon': Icons.grid_view_rounded},
       {
         'id': 'wallet',
         'label': 'wallet'.tr,

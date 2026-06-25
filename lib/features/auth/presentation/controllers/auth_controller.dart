@@ -188,7 +188,8 @@ class AuthController extends GetxController {
       final session = SupabaseService.auth.currentSession;
       if (session != null) {
         _log('Initial session found for user: ${session.user.id}');
-        if (_requiresEmailVerification(session.user)) {
+        if (!AuthOtpConfig.tempSkipEmailVerification &&
+            _requiresEmailVerification(session.user)) {
           pendingVerificationEmail.value = session.user.email;
           authStatus.value = AuthStatus.unauthenticated;
         } else if (_requiresPhoneVerification(session.user)) {
@@ -234,7 +235,9 @@ class AuthController extends GetxController {
       switch (event) {
         case AuthChangeEvent.signedIn:
           _log('User signed in: ${session?.user.id}');
-          if (session != null && _requiresEmailVerification(session.user)) {
+          if (!AuthOtpConfig.tempSkipEmailVerification &&
+              session != null &&
+              _requiresEmailVerification(session.user)) {
             pendingVerificationEmail.value = session.user.email;
             authStatus.value = AuthStatus.unauthenticated;
             if (Get.currentRoute != Routes.verifyEmail) {
@@ -250,7 +253,7 @@ class AuthController extends GetxController {
             pendingVerificationPhone.value = phone;
             authStatus.value = AuthStatus.unauthenticated;
             if (Get.currentRoute != Routes.otp && phone != null) {
-              _goToPhoneVerification(phone, purpose: 'phone_confirm');
+              unawaited(_goToPhoneVerification(phone, purpose: 'phone_confirm'));
             }
             break;
           }
@@ -354,22 +357,39 @@ class AuthController extends GetxController {
     return AuthSecurityService.isPhoneVerificationRequired(user);
   }
 
-  void _goToPhoneVerification(
+  Future<void> _goToPhoneVerification(
     String phone, {
     String purpose = 'login',
     bool isRecovery = false,
-  }) {
+  }) async {
     pendingVerificationPhone.value = phone;
+
+    try {
+      await AuthSecurityService.ensurePhoneVerificationSent(
+        phone: phone,
+        purpose: purpose == 'phone_confirm' ? 'verification' : purpose,
+      );
+    } on AuthException catch (e, stack) {
+      _log(
+        'Failed to send phone verification OTP',
+        isError: true,
+        error: e.message,
+        stack: stack,
+      );
+      AppSnack.error('error'.tr, translateOtpError(e));
+      return;
+    }
+
+    AppSnack.success('success'.tr, 'otp_sent_success'.tr);
     Get.toNamed(
       Routes.otp,
       arguments: {
         'identifier': phone,
         'isPhone': true,
-        'isFreeOtp': false,
-        'type': OtpType.sms,
+        'isFreeOtp': true,
         'purpose': purpose,
         'isRecovery': isRecovery,
-        'otpLength': AuthSecurityService.phoneOtpLength,
+        'otpLength': AuthOtpConfig.unifiedOtpLength,
       },
     );
   }
@@ -395,10 +415,14 @@ class AuthController extends GetxController {
       await AuthSecurityService.ensureSignupVerificationSent(email);
       return;
     }
-    await AuthSecurityService.resendOtp(
-      email: email,
-      type: OtpType.emailChange,
-    );
+    if (purpose == 'email_change') {
+      await AuthSecurityService.sendProfileChangeOtp(
+        target: email,
+        targetType: 'email',
+        purpose: 'email_change',
+      );
+      return;
+    }
   }
 
   Future<bool> checkEmailVerificationStatus({
@@ -436,10 +460,11 @@ class AuthController extends GetxController {
     try {
       _log('Verifying email OTP ($purpose)');
       if (purpose == 'email_change') {
-        await AuthSecurityService.verifyOtpCode(
+        await OTPService.to.verifyEmailOtp(
           email: email,
-          token: code,
-          type: OtpType.emailChange,
+          code: code,
+          purpose: 'email_change',
+          newValue: email,
         );
         await AuthSecurityService.refreshUserProfileState();
         pendingVerificationEmail.value = null;
@@ -494,6 +519,9 @@ class AuthController extends GetxController {
     String? password,
   }) {
     pendingVerificationEmail.value = email;
+    if (AuthOtpConfig.tempSkipEmailVerification && purpose == 'signup') {
+      return;
+    }
     Get.offAllNamed(
       Routes.verifyEmail,
       arguments: {
@@ -514,6 +542,34 @@ class AuthController extends GetxController {
 
   void toggleTerms(bool? value) {
     termsAccepted.value = value ?? false;
+  }
+
+  /// Completes signup session and navigates to home (or guided tour).
+  Future<bool> _finalizeRegistrationAndNavigateHome({
+    required String email,
+    required String password,
+    AuthResponse? signupResponse,
+  }) async {
+    if (signupResponse?.session == null) {
+      final signedIn = await AuthSecurityService.completeRegistrationSession(
+        email: email,
+        password: password,
+      );
+      if (!signedIn) return false;
+    }
+
+    if (SupabaseService.auth.currentSession == null) return false;
+
+    authStatus.value = AuthStatus.authenticated;
+    pendingVerificationEmail.value = null;
+    await AuthSecurityService.refreshUserProfileState();
+    final tourDone = await TourService.isTourCompleted();
+    if (!tourDone) {
+      Get.offAllNamed(Routes.guidedTour);
+    } else {
+      Get.offAllNamed(Routes.home);
+    }
+    return true;
   }
 
   Future<void> login({bool skipFormValidation = false}) async {
@@ -560,7 +616,9 @@ class AuthController extends GetxController {
       isLoading.value = false;
       _log('Login successful for: $loginId');
 
-      if (user != null && _requiresEmailVerification(user)) {
+      if (!AuthOtpConfig.tempSkipEmailVerification &&
+          user != null &&
+          _requiresEmailVerification(user)) {
         _goToVerifyEmail(user.email ?? loginId);
       } else if (user != null && _requiresPhoneVerification(user)) {
         final phone = AuthSecurityService.getUserPhone() ??
@@ -568,7 +626,7 @@ class AuthController extends GetxController {
                 ? null
                 : LoginIdentifierUtils.toE164(loginId));
         if (phone != null) {
-          _goToPhoneVerification(phone, purpose: 'phone_confirm');
+          await _goToPhoneVerification(phone, purpose: 'phone_confirm');
         }
       }
     } on AuthException catch (e, stack) {
@@ -579,7 +637,8 @@ class AuthController extends GetxController {
         error: e.message,
         stack: stack,
       );
-      if (e.message.contains('Email not confirmed') &&
+      if (!AuthOtpConfig.tempSkipEmailVerification &&
+          e.message.contains('Email not confirmed') &&
           LoginIdentifierUtils.isEmail(loginId)) {
         _goToVerifyEmail(loginId);
         return;
@@ -689,20 +748,19 @@ class AuthController extends GetxController {
         return;
       }
 
-      final needsVerification = user != null &&
-          (response.session == null || _requiresEmailVerification(user));
-      if (needsVerification) {
-        // GoTrue already sends the "Confirm sign up" email on signUp().
-        // Avoid an immediate resend — it invalidates the active OTP.
-        _goToVerifyEmail(email, password: password);
-        AppSnack.success('success'.tr, 'verification_email_sent'.tr);
-      } else if (response.session != null) {
-        authStatus.value = AuthStatus.authenticated;
-        final tourDone = await TourService.isTourCompleted();
-        if (!tourDone) {
-          Get.offAllNamed(Routes.guidedTour);
+      if (user != null) {
+        if (AuthOtpConfig.tempSkipEmailVerification) {
+          final completed = await _finalizeRegistrationAndNavigateHome(
+            email: email,
+            password: password,
+            signupResponse: response,
+          );
+          if (!completed) {
+            AppSnack.error('error'.tr, 'auth_error_email_not_confirmed'.tr);
+          }
         } else {
-          Get.offAllNamed(Routes.home);
+          _goToVerifyEmail(email, password: password);
+          AppSnack.success('success'.tr, 'verification_email_sent'.tr);
         }
       }
     } on AuthException catch (e, stack) {
@@ -712,13 +770,35 @@ class AuthController extends GetxController {
 
       if (AuthSecurityService.isEmailDeliveryFailureError(e)) {
         _log(
-          'Signup SMTP failed — trying Resend fallback',
+          'Signup SMTP failed — attempting direct sign-in (email verify skipped)',
           isError: true,
           error: e.message,
           stack: stack,
         );
+
+        if (AuthOtpConfig.tempSkipEmailVerification) {
+          await DeepLinkService.clearPendingReferralCode();
+          final completed = await _finalizeRegistrationAndNavigateHome(
+            email: email,
+            password: password,
+          );
+          if (completed) return;
+
+          AppSnack.error('error'.tr, 'auth_error_email_not_confirmed'.tr);
+          return;
+        }
+
+        // Production path: Resend OTP fallback (requires send-email-otp edge function)
         try {
-          await AuthSecurityService.ensureSignupVerificationSent(email);
+          await AuthSecurityService.provisionSignupAndSendOtp(
+            email: email,
+            password: password,
+            metadata: {
+              'full_name': nameController.text.trim(),
+              'phone': registerPhoneE164.value,
+              'country_code': registerCountryCode.value,
+            },
+          );
           await DeepLinkService.clearPendingReferralCode();
           _goToVerifyEmail(email, password: password);
           AppSnack.success('success'.tr, 'verification_email_sent'.tr);
@@ -748,7 +828,7 @@ class AuthController extends GetxController {
         error: e,
         stack: stack,
       );
-      AppSnack.error('error'.tr, 'حدث خطأ غير متوقع. حاول مرة أخرى.');
+      AppSnack.error('error'.tr, 'unexpected_error'.tr);
     }
   }
 
@@ -766,7 +846,7 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Resend Supabase SMS OTP to a phone number (verification / step-up flows).
+  /// Resend phone OTP via Twilio Verify.
   Future<void> resendPhoneOtp(
     String phoneNumber, {
     OtpType type = OtpType.sms,
@@ -774,7 +854,11 @@ class AuthController extends GetxController {
   }) async {
     _log('Resending phone OTP ($purpose)');
     try {
-      await AuthSecurityService.resendPhoneOtp(phone: phoneNumber, type: type);
+      await AuthSecurityService.resendPhoneOtp(
+        phone: phoneNumber,
+        type: type,
+        purpose: purpose == 'phone_confirm' ? 'verification' : purpose,
+      );
       _log('Phone OTP resent');
       AppSnack.success('success'.tr, 'otp_resend_success'.tr);
     } on AuthException catch (e, stack) {
@@ -851,10 +935,10 @@ class AuthController extends GetxController {
         arguments: {
           'identifier': sanitizedEmail,
           'isPhone': false,
-          'isFreeOtp': false,
-          'type': OtpType.recovery,
+          'isFreeOtp': true,
           'isRecovery': true,
-          'otpLength': AuthOtpConfig.lengthForOtpType(OtpType.recovery),
+          'purpose': 'password_reset',
+          'otpLength': AuthOtpConfig.unifiedOtpLength,
         },
       );
     } on AuthException catch (e, stack) {
@@ -864,6 +948,42 @@ class AuthController extends GetxController {
     } catch (e, stack) {
       _log('Password reset email failed', isError: true, error: e, stack: stack);
       AppSnack.error('error'.tr, 'unexpected_error'.tr);
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Password reset via phone OTP (Twilio Verify SMS).
+  Future<void> sendPasswordResetPhone(String phone) async {
+    final sanitized = phone.trim();
+    if (sanitized.isEmpty) {
+      AppSnack.error('error'.tr, 'invalid_phone'.tr);
+      return;
+    }
+
+    isLoading.value = true;
+    try {
+      _log('Sending password reset phone OTP');
+      await OTPService.to.sendPhoneOtp(
+        phone: sanitized,
+        purpose: 'password_reset',
+      );
+      AppSnack.success('success'.tr, 'reset_otp_sent'.tr);
+      Get.toNamed(
+        Routes.otp,
+        arguments: {
+          'identifier': sanitized,
+          'isPhone': true,
+          'isFreeOtp': true,
+          'isRecovery': true,
+          'purpose': 'password_reset',
+          'otpLength': AuthOtpConfig.unifiedOtpLength,
+        },
+      );
+    } catch (e, stack) {
+      _log('Password reset phone failed', isError: true, error: e, stack: stack);
+      AppSnack.error('error'.tr, e.toString());
       rethrow;
     } finally {
       isLoading.value = false;
@@ -880,15 +1000,7 @@ class AuthController extends GetxController {
 
     isLoading.value = true;
     try {
-      await AuthSecurityService.sendPhoneOtp(
-        phone: phone,
-        shouldCreateUser: false,
-      );
-      AppSnack.success('success'.tr, 'otp_sent_success'.tr);
-      _goToPhoneVerification(phone, purpose: 'phone_confirm');
-    } on AuthException catch (e, stack) {
-      _log('Phone verification OTP failed', isError: true, error: e.message, stack: stack);
-      AppSnack.error('error'.tr, translateOtpError(e));
+      await _goToPhoneVerification(phone, purpose: 'phone_confirm');
     } finally {
       isLoading.value = false;
     }
@@ -903,7 +1015,7 @@ class AuthController extends GetxController {
     Get.toNamed(Routes.legal, arguments: {'initialTab': initialTab});
   }
 
-  /// Send OTP to an email address via the hardened edge function (Resend).
+  /// Send OTP to an email address via Twilio Verify platform.
   Future<void> sendEmailOtp(
     String email, {
     bool isRecovery = false,
@@ -913,17 +1025,15 @@ class AuthController extends GetxController {
     _log('Sending email OTP to: $email');
 
     try {
-      final bool success = await Get.find<OTPService>().sendOtp(
-        target: email.trim().toLowerCase(),
-        targetType: 'email',
-        purpose: purpose,
+      final resolvedPurpose =
+          isRecovery || purpose == 'recovery' ? 'password_reset' : purpose;
+      await OTPService.to.sendEmailOtp(
+        email: email.trim().toLowerCase(),
+        purpose: resolvedPurpose,
       );
 
-      _log('Email OTP request finished. Success: $success');
-
-      if (success) {
-        AppSnack.success('success'.tr, 'verification_code_resent'.tr);
-      }
+      _log('Email OTP request finished');
+      AppSnack.success('success'.tr, 'verification_code_resent'.tr);
 
       Get.toNamed(
         Routes.otp,
@@ -932,10 +1042,8 @@ class AuthController extends GetxController {
           'isPhone': false,
           'isFreeOtp': true,
           'isRecovery': isRecovery,
-          'purpose': purpose,
-          'otpLength': purpose == 'email_change'
-              ? AuthOtpConfig.lengthForPurpose('email_change')
-              : AuthOtpConfig.fcmOtpLength,
+          'purpose': resolvedPurpose,
+          'otpLength': AuthOtpConfig.unifiedOtpLength,
         },
       );
     } catch (e, stack) {

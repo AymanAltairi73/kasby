@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/services/notification_navigation_service.dart';
+import 'package:kasby/features/auth/domain/auth_otp_config.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:lottie/lottie.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -19,6 +23,8 @@ class _SplashViewState extends State<SplashView>
   late Animation<double> _fadeAnimation;
   bool _hasNavigated = false;
   Worker? _authWorker;
+  String _versionLabel = '';
+  bool _isRestoringSession = false;
 
   @override
   void initState() {
@@ -27,29 +33,43 @@ class _SplashViewState extends State<SplashView>
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_controller);
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
     _controller.forward();
+    _loadVersion();
 
-    // Listen to auth status changes
     _authWorker = ever(AuthController.to.authStatus, (status) {
       if (status != AuthStatus.initial) {
         _navigateToNext(status);
       }
     });
 
-    // Check if status is already determined (case where Supabase completes before splash init)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (AuthController.to.authStatus.value != AuthStatus.initial) {
-        _navigateToNext(AuthController.to.authStatus.value);
+      final status = AuthController.to.authStatus.value;
+      if (status != AuthStatus.initial) {
+        _navigateToNext(status);
+      } else {
+        setState(() => _isRestoringSession = true);
       }
     });
 
-    // Timeout fallback: navigate to onboarding if auth check hangs
     Future.delayed(const Duration(seconds: 10), () {
       if (!_hasNavigated && mounted) {
         _navigateToNext(AuthStatus.unauthenticated);
       }
     });
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _versionLabel = 'v${info.version} (${info.buildNumber})';
+        });
+      }
+    } catch (_) {}
   }
 
   void _navigateToNext(AuthStatus status) {
@@ -64,7 +84,6 @@ class _SplashViewState extends State<SplashView>
       params: {'authStatus': status.name},
     );
 
-    // Ensure splash shows for at least 2 seconds for smooth UX
     final elapsed = _controller.lastElapsedDuration ?? Duration.zero;
     final remaining = const Duration(seconds: 2) - elapsed;
 
@@ -73,8 +92,9 @@ class _SplashViewState extends State<SplashView>
       if (status == AuthStatus.authenticated) {
         Get.offAllNamed(Routes.home);
         NotificationNavigationService.processPendingNavigation();
-      } else if (AuthController.to.pendingVerificationEmail.value?.isNotEmpty ==
-          true) {
+      }
+      else if (!AuthOtpConfig.tempSkipEmailVerification &&
+          AuthController.to.pendingVerificationEmail.value?.isNotEmpty == true) {
         Get.offAllNamed(
           Routes.verifyEmail,
           arguments: {
@@ -96,39 +116,129 @@ class _SplashViewState extends State<SplashView>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
               AppColors.background,
-              Theme.of(context).brightness == Brightness.dark ? AppColors.darkGold : AppColors.darkGold.withValues(alpha: 0.8)
+              isDark
+                  ? AppColors.darkGold.withValues(alpha: 0.35)
+                  : AppColors.darkGold.withValues(alpha: 0.25),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            stops: const [0.6, 1.0],
+            stops: const [0.55, 1.0],
           ),
         ),
-        child: Center(
+        child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Image.asset('assets/images/logo.png', width: 150, height: 150),
-                // const SizedBox(height: 24),
-                Text(
-                  'app_name'.tr,
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryLight,
-                    letterSpacing: 1.2,
+                const Spacer(flex: 2),
+                Semantics(
+                  label: 'app_name'.tr,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 120,
+                    height: 120,
+                    errorBuilder: (_, __, ___) => Image.asset(
+                      'assets/images/logo2.jpg',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 48),
-                CircularProgressIndicator(
-                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.primaryLight,
-                  strokeWidth: 2,
+                const SizedBox(height: KasbySpacing.lg),
+                SizedBox(
+                  width: 140,
+                  height: 140,
+                  child: Lottie.asset(
+                    'assets/lottie/splash_secure.json',
+                    repeat: true,
+                    animate: KasbyMotion.enabled(context),
+                  ),
                 ),
+                const SizedBox(height: KasbySpacing.md),
+                Text(
+                  'app_name'.tr,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: isDark ? Colors.white : AppColors.primaryLight,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: KasbySpacing.sm),
+                Text(
+                  'splash_secured_platform'.tr,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLight,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: KasbySpacing.xs),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.lock_outline_rounded,
+                      size: 14,
+                      color: AppColors.darkGold.withValues(alpha: 0.9),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'splash_protected_encryption'.tr,
+                      style: TextStyle(
+                        color: AppColors.darkGold.withValues(alpha: 0.9),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(flex: 2),
+                if (_isRestoringSession)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: KasbySpacing.md),
+                    child: Text(
+                      'restoring_session'.tr,
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLight,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    color: isDark ? Colors.white : AppColors.primaryLight,
+                    strokeWidth: 2,
+                  ),
+                ),
+                const SizedBox(height: KasbySpacing.xl),
+                if (_versionLabel.isNotEmpty)
+                  Text(
+                    _versionLabel,
+                    style: TextStyle(
+                      color: (isDark
+                              ? AppColors.textSecondary
+                              : AppColors.textSecondaryLight)
+                          .withValues(alpha: 0.6),
+                      fontSize: 11,
+                    ),
+                  ),
+                const SizedBox(height: KasbySpacing.xl),
               ],
             ),
           ),

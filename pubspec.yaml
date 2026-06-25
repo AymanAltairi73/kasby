@@ -1,5 +1,5 @@
 name: kasby
-description: "A new Flutter project."
+description: "Kasby — Invest, grow, and manage your wealth securely."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -86,10 +86,22 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/logo2.jpg"
   adaptive_icon_background: "#080B10"
-  adaptive_icon_foreground: "assets/images/logo.png"
+  adaptive_icon_foreground: "assets/images/logo2.jpg"
   min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/images/logo2.jpg"
+    background_color: "#080B10"
+    theme_color: "#080B10"
+  windows:
+    generate: true
+    image_path: "assets/images/logo2.jpg"
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: "assets/images/logo2.jpg"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -108,6 +120,7 @@ flutter:
     - assets/icons/app_icon.png
     - assets/images/
     - assets/sounds/
+    - assets/lottie/
     
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

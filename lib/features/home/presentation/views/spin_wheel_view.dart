@@ -1,3 +1,4 @@
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -10,6 +11,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/models/spin_reward_model.dart';
 import 'dart:async';
+import '../widgets/kasby_spin_wheel.dart';
 
 class SpinWheelView extends StatefulWidget {
   const SpinWheelView({super.key});
@@ -19,19 +21,25 @@ class SpinWheelView extends StatefulWidget {
 }
 
 class _SpinWheelViewState extends State<SpinWheelView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+  late ConfettiController _confettiController;
   bool _isSpinning = false;
   int _selectedRewardIndex = 0;
+  int _lastGrantedPoints = 0;
   int _userPoints = 0;
   int _storedSpins = 0;
   List<SpinReward> _dbRewards = SpinReward.defaultRewards;
+  bool _showWinHighlight = false;
+  double _highlightPulse = 0;
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   DateTime? _lastFreeSpinAt;
   Timer? _countdownTimer;
+  Timer? _highlightTimer;
+  Timer? _tickTimer;
   String _timeUntilNextSpin = '';
   bool _isFreeSpinAvailable = false;
 
@@ -53,6 +61,9 @@ class _SpinWheelViewState extends State<SpinWheelView>
     _animation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutCirc,
+    );
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 2),
     );
     _fetchInitialData();
   }
@@ -149,14 +160,20 @@ class _SpinWheelViewState extends State<SpinWheelView>
           .from('spin_wheel_rewards')
           .select()
           .eq('is_active', true)
-          .order('created_at', ascending: true);
+          .order('display_order', ascending: true)
+          .order('id', ascending: true);
 
       if (mounted) {
+        final fetched = (response as List)
+            .map((r) => SpinReward.fromJson(r as Map<String, dynamic>))
+            .toList();
+        final normalized = SpinReward.normalizeList(fetched);
+        final integrityError = SpinReward.validateIntegrity(normalized);
+        if (integrityError != null) {
+          debugPrint('Spin reward integrity warning: $integrityError');
+        }
         setState(() {
-          _dbRewards = (response as List)
-              .map((r) => SpinReward.fromJson(r))
-              .toList();
-
+          _dbRewards = normalized;
         });
       }
     } catch (e) {
@@ -169,14 +186,14 @@ class _SpinWheelViewState extends State<SpinWheelView>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.darkGold.withValues(alpha: 0.1),
+        color: const Color(0xFFC9A24D).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.3)),
+        border: Border.all(color: const Color(0xFFC9A24D).withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.bolt_rounded, color: AppColors.darkGold, size: 20)
+          const Icon(Icons.bolt_rounded, color: Color(0xFFC9A24D), size: 20)
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2)),
           const SizedBox(width: 8),
@@ -186,8 +203,8 @@ class _SpinWheelViewState extends State<SpinWheelView>
                 : _storedSpins > 0
                 ? 'use_stored_spin'.trParams({'count': _storedSpins.toString()})
                 : 'next_free_spin'.trParams({'time': _timeUntilNextSpin}),
-            style: TextStyle(
-              color: AppColors.darkGold,
+            style: const TextStyle(
+              color: Color(0xFFC9A24D),
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -233,7 +250,10 @@ class _SpinWheelViewState extends State<SpinWheelView>
 
     setState(() {
       _isSpinning = true;
+      _showWinHighlight = false;
+      _highlightPulse = 0;
     });
+    _highlightTimer?.cancel();
     final stopwatch = Stopwatch()..start();
 
     try {
@@ -250,8 +270,9 @@ class _SpinWheelViewState extends State<SpinWheelView>
         return;
       }
 
-      final rewardData = response['reward'];
-      final rewardId = rewardData['id'];
+      final rewardData = response['reward'] as Map<String, dynamic>;
+      final rewardId = rewardData['id']?.toString();
+      _lastGrantedPoints = (rewardData['points'] as num?)?.toInt() ?? 0;
 
       // Find the index of the reward in our list to stop the wheel correctly
       _selectedRewardIndex = _dbRewards.indexWhere((r) => r.id == rewardId);
@@ -271,34 +292,39 @@ class _SpinWheelViewState extends State<SpinWheelView>
       }
 
       _controller.reset();
-      final int randomRounds = 4 + math.Random().nextInt(3);
+      final int randomRounds = 5 + math.Random().nextInt(2);
 
-      // Calculate target turns based on the selected index
-      // The wheel segments are (index / length) * 2pi
-      // To align with the pointer at top (-pi/2), we need to offset
       final double segmentAngle = 1 / _dbRewards.length;
       final double endPoint = 1 - ((_selectedRewardIndex + 0.5) * segmentAngle);
       final double targetTurns = randomRounds + endPoint;
 
+      _controller.duration = const Duration(milliseconds: 5800);
       _animation = Tween<double>(begin: 0, end: targetTurns).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutCirc),
+        CurvedAnimation(
+          parent: _controller,
+          curve: const Cubic(0.08, 0.0, 0.12, 1.0),
+        ),
       );
 
-      _startTicks(targetTurns);
+      _startSpinTicks();
 
-      _controller.duration = const Duration(seconds: 5);
       await _controller.forward();
 
       _audioPlayer.stop();
-      _showVictoryOverlay();
 
-      // Update local state from backend response
       setState(() {
         _isSpinning = false;
+        _showWinHighlight = true;
         _userPoints = (response['new_balance'] as num?)?.toInt() ?? _userPoints;
         _storedSpins =
             (response['stored_spins'] as num?)?.toInt() ?? _storedSpins;
       });
+
+      _startWinHighlightPulse();
+      if (_lastGrantedPoints > 0) {
+        _confettiController.play();
+      }
+      _showVictoryOverlay();
 
       _fetchFreeSpinStatus();
       SafeGetx.debugTrace(
@@ -485,31 +511,62 @@ class _SpinWheelViewState extends State<SpinWheelView>
     );
   }
 
-  void _startTicks(double totalRotations) {
-    final int segmentsPerRotation = _dbRewards.length;
-    int totalTicks = (totalRotations * segmentsPerRotation).floor();
-    int currentTick = 0;
+  void _startSpinTicks() {
+    _tickTimer?.cancel();
+    var lastBoundary = -1;
 
-    void triggerNextTick() {
-      if (!_isSpinning || currentTick >= totalTicks) return;
+    _tickTimer = Timer.periodic(const Duration(milliseconds: 40), (timer) {
+      if (!_controller.isAnimating) {
+        timer.cancel();
+        return;
+      }
 
-      HapticFeedback.lightImpact();
-      currentTick++;
+      final boundary = (_animation.value * _dbRewards.length).floor();
+      if (boundary != lastBoundary) {
+        lastBoundary = boundary;
+        HapticFeedback.selectionClick();
+      }
+    });
+  }
 
-      // Increase delay based on acceleration curve
-      // As _controller.value goes from 0 to totalRotations
-      // The delay should increase.
-      // Delay calculation for 5s duration
-      double progress = _controller.value;
-      double nextDelay = 30 + (370 * progress); // Faster ticks for 5s
+  void _startWinHighlightPulse() {
+    _highlightTimer?.cancel();
+    var tick = 0;
+    _highlightTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      tick++;
+      setState(() {
+        _highlightPulse = (math.sin(tick * 0.18) + 1) / 2;
+      });
+      if (tick > 120) {
+        timer.cancel();
+      }
+    });
+  }
 
-      Future.delayed(
-        Duration(milliseconds: nextDelay.toInt()),
-        triggerNextTick,
-      );
+  String _victoryRewardText(SpinReward reward) {
+    if (reward.isGift) {
+      return 'gift_reward'.tr;
     }
+    if (_lastGrantedPoints <= 0 || reward.isNoReward) {
+      return 'no_reward'.tr;
+    }
+    return '$_lastGrantedPoints KSP';
+  }
 
-    triggerNextTick();
+  String _victorySubtitle(SpinReward reward) {
+    if (reward.isGift && _lastGrantedPoints > 0) {
+      return 'gift_reward_points'.trParams({
+        'count': _lastGrantedPoints.toString(),
+      });
+    }
+    if (_lastGrantedPoints <= 0) {
+      return 'try_again_soon'.tr;
+    }
+    return 'win_extra_rewards'.tr;
   }
 
   void _showVictoryOverlay() {
@@ -551,12 +608,14 @@ class _SpinWheelViewState extends State<SpinWheelView>
               ).animate().fadeIn(delay: 200.ms),
               const SizedBox(height: 12),
               Text(
-                'win_extra_rewards'.tr,
+                _victorySubtitle(reward),
+                textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
               ).animate().fadeIn(delay: 400.ms),
               const SizedBox(height: 24),
               Text(
-                    '${reward.label == 'bonus' ? 'bonus'.tr : reward.label} ${'points'.tr}',
+                    _victoryRewardText(reward),
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.darkGold,
                       fontSize: 40,
@@ -570,7 +629,14 @@ class _SpinWheelViewState extends State<SpinWheelView>
               const SizedBox(height: 40),
               KasbyButton(
                 text: 'ok'.tr,
-                onPressed: () => Get.safeBack(),
+                onPressed: () {
+                  setState(() {
+                    _showWinHighlight = false;
+                    _highlightPulse = 0;
+                  });
+                  _highlightTimer?.cancel();
+                  Get.safeBack();
+                },
               ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.1, end: 0),
             ],
           ),
@@ -589,6 +655,9 @@ class _SpinWheelViewState extends State<SpinWheelView>
       status: 'INFO',
     );
     _countdownTimer?.cancel();
+    _highlightTimer?.cancel();
+    _tickTimer?.cancel();
+    _confettiController.dispose();
     _controller.dispose();
     _audioPlayer.dispose();
     super.dispose();
@@ -599,17 +668,23 @@ class _SpinWheelViewState extends State<SpinWheelView>
     return PopScope(
       canPop: !_isSpinning,
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: Colors.black,
         appBar: AppBar(
-          title: Text('spin_win'.tr),
+          title: Text(
+            'spin_win'.tr,
+            style: const TextStyle(color: Color(0xFFC9A24D), fontWeight: FontWeight.bold),
+          ),
           backgroundColor: Colors.transparent,
           elevation: 0,
+          iconTheme: const IconThemeData(color: Color(0xFFC9A24D)),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: _isSpinning ? null : () => Get.safeBack(),
           ),
         ),
-        body: SingleChildScrollView(
+        body: Stack(
+          children: [
+            SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
             child: Column(
@@ -619,134 +694,76 @@ class _SpinWheelViewState extends State<SpinWheelView>
                   style: const TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
+                    color: Color(0xFFC9A24D),
                   ),
                 ).animate().fadeIn().slideY(begin: -0.2, end: 0),
               const SizedBox(height: 12),
               Text(
                 'spin_desc'.tr,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontSize: 16,
+                ),
               ).animate().fadeIn(delay: 200.ms),
-              const SizedBox(height: 60),
+              const SizedBox(height: 48),
 
-              // The Miraculous Wheel
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Outer Glow & Lights
-                  Container(
-                        width: 290,
-                        height: 290,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            // BoxShadow(
-                            //   color: AppColors.darkGold.withValues(alpha: 0.15),
-                            //   blurRadius: 40,
-                            //   spreadRadius: 10,
-                            // ),
-                          ],
-                        ),
-                      )
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scale(
-                        begin: const Offset(1, 1),
-                        end: const Offset(1.05, 1.05),
-                        duration: const Duration(seconds: 2),
-                      ),
-
-                  // Rotating LEDs
-                  ...List.generate(12, (index) {
-                    return RotationTransition(
-                      turns: AlwaysStoppedAnimation(index / 12),
-                      child: Transform.translate(
-                        offset: const Offset(0, -145),
-                        child:
-                            Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    //color: AppColors.darkGold,
-                                    shape: BoxShape.circle,
+              Builder(
+                builder: (context) {
+                  final wheelSize = kasbySpinWheelDiameter(context);
+                  final innerSize = wheelSize * 0.882;
+                  final hubSize = wheelSize * 0.229;
+                  return SizedBox(
+                    width: wheelSize,
+                    height: wheelSize + 20,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        KasbySpinWheelAmbientGlow(size: wheelSize),
+                        KasbySpinWheelOuterRing(size: wheelSize, ledCount: 24),
+                        RotationTransition(
+                          turns: _animation,
+                          child: SizedBox(
+                            width: innerSize,
+                            height: innerSize,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              alignment: Alignment.center,
+                              children: [
+                                CustomPaint(
+                                  size: Size(innerSize, innerSize),
+                                  painter: KasbySpinWheelPainter(
+                                    rewards: _dbRewards,
+                                    highlightIndex: _showWinHighlight
+                                        ? _selectedRewardIndex
+                                        : null,
+                                    highlightPulse: _highlightPulse,
                                   ),
-                                )
-                                .animate(onPlay: (c) => c.repeat())
-                                .scale(
-                                  duration: const Duration(seconds: 1),
-                                  delay: (index * 100).ms,
-                                  begin: const Offset(0.5, 0.5),
-                                )
-                                .tint(
-                                  color: Colors.white,
-                                  duration: const Duration(seconds: 1),
                                 ),
-                      ),
-                    );
-                  }),
-
-                  // The Core Wheel
-                  RotationTransition(
-                    turns: _animation,
-                    child: Container(
-                      width: 260,
-                      height: 260,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.darkGold, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: CustomPaint(
-                        painter: WheelPainter(rewards: _dbRewards),
-                      ),
-                    ),
-                  ),
-                  //SizedBox(height: 10),
-
-                  // Center Pin
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.surface
-                          : AppColors.surfaceLight,
-                      shape: BoxShape.circle,
-                      image: const DecorationImage(
-                        image: AssetImage('assets/images/spin-wheel.jpg'),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  // The Pointer
-                  Positioned(
-                    top: -15,
-                    child:
-                        Icon(
-                              Icons.arrow_drop_down_rounded,
-                              color: Colors.white,
-                              size: 60,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black54,
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4),
+                                KasbySpinWheelSegmentLabels(
+                                  rewards: _dbRewards,
+                                  diameter: innerSize,
                                 ),
                               ],
-                            )
-                            .animate(
-                              onPlay: (c) => _isSpinning
-                                  ? c.repeat(reverse: true)
-                                  : c.stop(),
-                            )
-                            .moveY(begin: 0, end: 5, duration: 200.ms),
-                  ),
-                ],
+                            ),
+                          ),
+                        ),
+                        KasbySpinWheelCenterHub(size: hubSize),
+                        Positioned(
+                          top: wheelSize * 0.018,
+                          child: KasbySpinWheelPointer(isAnimating: _isSpinning)
+                              .animate(
+                                onPlay: (c) => _isSpinning
+                                    ? c.repeat(reverse: true)
+                                    : c.stop(),
+                              )
+                              .moveY(begin: 0, end: 4, duration: 180.ms),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 60),
@@ -842,7 +859,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
                 'spin_disclaimer_text'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: Colors.white.withValues(alpha: 0.4),
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
                 ),
@@ -851,107 +868,28 @@ class _SpinWheelViewState extends State<SpinWheelView>
             ),
           ),
         ),
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                emissionFrequency: 0.04,
+                numberOfParticles: 18,
+                maxBlastForce: 18,
+                minBlastForce: 6,
+                gravity: 0.18,
+                shouldLoop: false,
+                colors: const [
+                  Color(0xFFF5D77A),
+                  Color(0xFFC9A24D),
+                  Color(0xFF8B6914),
+                  Color(0xFFFFF8E7),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
-  }
-}
-
-class WheelPainter extends CustomPainter {
-  final List<SpinReward> rewards;
-
-  WheelPainter({required this.rewards});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (rewards.isEmpty) return;
-    final double radius = size.width / 2;
-    final Rect rect = Rect.fromCircle(
-      center: Offset(radius, radius),
-      radius: radius,
-    );
-
-    final int count = rewards.length;
-    final double angle = (2 * math.pi) / count;
-
-    for (int i = 0; i < count; i++) {
-      final reward = rewards[i];
-      // Draw Segment
-      final Paint paint = Paint()
-        ..shader = RadialGradient(
-          colors: [
-            i % 2 == 0
-                ? AppColors.darkGold.withValues(alpha: 0.9)
-                : AppColors.surface,
-            i % 2 == 0
-                ? AppColors.darkGold
-                : AppColors.surface.withValues(alpha: 0.8),
-          ],
-        ).createShader(rect);
-
-      canvas.drawArc(rect, i * angle - math.pi / 2, angle, true, paint);
-
-      // Draw Icon/Label
-      canvas.save();
-      canvas.translate(radius, radius);
-      canvas.rotate(i * angle + angle / 2);
-
-      final String labelText = reward.label == 'bonus'
-          ? 'bonus'.tr
-          : reward.label;
-      final bool isGift =
-          reward.label == 'bonus' || labelText.toLowerCase() == 'gift';
-
-      if (isGift) {
-        final iconPainter = TextPainter(
-          text: TextSpan(
-            text: String.fromCharCode(Icons.card_giftcard_rounded.codePoint),
-            style: TextStyle(
-              fontSize: 22,
-              fontFamily: Icons.card_giftcard_rounded.fontFamily,
-              package: Icons.card_giftcard_rounded.fontPackage,
-              color: i % 2 == 0 ? Colors.black : Colors.white,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        iconPainter.paint(canvas, Offset(-iconPainter.width / 2, -radius + 45));
-      } else {
-        final textPainter = TextPainter(
-          text: TextSpan(
-            text: labelText,
-            style: TextStyle(
-              color: i % 2 == 0 ? Colors.black : Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-
-        // Position text towards the edge
-        textPainter.paint(canvas, Offset(-textPainter.width / 2, -radius + 40));
-      }
-
-      // Draw tiny dot at segment edge
-      final Paint dotPaint = Paint()
-        ..color = i % 2 == 0
-            ? Colors.black45
-            : AppColors.darkGold.withValues(alpha: 0.5);
-      canvas.drawCircle(Offset(0, -radius + 15), 3, dotPaint);
-
-      canvas.restore();
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant WheelPainter oldDelegate) {
-    if (rewards.length != oldDelegate.rewards.length) return true;
-    for (int i = 0; i < rewards.length; i++) {
-      if (rewards[i].id != oldDelegate.rewards[i].id ||
-          rewards[i].label != oldDelegate.rewards[i].label) {
-        return true;
-      }
-    }
-    return false;
   }
 }

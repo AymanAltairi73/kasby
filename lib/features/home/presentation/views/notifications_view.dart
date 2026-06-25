@@ -8,6 +8,7 @@ import 'package:kasby/core/models/notification_model.dart';
 import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
+import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class NotificationsView extends StatefulWidget {
@@ -101,6 +102,11 @@ class _NotificationsViewState extends State<NotificationsView> {
           onPressed: () => Get.safeBack(),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'notification_settings'.tr,
+            onPressed: () => Get.toNamed(Routes.notificationPreferences),
+          ),
           Obx(() {
             if (homeController.unreadNotificationCount.value > 0) {
               return TextButton(

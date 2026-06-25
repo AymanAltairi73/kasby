@@ -5,8 +5,6 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/services/snack_service.dart';
-import 'package:kasby/core/services/auth_security_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -255,8 +253,10 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                         }
 
                         if (isEmailChange) {
-                          final success =
-                              await profileCtrl.requestEmailChange(newValue);
+                          final success = await profileCtrl.sendUpdateOtp(
+                            target: newValue,
+                            type: type,
+                          );
                           if (success) {
                             currentStep.value = 2;
                           }
@@ -266,26 +266,7 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                             type: type,
                           );
                           if (success) {
-                            final verified = await Get.toNamed<bool>(
-                              Routes.otp,
-                              arguments: {
-                                'identifier': newValue,
-                                'isPhone': true,
-                                'isFreeOtp': false,
-                                'type': OtpType.phoneChange,
-                                'purpose': 'phone_change',
-                                'otpLength':
-                                    AuthSecurityService.phoneOtpLength,
-                              },
-                            );
-                            if (verified == true) {
-                              profileCtrl.resetFlow();
-                              if (_isEmbedded && context.mounted) {
-                                Navigator.of(context).pop();
-                              } else {
-                                Get.offNamed(Routes.personalProfile);
-                              }
-                            }
+                            currentStep.value = 2;
                           }
                         }
                       },
@@ -351,29 +332,18 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                               onPressed: () async {
                                 final code = otpController.text.trim();
                                 if (code.isEmpty) return;
-                                try {
-                                  await AuthSecurityService.verifyOtpCode(
-                                    email: _buildTargetValue(),
-                                    token: code,
-                                    type: OtpType.emailChange,
-                                  );
-                                  await AuthSecurityService
-                                      .refreshUserProfileState();
-                                  AppSnack.success(
-                                    'success'.tr,
-                                    'email_changed_success'.tr,
-                                  );
+                                final success = await profileCtrl.verifyAndUpdate(
+                                  type: type,
+                                  newValue: _buildTargetValue(),
+                                  otpCode: code,
+                                );
+                                if (success) {
                                   profileCtrl.resetFlow();
                                   if (_isEmbedded && context.mounted) {
                                     Navigator.of(context).pop();
                                   } else {
                                     Get.offNamed(Routes.personalProfile);
                                   }
-                                } catch (e) {
-                                  AppSnack.error(
-                                    'error'.tr,
-                                    AuthSecurityService.translateOtpError(e),
-                                  );
                                 }
                               },
                             ).animate().fadeIn(delay: 250.ms),

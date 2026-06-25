@@ -48,4 +48,16 @@ abstract class Routes {
   static const globalSearch = '/global-search';
   static const referralAnalytics = '/referral-analytics';
   static const notificationPreferences = '/notification-preferences';
+  static const marketplace = '/marketplace';
+  static const marketplaceCategory = '/marketplace-category';
+  static const marketplaceProduct = '/marketplace-product';
+  static const marketplaceCart = '/marketplace-cart';
+  static const marketplaceCheckout = '/marketplace-checkout';
+  static const marketplaceOrders = '/marketplace-orders';
+  static const marketplaceOrderDetail = '/marketplace-order-detail';
+  static const marketplaceRewards = '/marketplace-rewards';
+  static const marketplaceSearch = '/marketplace-search';
+  static const marketplaceWishlist = '/marketplace-wishlist';
+  static const marketplaceNotifications = '/marketplace-notifications';
+  static const marketplaceHealth = '/marketplace-health';
 }

@@ -18,6 +18,8 @@ class CurrencyController extends GetxController {
   final RxDouble investedBalance = 0.0.obs;
   final RxDouble pendingBalance = 0.0.obs;
   final RxBool isLoadingWallet = false.obs;
+  final RxBool isWalletFrozen = false.obs;
+  final RxnString walletFrozenReason = RxnString();
 
   /// Currencies fetched from DB (falls back to hardcoded data).
   final RxList<CurrencyModel> currencies = <CurrencyModel>[].obs;
@@ -149,6 +151,8 @@ class CurrencyController extends GetxController {
         profitBalance.value = wallet.profitBalance;
         investedBalance.value = wallet.investedBalance;
         pendingBalance.value = wallet.pendingBalance;
+        isWalletFrozen.value = wallet.isFrozen;
+        walletFrozenReason.value = wallet.frozenReason;
       }
       SafeGetx.debugTrace(
         className: 'CurrencyController',

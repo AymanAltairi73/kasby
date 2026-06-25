@@ -10,6 +10,7 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:kasby/core/utils/mask_utils.dart';
 import 'package:kasby/features/auth/presentation/widgets/auth_otp_input.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
@@ -113,7 +114,8 @@ class _OtpViewState extends State<OtpView> {
           type: _otpType,
           purpose: _purpose,
         );
-      } else if (_otpType == OtpType.recovery) {
+      } else if (_otpType == OtpType.recovery ||
+          (_isRecovery && !_isPhone && !_isFreeOtp)) {
         await AuthSecurityService.resendPasswordRecovery(_identifier);
       } else if (_isFreeOtp) {
         if (_isPhone) {
@@ -122,11 +124,21 @@ class _OtpViewState extends State<OtpView> {
             type: _otpType,
             purpose: _purpose,
           );
+        } else if (_isRecovery || _purpose == 'password_reset') {
+          await AuthSecurityService.resendPasswordRecovery(_identifier);
+        } else if (_purpose == 'signup') {
+          await AuthSecurityService.ensureSignupVerificationSent(_identifier);
+        } else if (_purpose == 'email_change') {
+          await AuthSecurityService.sendProfileChangeOtp(
+            target: _identifier,
+            targetType: 'email',
+            purpose: 'email_change',
+          );
         } else {
           await AuthController.to.sendEmailOtp(
             _identifier,
             isRecovery: _isRecovery,
-            purpose: _isRecovery ? 'password_reset' : 'verification',
+            purpose: _purpose,
           );
         }
       } else {
@@ -184,30 +196,30 @@ class _OtpViewState extends State<OtpView> {
       }
 
       if (_purpose == 'phone_change') {
-        await AuthSecurityService.confirmPhoneChange(
-          phone: _identifier,
-          token: otp,
+        final success = await Get.find<ProfileUpdateController>().verifyAndUpdate(
+          type: _purpose,
+          newValue: _identifier,
+          otpCode: otp,
         );
-        setState(() => _isVerified = true);
-        AppSnack.success('success'.tr, 'phone_updated_success'.tr);
-        await Future.delayed(const Duration(milliseconds: 600));
-        Get.back(result: true);
-        if (Get.previousRoute == Routes.profileUpdate) {
-          Get.back();
+        if (success) {
+          setState(() => _isVerified = true);
+          AppSnack.success('success'.tr, 'phone_updated_success'.tr);
+          await Future.delayed(const Duration(milliseconds: 600));
+          Get.back(result: true);
         }
         return;
       }
 
       if (_isPhone) {
         if (_isRecovery || _purpose == 'password_reset') {
-          await AuthSecurityService.verifyPhoneOtpCode(
-            phone: _identifier,
-            token: otp,
-            type: OtpType.sms,
-          );
-          Get.offNamed(
+          Get.toNamed(
             Routes.changePassword,
-            arguments: {'isRecovery': true},
+            arguments: {
+              'isRecovery': true,
+              'identifier': _identifier,
+              'otp': otp,
+              'isPhone': true,
+            },
           );
           return;
         }
@@ -381,11 +393,7 @@ class _OtpViewState extends State<OtpView> {
                       if (!_isVerified) ...[
                         const SizedBox(height: 12),
                     Text(
-                      'otp_sent_to'.trParams({
-                        'target': _identifier.startsWith('+')
-                            ? _identifier
-                            : '+$_identifier',
-                      }),
+                      '${'code_sent_to'.tr}\n${MaskUtils.maskIdentifier(value: _identifier, isPhone: _isPhone)}',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,

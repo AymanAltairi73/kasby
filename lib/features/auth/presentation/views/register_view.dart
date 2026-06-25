@@ -210,7 +210,9 @@ class _RegisterViewState extends State<RegisterView> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                // const SizedBox(height: 24),
+                // _buildNextSteps(context, isDark),
+                const SizedBox(height: 24),
                 Obx(
                   () => controller.isLoading.value
                       ? Center(
@@ -256,6 +258,72 @@ class _RegisterViewState extends State<RegisterView> {
       ),
     );
   }
+
+  // Widget _buildNextSteps(BuildContext context, bool isDark) {
+  //   final steps = [
+  //     'register_step_verify'.tr,
+  //     'register_step_activate'.tr,
+  //     'register_step_start'.tr,
+  //   ];
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: isDark
+  //           ? Colors.white.withValues(alpha: 0.04)
+  //           : AppColors.darkGold.withValues(alpha: 0.06),
+  //       borderRadius: BorderRadius.circular(16),
+  //       border: Border.all(
+  //         color: AppColors.darkGold.withValues(alpha: 0.15),
+  //       ),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           'register_next_steps_title'.tr,
+  //           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+  //         ),
+  //         const SizedBox(height: 12),
+  //         ...steps.asMap().entries.map((e) {
+  //           return Padding(
+  //             padding: const EdgeInsets.only(bottom: 8),
+  //             child: Row(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 CircleAvatar(
+  //                   radius: 12,
+  //                   backgroundColor: AppColors.darkGold.withValues(alpha: 0.15),
+  //                   child: Text(
+  //                     '${e.key + 1}',
+  //                     style: TextStyle(
+  //                       color: AppColors.darkGold,
+  //                       fontSize: 11,
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 10),
+  //                 Expanded(
+  //                   child: Text(
+  //                     e.value,
+  //                     style: TextStyle(
+  //                       fontSize: 13,
+  //                       height: 1.4,
+  //                       color: isDark
+  //                           ? AppColors.textSecondary
+  //                           : AppColors.textSecondaryLight,
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         }),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildReferralStatus(AuthController controller) {
     if (controller.isCheckingReferral.value) {

@@ -9,6 +9,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:kasby/core/utils/mask_utils.dart';
 import 'package:kasby/features/auth/presentation/widgets/auth_otp_input.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -326,12 +327,28 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                     Icon(Icons.email_outlined, color: AppColors.darkGold),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        _email.isEmpty ? '---' : _email,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'code_sent_to'.tr,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : AppColors.textSecondaryLight,
+                            ),
+                          ),
+                          Text(
+                            _email.isEmpty
+                                ? '---'
+                                : MaskUtils.maskEmail(_email),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

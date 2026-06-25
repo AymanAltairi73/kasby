@@ -21,6 +21,7 @@ import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/fee_service.dart';
 import 'package:kasby/core/widgets/fee_breakdown_card.dart';
+import 'package:kasby/core/widgets/error_state_widget.dart';
 
 class WithdrawView extends StatefulWidget {
   const WithdrawView({super.key});
@@ -32,6 +33,7 @@ class WithdrawView extends StatefulWidget {
 class _WithdrawViewState extends State<WithdrawView> {
   final RxList<AgentModel> agents = <AgentModel>[].obs;
   final RxBool isLoadingAgents = true.obs;
+  final RxBool hasAgentError = false.obs;
   final RxInt selectedAgentIndex = 0.obs;
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
@@ -60,6 +62,7 @@ class _WithdrawViewState extends State<WithdrawView> {
 
   Future<void> _fetchAgents() async {
     isLoadingAgents.value = true;
+    hasAgentError.value = false;
     try {
       agents.value = await AgentService.fetchActiveAgents(limit: 20);
       SafeGetx.debugTrace(
@@ -69,8 +72,16 @@ class _WithdrawViewState extends State<WithdrawView> {
         status: 'SUCCESS',
         params: {'count': agents.length},
       );
-    } catch (_) {
-      // Logged by AgentService caller if needed.
+    } catch (e, stack) {
+      hasAgentError.value = true;
+      SafeGetx.debugTrace(
+        className: 'WithdrawView',
+        method: '_fetchAgents',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingAgents.value = false;
     }
@@ -520,14 +531,17 @@ class _WithdrawViewState extends State<WithdrawView> {
         );
       }
 
+      if (hasAgentError.value) {
+        return ErrorStateWidget(
+          message: 'agents_load_error'.tr,
+          onRetry: _fetchAgents,
+        );
+      }
+
       if (agents.isEmpty) {
-        return KasbyCard(
-          child: Center(
-            child: Text(
-              'no_agents'.tr,
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
+        return ErrorStateWidget(
+          message: 'no_agents_desc'.tr,
+          onRetry: _fetchAgents,
         );
       }
 

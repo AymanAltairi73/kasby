@@ -7,6 +7,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AuthOtpConfig {
   AuthOtpConfig._();
 
+  /// TEMP: Skip email verification UI and OTP during signup.
+  /// Requires "Confirm email" disabled in Supabase Auth settings.
+  static const bool tempSkipEmailVerification = true;
+
   static const int defaultLength = 6;
 
   static int _fromEnv(String key, int fallback) {
@@ -51,8 +55,17 @@ class AuthOtpConfig {
     }
   }
 
-  /// FCM / Edge Function OTP (phone, custom email).
-  static int get fcmOtpLength => _fromEnv('AUTH_OTP_LENGTH_FCM', defaultLength);
+  /// Unified Twilio Verify OTP length (6 digits).
+  static int get unifiedOtpLength => defaultLength;
+
+  /// OTP expiry in seconds (10 minutes).
+  static int get expirySeconds => _fromEnv('AUTH_OTP_EXPIRY_SECONDS', 600);
+
+  /// Resend cooldown in seconds.
+  static int get cooldownSeconds => _fromEnv('AUTH_OTP_COOLDOWN_SECONDS', 60);
+
+  /// @deprecated Use [unifiedOtpLength]. Legacy alias.
+  static int get fcmOtpLength => unifiedOtpLength;
 
   static String normalize(String raw) =>
       raw.replaceAll(RegExp(r'\D'), '');

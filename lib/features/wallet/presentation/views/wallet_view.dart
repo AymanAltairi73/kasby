@@ -10,6 +10,7 @@ import 'package:kasby/features/auth/presentation/controllers/auth_controller.dar
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 // import 'package:kasby/core/controllers/shell_controller.dart';
+import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -27,6 +28,8 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
   final currencyController = CurrencyController.to;
   final homeController = HomeController.to;
   final authController = AuthController.to;
+  final shellController = ShellController.to;
+  Worker? _tabWorker;
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
@@ -42,11 +45,25 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
     _gradientController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
-    )..repeat();
+    );
+    _syncAnimationWithTab(shellController.currentIndex.value);
+    _tabWorker = ever(shellController.currentIndex, _syncAnimationWithTab);
+  }
+
+  void _syncAnimationWithTab(int index) {
+    if (!mounted) return;
+    if (index == ShellController.tabWallet) {
+      if (!_gradientController.isAnimating) {
+        _gradientController.repeat();
+      }
+    } else {
+      _gradientController.stop();
+    }
   }
 
   @override
   void dispose() {
+    _tabWorker?.dispose();
     SafeGetx.debugTrace(
       className: 'WalletView',
       method: 'dispose',
@@ -108,7 +125,8 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
     return LayoutBuilder(
       builder: (context, constraints) {
         final cardWidth = constraints.maxWidth;
-        final cardHeight = cardWidth * 0.62;
+        // Min 300px so chip + balance + pending row + currency bar fit on narrow phones.
+        final cardHeight = (cardWidth * 0.62).clamp(300.0, double.infinity);
 
         return Material(
           type: MaterialType.transparency,
@@ -119,7 +137,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
               builder: (context, child) {
                 return Container(
                   width: double.infinity,
-                  height: cardHeight < 280 ? 280 : cardHeight,
+                  height: cardHeight,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(28),
                     gradient: LinearGradient(
@@ -184,11 +202,11 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
-                            vertical: 14,
+                            vertical: 12,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Row(
                                 mainAxisAlignment:
@@ -262,6 +280,12 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                           ),
                                         ),
                                         tooltip: 'Toggle Balance',
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 32,
+                                          minHeight: 32,
+                                        ),
+                                        visualDensity: VisualDensity.compact,
                                         onPressed: () =>
                                             currencyController
                                                 .toggleBalancePrivacy(),
@@ -289,12 +313,49 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 8),
+                                  Obx(
+                                    () {
+                                      final pending =
+                                          currencyController.pendingBalance.value;
+                                      if (pending <= 0) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return Row(
+                                        children: [
+                                          Text(
+                                            '${'pending_balance'.tr}: ',
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.5,
+                                              ),
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            currencyController.isBalanceHidden.value
+                                                ? '****'
+                                                : currencyController.formatToUSD(
+                                                    pending,
+                                                  ),
+                                            style: TextStyle(
+                                              color: AppColors.darkGold
+                                                  .withValues(alpha: 0.95),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
                                 ],
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
-                                  vertical: 12,
+                                  vertical: 10,
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.05),

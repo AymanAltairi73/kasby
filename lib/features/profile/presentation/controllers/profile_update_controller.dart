@@ -3,9 +3,6 @@ import 'package:get/get.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/features/auth/domain/services/otp_service.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kasby/core/services/auth_security_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -73,13 +70,12 @@ class ProfileUpdateController extends GetxController {
 
   // ─── OTP FLOW ───────────────────────────────────────────
 
-  /// Sends OTP for either email or phone change.
+  /// Sends OTP for either email or phone change via Resend / FCM.
   /// Requires password verification first.
   Future<bool> sendUpdateOtp({
     required String target,
     required String type, // 'email_change' or 'phone_change'
   }) async {
-    // Guard: password must be verified first
     if (!isPasswordVerified.value) {
       AppSnack.warning('error'.tr, 'password_required_first'.tr);
       return false;
@@ -92,22 +88,26 @@ class ProfileUpdateController extends GetxController {
     await SupabaseService.hardRefreshSession();
     try {
       final isEmailChange = type == 'email_change';
+      final normalizedTarget = isEmailChange
+          ? target.trim().toLowerCase()
+          : target.trim();
 
       if (isEmailChange) {
-        final bool success = await OTPService.to.sendOtp(
-          target: target,
+        await AuthSecurityService.sendProfileChangeOtp(
+          target: normalizedTarget,
           targetType: 'email',
           purpose: type,
         );
         _startResendTimer();
-        if (success) {
-          AppSnack.success('success'.tr, 'otp_sent_email'.tr);
-        }
-        return success;
+        AppSnack.success('success'.tr, 'otp_sent_email'.tr);
+        return true;
       }
 
-      // Phone change via Supabase Auth (Twilio SMS)
-      await AuthSecurityService.requestPhoneChange(target);
+      await AuthSecurityService.sendProfileChangeOtp(
+        target: normalizedTarget,
+        targetType: 'phone',
+        purpose: type,
+      );
       _startResendTimer();
       AppSnack.success('success'.tr, 'otp_sent_sms'.tr);
       return true;
@@ -116,6 +116,10 @@ class ProfileUpdateController extends GetxController {
       String msg = e.toString().replaceAll('Exception:', '').trim();
       if (e is AuthException) {
         msg = AuthSecurityService.translateOtpError(e);
+      } else if (e is Exception && msg.isNotEmpty) {
+        msg = msg;
+      } else {
+        msg = 'otp_resend_failed'.tr;
       }
       if (e.toString().contains('RATE_LIMIT')) msg = 'rate_limit_exceeded_friend'.tr;
       AppSnack.error('error'.tr, msg);
@@ -125,30 +129,9 @@ class ProfileUpdateController extends GetxController {
     }
   }
 
-  /// Requests email change via Supabase Auth (confirmation email sent).
+  /// Requests email change OTP (Resend) — kept for resend actions.
   Future<bool> requestEmailChange(String newEmail) async {
-    if (!isPasswordVerified.value) {
-      AppSnack.warning('error'.tr, 'password_required_first'.tr);
-      return false;
-    }
-
-    isLoading.value = true;
-    try {
-      await SupabaseService.hardRefreshSession();
-      await AuthSecurityService.requestEmailChange(newEmail);
-      AppSnack.success('success'.tr, 'email_change_confirmation_sent'.tr);
-      return true;
-    } on AuthException catch (e) {
-      _log('Email change request failed', method: 'requestEmailChange', isError: true, error: e.message);
-      AppSnack.error('error'.tr, AuthSecurityService.translateAuthError(e));
-      return false;
-    } catch (e) {
-      _log('Email change request error', method: 'requestEmailChange', isError: true, error: e);
-      AppSnack.error('error'.tr, 'unknown_error'.tr);
-      return false;
-    } finally {
-      isLoading.value = false;
-    }
+    return sendUpdateOtp(target: newEmail, type: 'email_change');
   }
 
   /// Checks whether a pending email change has been confirmed.
@@ -170,7 +153,7 @@ class ProfileUpdateController extends GetxController {
     }
   }
 
-  /// Verifies OTP and performs the atomic update via Edge Function.
+  /// Verifies OTP and applies profile update via Twilio Verify platform.
   Future<bool> verifyAndUpdate({
     required String type,
     required String newValue,
@@ -178,37 +161,27 @@ class ProfileUpdateController extends GetxController {
   }) async {
     isLoading.value = true;
     try {
-      final response = await _invokeSecureUpdate({
-        'type': type,
-        'new_value': newValue,
-        'otp_code': otpCode,
-      });
-
-      if (response.statusCode == 200) {
-        await AuthSecurityService.refreshUserProfileState();
-        AppSnack.success('success'.tr, 'profile_updated_success'.tr);
-        return true;
+      if (type == 'email_change') {
+        await OTPService.to.verifyEmailOtp(
+          email: newValue.trim().toLowerCase(),
+          code: otpCode,
+          purpose: 'email_change',
+          newValue: newValue.trim().toLowerCase(),
+        );
       } else {
-        String userMsg = 'unknown_error'.tr;
-        try {
-          final data = jsonDecode(response.body);
-          final error = data['error'] ?? userMsg;
-          final code = data['code'] ?? '';
-          
-          userMsg = error;
-          if (code == 'INVALID_CODE') userMsg = 'invalid_otp'.tr;
-          if (code == 'INVALID_OTP') userMsg = 'otp_expired'.tr;
-          if (code == 'MAX_ATTEMPTS') userMsg = 'max_attempts_reached'.tr;
-          if (code == 'DUPLICATE_VALUE') {
-            userMsg = type == 'email_change' ? 'email_already_exists'.tr : 'phone_already_exists'.tr;
-          }
-        } catch (e) {
-          _log('Failed to decode error response', method: 'verifyAndUpdate', isError: true);
-        }
-
-        AppSnack.error('error'.tr, userMsg);
-        return false;
+        await OTPService.to.verifyPhoneOtp(
+          phone: newValue.trim(),
+          code: otpCode,
+          purpose: 'phone_change',
+          newValue: newValue.trim(),
+        );
       }
+      await AuthSecurityService.refreshUserProfileState();
+      AppSnack.success('success'.tr, 'profile_updated_success'.tr);
+      return true;
+    } on OTPVerificationException catch (e) {
+      AppSnack.error('error'.tr, AuthSecurityService.translateOtpError(e));
+      return false;
     } catch (e) {
       _log('Error in verifyAndUpdate', method: 'verifyAndUpdate', isError: true, error: e);
       AppSnack.error('error'.tr, 'unknown_error'.tr);
@@ -229,24 +202,6 @@ class ProfileUpdateController extends GetxController {
   }
 
   // ─── HELPERS ──────────────────────────────────────────
-
-  Future<http.Response> _invokeSecureUpdate(Map<String, dynamic> body) async {
-    final supabaseUrl = dotenv.env['SUPABASE_URL']!;
-    final anonKey = dotenv.env['SUPABASE_ANON_KEY']!;
-    final session = SupabaseService.client.auth.currentSession;
-    
-    final url = Uri.parse('$supabaseUrl/functions/v1/secure-profile-update');
-    
-    return await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': anonKey,
-        'Authorization': 'Bearer ${session?.accessToken ?? anonKey}',
-      },
-      body: jsonEncode(body),
-    );
-  }
 
   void _startResendTimer() {
     resendTimer.value = 60;

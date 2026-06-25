@@ -16,6 +16,7 @@ class InvestmentPlanCard extends StatefulWidget {
   final List<String>? amounts;
   final double? rawProfitPercentage;
   final String? duration;
+  final String? riskLevel;
 
   const InvestmentPlanCard({
     super.key,
@@ -28,6 +29,7 @@ class InvestmentPlanCard extends StatefulWidget {
     this.amounts,
     this.rawProfitPercentage,
     this.duration,
+    this.riskLevel,
   });
 
   @override
@@ -159,6 +161,10 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                               ),
                             ],
                           ),
+                          if (widget.riskLevel != null) ...[
+                            const SizedBox(height: 10),
+                            _buildRiskBadge(widget.riskLevel!),
+                          ],
                           const SizedBox(height: 16),
                           Row(
                             children: [
@@ -226,6 +232,41 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRiskBadge(String level) {
+    final normalized = level.toLowerCase();
+    late String label;
+    late Color color;
+    switch (normalized) {
+      case 'low':
+        label = 'risk_low'.tr;
+        color = AppColors.softGreen;
+        break;
+      case 'high':
+        label = 'risk_high'.tr;
+        color = AppColors.error;
+        break;
+      default:
+        label = 'risk_medium'.tr;
+        color = AppColors.darkGold;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

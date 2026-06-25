@@ -19,6 +19,7 @@ import 'package:uuid/uuid.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/fee_service.dart';
 import 'package:kasby/core/widgets/fee_breakdown_card.dart';
+import 'package:kasby/core/widgets/error_state_widget.dart';
 
 class DepositView extends StatefulWidget {
   const DepositView({super.key});
@@ -30,6 +31,7 @@ class DepositView extends StatefulWidget {
 class _DepositViewState extends State<DepositView> {
   final RxList<AgentModel> agents = <AgentModel>[].obs;
   final RxBool isLoading = true.obs;
+  final RxBool hasAgentError = false.obs;
   final RxInt selectedAgent = 0.obs;
   final TextEditingController _amountController = TextEditingController();
   final RxDouble _amountPreview = 0.0.obs;
@@ -56,6 +58,7 @@ class _DepositViewState extends State<DepositView> {
 
   Future<void> _fetchAgents() async {
     isLoading.value = true;
+    hasAgentError.value = false;
     try {
       agents.value = await AgentService.fetchActiveAgents(limit: 20);
       SafeGetx.debugTrace(
@@ -65,8 +68,16 @@ class _DepositViewState extends State<DepositView> {
         status: 'SUCCESS',
         params: {'count': agents.length},
       );
-    } catch (_) {
-      // traceAsync already logged the failure.
+    } catch (e, stack) {
+      hasAgentError.value = true;
+      SafeGetx.debugTrace(
+        className: 'DepositView',
+        method: '_fetchAgents',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoading.value = false;
     }
@@ -180,6 +191,12 @@ class _DepositViewState extends State<DepositView> {
               'deposit_location'.tr,
               agent.city.isNotEmpty ? agent.city : agent.country,
               null,
+            ),
+            const SizedBox(height: 12),
+            _buildConfirmRow(
+              'estimated_processing'.tr,
+              'deposit_eta'.tr,
+              AppColors.darkGold,
             ),
             const SizedBox(height: 16),
             Container(
@@ -436,15 +453,17 @@ class _DepositViewState extends State<DepositView> {
         );
       }
 
+      if (hasAgentError.value) {
+        return ErrorStateWidget(
+          message: 'agents_load_error'.tr,
+          onRetry: _fetchAgents,
+        );
+      }
+
       if (agents.isEmpty) {
-        return KasbyCard(
-          padding: const EdgeInsets.all(24),
-          child: Center(
-            child: Text(
-              'no_agents'.tr,
-               style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
+        return ErrorStateWidget(
+          message: 'no_agents_desc'.tr,
+          onRetry: _fetchAgents,
         );
       }
 

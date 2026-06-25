@@ -93,14 +93,6 @@ class _ProfileViewState extends State<ProfileView> {
                     _buildProfileItem(
                       context,
                       isDark,
-                      Icons.leaderboard_rounded,
-                      'referral_analytics'.tr,
-                      Colors.greenAccent,
-                      () => Get.toNamed(Routes.referralAnalytics),
-                    ),
-                    _buildProfileItem(
-                      context,
-                      isDark,
                       Icons.tour_rounded,
                       'guided_tour'.tr,
                       Colors.amberAccent,
@@ -187,7 +179,7 @@ class _ProfileViewState extends State<ProfileView> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'PRO',
+                            'agent_pro_badge'.tr,
                             style: TextStyle(
                               color: AppColors.darkGold,
                               fontSize: 10,

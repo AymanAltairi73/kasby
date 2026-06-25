@@ -57,7 +57,7 @@ class _OnboardingViewState extends State<OnboardingView> {
       OnboardingData(
         title: 'ob3_title'.tr,
         description: 'ob3_desc'.tr,
-        icon: Icons.trending_up_rounded,
+        icon: Icons.groups_rounded,
       ),
       // 4th slide — security messaging (audit M8)
       OnboardingData(

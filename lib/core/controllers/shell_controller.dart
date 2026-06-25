@@ -43,6 +43,16 @@ class ShellController extends GetxController {
     super.onClose();
   }
 
+  /// Whether the given shell tab index is currently visible.
+  bool isTabActive(int index) => currentIndex.value == index;
+
+  /// Tab indices for [MainShellView].
+  static const int tabHome = 0;
+  static const int tabWallet = 1;
+  static const int tabInvest = 2;
+  static const int tabTransactions = 3;
+  static const int tabProfile = 4;
+
   void setIndex(int index) {
     SafeGetx.debugTrace(
       className: 'ShellController',

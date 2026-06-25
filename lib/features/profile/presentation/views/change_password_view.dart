@@ -72,6 +72,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
             target: _recoveryIdentifier,
             otpCode: _recoveryOtp,
             newPassword: _newPasswordController.text.trim(),
+            isPhone: Get.arguments?['isPhone'] == true,
           );
         } else {
           await AuthSecurityService.updatePassword(

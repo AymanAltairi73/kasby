@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/services/fcm_service.dart';
+import 'package:kasby/core/services/notification_preferences_service.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationPreferencesView extends StatefulWidget {
   const NotificationPreferencesView({super.key});
@@ -22,6 +23,7 @@ class _NotificationPreferencesViewState
   bool _quietHoursEnabled = false;
   TimeOfDay _quietStart = const TimeOfDay(hour: 22, minute: 0);
   TimeOfDay _quietEnd = const TimeOfDay(hour: 7, minute: 0);
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -36,31 +38,75 @@ class _NotificationPreferencesViewState
   }
 
   Future<void> _loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
+    final financial = await NotificationPreferencesService.isCategoryEnabled('financial');
+    final security = await NotificationPreferencesService.isCategoryEnabled('security');
+    final social = await NotificationPreferencesService.isCategoryEnabled('social');
+    final system = await NotificationPreferencesService.isCategoryEnabled('system');
+    final quiet = await NotificationPreferencesService.isQuietHoursEnabled();
+    final quietStart = await NotificationPreferencesService.getQuietStart();
+    final quietEnd = await NotificationPreferencesService.getQuietEnd();
+
+    if (!mounted) return;
     setState(() {
-      _financialEnabled = prefs.getBool('notif_financial') ?? true;
-      _securityEnabled = prefs.getBool('notif_security') ?? true;
-      _socialEnabled = prefs.getBool('notif_social') ?? true;
-      _systemEnabled = prefs.getBool('notif_system') ?? true;
-      _quietHoursEnabled = prefs.getBool('notif_quiet_hours') ?? false;
-      _quietStart = TimeOfDay(
-        hour: prefs.getInt('notif_quiet_start_h') ?? 22,
-        minute: prefs.getInt('notif_quiet_start_m') ?? 0,
-      );
-      _quietEnd = TimeOfDay(
-        hour: prefs.getInt('notif_quiet_end_h') ?? 7,
-        minute: prefs.getInt('notif_quiet_end_m') ?? 0,
-      );
+      _financialEnabled = financial;
+      _securityEnabled = security;
+      _socialEnabled = social;
+      _systemEnabled = system;
+      _quietHoursEnabled = quiet;
+      _quietStart = quietStart;
+      _quietEnd = quietEnd;
+      _isLoading = false;
     });
   }
 
-  Future<void> _savePreference(String key, dynamic value) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (value is bool) {
-      await prefs.setBool(key, value);
-    } else if (value is int) {
-      await prefs.setInt(key, value);
-    }
+  Future<void> _onGlobalToggle(bool value) async {
+    await FCMService.to.setNotificationsEnabled(value);
+    AppSnack.success(
+      'success'.tr,
+      value ? 'notif_enabled_message'.tr : 'notif_disabled_message'.tr,
+    );
+  }
+
+  Future<void> _onCategoryToggle(String category, bool value) async {
+    await NotificationPreferencesService.setCategoryEnabled(category, value);
+    setState(() {
+      switch (category) {
+        case 'financial':
+          _financialEnabled = value;
+        case 'security':
+          _securityEnabled = value;
+        case 'social':
+          _socialEnabled = value;
+        case 'system':
+          _systemEnabled = value;
+      }
+    });
+    final label = _categoryLabel(category);
+    AppSnack.success(
+      'success'.tr,
+      value
+          ? 'notif_category_enabled'.trParams({'category': label})
+          : 'notif_category_disabled'.trParams({'category': label}),
+    );
+  }
+
+  Future<void> _onQuietHoursToggle(bool value) async {
+    await NotificationPreferencesService.setQuietHoursEnabled(value);
+    setState(() => _quietHoursEnabled = value);
+    AppSnack.success(
+      'success'.tr,
+      value ? 'notif_quiet_hours_enabled'.tr : 'notif_quiet_hours_disabled'.tr,
+    );
+  }
+
+  String _categoryLabel(String category) {
+    return switch (category) {
+      'financial' => 'category_financial'.tr,
+      'security' => 'category_security'.tr,
+      'social' => 'category_social'.tr,
+      'system' => 'category_system'.tr,
+      _ => category,
+    };
   }
 
   Future<void> _pickTime({required bool isStart}) async {
@@ -83,14 +129,22 @@ class _NotificationPreferencesViewState
       setState(() {
         if (isStart) {
           _quietStart = picked;
-          _savePreference('notif_quiet_start_h', picked.hour);
-          _savePreference('notif_quiet_start_m', picked.minute);
         } else {
           _quietEnd = picked;
-          _savePreference('notif_quiet_end_h', picked.hour);
-          _savePreference('notif_quiet_end_m', picked.minute);
         }
       });
+      if (isStart) {
+        await NotificationPreferencesService.setQuietHoursStart(
+          picked.hour,
+          picked.minute,
+        );
+      } else {
+        await NotificationPreferencesService.setQuietHoursEnd(
+          picked.hour,
+          picked.minute,
+        );
+      }
+      AppSnack.success('success'.tr, 'notif_time_updated'.tr);
     }
   }
 
@@ -105,7 +159,7 @@ class _NotificationPreferencesViewState
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'notification_preferences'.tr,
+          'notification_settings'.tr,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isDark ? Colors.white : AppColors.onSurfaceLight,
@@ -116,104 +170,87 @@ class _NotificationPreferencesViewState
           onPressed: () => Get.back(),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Global toggle
-          _buildSection(
-            title: 'notification_settings'.tr,
-            children: [
-              Obx(() => _buildToggleItem(
-                    icon: Icons.notifications_active_rounded,
-                    color: AppColors.darkGold,
-                    title: 'notification_settings'.tr,
-                    value: FCMService.to.isNotificationsEnabled.value,
-                    onChanged: (val) =>
-                        FCMService.to.setNotificationsEnabled(val),
-                  )),
-            ],
-          ),
-          const SizedBox(height: 24),
-          // Category toggles
-          _buildSection(
-            title: 'categories'.tr,
-            children: [
-              _buildToggleItem(
-                icon: Icons.account_balance_wallet_rounded,
-                color: Colors.green,
-                title: 'category_financial'.tr,
-                value: _financialEnabled,
-                onChanged: (val) {
-                  setState(() => _financialEnabled = val);
-                  _savePreference('notif_financial', val);
-                },
-              ),
-              _buildToggleItem(
-                icon: Icons.shield_rounded,
-                color: Colors.redAccent,
-                title: 'category_security'.tr,
-                value: _securityEnabled,
-                onChanged: (val) {
-                  setState(() => _securityEnabled = val);
-                  _savePreference('notif_security', val);
-                },
-              ),
-              _buildToggleItem(
-                icon: Icons.people_rounded,
-                color: Colors.blueAccent,
-                title: 'category_social'.tr,
-                value: _socialEnabled,
-                onChanged: (val) {
-                  setState(() => _socialEnabled = val);
-                  _savePreference('notif_social', val);
-                },
-              ),
-              _buildToggleItem(
-                icon: Icons.settings_rounded,
-                color: Colors.grey,
-                title: 'category_system'.tr,
-                value: _systemEnabled,
-                onChanged: (val) {
-                  setState(() => _systemEnabled = val);
-                  _savePreference('notif_system', val);
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          // Quiet hours
-          _buildSection(
-            title: 'quiet_hours'.tr,
-            children: [
-              _buildToggleItem(
-                icon: Icons.do_not_disturb_on_rounded,
-                color: Colors.deepPurple,
-                title: 'quiet_hours'.tr,
-                subtitle: 'quiet_hours_desc'.tr,
-                value: _quietHoursEnabled,
-                onChanged: (val) {
-                  setState(() => _quietHoursEnabled = val);
-                  _savePreference('notif_quiet_hours', val);
-                },
-              ),
-              if (_quietHoursEnabled) ...[
-                const SizedBox(height: 8),
-                _buildTimePicker(
-                  label: 'start_time'.tr,
-                  time: _quietStart,
-                  onTap: () => _pickTime(isStart: true),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                _buildSection(
+                  title: 'notification_settings'.tr,
+                  children: [
+                    Obx(() => _buildToggleItem(
+                          icon: Icons.notifications_active_rounded,
+                          color: AppColors.darkGold,
+                          title: 'notification_settings'.tr,
+                          value: FCMService.to.isNotificationsEnabled.value,
+                          onChanged: _onGlobalToggle,
+                        )),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                _buildTimePicker(
-                  label: 'end_time'.tr,
-                  time: _quietEnd,
-                  onTap: () => _pickTime(isStart: false),
+                const SizedBox(height: 24),
+                _buildSection(
+                  title: 'categories'.tr,
+                  children: [
+                    _buildToggleItem(
+                      icon: Icons.account_balance_wallet_rounded,
+                      color: Colors.green,
+                      title: 'category_financial'.tr,
+                      value: _financialEnabled,
+                      onChanged: (val) => _onCategoryToggle('financial', val),
+                    ),
+                    _buildToggleItem(
+                      icon: Icons.shield_rounded,
+                      color: Colors.redAccent,
+                      title: 'category_security'.tr,
+                      value: _securityEnabled,
+                      onChanged: (val) => _onCategoryToggle('security', val),
+                    ),
+                    _buildToggleItem(
+                      icon: Icons.people_rounded,
+                      color: Colors.blueAccent,
+                      title: 'category_social'.tr,
+                      value: _socialEnabled,
+                      onChanged: (val) => _onCategoryToggle('social', val),
+                    ),
+                    _buildToggleItem(
+                      icon: Icons.settings_rounded,
+                      color: Colors.grey,
+                      title: 'category_system'.tr,
+                      value: _systemEnabled,
+                      onChanged: (val) => _onCategoryToggle('system', val),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildSection(
+                  title: 'quiet_hours'.tr,
+                  children: [
+                    _buildToggleItem(
+                      icon: Icons.do_not_disturb_on_rounded,
+                      color: Colors.deepPurple,
+                      title: 'quiet_hours'.tr,
+                      subtitle: 'quiet_hours_desc'.tr,
+                      value: _quietHoursEnabled,
+                      onChanged: _onQuietHoursToggle,
+                    ),
+                    if (_quietHoursEnabled) ...[
+                      const SizedBox(height: 8),
+                      _buildTimePicker(
+                        label: 'start_time'.tr,
+                        time: _quietStart,
+                        onTap: () => _pickTime(isStart: true),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTimePicker(
+                        label: 'end_time'.tr,
+                        time: _quietEnd,
+                        onTap: () => _pickTime(isStart: false),
+                      ),
+                    ],
+                  ],
                 ),
               ],
-            ],
-          ),
-        ],
-      ),
+            ),
     );
   }
 

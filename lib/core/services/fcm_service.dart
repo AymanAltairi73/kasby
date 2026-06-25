@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/services/notification_navigation_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'notification_service.dart';
+import 'notification_preferences_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/routes/app_routes.dart';
@@ -191,10 +192,20 @@ class FCMService extends GetxService {
     }
   }
 
-  void _showLocalNotification(RemoteMessage message) {
+  void _showLocalNotification(RemoteMessage message) async {
     RemoteNotification? notification = message.notification;
 
     if (notification != null && !kIsWeb) {
+      final category = message.data['category'] as String?;
+      final entityType = message.data['entity_type'] as String?;
+      final type = message.data['type'] as String?;
+      final allowed = await NotificationPreferencesService.shouldDeliverNotification(
+        category: category,
+        entityType: entityType,
+        notificationType: type,
+      );
+      if (!allowed) return;
+
       _localNotifications.show(
         notification.hashCode,
         notification.title,
