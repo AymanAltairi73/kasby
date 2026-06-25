@@ -44,6 +44,11 @@ class MarketplaceHomeView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (controller.catalogUnavailable.value)
+                        _catalogUnavailableBanner(
+                          controller.catalogErrorMessage.value,
+                          controller.loadHome,
+                        ),
                       MarketplaceBannerCarousel(banners: controller.banners).animate().fadeIn(),
                       if (controller.flashDeals.isNotEmpty) ...[
                         const SizedBox(height: KasbySpacing.lg),
@@ -156,6 +161,36 @@ class MarketplaceHomeView extends StatelessWidget {
       );
 
   Widget _sectionHeader(String title) => Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
+
+  Widget _catalogUnavailableBanner(String? message, VoidCallback onRetry) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: KasbySpacing.md),
+      child: Material(
+        color: Colors.orange.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(KasbyRadius.card),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(KasbyRadius.card),
+          onTap: onRetry,
+          child: Padding(
+            padding: const EdgeInsets.all(KasbySpacing.md),
+            child: Row(
+              children: [
+                const Icon(Icons.cloud_off_rounded, color: Colors.orange),
+                const SizedBox(width: KasbySpacing.sm),
+                Expanded(
+                  child: Text(
+                    message ?? 'couldnt_load_data'.tr,
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                ),
+                Text('retry'.tr, style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _quickLinks() => Row(
         children: [

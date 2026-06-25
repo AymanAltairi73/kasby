@@ -48,6 +48,11 @@ class ReloadlyProvider implements MarketplaceProvider {
   List<MarketplaceProductVariant>? _variants;
   String? _loadError;
 
+  /// Last catalog fetch error (null when Reloadly catalog loaded successfully).
+  String? get catalogLoadError => _loadError;
+
+  bool get isCatalogAvailable => _loadError == null;
+
   Future<void> warmUp() async {
     try {
       await _ensureCatalogLoaded();
@@ -343,9 +348,6 @@ class ReloadlyProvider implements MarketplaceProvider {
     MarketplaceFilterOptions? filters,
   }) async {
     await _ensureCatalogLoaded();
-    if (_loadError != null && (_listings == null || _listings!.isEmpty)) {
-      throw ReloadlyApiException(_loadError!);
-    }
     return _applyFilters(filters);
   }
 

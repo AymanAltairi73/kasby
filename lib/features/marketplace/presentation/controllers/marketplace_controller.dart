@@ -30,6 +30,8 @@ class MarketplaceController extends GetxController {
 
   final isLoading = true.obs;
   final hasError = false.obs;
+  final catalogUnavailable = false.obs;
+  final catalogErrorMessage = RxnString();
   final filters = const MarketplaceFilterOptions().obs;
 
   String get _locale => Get.locale?.languageCode ?? 'en';
@@ -44,7 +46,10 @@ class MarketplaceController extends GetxController {
   Future<void> loadHome() async {
     isLoading.value = true;
     hasError.value = false;
+    catalogUnavailable.value = false;
+    catalogErrorMessage.value = null;
     try {
+      await _repo.refreshCatalog();
       final results = await Future.wait([
         _repo.getCategories(),
         _repo.getBrands(),
@@ -71,6 +76,10 @@ class MarketplaceController extends GetxController {
       recentlyPurchased.value = results[9] as List<MarketplaceCatalogListing>;
       banners.value = results[10] as List<MarketplacePromotion>;
       flashDeals.value = results[11] as List<MarketplacePromotion>;
+      if (!_repo.isCatalogAvailable) {
+        catalogUnavailable.value = true;
+        catalogErrorMessage.value = _repo.catalogLoadError;
+      }
     } catch (e, st) {
       hasError.value = true;
       SafeGetx.debugTrace(className: 'MarketplaceController', method: 'loadHome', feature: 'Marketplace', status: 'FAILED', error: e, stackTrace: st);

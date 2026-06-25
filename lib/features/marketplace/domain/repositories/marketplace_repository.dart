@@ -30,6 +30,10 @@ class MarketplaceRepository {
 
   MarketplaceProvider get _provider => _api.provider;
 
+  String? get catalogLoadError => _api.catalogLoadError;
+
+  bool get isCatalogAvailable => _api.isCatalogAvailable;
+
   Future<List<MarketplaceCatalogListing>> _allListings() =>
       _provider.getCatalogListings();
 

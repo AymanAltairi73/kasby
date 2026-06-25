@@ -20,6 +20,17 @@ class MarketplaceApiService extends GetxService {
 
   bool get isReloadly => _provider is ReloadlyProvider;
 
+  /// Non-null when Reloadly catalog failed to load (credentials, proxy, network).
+  String? get catalogLoadError =>
+      _provider is ReloadlyProvider
+          ? (_provider as ReloadlyProvider).catalogLoadError
+          : null;
+
+  bool get isCatalogAvailable =>
+      _provider is ReloadlyProvider
+          ? (_provider as ReloadlyProvider).isCatalogAvailable
+          : true;
+
   Future<MarketplaceApiService> init({MarketplaceProvider? provider}) async {
     if (provider != null) {
       _provider = provider;

@@ -54,10 +54,16 @@ class ReloadlyApiClient {
     } on ReloadlyApiException {
       rethrow;
     } on FunctionException catch (e) {
-      throw ReloadlyApiException(
-        e.reasonPhrase ?? e.details?.toString() ?? 'Reloadly proxy unavailable',
-        statusCode: e.status,
-      );
+      final details = e.details;
+      var message = e.reasonPhrase ?? 'Reloadly proxy unavailable';
+      if (details is Map) {
+        message = details['error']?.toString() ??
+            details['message']?.toString() ??
+            message;
+      } else if (details != null && details.toString().isNotEmpty) {
+        message = details.toString();
+      }
+      throw ReloadlyApiException(message, statusCode: e.status);
     } catch (e) {
       throw ReloadlyApiException(e.toString());
     }

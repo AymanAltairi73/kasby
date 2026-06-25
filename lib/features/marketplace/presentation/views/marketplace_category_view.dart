@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
+import 'package:kasby/core/widgets/error_state_widget.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import '../../domain/models/marketplace_brand.dart';
 import '../../domain/models/marketplace_category.dart';
@@ -26,6 +27,8 @@ class _MarketplaceCategoryViewState extends State<MarketplaceCategoryView> {
   final listings = <MarketplaceCatalogListing>[].obs;
   final brands = <MarketplaceBrand>[].obs;
   final isLoading = true.obs;
+  final hasError = false.obs;
+  String? loadErrorMessage;
   final filters = const MarketplaceFilterOptions().obs;
   String? selectedBrandId;
 
@@ -36,13 +39,26 @@ class _MarketplaceCategoryViewState extends State<MarketplaceCategoryView> {
     _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool refresh = false}) async {
     isLoading.value = true;
-    brands.value = await _repo.getBrands(categoryId: category.id);
-    listings.value = await _repo.getCatalogListings(
-      filters: filters.value.copyWith(categoryId: category.id, brandId: selectedBrandId),
-    );
-    isLoading.value = false;
+    hasError.value = false;
+    loadErrorMessage = null;
+    try {
+      if (refresh) await _repo.refreshCatalog();
+      brands.value = await _repo.getBrands(categoryId: category.id);
+      listings.value = await _repo.getCatalogListings(
+        filters: filters.value.copyWith(categoryId: category.id, brandId: selectedBrandId),
+      );
+      if (!_repo.isCatalogAvailable) {
+        hasError.value = true;
+        loadErrorMessage = _repo.catalogLoadError;
+      }
+    } catch (e) {
+      hasError.value = true;
+      loadErrorMessage = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   @override
@@ -75,6 +91,12 @@ class _MarketplaceCategoryViewState extends State<MarketplaceCategoryView> {
             itemBuilder: (_, __) => KasbyShimmer.card(height: 200),
           );
         }
+        if (hasError.value) {
+          return ErrorStateWidget(
+            message: loadErrorMessage ?? 'couldnt_load_data'.tr,
+            onRetry: () => _load(refresh: true),
+          );
+        }
         return Column(
           children: [
             if (brands.isNotEmpty)
@@ -105,7 +127,7 @@ class _MarketplaceCategoryViewState extends State<MarketplaceCategoryView> {
                   ? Center(child: Text('marketplace_no_products'.tr))
                   : RefreshIndicator(
                       color: AppColors.darkGold,
-                      onRefresh: _load,
+                      onRefresh: () => _load(refresh: true),
                       child: GridView.builder(
                         padding: const EdgeInsets.all(KasbySpacing.md),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 0.68, crossAxisSpacing: KasbySpacing.md, mainAxisSpacing: KasbySpacing.md),
