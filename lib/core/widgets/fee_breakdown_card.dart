@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 import 'package:kasby/core/services/fee_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 
-/// Shows expected fees with rate percentage for wallet operations.
-class FeeBreakdownCard extends StatelessWidget {
+/// Shows server-authoritative fee preview for wallet operations.
+class FeeBreakdownCard extends StatefulWidget {
   const FeeBreakdownCard({
     super.key,
     required this.category,
@@ -17,14 +17,50 @@ class FeeBreakdownCard extends StatelessWidget {
   final bool compact;
 
   @override
+  State<FeeBreakdownCard> createState() => _FeeBreakdownCardState();
+}
+
+class _FeeBreakdownCardState extends State<FeeBreakdownCard> {
+  double _fee = 0;
+  double _net = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreview();
+  }
+
+  @override
+  void didUpdateWidget(covariant FeeBreakdownCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.category != widget.category ||
+        oldWidget.amount != widget.amount) {
+      _loadPreview();
+    }
+  }
+
+  Future<void> _loadPreview() async {
+    await FeeService.load();
+    final preview = await FeeService.previewFeeFromServer(
+      widget.category,
+      widget.amount,
+    );
+    if (mounted) {
+      setState(() {
+        _fee = preview['fee'] ?? 0;
+        _net = preview['net'] ?? widget.amount;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fee = FeeService.totalFee(category, amount);
-    final rateLabel = FeeService.feeRateLabel(category);
-    final lines = FeeService.feeDescriptionLines(category, amount);
+    final rateLabel = FeeService.feeRateLabel(widget.category);
+    final lines = FeeService.feeDescriptionLines(widget.category, widget.amount);
 
     return Container(
-      padding: EdgeInsets.all(compact ? 12 : 14),
+      padding: EdgeInsets.all(widget.compact ? 12 : 14),
       decoration: BoxDecoration(
         color: (isDark ? AppColors.surface : AppColors.surfaceLight)
             .withValues(alpha: 0.5),
@@ -53,18 +89,18 @@ class FeeBreakdownCard extends StatelessWidget {
                     'expected_fee'.tr,
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: compact ? 12 : 13,
+                      fontSize: widget.compact ? 12 : 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
               Text(
-                fee > 0 ? '-\$${fee.toStringAsFixed(2)}' : '\$0.00',
+                _fee > 0 ? '-\$${_fee.toStringAsFixed(2)}' : '\$0.00',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: fee > 0 ? AppColors.error : AppColors.softGreen,
-                  fontSize: compact ? 12 : 13,
+                  color: _fee > 0 ? AppColors.error : AppColors.softGreen,
+                  fontSize: widget.compact ? 12 : 13,
                 ),
               ),
             ],
@@ -79,7 +115,7 @@ class FeeBreakdownCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ] else if (fee <= 0) ...[
+          ] else if (_fee <= 0) ...[
             const SizedBox(height: 4),
             Text(
               'no_fee_applied'.tr,
@@ -89,7 +125,7 @@ class FeeBreakdownCard extends StatelessWidget {
               ),
             ),
           ],
-          if (!compact && lines.isNotEmpty && amount > 0) ...[
+          if (!widget.compact && lines.isNotEmpty && widget.amount > 0) ...[
             const SizedBox(height: 8),
             ...lines.map(
               (line) => Padding(
@@ -104,7 +140,7 @@ class FeeBreakdownCard extends StatelessWidget {
               ),
             ),
           ],
-          if (amount > 0 && fee > 0) ...[
+          if (widget.amount > 0 && _fee > 0) ...[
             const SizedBox(height: 8),
             Divider(
               height: 1,
@@ -123,7 +159,7 @@ class FeeBreakdownCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '\$${(amount - fee).toStringAsFixed(2)}',
+                  '\$${_net.toStringAsFixed(2)}',
                   style: TextStyle(
                     color: AppColors.softGreen,
                     fontWeight: FontWeight.bold,

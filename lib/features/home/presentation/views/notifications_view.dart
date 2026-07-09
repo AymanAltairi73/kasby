@@ -5,6 +5,7 @@ import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/models/notification_model.dart';
+import 'package:kasby/core/localization/model_localization_extensions.dart';
 import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
@@ -146,9 +147,20 @@ class _NotificationsViewState extends State<NotificationsView> {
 
           return ListView.separated(
             padding: const EdgeInsets.all(20),
-            itemCount: notifications.length,
+            itemCount: notifications.length +
+                (homeController.notifications.length <
+                        homeController.notificationTotalCount.value
+                    ? 1
+                    : 0),
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
+              if (index == notifications.length) {
+                homeController.loadMoreNotifications();
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
               final notification = notifications[index];
               final isRead = notification.isRead;
 
@@ -188,7 +200,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              notification.title,
+                              notification.localizedTitle,
                               style: TextStyle(
                                 fontWeight: isRead
                                     ? FontWeight.normal
@@ -197,7 +209,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              notification.message,
+                              notification.localizedMessage,
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 13,

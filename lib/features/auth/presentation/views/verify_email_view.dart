@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/auth_security_service.dart';
+import 'package:kasby/core/services/authentication_logger.dart';
+import 'package:kasby/core/services/confetti_service.dart';
+import 'package:kasby/core/services/network_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
@@ -13,6 +16,7 @@ import 'package:kasby/core/utils/mask_utils.dart';
 import 'package:kasby/features/auth/presentation/widgets/auth_otp_input.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Email verification screen for signup and email-change flows.
 class VerifyEmailView extends StatefulWidget {
@@ -22,14 +26,16 @@ class VerifyEmailView extends StatefulWidget {
   State<VerifyEmailView> createState() => _VerifyEmailViewState();
 }
 
-class _VerifyEmailViewState extends State<VerifyEmailView> {
+class _VerifyEmailViewState extends State<VerifyEmailView>
+    with WidgetsBindingObserver {
   final AuthController _auth = AuthController.to;
   final GlobalKey<AuthOtpInputState> _otpKey = GlobalKey<AuthOtpInputState>();
 
   bool _isRefreshing = false;
   bool _isVerifyingOtp = false;
   bool _isResending = false;
-  int _resendCountdown = 60;
+  bool _showVerifiedSuccess = false;
+  late int _resendCountdown;
   Timer? _countdownTimer;
   Timer? _pollTimer;
   StreamSubscription<AuthState>? _authSubscription;
@@ -77,9 +83,18 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    AuthenticationLogger.logStart(
+      'email_verification_screen',
+      method: 'initState',
+      authMethod: 'email_otp',
+      email: _email,
+      params: {'purpose': _purpose},
+    );
     if (_email.isNotEmpty) {
       _auth.pendingVerificationEmail.value = _email;
     }
+    _resendCountdown = AuthOtpConfig.cooldownSeconds;
     _startCountdown();
     if (_canPollStatus) {
       _startAutoPoll();
@@ -89,15 +104,24 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _countdownTimer?.cancel();
     _pollTimer?.cancel();
     _authSubscription?.cancel();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Returning from Gmail can briefly mark the app offline; refresh status.
+    if (state == AppLifecycleState.resumed) {
+      unawaited(NetworkService.to.retryConnection());
+    }
+  }
+
   void _startCountdown() {
     _countdownTimer?.cancel();
-    _resendCountdown = 60;
+    _resendCountdown = AuthOtpConfig.cooldownSeconds;
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -132,19 +156,38 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
 
   Future<void> _onVerified() async {
     _pollTimer?.cancel();
+    if (!mounted) return;
+
+    setState(() => _showVerifiedSuccess = true);
+    if (Get.isRegistered<ConfettiService>()) {
+      ConfettiService.to.celebrate();
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+
+    AuthenticationLogger.logSuccess(
+      'email_verification_complete',
+      stopwatch: Stopwatch()..start(),
+      method: '_onVerified',
+      authMethod: 'email_otp',
+      email: _email,
+      params: {'purpose': _purpose},
+    );
+
     if (_isEmailChange) {
       AppSnack.success('success'.tr, 'email_changed_success'.tr);
       Get.offAllNamed(Routes.personalProfile);
     } else {
       _auth.authStatus.value = AuthStatus.authenticated;
       _auth.pendingVerificationEmail.value = null;
-      AppSnack.success('success'.tr, 'email_verified_success'.tr);
+      AppSnack.success('success'.tr, 'verification_completed'.tr);
       Get.offAllNamed(Routes.home);
     }
   }
 
   Future<void> _refreshStatus({bool silent = false}) async {
-    if (_isRefreshing || _isVerifyingOtp) return;
+    if (_isRefreshing || _isVerifyingOtp || _showVerifiedSuccess) return;
 
     if (!_canPollStatus) {
       if (!silent && mounted) {
@@ -187,7 +230,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
     setState(() => _isResending = true);
     try {
       await _auth.resendVerificationEmail(_email, purpose: _purpose);
-      AppSnack.success('success'.tr, 'verification_code_resent'.tr);
+      AppSnack.success('success'.tr, 'verification_email_resent'.tr);
       _startCountdown();
     } on AuthException catch (e) {
       AppSnack.error('error'.tr, _auth.translateAuthError(e));
@@ -214,7 +257,9 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
         code: code,
         purpose: _purpose,
         signupPassword: _signupPassword,
+        navigateOnSuccess: false,
       );
+      if (mounted) await _onVerified();
     } on AuthException catch (e) {
       AppSnack.error('error'.tr, _auth.translateOtpError(e));
       _otpKey.currentState?.clear();
@@ -223,6 +268,45 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
       _otpKey.currentState?.clear();
     } finally {
       if (mounted) setState(() => _isVerifyingOtp = false);
+    }
+  }
+
+  Future<void> _openEmailApp() async {
+    final uri = Uri.parse('mailto:');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      AppSnack.info('verify_email'.tr, 'verify_email_hint'.tr);
+    }
+  }
+
+  Future<void> _changeEmail() async {
+    if (_isEmailChange) {
+      Get.back();
+      return;
+    }
+
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('change_email_verify_title'.tr),
+        content: Text('change_email_verify_desc'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('change_email'.tr),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _pollTimer?.cancel();
+      await _auth.logout();
+      Get.offAllNamed(Routes.register);
     }
   }
 
@@ -240,6 +324,38 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isBusy = _isRefreshing || _isVerifyingOtp;
 
+    if (_showVerifiedSuccess) {
+      return Scaffold(
+        backgroundColor:
+            isDark ? AppColors.background : AppColors.backgroundLight,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.verified_rounded,
+                size: 88,
+                color: AppColors.softGreen,
+              )
+                  .animate()
+                  .scale(curve: Curves.elasticOut, duration: 700.ms),
+              const SizedBox(height: 24),
+              Text(
+                'verification_completed'.tr,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ).animate().fadeIn(delay: 200.ms),
+              const SizedBox(height: 16),
+              CircularProgressIndicator(color: AppColors.darkGold),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.background : AppColors.backgroundLight,
@@ -256,16 +372,6 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
               )
             : null,
         automaticallyImplyLeading: false,
-        actions: [
-          if (!_isEmailChange)
-            TextButton(
-              onPressed: _backToLogin,
-              child: Text(
-                'back_to_login'.tr,
-                style: TextStyle(color: AppColors.darkGold),
-              ),
-            ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -290,7 +396,12 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                     size: 44,
                   ),
                 ),
-              ).animate().scale(curve: Curves.easeOutBack),
+              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
+                    begin: const Offset(1, 1),
+                    end: const Offset(1.04, 1.04),
+                    duration: 1800.ms,
+                    curve: Curves.easeInOut,
+                  ),
               const SizedBox(height: 28),
               Text(
                 _title,
@@ -354,7 +465,23 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                   ],
                 ),
               ).animate().fadeIn(delay: 200.ms),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+              if (!_isEmailChange)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _openEmailApp,
+                    icon: Icon(Icons.open_in_new_rounded,
+                        color: AppColors.darkGold, size: 18),
+                    label: Text(
+                      'open_email_app'.tr,
+                      style: TextStyle(
+                        color: AppColors.darkGold,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
               Text(
                 'enter_verification_code'.trParams({'count': '$_otpLength'}),
                 style: TextStyle(
@@ -372,7 +499,23 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
               ).animate().fadeIn(delay: 250.ms),
               const SizedBox(height: 24),
               isBusy
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(color: AppColors.darkGold),
+                          const SizedBox(height: 12),
+                          Text(
+                            _isRefreshing
+                                ? 'verification_checking'.tr
+                                : 'verify'.tr,
+                            style: TextStyle(
+                              color: isDark ? Colors.white54 : Colors.black45,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   : KasbyButton(
                       text: 'verify'.tr,
                       onPressed: () =>
@@ -395,8 +538,10 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                         )
                       : Text(
                           _resendCountdown > 0
-                              ? '${'resend_verification_code'.tr} (${_resendCountdown}s)'
-                              : 'resend_verification_code'.tr,
+                              ? 'resend_cooldown_label'.trParams({
+                                  'seconds': '$_resendCountdown',
+                                })
+                              : 'resend_verification_email'.tr,
                           style: TextStyle(
                             color: _resendCountdown > 0
                                 ? Colors.grey
@@ -407,7 +552,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                 ),
               ),
               if (_canPollStatus) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Center(
                   child: TextButton.icon(
                     onPressed: isBusy ? null : () => _refreshStatus(),
@@ -423,6 +568,40 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                   ),
                 ),
               ],
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: isBusy ? null : _changeEmail,
+                  child: Text(
+                    'change_email'.tr,
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (!_isEmailChange)
+                Center(
+                  child: OutlinedButton(
+                    onPressed: isBusy ? null : _backToLogin,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.darkGold,
+                      side: BorderSide(
+                        color: AppColors.darkGold.withValues(alpha: 0.4),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text('back_to_login'.tr),
+                  ),
+                ),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(16),

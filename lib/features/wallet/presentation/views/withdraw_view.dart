@@ -2,23 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
+import 'package:kasby/core/widgets/agent_status_badge.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/core/models/agent_model.dart';
 import 'package:kasby/core/services/account_restriction_service.dart';
 import 'package:kasby/core/services/agent_service.dart';
-import 'package:kasby/core/services/sensitive_operation_guard.dart';
+import 'package:kasby/core/services/transaction_auth_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
-import 'package:kasby/core/widgets/transaction_receipt.dart';
+import 'package:kasby/core/models/kasby_receipt_data.dart';
+import 'package:kasby/core/services/receipt_export_service.dart';
 import 'package:kasby/core/services/confetti_service.dart';
-import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
-import 'package:uuid/uuid.dart';
-import 'package:flutter/services.dart';
+import 'package:kasby/core/services/financial_repository.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:flutter/services.dart';
 import 'package:kasby/core/services/fee_service.dart';
 import 'package:kasby/core/widgets/fee_breakdown_card.dart';
 import 'package:kasby/core/widgets/error_state_widget.dart';
@@ -88,16 +89,12 @@ class _WithdrawViewState extends State<WithdrawView> {
   }
 
   Future<void> _handleWithdraw() async {
-    if (!AccountRestrictionService.to.checkWriteAccess()) return;
-    if (HomeController.to.dashboard.value?.isFrozen == true) {
-      Get.snackbar('error'.tr, 'wallet_frozen'.tr);
-      return;
-    }
+    if (!await AccountRestrictionService.to.checkWriteAccessAsync()) return;
 
     final amountText = _amountController.text.trim();
     
     // Check KYC Status
-    if (!AuthController.to.isVerified.value) {
+    if (HomeController.to.kycStatus != 'verified') {
       Get.snackbar(
         'kyc_verification'.tr,
         'verified_account_required'.tr,
@@ -146,10 +143,8 @@ class _WithdrawViewState extends State<WithdrawView> {
       return;
     }
 
-    final fee = FeeService.totalFee('withdraw', amount);
-    final totalDeducted = amount + fee;
     final totalBalance = CurrencyController.to.totalBalance.value;
-    if (totalDeducted > totalBalance) {
+    if (amount > totalBalance) {
       Get.snackbar(
         'error'.tr,
         'insufficient_balance'.tr,
@@ -169,10 +164,10 @@ class _WithdrawViewState extends State<WithdrawView> {
       return;
     }
 
-    final otpVerified = await SensitiveOperationGuard.requirePhoneOtp(
+    final confirmed = await TransactionAuthService.to.requireConfirmation(
       purpose: 'wallet_withdraw',
     );
-    if (!otpVerified) return;
+    if (!confirmed) return;
 
     _showConfirmationDialog(amount);
   }
@@ -306,20 +301,28 @@ class _WithdrawViewState extends State<WithdrawView> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color:
-                valueColor ??
-                (isDark
-                    ? Theme.of(context).colorScheme.onSurface
-                    : AppColors.textBodyLight),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color:
+                  valueColor ??
+                  (isDark
+                      ? Theme.of(context).colorScheme.onSurface
+                      : AppColors.textBodyLight),
+            ),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
           ),
         ),
       ],
@@ -331,32 +334,18 @@ class _WithdrawViewState extends State<WithdrawView> {
 
     try {
       final selectedAgent = agents[selectedAgentIndex.value];
-      final result = await SafeGetx.traceAsync(
-        className: 'WithdrawView',
-        method: '_executeWithdrawal',
-        feature: 'Wallet',
-        params: {
-          'table': 'transactions',
-          'operation': 'RPC',
-          'rpc': 'create_withdrawal',
-          'amount': amount,
-          'agentId': selectedAgent.id,
-        },
-        operation: () => SupabaseService.client.rpc(
-          'create_withdrawal',
-          params: {
-            'p_amount': amount,
-            'p_agent_id': selectedAgent.id,
-            'p_idempotency_key': const Uuid().v4(),
-            'p_currency': 'USD',
-          },
-        ),
+      final response = await FinancialRepository.createWithdrawal(
+        amount: amount,
+        agentId: selectedAgent.id,
       );
 
-      final response = result as Map<String, dynamic>;
-
       if (response['success'] == true) {
-        ConfettiService.to.celebrate();
+        if (Get.isRegistered<HomeController>()) {
+          HomeController.to.refreshAll();
+        }
+        if (Get.isRegistered<CurrencyController>()) {
+          CurrencyController.to.fetchWalletBalances();
+        }
 
         _showSuccessOverlay(
           amount,
@@ -373,7 +362,7 @@ class _WithdrawViewState extends State<WithdrawView> {
         );
         Get.snackbar(
           'error'.tr,
-          response['error']?.toString() ?? 'withdraw_error'.tr,
+          FinancialRepository.mapErrorMessage(response, 'withdraw_error'.tr),
           backgroundColor: AppColors.error.withValues(alpha: 0.7),
           colorText: Colors.white,
         );
@@ -391,13 +380,22 @@ class _WithdrawViewState extends State<WithdrawView> {
   }
 
   void _showSuccessOverlay(double amount, String agentName, String transactionId) {
-    Get.to(
-      () => TransactionReceipt(
+    final profile = Get.isRegistered<HomeController>()
+        ? HomeController.to.profile.value
+        : null;
+    ReceiptExportService.showReceiptSheet(
+      KasbyReceiptData(
         transactionId: transactionId,
-        recipientName: agentName,
-        amount: amount,
-        type: 'withdraw'.tr,
+        operationType: 'withdrawal',
+        referenceNumber: transactionId,
         date: DateTime.now(),
+        userName: profile?.fullName,
+        userId: profile?.id,
+        invitationCode: profile?.referralCode,
+        amount: amount,
+        status: 'pending',
+        recipientName: agentName,
+        qrPayload: transactionId,
       ),
     );
   }
@@ -540,7 +538,7 @@ class _WithdrawViewState extends State<WithdrawView> {
 
       if (agents.isEmpty) {
         return ErrorStateWidget(
-          message: 'no_agents_desc'.tr,
+          message: 'no_online_agents_desc'.tr,
           onRetry: _fetchAgents,
         );
       }
@@ -573,7 +571,9 @@ class _WithdrawViewState extends State<WithdrawView> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (agent.successRate > 0)
+                        AgentStatusBadge(isOnline: agent.isAvailableNow, compact: true),
+                        if (agent.successRate > 0) ...[
+                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
@@ -595,6 +595,7 @@ class _WithdrawViewState extends State<WithdrawView> {
                               ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                     subtitle: Text(

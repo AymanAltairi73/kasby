@@ -53,4 +53,22 @@ class DateHelper {
     if (diff == 1) return 'yesterday'.tr;
     return date(local);
   }
+
+  /// Human-readable last-seen label for presence (e.g. "5 minutes ago").
+  static String lastSeenRelative(DateTime? value) {
+    if (value == null) return 'last_seen_unknown'.tr;
+    final diff = DateTime.now().difference(value.toLocal());
+    if (diff.inSeconds < 60) return 'last_seen_just_now'.tr;
+    if (diff.inMinutes < 60) {
+      return 'last_seen_minutes_ago'.trParams({'count': '${diff.inMinutes}'});
+    }
+    if (diff.inHours < 24) {
+      return 'last_seen_hours_ago'.trParams({'count': '${diff.inHours}'});
+    }
+    if (diff.inDays == 1) return 'yesterday'.tr;
+    if (diff.inDays < 7) {
+      return 'last_seen_days_ago'.trParams({'count': '${diff.inDays}'});
+    }
+    return date(value);
+  }
 }

@@ -1,0 +1,4 @@
+-- Applied via Supabase migration: fix_subscription_account_tier_guard
+-- buy_subscription / activate_free_plan update profiles.account_tier but
+-- trg_guard_profile_self_update blocked it for authenticated users.
+-- Fix: set LOCAL app.subscription_update = true in trusted RPCs.

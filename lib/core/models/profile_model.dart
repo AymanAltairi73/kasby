@@ -8,6 +8,7 @@ class ProfileModel {
   final String? avatarUrl;
   final String status; // active, blocked, suspended
   final String? statusReason;
+  final String? kycRejectionReason;
   final String accountTier; // free, verified, vip
   final String kycStatus; // unverified, pending, verified, rejected
   final String? referralCode;
@@ -33,6 +34,7 @@ class ProfileModel {
     this.avatarUrl,
     this.status = 'active',
     this.statusReason,
+    this.kycRejectionReason,
     this.accountTier = 'free',
     this.kycStatus = 'unverified',
     this.referralCode,
@@ -61,6 +63,7 @@ class ProfileModel {
         avatarUrl: json['avatar_url'] as String?,
         status: json['status'] as String? ?? 'active',
         statusReason: json['status_reason'] as String?,
+        kycRejectionReason: json['kyc_rejection_reason'] as String?,
         accountTier: json['account_tier'] as String? ?? 'free',
         kycStatus: json['kyc_status'] as String? ?? 'unverified',
         role: json['role'] as String? ?? 'user',
@@ -108,6 +111,7 @@ class ProfileModel {
       'avatar_url': avatarUrl,
       'status': status,
       'status_reason': statusReason,
+      'kyc_rejection_reason': kycRejectionReason,
       'account_tier': accountTier,
       'kyc_status': kycStatus,
       'referral_code': referralCode,
@@ -133,6 +137,7 @@ class ProfileModel {
     String? avatarUrl,
     String? status,
     String? statusReason,
+    String? kycRejectionReason,
     String? accountTier,
     String? kycStatus,
     String? referralCode,
@@ -156,6 +161,7 @@ class ProfileModel {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       status: status ?? this.status,
       statusReason: statusReason ?? this.statusReason,
+      kycRejectionReason: kycRejectionReason ?? this.kycRejectionReason,
       accountTier: accountTier ?? this.accountTier,
       kycStatus: kycStatus ?? this.kycStatus,
       referralCode: referralCode ?? this.referralCode,

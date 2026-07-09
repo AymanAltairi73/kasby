@@ -10,6 +10,7 @@ import 'package:kasby/core/services/supabase_service.dart';
 import 'notification_service.dart';
 import 'notification_preferences_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kasby/core/localization/content_localization_service.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -96,10 +97,14 @@ class FCMService extends GetxService {
     );
 
     // Create high importance channel
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    final channelName = await LocaleHelper.translate('fcm_channel_name');
+    final channelDescription =
+        await LocaleHelper.translate('fcm_channel_description');
+
+    final AndroidNotificationChannel channel = AndroidNotificationChannel(
       'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
+      channelName,
+      description: channelDescription,
       importance: Importance.max,
       playSound: true,
       enableVibration: true,
@@ -206,20 +211,37 @@ class FCMService extends GetxService {
       );
       if (!allowed) return;
 
+      final title = ContentLocalizationService.resolve(
+        message.data['title_key'] as String? ?? notification.title,
+      );
+      final body = ContentLocalizationService.resolve(
+        message.data['message_key'] as String? ?? notification.body,
+      );
+      final resolvedTitle = title.isNotEmpty
+          ? title
+          : ContentLocalizationService.resolve(notification.title);
+      final resolvedBody = body.isNotEmpty
+          ? body
+          : ContentLocalizationService.resolve(notification.body);
+
+      final channelName = await LocaleHelper.translate('fcm_channel_name');
+      final channelDescription =
+          await LocaleHelper.translate('fcm_channel_description');
+
       _localNotifications.show(
         notification.hashCode,
-        notification.title,
-        notification.body,
-        const NotificationDetails(
+        resolvedTitle,
+        resolvedBody,
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'high_importance_channel',
-            'High Importance Notifications',
-            channelDescription: 'This channel is used for important notifications.',
+            channelName,
+            channelDescription: channelDescription,
             importance: Importance.max,
             priority: Priority.high,
             icon: '@mipmap/ic_launcher',
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
         payload: jsonEncode(message.data),
       );
@@ -259,20 +281,24 @@ class FCMService extends GetxService {
     required String body,
     String? payload,
   }) async {
+    final channelName = await LocaleHelper.translate('fcm_channel_name');
+    final channelDescription =
+        await LocaleHelper.translate('fcm_channel_description');
+
     await _localNotifications.show(
       DateTime.now().millisecond,
-      title,
-      body,
-      const NotificationDetails(
+      ContentLocalizationService.resolve(title),
+      ContentLocalizationService.resolve(body),
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'high_importance_channel',
-          'High Importance Notifications',
-          channelDescription: 'This channel is used for important notifications.',
+          channelName,
+          channelDescription: channelDescription,
           importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
         ),
-        iOS: DarwinNotificationDetails(),
+        iOS: const DarwinNotificationDetails(),
       ),
       payload: payload,
     );
@@ -346,20 +372,24 @@ class FCMService extends GetxService {
     // Use Future.delayed as a simple cross-platform scheduling mechanism
     // that works without timezone dependencies
     Future.delayed(delay, () async {
+      final channelName = await LocaleHelper.translate('fcm_channel_name');
+      final channelDescription =
+          await LocaleHelper.translate('fcm_channel_description');
+
       await _localNotifications.show(
         id,
         title,
         body,
-        const NotificationDetails(
+        NotificationDetails(
           android: AndroidNotificationDetails(
             'high_importance_channel',
-            'High Importance Notifications',
-            channelDescription: 'Check-in reminder notification.',
+            channelName,
+            channelDescription: channelDescription,
             importance: Importance.max,
             priority: Priority.high,
             icon: '@mipmap/ic_launcher',
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(),
         ),
         payload: jsonEncode({
           'type': 'check_in_reminder',

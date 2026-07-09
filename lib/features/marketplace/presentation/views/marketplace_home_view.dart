@@ -5,6 +5,9 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/widgets/error_state_widget.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
+import 'package:kasby/core/tour/tour_feature_host.dart';
+import 'package:kasby/core/tour/tour_ids.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/routes/app_routes.dart';
 import '../../domain/models/marketplace_catalog_listing.dart';
 import '../controllers/marketplace_controller.dart';
@@ -14,8 +17,21 @@ import '../widgets/marketplace_banner_carousel.dart';
 import '../widgets/marketplace_category_chip.dart';
 import '../widgets/marketplace_product_card.dart';
 
-class MarketplaceHomeView extends StatelessWidget {
+class MarketplaceHomeView extends StatefulWidget {
   const MarketplaceHomeView({super.key});
+
+  @override
+  State<MarketplaceHomeView> createState() => _MarketplaceHomeViewState();
+}
+
+class _MarketplaceHomeViewState extends State<MarketplaceHomeView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) TourFeatureHost.scheduleForRoute(context, TourId.marketplace);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +76,7 @@ class MarketplaceHomeView extends StatelessWidget {
                       _sectionHeader('marketplace_categories'.tr),
                       const SizedBox(height: KasbySpacing.sm),
                       SizedBox(
+                        key: TourTargetKeys.marketplaceCategories,
                         height: 44,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
@@ -132,9 +149,14 @@ class MarketplaceHomeView extends StatelessWidget {
       pinned: true,
       title: Text('marketplace'.tr),
       actions: [
-        IconButton(icon: const Icon(Icons.search_rounded), onPressed: () => Get.toNamed(Routes.marketplaceSearch)),
+        KeyedSubtree(
+          key: TourTargetKeys.marketplaceSearch,
+          child: IconButton(icon: const Icon(Icons.search_rounded), onPressed: () => Get.toNamed(Routes.marketplaceSearch)),
+        ),
         IconButton(icon: const Icon(Icons.favorite_border_rounded), onPressed: () => Get.toNamed(Routes.marketplaceWishlist)),
-        Obx(() => Stack(
+        Obx(() => KeyedSubtree(
+              key: TourTargetKeys.marketplaceCart,
+              child: Stack(
               children: [
                 IconButton(icon: const Icon(Icons.shopping_cart_outlined), onPressed: () => Get.toNamed(Routes.marketplaceCart)),
                 if (cart.itemCount > 0)
@@ -148,6 +170,7 @@ class MarketplaceHomeView extends StatelessWidget {
                     ),
                   ),
               ],
+            ),
             )),
         IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () => Get.toNamed(Routes.marketplaceNotifications)),
         IconButton(icon: const Icon(Icons.monitor_heart_outlined), onPressed: () => Get.toNamed(Routes.marketplaceHealth)),

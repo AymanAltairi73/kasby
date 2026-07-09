@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/tour/tour_feature_host.dart';
+import 'package:kasby/core/tour/tour_ids.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:kasby/core/theme/app_colors.dart';
@@ -52,6 +55,7 @@ class _QrScannerViewState extends State<QrScannerView>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_startScanner());
+      if (mounted) TourFeatureHost.scheduleForRoute(context, TourId.qr);
     });
   }
 
@@ -175,7 +179,9 @@ class _QrScannerViewState extends State<QrScannerView>
           ),
           IgnorePointer(
             child: Center(
-              child: SizedBox(
+              child: KeyedSubtree(
+                key: TourTargetKeys.qrScanner,
+                child: SizedBox(
                 width: _scanWindowSize,
                 height: _scanWindowSize,
                 child: Stack(
@@ -215,6 +221,7 @@ class _QrScannerViewState extends State<QrScannerView>
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ),

@@ -4,6 +4,10 @@ class AgentModel {
   final String id;
   final String? userId;
   final String name;
+  final String? username;
+  final String? avatarUrl;
+  final String kycStatus;
+  final String role;
   final String country;
   final String province;
   final String city;
@@ -32,6 +36,10 @@ class AgentModel {
     required this.id,
     this.userId,
     required this.name,
+    this.username,
+    this.avatarUrl,
+    this.kycStatus = 'unverified',
+    this.role = 'agent',
     this.country = '',
     this.province = '',
     this.city = '',
@@ -68,6 +76,10 @@ class AgentModel {
       userId: json['user_id'] as String?,
       // Fallback logic: Use profile if available, otherwise use agents table fields
       name: (profile?['full_name'] ?? json['name'] ?? '') as String,
+      username: (profile?['referral_code'] ?? profile?['username'])?.toString(),
+      avatarUrl: profile?['avatar_url']?.toString(),
+      kycStatus: (profile?['kyc_status'] ?? 'unverified') as String,
+      role: (profile?['role'] ?? 'agent') as String,
       country:
           (profile?['country_code'] ?? json['country'] ?? '') as String,
       province: (profile?['province'] ?? json['province'] ?? '') as String,
@@ -143,6 +155,10 @@ class AgentModel {
     String? id,
     String? userId,
     String? name,
+    String? username,
+    String? avatarUrl,
+    String? kycStatus,
+    String? role,
     String? country,
     String? province,
     String? city,
@@ -169,6 +185,10 @@ class AgentModel {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       name: name ?? this.name,
+      username: username ?? this.username,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      kycStatus: kycStatus ?? this.kycStatus,
+      role: role ?? this.role,
       country: country ?? this.country,
       province: province ?? this.province,
       city: city ?? this.city,

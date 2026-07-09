@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' show Random;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -19,7 +20,11 @@ import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/core/services/fee_service.dart';
+import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:kasby/core/services/enterprise_operations_logger.dart';
+import 'package:kasby/routes/app_routes.dart';
 
 /// Central controller for the Home & Wallet screens.
 /// Fetches profile data, recent transactions, and notification count.
@@ -41,11 +46,17 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   final RxList<NotificationModel> notifications = <NotificationModel>[].obs;
   final RxList<UserInvestmentModel> myInvestments = <UserInvestmentModel>[].obs;
   final RxBool isLoadingNotifications = false.obs;
+  final RxBool isLoadingMoreNotifications = false.obs;
+  final RxInt notificationTotalCount = 0.obs;
+  final RxInt notificationPage = 0.obs;
+  static const int notificationPageSize = 50;
   final RxBool isLoadingInvestments = false.obs;
   final RxBool hasError = false.obs;
 
-  // Points
-  final RxInt userPoints = 0.obs;
+  // KSP (Effective = wallet_ksp + reward_ksp)
+  final RxInt userPoints = 0.obs; // effective KSP — backward-compatible name
+  final RxInt rewardKsp = 0.obs;
+  final RxInt walletKsp = 0.obs;
   final RxInt totalEarnedKsp = 0.obs;
   final RxInt totalSpentKsp = 0.obs;
   final RxBool isLoadingPoints = false.obs;
@@ -75,6 +86,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   Timer? _transactionReconnectTimer;
   Timer? _investmentReconnectTimer;
   Timer? _pointsReconnectTimer;
+  Timer? _lifecycleReconnectTimer;
+  bool _streamsStarted = false;
 
   // Exponential backoff for reconnection (1s -> 2s -> 4s -> ... -> 60s max)
   Duration _reconnectDelay = const Duration(seconds: 1);
@@ -82,9 +95,10 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   Timer _scheduleReconnect(void Function() reconnect) {
     final delay = _reconnectDelay;
     _reconnectDelay = Duration(
-      seconds: (_reconnectDelay.inSeconds * 2).clamp(1, 60),
+      seconds: (_reconnectDelay.inSeconds * 2).clamp(2, 60),
     );
-    return Timer(delay, reconnect);
+    final jitterMs = Random().nextInt(1000);
+    return Timer(delay + Duration(milliseconds: jitterMs), reconnect);
   }
 
   void _resetBackoff() {
@@ -97,8 +111,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   String get accountTier =>
       dashboard.value?.accountTier ?? profile.value?.accountTier ?? 'free';
   String get kycStatus =>
-      dashboard.value?.kycStatus ?? profile.value?.kycStatus ?? 'none';
+      profile.value?.kycStatus ?? dashboard.value?.kycStatus ?? 'none';
   int get pointsBalance => userPoints.value;
+  int get effectiveKsp => userPoints.value;
   double get dailyProfit {
     final fromDashboard = dashboard.value?.dailyProfit;
     if (fromDashboard != null && fromDashboard > 0) return fromDashboard;
@@ -213,14 +228,34 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     super.onInit();
     WidgetsBinding.instance.addObserver(this);
     if (SupabaseService.isLoggedIn) {
-      fetchAll();
-      _listenToNotifications();
-      _listenToProfile();
-      _listenToTransactions();
-      _listenToInvestments();
-      _listenToPoints();
-      fetchPendingRewards();
+      unawaited(_bootstrapData());
     }
+  }
+
+  Future<void> _bootstrapData() async {
+    await fetchAll();
+    if (!SupabaseService.isLoggedIn) return;
+    // Defer realtime until REST bootstrap completes to avoid channel storms.
+    Future.delayed(const Duration(seconds: 2), _startRealtimeListeners);
+    CurrencyController.to.startWalletListener(
+      delay: const Duration(seconds: 3),
+    );
+  }
+
+  void _startRealtimeListeners() {
+    if (_streamsStarted || !SupabaseService.isLoggedIn) return;
+    _streamsStarted = true;
+    _resetBackoff();
+    // Stagger subscriptions — Supabase realtime limits concurrent joins.
+    _listenToNotifications();
+    Future.delayed(const Duration(seconds: 2), _listenToProfile);
+    Future.delayed(const Duration(seconds: 4), _listenToTransactions);
+    Future.delayed(const Duration(seconds: 6), _listenToInvestments);
+    Future.delayed(const Duration(seconds: 8), _listenToPoints);
+  }
+
+  bool _isRealtimeTimeout(Object error) {
+    return error.toString().contains('RealtimeSubscribeStatus.timedOut');
   }
 
   // ─── NOTIFICATION LISTENER ──────────────────────────────
@@ -264,6 +299,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             unreadNotificationCount.value = newList
                 .where((n) => !n.isRead)
                 .length;
+            _resetBackoff();
           },
           onError: (error, stack) {
             SafeGetx.debugTrace(
@@ -352,10 +388,17 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           (data) {
             if (data.isNotEmpty) {
               final json = data.first;
+              final previousKyc = profile.value?.kycStatus;
+              final previousStatus = profile.value?.status;
               profile.value = ProfileModel.fromJson(json);
               if (Get.isRegistered<AccountRestrictionService>()) {
                 AccountRestrictionService.to.onProfileUpdated();
               }
+              unawaited(onProfileFieldsChanged(
+                previousKycStatus: previousKyc,
+                previousStatus: previousStatus,
+              ));
+              _resetBackoff();
               _log(
                 'Profile updated via real-time stream',
                 method: '_listenToProfile',
@@ -367,7 +410,16 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             }
           },
           onError: (error, stack) {
-            _log('Profile stream error', method: '_listenToProfile', isError: true, error: error, stackTrace: stack);
+            _log(
+              _isRealtimeTimeout(error)
+                  ? 'Profile stream timed out; retry scheduled'
+                  : 'Profile stream error',
+              method: '_listenToProfile',
+              isError: !_isRealtimeTimeout(error),
+              isWarn: _isRealtimeTimeout(error),
+              error: error,
+              stackTrace: stack,
+            );
             _profileReconnectTimer?.cancel();
             _profileReconnectTimer = _scheduleReconnect(_listenToProfile);
           },
@@ -398,10 +450,20 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             if (allTransactions.isNotEmpty && selectedFilter.value == 'all') {
               fetchAllTransactions(reset: true);
             }
+            _resetBackoff();
             _log('Transactions updated via real-time stream', method: '_listenToTransactions');
           },
           onError: (error, stack) {
-            _log('Transactions stream error', method: '_listenToTransactions', isError: true, error: error, stackTrace: stack);
+            _log(
+              _isRealtimeTimeout(error)
+                  ? 'Transactions stream timed out; retry scheduled'
+                  : 'Transactions stream error',
+              method: '_listenToTransactions',
+              isError: !_isRealtimeTimeout(error),
+              isWarn: _isRealtimeTimeout(error),
+              error: error,
+              stackTrace: stack,
+            );
             _transactionReconnectTimer?.cancel();
             _transactionReconnectTimer = _scheduleReconnect(_listenToTransactions);
           },
@@ -429,6 +491,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
             // Update countdowns whenever investments refresh
             _updateRewardDistributionInfo();
+            _resetBackoff();
             _log('Investments updated via real-time stream', method: '_listenToInvestments');
           },
           onError: (error, stack) {
@@ -454,10 +517,15 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         .listen(
           (data) {
             if (data.isNotEmpty) {
+              _resetBackoff();
               final row = data.first;
-              userPoints.value = (row['current_balance'] as num?)?.toInt() ?? 0;
               totalEarnedKsp.value = (row['total_earned'] as num?)?.toInt() ?? 0;
               totalSpentKsp.value = (row['total_spent'] as num?)?.toInt() ?? 0;
+              if (Get.isRegistered<KspBalanceService>()) {
+                unawaited(
+                  KspBalanceService.to.refresh().then((_) => syncKspFromService()),
+                );
+              }
               _log('Points updated via real-time stream', method: '_listenToPoints', params: {'balance': userPoints.value});
             }
           },
@@ -469,12 +537,12 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         );
   }
 
-  void _log(String message, {String method = 'event', bool isError = false, Object? error, StackTrace? stackTrace, Map<String, Object?>? params}) {
+  void _log(String message, {String method = 'event', bool isError = false, bool isWarn = false, Object? error, StackTrace? stackTrace, Map<String, Object?>? params}) {
     SafeGetx.debugTrace(
       className: 'HomeController',
       method: method,
       feature: 'Home',
-      status: isError ? 'ERROR' : 'INFO',
+      status: isError ? 'ERROR' : (isWarn ? 'WARN' : 'INFO'),
       message: message,
       params: params,
       error: error,
@@ -490,12 +558,10 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       feature: 'Home',
       status: 'INFO',
     );
+    _streamsStarted = false;
     _resetBackoff();
-    _listenToNotifications();
-    _listenToProfile();
-    _listenToTransactions();
-    _listenToInvestments();
-    _listenToPoints();
+    _startRealtimeListeners();
+    CurrencyController.to.startWalletListener(delay: const Duration(seconds: 2));
   }
 
   @override
@@ -519,6 +585,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     _transactionReconnectTimer?.cancel();
     _investmentReconnectTimer?.cancel();
     _pointsReconnectTimer?.cancel();
+    _lifecycleReconnectTimer?.cancel();
     super.onClose();
   }
 
@@ -531,11 +598,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         method: 'didChangeAppLifecycleState',
         feature: 'Home',
         status: 'INFO',
-        message: 'App resumed: reconnecting streams',
+        message: 'App resumed: scheduling stream reconnect',
       );
       if (SupabaseService.isLoggedIn) {
-        reconnectStreams();
-        refreshAll();
+        _lifecycleReconnectTimer?.cancel();
+        _lifecycleReconnectTimer = Timer(const Duration(milliseconds: 800), () {
+          reconnectStreams();
+          refreshAll();
+        });
       }
     }
   }
@@ -549,7 +619,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       fetchRecentTransactions(),
       fetchNotifications(),
       fetchMyInvestments(),
-      fetchPoints(),
+      fetchKspBalance(),
       fetchRecentRecipients(),
       fetchPendingRewards(),
       CurrencyController.to.fetchCurrencies(),
@@ -584,6 +654,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     recentRecipients.clear();
     unreadNotificationCount.value = 0;
     userPoints.value = 0;
+    rewardKsp.value = 0;
+    walletKsp.value = 0;
     totalEarnedKsp.value = 0;
     totalSpentKsp.value = 0;
     hasError.value = false;
@@ -592,6 +664,75 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     rewardCountdownText.value = '';
     canClaimRewards.value = false;
     portfolioPeriod.value = '7D';
+  }
+
+  /// Keeps dashboard freeze flags aligned with the USD wallet stream.
+  void syncDashboardFreezeState({
+    required bool isFrozen,
+    String? frozenReason,
+  }) {
+    final current = dashboard.value;
+    if (current == null) return;
+    dashboard.value = DashboardModel(
+      userId: current.userId,
+      fullName: current.fullName,
+      accountTier: current.accountTier,
+      kycStatus: current.kycStatus,
+      availableBalance: current.availableBalance,
+      profitBalance: current.profitBalance,
+      investedBalance: current.investedBalance,
+      pendingBalance: current.pendingBalance,
+      isFrozen: isFrozen,
+      frozenReason: frozenReason,
+      currency: current.currency,
+      pointBalance: current.pointBalance,
+      activeInvestments: current.activeInvestments,
+      activeLoans: current.activeLoans,
+      dailyProfit: current.dailyProfit,
+      profitPercentage: current.profitPercentage,
+    );
+  }
+
+  /// Called when profile KYC/status changes via realtime — refresh dependent UI.
+  Future<void> onProfileFieldsChanged({
+    String? previousKycStatus,
+    String? previousStatus,
+  }) async {
+    final current = profile.value;
+    if (current == null) return;
+
+    if (Get.isRegistered<AuthController>()) {
+      AuthController.to.syncVerificationFromProfile(current);
+    }
+
+    if (previousKycStatus != current.kycStatus ||
+        previousStatus != current.status) {
+      await fetchDashboard();
+      if (previousKycStatus != current.kycStatus) {
+        EnterpriseOperationsLogger.log(
+          domain: 'kyc',
+          operation: 'profile_status_sync',
+          phase: 'COMPLETE',
+          userId: current.id,
+          params: {
+            'previousKycStatus': previousKycStatus,
+            'kycStatus': current.kycStatus,
+          },
+        );
+      }
+      if (previousStatus != current.status) {
+        EnterpriseOperationsLogger.log(
+          domain: 'account_activation',
+          operation: 'profile_status_sync',
+          phase: 'COMPLETE',
+          userId: current.id,
+          params: {
+            'previousStatus': previousStatus,
+            'status': current.status,
+          },
+        );
+      }
+    }
   }
 
   // ─── PROFILE ──────────────────────────────────────────
@@ -631,12 +772,34 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           method: 'fetchProfile',
           feature: 'Home',
           status: 'WARN',
-          message: 'Profile not found',
+          message: 'Profile not found — attempting server provisioning',
           durationMs: stopwatch.elapsedMilliseconds,
         );
+
+        final provisioned = await _tryProvisionMissingProfile();
+        if (provisioned != null) {
+          profile.value = provisioned;
+          unawaited(CrashReportingService.syncUserContextFromProfile());
+          if (Get.isRegistered<AccountRestrictionService>()) {
+            AccountRestrictionService.to.onProfileUpdated();
+          }
+          SafeGetx.debugTrace(
+            className: 'HomeController',
+            method: 'fetchProfile',
+            feature: 'Home',
+            status: 'SUCCESS',
+            message: 'Profile provisioned after missing row',
+            params: {'userId': provisioned.id},
+            durationMs: stopwatch.elapsedMilliseconds,
+          );
+          return;
+        }
+
         profile.value = null;
-        if (Get.isRegistered<AccountRestrictionService>()) {
-          await AccountRestrictionService.to.handleDeletedAccount();
+        if (_shouldTreatMissingProfileAsDeleted()) {
+          if (Get.isRegistered<AccountRestrictionService>()) {
+            await AccountRestrictionService.to.handleDeletedAccount();
+          }
         }
       }
     } catch (e, stack) {
@@ -653,6 +816,52 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     } finally {
       isLoadingProfile.value = false;
     }
+  }
+
+  Future<ProfileModel?> _tryProvisionMissingProfile() async {
+    if (!SupabaseService.isLoggedIn) return null;
+    try {
+      final response =
+          await SupabaseService.client.rpc('fn_ensure_user_profile');
+      final success = response is Map && response['success'] == true;
+      if (!success) return null;
+
+      final row = await SupabaseService.client
+          .from('profiles')
+          .select()
+          .eq('id', SupabaseService.userId!)
+          .maybeSingle();
+      if (row == null) return null;
+      return ProfileModel.fromJson(row);
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: '_tryProvisionMissingProfile',
+        feature: 'Home',
+        status: 'WARN',
+        error: e,
+        stackTrace: stack,
+      );
+      return null;
+    }
+  }
+
+  bool _shouldTreatMissingProfileAsDeleted() {
+    final route = Get.currentRoute;
+    if (route == Routes.verifyEmail ||
+        route == Routes.register ||
+        route == Routes.login ||
+        route == Routes.splash) {
+      return false;
+    }
+
+    final createdAt = SupabaseService.auth.currentUser?.createdAt;
+    if (createdAt != null) {
+      final age = DateTime.now().difference(DateTime.parse(createdAt));
+      if (age.inMinutes < 30) return false;
+    }
+
+    return true;
   }
 
   Future<void> fetchDashboard() async {
@@ -813,28 +1022,87 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   // ─── NOTIFICATIONS ────────────────────────────────────
 
-  Future<void> fetchNotifications() async {
+  Future<void> fetchNotifications({bool reset = true}) async {
     if (!SupabaseService.isLoggedIn) return;
-    isLoadingNotifications.value = true;
+    if (reset) {
+      notificationPage.value = 0;
+      isLoadingNotifications.value = true;
+    } else {
+      isLoadingMoreNotifications.value = true;
+    }
     try {
-      final response = await SupabaseService.client
-          .from('notifications')
-          .select()
-          .eq('user_id', SupabaseService.userId!)
-          .order('created_at', ascending: false)
-          .limit(50);
+      final response = await SupabaseService.client.rpc(
+        'fn_get_notification_history',
+        params: {
+          'p_limit': notificationPageSize,
+          'p_offset': notificationPage.value * notificationPageSize,
+          'p_category': null,
+        },
+      );
 
-      final list = (response as List)
-          .map((json) => NotificationModel.fromJson(json))
-          .toList();
+      if (response is Map && response['success'] == true) {
+        final rows = (response['data'] as List? ?? [])
+            .map((json) => NotificationModel.fromJson(
+                  Map<String, dynamic>.from(json as Map),
+                ))
+            .toList();
 
-      notifications.value = list;
-      unreadNotificationCount.value = list.where((n) => !n.isRead).length;
+        if (reset) {
+          notifications.value = rows;
+        } else {
+          notifications.addAll(rows);
+        }
+        notificationTotalCount.value =
+            (response['total'] as num?)?.toInt() ?? notifications.length;
+        unreadNotificationCount.value =
+            notifications.where((n) => !n.isRead).length;
+        return;
+      }
+      await _fetchNotificationsFallback(reset: reset);
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchNotifications', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'fetchNotifications',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+      await _fetchNotificationsFallback(reset: reset);
     } finally {
       isLoadingNotifications.value = false;
+      isLoadingMoreNotifications.value = false;
     }
+  }
+
+  Future<void> _fetchNotificationsFallback({bool reset = true}) async {
+    final response = await SupabaseService.client
+        .from('notifications')
+        .select()
+        .eq('user_id', SupabaseService.userId!)
+        .order('sent_at', ascending: false)
+        .range(
+          notificationPage.value * notificationPageSize,
+          (notificationPage.value + 1) * notificationPageSize - 1,
+        );
+
+    final list = (response as List)
+        .map((json) => NotificationModel.fromJson(json))
+        .toList();
+
+    if (reset) {
+      notifications.value = list;
+    } else {
+      notifications.addAll(list);
+    }
+    unreadNotificationCount.value = notifications.where((n) => !n.isRead).length;
+  }
+
+  Future<void> loadMoreNotifications() async {
+    if (isLoadingMoreNotifications.value) return;
+    if (notifications.length >= notificationTotalCount.value) return;
+    notificationPage.value++;
+    await fetchNotifications(reset: false);
   }
 
   /// Deep-link navigation based on notification type/target.
@@ -919,33 +1187,52 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     }
   }
 
-  // ─── POINTS ────────────────────────────────────────────
+  // ─── KSP BALANCE (Effective = wallet×1000 + reward) ───
 
-  Future<void> fetchPoints() async {
+  /// Mirrors [KspBalanceService] values into home observables (no network I/O).
+  void syncKspFromService() {
+    if (!Get.isRegistered<KspBalanceService>()) return;
+    final ksp = KspBalanceService.to;
+    userPoints.value = ksp.effectiveKsp.value;
+    rewardKsp.value = ksp.rewardKsp.value;
+    walletKsp.value = ksp.walletKsp.value;
+  }
+
+  Future<void> fetchKspBalance() async {
     if (!SupabaseService.isLoggedIn) return;
     isLoadingPoints.value = true;
     try {
-      final response = await SupabaseService.client
+      if (Get.isRegistered<KspBalanceService>()) {
+        await KspBalanceService.to.refresh();
+        syncKspFromService();
+      } else {
+        final raw = await SupabaseService.client.rpc('fn_get_effective_ksp');
+        final payload = raw is Map ? Map<String, dynamic>.from(raw) : null;
+        if (payload?['success'] == true) {
+          userPoints.value = (payload!['effective_ksp'] as num?)?.toInt() ?? 0;
+          rewardKsp.value = (payload['reward_ksp'] as num?)?.toInt() ?? 0;
+          walletKsp.value = (payload['wallet_ksp'] as num?)?.toInt() ?? 0;
+        }
+      }
+
+      final stats = await SupabaseService.client
           .from('user_points')
-          .select('current_balance, total_earned, total_spent')
+          .select('total_earned, total_spent')
           .eq('user_id', SupabaseService.userId!)
           .maybeSingle();
-
-      if (response != null) {
-        userPoints.value = (response['current_balance'] as num?)?.toInt() ?? 0;
-        totalEarnedKsp.value = (response['total_earned'] as num?)?.toInt() ?? 0;
-        totalSpentKsp.value = (response['total_spent'] as num?)?.toInt() ?? 0;
-      } else {
-        userPoints.value = 0;
-        totalEarnedKsp.value = 0;
-        totalSpentKsp.value = 0;
+      if (stats != null) {
+        totalEarnedKsp.value = (stats['total_earned'] as num?)?.toInt() ?? 0;
+        totalSpentKsp.value = (stats['total_spent'] as num?)?.toInt() ?? 0;
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchPoints', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchKspBalance', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
     } finally {
       isLoadingPoints.value = false;
     }
   }
+
+  /// @deprecated Use [fetchKspBalance].
+  Future<void> fetchPoints() => fetchKspBalance();
 
   // ─── RECENT RECIPIENTS ────────────────────────────────
 

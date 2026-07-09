@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/presence_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/features/profile/presentation/controllers/team_controller.dart';
+import 'package:kasby/features/profile/presentation/widgets/team_enterprise_widgets.dart';
 import 'package:kasby/routes/app_routes.dart';
 
 class MyTeamView extends StatefulWidget {
@@ -19,135 +21,37 @@ class MyTeamView extends StatefulWidget {
   State<MyTeamView> createState() => _MyTeamViewState();
 }
 
-class _MyTeamViewState extends State<MyTeamView> {
-  bool _isLoading = true;
-  String? _errorMessage;
-  String _myReferralCode = '';
-  int _totalMembers = 0;
-  int _activeMembers = 0;
-  int _inactiveMembers = 0;
-  int _newToday = 0;
-  List<Map<String, dynamic>> _treeNodes = [];
-  List<Map<String, dynamic>> _friends = [];
+class _MyTeamViewState extends State<MyTeamView> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
     SafeGetx.debugTrace(
       className: 'MyTeamView',
       method: 'initState',
       feature: 'Profile',
       status: 'INFO',
     );
-    _myReferralCode = ReferralService.formatDisplayCode(
-      HomeController.to.profile.value?.referralCode,
-    );
-    _fetchTeamData();
   }
 
-  List<Map<String, dynamic>> get _allTreeNodes {
-    if (_treeNodes.isNotEmpty) return _treeNodes;
-
-    final userId = SupabaseService.userId ?? '';
-    return _friends.map((friend) {
-      return {
-        'id': friend['id'],
-        'full_name': friend['full_name'],
-        'avatar_url': friend['avatar_url'],
-        'created_at': friend['created_at'],
-        'status': friend['status'],
-        'referral_code': friend['referral_code'],
-        'parent_id': userId,
-        'level': 1,
-        'member_type': 'friend',
-        'direct_referrals': 0,
-        'sub_referrals': 0,
-      };
-    }).toList();
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
-  bool get _hasTeamContent => _allTreeNodes.isNotEmpty || _friends.isNotEmpty;
+  TeamController get _team => TeamController.to;
 
   int get _onlineCount {
     if (!Get.isRegistered<PresenceService>()) return 0;
     final presence = Get.find<PresenceService>();
-    final ids = <String>{
-      ..._allTreeNodes.map((n) => n['id']?.toString()).whereType<String>(),
-      ..._friends.map((f) => f['id']?.toString()).whereType<String>(),
-    };
-    return ids.where(presence.isUserOnline).length;
-  }
-
-  Future<void> _fetchTeamData() async {
-    final stopwatch = Stopwatch()..start();
-    setState(() => _errorMessage = null);
-    try {
-      final result = await SupabaseService.client.rpc('get_my_team');
-
-      if (result == null || result is! Map) {
-        throw Exception('get_my_team returned invalid data');
-      }
-
-      final response = Map<String, dynamic>.from(result);
-
-      if (response['success'] == true) {
-        if (mounted) {
-          setState(() {
-            final rpcCode = response['my_referral_code'] as String?;
-            if (rpcCode != null && rpcCode.isNotEmpty) {
-              _myReferralCode = ReferralService.formatDisplayCode(rpcCode);
-            } else if (_myReferralCode.isEmpty) {
-              _myReferralCode = ReferralService.formatDisplayCode(
-                HomeController.to.profile.value?.referralCode,
-              );
-            }
-
-            _totalMembers = response['total_members'] as int? ?? 0;
-            _activeMembers = response['active_members'] as int? ?? 0;
-            _inactiveMembers = response['inactive_members'] as int? ?? 0;
-            _newToday = response['new_today'] as int? ?? 0;
-            _treeNodes = List<Map<String, dynamic>>.from(
-              response['tree'] ?? response['members'] ?? [],
-            );
-            _friends = List<Map<String, dynamic>>.from(
-              response['friends'] ?? [],
-            );
-          });
-        }
-        SafeGetx.debugTrace(
-          className: 'MyTeamView',
-          method: '_fetchTeamData',
-          feature: 'Profile',
-          status: 'SUCCESS',
-          durationMs: stopwatch.elapsedMilliseconds,
-          params: {
-            'totalMembers': _totalMembers,
-            'treeNodes': _treeNodes.length,
-            'displayNodes': _allTreeNodes.length,
-            'friends': _friends.length,
-          },
-        );
-      } else {
-        throw Exception(response['error']?.toString() ?? 'Unknown error');
-      }
-    } catch (e, stack) {
-      SafeGetx.debugTrace(
-        className: 'MyTeamView',
-        method: '_fetchTeamData',
-        feature: 'Profile',
-        status: 'ERROR',
-        durationMs: stopwatch.elapsedMilliseconds,
-        error: e,
-        stackTrace: stack,
-      );
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'team_load_error'.tr;
-        });
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    return _team.treeNodes
+        .map((n) => n['id']?.toString())
+        .whereType<String>()
+        .where(presence.isUserOnline)
+        .length;
   }
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
@@ -172,34 +76,56 @@ class _MyTeamViewState extends State<MyTeamView> {
             onPressed: () => Get.toNamed(Routes.referralAnalytics),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          tabs: [
+            Tab(text: 'network'.tr),
+            Tab(text: 'tree_view'.tr),
+            Tab(text: 'timeline'.tr),
+            Tab(text: 'statistics'.tr),
+          ],
+        ),
       ),
-      body: _isLoading
-          ? _buildLoadingSkeleton()
-          : _errorMessage != null
-              ? _buildErrorState()
-              : RefreshIndicator(
-                  onRefresh: _fetchTeamData,
-                  color: AppColors.darkGold,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    child: Column(
-                      children: [
-                        _buildReferralCodeCard(),
-                        const SizedBox(height: 24),
-                        Obx(() => _buildStatsDashboard()),
-                        const SizedBox(height: 32),
-                        _buildSectionHeader('tree_view'.tr),
-                        const SizedBox(height: 16),
-                        _buildUnifiedTeamTree(),
-                        const SizedBox(height: 60),
-                      ],
-                    ),
-                  ),
-                ),
+      body: Obx(() {
+        if (_team.isLoading.value && _team.treeNodes.isEmpty) {
+          return _buildLoadingSkeleton();
+        }
+        if (_team.hasError.value && _team.treeNodes.isEmpty) {
+          return _buildErrorState();
+        }
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                KasbySpacing.lg,
+                KasbySpacing.sm,
+                KasbySpacing.lg,
+                0,
+              ),
+              child: _buildReferralCodeCard(),
+            ),
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            //   child: _buildStatsDashboard(),
+            // ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: const [
+                  TeamNetworkTab(),
+                  TeamTreeTab(),
+                  TeamTimelineTab(),
+                  TeamStatsTab(),
+                ],
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -248,13 +174,10 @@ class _MyTeamViewState extends State<MyTeamView> {
             Icon(Icons.error_outline_rounded,
                 size: 56, color: AppColors.error.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
-            Text(_errorMessage!, textAlign: TextAlign.center),
+            Text('team_load_error'.tr, textAlign: TextAlign.center),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () {
-                setState(() => _isLoading = true);
-                _fetchTeamData();
-              },
+              onPressed: _team.refreshAll,
               icon: const Icon(Icons.refresh_rounded),
               label: Text('app_error_retry'.tr),
               style: FilledButton.styleFrom(backgroundColor: AppColors.darkGold),
@@ -268,9 +191,9 @@ class _MyTeamViewState extends State<MyTeamView> {
   Widget _buildReferralCodeCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(KasbySpacing.lg),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: KasbyRadius.heroR,
         gradient: AppColors.goldGradient,
         boxShadow: [
           BoxShadow(
@@ -293,41 +216,55 @@ class _MyTeamViewState extends State<MyTeamView> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            _myReferralCode.isNotEmpty ? _myReferralCode : '---',
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 3,
-            ),
-          ),
+          Obx(() {
+            final code = _team.myReferralCode.value.isNotEmpty
+                ? _team.myReferralCode.value
+                : ReferralService.formatDisplayCode(
+                    HomeController.to.profile.value?.referralCode,
+                  );
+            return Text(
+              code.isNotEmpty ? code : '---',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 3,
+              ),
+            );
+          }),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildActionChip(Icons.copy_rounded, 'copy'.tr, () {
-                Clipboard.setData(ClipboardData(text: _myReferralCode));
-                HapticFeedback.lightImpact();
-                Get.snackbar(
-                  'success'.tr,
-                  'referral_code_copied'.tr,
-                  backgroundColor:
-                      AppColors.softGreen.withValues(alpha: 0.9),
-                  colorText: Colors.white,
-                );
-              }),
-              const SizedBox(width: 12),
-              _buildActionChip(Icons.share_rounded, 'share'.tr, () {
-                SharePlus.instance.share(
-                  ShareParams(
-                    text:
-                        '${'invite_share_text'.tr} $_myReferralCode\nhttps://kasby.app/join?ref=$_myReferralCode',
-                  ),
-                );
-              }),
-            ],
-          ),
+          Obx(() {
+            final code = _team.myReferralCode.value.isNotEmpty
+                ? _team.myReferralCode.value
+                : ReferralService.formatDisplayCode(
+                    HomeController.to.profile.value?.referralCode,
+                  );
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildActionChip(Icons.copy_rounded, 'copy'.tr, () {
+                  Clipboard.setData(ClipboardData(text: code));
+                  HapticFeedback.lightImpact();
+                  Get.snackbar(
+                    'success'.tr,
+                    'referral_code_copied'.tr,
+                    backgroundColor:
+                        AppColors.softGreen.withValues(alpha: 0.9),
+                    colorText: Colors.white,
+                  );
+                }),
+                const SizedBox(width: 12),
+                _buildActionChip(Icons.share_rounded, 'share'.tr, () {
+                  SharePlus.instance.share(
+                    ShareParams(
+                      text:
+                          '${'invite_share_text'.tr} $code\nhttps://kasby.app/join?ref=$code',
+                    ),
+                  );
+                }),
+              ],
+            );
+          }),
         ],
       ),
     ).animate().fadeIn().scale(begin: const Offset(0.95, 0.95));
@@ -363,16 +300,17 @@ class _MyTeamViewState extends State<MyTeamView> {
   }
 
   Widget _buildStatsDashboard() {
-    final online = _onlineCount;
-    final stats = [
-      ('team_members_count'.tr, '$_totalMembers', Icons.groups_rounded,
-          Colors.blueAccent),
-      ('active_members'.tr, '$_activeMembers', Icons.verified_rounded,
-          AppColors.softGreen),
-      ('inactive_members'.tr, '$_inactiveMembers', Icons.person_off_rounded,
-          AppColors.error),
-      ('new_today'.tr, '$_newToday', Icons.person_add_alt_1_rounded,
-          AppColors.darkGold),
+    return Obx(() {
+      final online = _onlineCount;
+      final stats = [
+        ('team_members_count'.tr, '${_team.totalMembers.value}', Icons.groups_rounded,
+            Colors.blueAccent),
+        ('active_members'.tr, '${_team.activeMembers.value}', Icons.verified_rounded,
+            AppColors.softGreen),
+        ('inactive_members'.tr, '${_team.inactiveMembers.value}', Icons.person_off_rounded,
+            AppColors.error),
+        ('new_today'.tr, '${_team.newToday.value}', Icons.person_add_alt_1_rounded,
+            AppColors.darkGold),
       ('online_members'.tr, '$online', Icons.circle, AppColors.softGreen),
     ];
 
@@ -400,6 +338,7 @@ class _MyTeamViewState extends State<MyTeamView> {
             );
       },
     );
+    });
   }
 
   Widget _buildStatCard(
@@ -468,327 +407,5 @@ class _MyTeamViewState extends State<MyTeamView> {
       ),
     );
   }
-
-  Widget _buildSectionHeader(String title) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 20,
-          decoration: BoxDecoration(
-            color: AppColors.darkGold,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.textBodyLight,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUnifiedTeamTree() {
-    if (!_hasTeamContent) {
-      return _buildEmptyTeamState();
-    }
-
-    final nodes = _allTreeNodes;
-    final childrenByParent = <String, List<Map<String, dynamic>>>{};
-    final userId = SupabaseService.userId ?? '';
-    for (final node in nodes) {
-      final parentId = node['parent_id']?.toString() ?? userId;
-      childrenByParent.putIfAbsent(parentId, () => []).add(node);
-    }
-
-    return Column(
-      children: [
-        _buildTreeNodeCard(
-          name: HomeController.to.profile.value?.fullName ?? 'You',
-          initials: _getInitials(
-            HomeController.to.profile.value?.fullName ?? 'Y',
-          ),
-          isRoot: true,
-          isActive: true,
-          isOnline: true,
-          isFriend: false,
-          subCount: _totalMembers,
-          level: 0,
-        ),
-        if (nodes.isNotEmpty) _buildVerticalLine(),
-        ..._buildTreeLevel(childrenByParent, userId, 0),
-      ],
-    ).animate().fadeIn(delay: const Duration(milliseconds: 200));
-  }
-
-  List<Widget> _buildTreeLevel(
-    Map<String, List<Map<String, dynamic>>> childrenByParent,
-    String parentId,
-    int depth,
-  ) {
-    final children = childrenByParent[parentId] ?? [];
-    if (children.isEmpty || depth > 4) return [];
-
-    return children.asMap().entries.expand((entry) {
-      final index = entry.key;
-      final member = entry.value;
-      final id = member['id']?.toString() ?? '';
-      final name = member['full_name']?.toString() ?? 'user'.tr;
-      final isActive = member['status']?.toString() == 'active';
-      final level = member['level'] as int? ?? 1;
-      final directRefs = member['direct_referrals'] as int? ??
-          member['sub_referrals'] as int? ??
-          0;
-      final isOnline = Get.isRegistered<PresenceService>() &&
-          Get.find<PresenceService>().isUserOnline(id);
-      final isFriend = member['member_type']?.toString() == 'friend';
-
-      return [
-        Padding(
-          padding: EdgeInsets.only(left: (level - 1) * 20.0, bottom: 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 28,
-                child: Column(
-                  children: [
-                    Container(
-                      width: 2,
-                      height: 24,
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.08),
-                    ),
-                    Container(
-                      width: 10,
-                      height: 2,
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.08),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTreeNodeCard(
-                      name: name,
-                      initials: _getInitials(name),
-                      isRoot: false,
-                      isActive: isActive,
-                      isOnline: isOnline,
-                      isFriend: isFriend,
-                      subCount: directRefs,
-                      level: level,
-                    ),
-                    ..._buildTreeLevel(childrenByParent, id, depth + 1),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: Duration(milliseconds: 80 * index)),
-      ];
-    }).toList();
-  }
-
-  Widget _buildTreeNodeCard({
-    required String name,
-    required String initials,
-    required bool isRoot,
-    required bool isActive,
-    required bool isOnline,
-    required bool isFriend,
-    required int subCount,
-    required int level,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surface.withValues(alpha: isRoot ? 0.7 : 0.45)
-            : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isRoot
-              ? AppColors.darkGold.withValues(alpha: 0.35)
-              : (isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.05)),
-        ),
-      ),
-      child: Row(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              CircleAvatar(
-                radius: isRoot ? 26 : 22,
-                backgroundColor: isRoot
-                    ? AppColors.darkGold
-                    : AppColors.darkGold.withValues(alpha: 0.15),
-                child: Text(
-                  initials,
-                  style: TextStyle(
-                    color: isRoot ? Colors.black : AppColors.darkGold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: isRoot ? 16 : 14,
-                  ),
-                ),
-              ),
-              if (isOnline)
-                Positioned(
-                  right: -1,
-                  bottom: -1,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: AppColors.softGreen,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? AppColors.background : Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: isRoot ? 15 : 14,
-                    color: isDark ? Colors.white : AppColors.textBodyLight,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    _buildStatusDot(isActive),
-                    const SizedBox(width: 6),
-                    Text(
-                      isActive ? 'active'.tr : 'inactive'.tr,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (level > 0) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        'L$level',
-                        style: TextStyle(
-                          color: AppColors.darkGold.withValues(alpha: 0.8),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                    if (subCount > 0) ...[
-                      const SizedBox(width: 8),
-                      Icon(Icons.people_outline,
-                          size: 13, color: AppColors.textSecondary),
-                      const SizedBox(width: 2),
-                      Text(
-                        '$subCount',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                    if (isFriend) ...[
-                      const SizedBox(width: 8),
-                      Icon(Icons.handshake_outlined,
-                          size: 13, color: AppColors.darkGold),
-                      const SizedBox(width: 2),
-                      Text(
-                        'friend'.tr,
-                        style: TextStyle(
-                          color: AppColors.darkGold,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusDot(bool isActive) {
-    return Container(
-      width: 6,
-      height: 6,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isActive ? AppColors.softGreen : AppColors.error,
-      ),
-    );
-  }
-
-  Widget _buildEmptyTeamState() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        children: [
-          Icon(
-            Icons.group_add_rounded,
-            size: 64,
-            color: AppColors.textSecondary.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: 16),
-          Text('no_team_members'.tr,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-          const SizedBox(height: 8),
-          Text(
-            'invite_friends_desc'.tr,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textSecondary.withValues(alpha: 0.7),
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVerticalLine() {
-    return Container(
-      width: 2,
-      height: 24,
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.1)
-          : Colors.black.withValues(alpha: 0.1),
-    );
-  }
-
-  String _getInitials(String name) {
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name.isNotEmpty ? name[0].toUpperCase() : '?';
-  }
 }
+

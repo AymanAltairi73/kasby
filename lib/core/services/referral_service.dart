@@ -119,10 +119,7 @@ class ReferralService {
     try {
       await SupabaseService.client
           .from('profiles')
-          .update({
-            'referred_by_id': referrerId,
-            'referred_by': referrerId,
-          })
+          .update({'referred_by': referrerId})
           .eq('id', newUserId);
 
       _log(
@@ -153,6 +150,7 @@ class ReferralService {
   static Future<void> processReferralCommission({
     required double investmentAmount,
     String? investmentId,
+    String? planName,
   }) async {
     if (!SupabaseService.isLoggedIn) return;
 
@@ -163,10 +161,12 @@ class ReferralService {
           'p_investor_id': SupabaseService.userId!,
           'p_investment_amount': investmentAmount,
           'p_investment_id': investmentId,
+          'p_plan_name': planName,
         },
       );
 
-      final response = result as Map<String, dynamic>?;
+      final Map<String, dynamic>? response =
+          result is Map ? Map<String, dynamic>.from(result as Map) : null;
 
       if (response != null && response['success'] == true) {
         final commission = response['commission'] as num?;

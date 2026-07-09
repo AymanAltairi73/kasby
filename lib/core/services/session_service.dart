@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/services/security_activity_service.dart';
+import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:kasby/core/utils/safe_getx.dart';
 
 class SessionService extends GetxService with WidgetsBindingObserver {
   static SessionService get to => Get.find();
@@ -54,6 +55,7 @@ class SessionService extends GetxService with WidgetsBindingObserver {
     _logoutTimer = Timer(const Duration(minutes: logoutTimeout), () {
       if (_backgroundTime != null) {
         SafeGetx.debugTrace(className: 'SessionService', method: '_startLogoutTimer', feature: 'Core', status: 'WARN', message: 'Auto logout triggered');
+        unawaited(SecurityActivityService.to.logEvent(SecurityEventType.sessionExpiration));
         AuthController.to.logout();
       }
     });
@@ -67,6 +69,7 @@ class SessionService extends GetxService with WidgetsBindingObserver {
     
     if (duration.inMinutes >= logoutTimeout) {
       SafeGetx.debugTrace(className: 'SessionService', method: '_handleAppResume', feature: 'Core', status: 'WARN', message: 'Logout timeout exceeded');
+      unawaited(SecurityActivityService.to.logEvent(SecurityEventType.sessionExpiration));
       AuthController.to.logout();
     } else if (duration.inMinutes >= lockTimeout) {
       SafeGetx.debugTrace(className: 'SessionService', method: '_handleAppResume', feature: 'Core', status: 'INFO', message: 'Showing lock screen');

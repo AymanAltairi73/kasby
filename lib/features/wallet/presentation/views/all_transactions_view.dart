@@ -6,6 +6,7 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/models/transaction_model.dart';
+import 'package:kasby/core/localization/model_localization_extensions.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
@@ -516,9 +517,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          (tx.description != null && tx.description!.isNotEmpty)
-                              ? tx.description!.tr
-                              : typeInfo['label'] as String,
+                          tx.localizedDescription,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(

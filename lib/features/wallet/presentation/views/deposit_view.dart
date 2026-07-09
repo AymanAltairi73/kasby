@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/services/agent_service.dart';
+import 'package:kasby/core/services/account_restriction_service.dart';
+import 'package:kasby/core/services/enterprise_operations_logger.dart';
+import 'package:kasby/core/services/fee_service.dart';
+import 'package:kasby/core/services/financial_repository.dart';
+import 'package:kasby/core/services/receipt_export_service.dart';
+import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/widgets/agent_status_badge.dart';
+import 'package:kasby/core/widgets/error_state_widget.dart';
+import 'package:kasby/core/widgets/fee_breakdown_card.dart';
+import 'package:kasby/core/widgets/glass_card.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/core/models/agent_model.dart';
-import 'package:kasby/core/services/account_restriction_service.dart';
-import 'package:kasby/core/services/agent_service.dart';
-import 'package:kasby/core/services/supabase_service.dart';
-import 'package:flutter/services.dart';
-import 'package:kasby/core/widgets/glass_card.dart';
-import 'package:kasby/core/widgets/transaction_receipt.dart';
-import 'package:kasby/core/services/confetti_service.dart';
-import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/models/kasby_receipt_data.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
-import 'package:uuid/uuid.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
-import 'package:kasby/core/services/fee_service.dart';
-import 'package:kasby/core/widgets/fee_breakdown_card.dart';
-import 'package:kasby/core/widgets/error_state_widget.dart';
 
 class DepositView extends StatefulWidget {
   const DepositView({super.key});
@@ -44,6 +46,11 @@ class _DepositViewState extends State<DepositView> {
     FeeService.load();
     _fetchAgents();
     _amountController.addListener(_syncAmountPreview);
+    EnterpriseOperationsLogger.log(
+      domain: 'deposit',
+      operation: 'deposit_screen',
+      phase: 'OPEN',
+    );
   }
 
   void _syncAmountPreview() {
@@ -83,12 +90,8 @@ class _DepositViewState extends State<DepositView> {
     }
   }
 
-  void _handleDeposit() {
-    if (!AccountRestrictionService.to.checkWriteAccess()) return;
-    if (HomeController.to.dashboard.value?.isFrozen == true) {
-      Get.snackbar('error'.tr, 'wallet_frozen'.tr);
-      return;
-    }
+  Future<void> _handleDeposit() async {
+    if (!await AccountRestrictionService.to.checkWriteAccessAsync()) return;
 
     final amountText = _amountController.text.trim();
     if (amountText.isEmpty) {
@@ -288,46 +291,24 @@ class _DepositViewState extends State<DepositView> {
       final userId = SupabaseService.userId;
       if (userId == null) return;
 
-      final idempotencyKey = const Uuid().v4();
-
-      final result = await SafeGetx.traceAsync(
-        className: 'DepositView',
-        method: '_executeDeposit',
-        feature: 'Wallet',
-        params: {
-          'table': 'transactions',
-          'operation': 'RPC',
-          'rpc': 'fn_create_deposit_request',
-          'amount': amount,
-          'agentId': selectedAgentModel.id,
-        },
-        operation: () => SupabaseService.client.rpc(
-          'fn_create_deposit_request',
-          params: {
-            'p_amount': amount,
-            'p_agent_id': selectedAgentModel.id,
-            'p_idempotency_key': idempotencyKey,
-          },
-        ),
+      final response = await FinancialRepository.createDeposit(
+        amount: amount,
+        agentId: selectedAgentModel.id,
       );
-
-      final response = result as Map<String, dynamic>?;
-      if (response == null || response['success'] != true) {
+      if (response['success'] != true) {
         SafeGetx.debugTrace(
           className: 'DepositView',
           method: '_executeDeposit',
           feature: 'Wallet',
           status: 'WARNING',
-          message: response?['error']?.toString(),
+          message: response['error']?.toString(),
         );
         AppSnack.error(
           'deposit_error_title'.tr,
-          (response?['error'] as String?) ?? 'deposit_error_desc'.tr,
+          (response['error'] as String?) ?? 'deposit_error_desc'.tr,
         );
         return;
       }
-
-      ConfettiService.to.celebrate();
 
       if (Get.isRegistered<HomeController>()) {
         HomeController.to.fetchDashboard();
@@ -356,17 +337,23 @@ class _DepositViewState extends State<DepositView> {
     String agentName,
     String transactionId,
   ) {
-    Get.to(
-      () => TransactionReceipt(
+    final profile = HomeController.to.profile.value;
+    ReceiptExportService.showReceiptSheet(
+      KasbyReceiptData(
         transactionId: transactionId,
-        recipientName: agentName,
-        amount: amount,
-        type: 'deposit'.tr,
+        operationType: 'deposit',
+        referenceNumber: transactionId,
         date: DateTime.now(),
+        userName: profile?.fullName,
+        userId: profile?.id,
+        invitationCode: profile?.referralCode,
+        amount: amount,
+        status: 'pending',
+        recipientName: agentName,
+        qrPayload: transactionId,
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -380,66 +367,66 @@ class _DepositViewState extends State<DepositView> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            KasbyCard(
-              color: isDark ? AppColors.surface : AppColors.surfaceLight,
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppColors.darkGold),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'deposit_desc'.tr,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark
-                            ? AppColors.textSecondary
-                            : AppColors.textSecondaryLight,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              KasbyCard(
+                color: isDark ? AppColors.surface : AppColors.surfaceLight,
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: AppColors.darkGold),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'deposit_desc'.tr,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark
+                              ? AppColors.textSecondary
+                              : AppColors.textSecondaryLight,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            KasbyTextField(
-              label: 'deposit_amount'.tr,
-              hint: 'enter_amount_usd'.tr,
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              prefixIcon: Icon(
-                Icons.attach_money_rounded,
-                color: AppColors.darkGold,
+              const SizedBox(height: 32),
+              KasbyTextField(
+                label: 'deposit_amount'.tr,
+                hint: 'enter_amount_usd'.tr,
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                prefixIcon: Icon(
+                  Icons.attach_money_rounded,
+                  color: AppColors.darkGold,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Obx(
-              () => FeeBreakdownCard(
-                category: 'deposit',
-                amount: _amountPreview.value,
+              const SizedBox(height: 16),
+              Obx(
+                () => FeeBreakdownCard(
+                  category: 'deposit',
+                  amount: _amountPreview.value,
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'select_payment_agent'.tr,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildAgentSelector(),
-            const SizedBox(height: 48),
-            _isSubmitting
-                ? Center(
-                    child: CircularProgressIndicator(color: AppColors.darkGold),
-                  )
-                : KasbyButton(
-                    text: 'proceed_to_payment'.tr,
-                    onPressed: _handleDeposit,
-                  ),
-          ],
-        ),
+              const SizedBox(height: 32),
+              Text(
+                'select_payment_agent'.tr,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _buildAgentSelector(),
+              const SizedBox(height: 32),
+              _isSubmitting
+                  ? Center(
+                      child: CircularProgressIndicator(color: AppColors.darkGold),
+                    )
+                  : KasbyButton(
+                      text: 'proceed_to_payment'.tr,
+                      onPressed: _handleDeposit,
+                    ),
+            ],
+          ),
         ),
       ),
     );
@@ -455,80 +442,110 @@ class _DepositViewState extends State<DepositView> {
 
       if (hasAgentError.value) {
         return ErrorStateWidget(
+          title: 'error'.tr,
           message: 'agents_load_error'.tr,
           onRetry: _fetchAgents,
         );
       }
 
       if (agents.isEmpty) {
-        return ErrorStateWidget(
-          message: 'no_agents_desc'.tr,
-          onRetry: _fetchAgents,
+        return GlassCard(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.person_off_outlined,
+                  size: 48,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'no_agents_title'.tr,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'no_agents_desc'.tr,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
         );
       }
 
-      return Obx(
-        () => RadioGroup<int>(
-          groupValue: selectedAgent.value,
-          onChanged: (val) => selectedAgent.value = val ?? 0,
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: agents.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final agent = agents[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: GlassCard(
-                  padding: EdgeInsets.zero,
-                  opacity: isDark ? 0.03 : 0.05,
-                  child: RadioListTile<int>(
-                    value: index,
-                    activeColor: AppColors.darkGold,
-                    title: Row(
+      return Column(
+        children: List.generate(agents.length, (index) {
+          final agent = agents[index];
+          final isSelected = selectedAgent.value == index;
+          return GestureDetector(
+            onTap: () => selectedAgent.value = index,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.darkGold
+                      : (isDark ? Colors.white12 : Colors.black12),
+                  width: isSelected ? 2 : 1,
+                ),
+                color: isSelected
+                    ? AppColors.darkGold.withValues(alpha: 0.08)
+                    : (isDark ? AppColors.surface : AppColors.surfaceLight),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: AppColors.darkGold.withValues(alpha: 0.15),
+                    child: Text(
+                      agent.name.isNotEmpty ? agent.name[0].toUpperCase() : 'A',
+                      style: TextStyle(
+                        color: AppColors.darkGold,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            agent.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          agent.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        if (agent.successRate > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.softGreen.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '${agent.successRate.toStringAsFixed(0)}%',
-                              style: TextStyle(
-                                color: AppColors.softGreen,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
+                        if (agent.city.isNotEmpty || agent.country.isNotEmpty)
+                          Text(
+                            [
+                              if (agent.city.isNotEmpty) agent.city,
+                              if (agent.country.isNotEmpty) agent.country,
+                            ].join(', '),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                       ],
                     ),
-                    subtitle: Text(
-                      '${agent.city}, ${agent.country}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                  ),
+                  AgentStatusBadge(isOnline: agent.isAvailableNow),
+                  if (isSelected)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.darkGold,
                       ),
                     ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+                ],
+              ),
+            ),
+          );
+        }),
       );
     });
   }

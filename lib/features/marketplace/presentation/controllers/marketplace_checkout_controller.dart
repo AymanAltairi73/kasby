@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:uuid/uuid.dart';
@@ -23,6 +24,18 @@ class MarketplaceCheckoutController extends GetxController {
   final showSuccess = false.obs;
   final _uuid = const Uuid();
   String? _checkoutIdempotencyKey;
+
+  int get effectiveKsp => KspBalanceService.to.effectiveKsp.value;
+
+  int get kspCheckoutCost => total.ceil();
+
+  @override
+  void onInit() {
+    super.onInit();
+    if (SupabaseService.isLoggedIn && Get.isRegistered<KspBalanceService>()) {
+      KspBalanceService.to.refresh();
+    }
+  }
 
   double get subtotal => MarketplaceCartController.to.walletSubtotal;
 

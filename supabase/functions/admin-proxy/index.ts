@@ -165,10 +165,62 @@ Deno.serve(async (req) => {
 
       case 'delete_user': {
         const userId = params.user_id as string
-        await supabaseAdmin.rpc('fn_admin_purge_user_data', { p_user_id: userId })
-        const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
-        if (error) throw error
-        result = { success: true, user_id: userId }
+
+        const { data: profileRow } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle()
+
+        const { data: authLookup, error: authLookupError } =
+          await supabaseAdmin.auth.admin.getUserById(userId)
+        const hasAuthUser = !authLookupError && !!authLookup?.user
+
+        if (!profileRow && !hasAuthUser) {
+          throw new Error('User not found')
+        }
+
+        const { error: recordError } = await supabaseAdmin.rpc('fn_record_deleted_account', {
+          p_user_id: userId,
+          p_deletion_type: 'admin',
+          p_deleted_by: ctx.userId,
+        })
+        if (recordError) {
+          console.warn('[admin-proxy] fn_record_deleted_account skipped:', recordError.message)
+        }
+
+        let purgeResult: unknown = null
+        if (profileRow) {
+          const { data, error: purgeError } = await supabaseAdmin.rpc(
+            'fn_admin_purge_user_data',
+            { p_user_id: userId },
+          )
+          if (purgeError) throw purgeError
+          purgeResult = data
+          if (
+            purgeResult &&
+            typeof purgeResult === 'object' &&
+            (purgeResult as Record<string, unknown>).success === false
+          ) {
+            const message =
+              (purgeResult as Record<string, unknown>).message?.toString() ??
+              'User data purge failed'
+            throw new Error(message)
+          }
+        }
+
+        if (hasAuthUser) {
+          const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
+          if (error) throw error
+        }
+
+        result = {
+          success: true,
+          user_id: userId,
+          purge: purgeResult,
+          profile_deleted: !!profileRow,
+          auth_deleted: hasAuthUser,
+        }
         break
       }
 
@@ -233,24 +285,24 @@ Deno.serve(async (req) => {
       case 'block_user': {
         const userId = params.user_id as string
         const reason = params.reason as string
-        const { error } = await supabaseAdmin.rpc('fn_admin_block_user', {
-          p_user_id: userId,
+        const { data, error } = await supabaseAdmin.rpc('fn_admin_block_user', {
+          p_target_user_id: userId,
           p_reason: reason,
           p_admin_id: ctx.userId,
         })
         if (error) throw error
-        result = { success: true }
+        result = (data as Record<string, unknown>) ?? { success: true }
         break
       }
 
       case 'unblock_user': {
         const userId = params.user_id as string
-        const { error } = await supabaseAdmin.rpc('fn_admin_unblock_user', {
-          p_user_id: userId,
+        const { data, error } = await supabaseAdmin.rpc('fn_admin_unblock_user', {
+          p_target_user_id: userId,
           p_admin_id: ctx.userId,
         })
         if (error) throw error
-        result = { success: true }
+        result = (data as Record<string, unknown>) ?? { success: true }
         break
       }
 

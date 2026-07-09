@@ -3,11 +3,53 @@ import 'package:flutter/material.dart';
 import 'package:kasby/core/models/user_investment_model.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
-import 'package:kasby/core/widgets/mini_charts.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 enum PortfolioPeriod { d7, d30, d90, y1, all }
+
+/// Aggregated money movement for the selected analytics period.
+class InvestmentFlowSnapshot {
+  final double opening;
+  final double deposits;
+  final double returns;
+  final double withdrawals;
+  final double investments;
+  final double closing;
+  final int activeInvestments;
+  final int completedInvestments;
+
+  const InvestmentFlowSnapshot({
+    required this.opening,
+    required this.deposits,
+    required this.returns,
+    required this.withdrawals,
+    required this.investments,
+    required this.closing,
+    required this.activeInvestments,
+    required this.completedInvestments,
+  });
+
+  static const empty = InvestmentFlowSnapshot(
+    opening: 0,
+    deposits: 0,
+    returns: 0,
+    withdrawals: 0,
+    investments: 0,
+    closing: 0,
+    activeInvestments: 0,
+    completedInvestments: 0,
+  );
+
+  bool get hasActivity =>
+      deposits > 0 || returns > 0 || withdrawals > 0 || investments > 0;
+
+  double get totalInflows => deposits + returns;
+
+  double get totalOutflows => withdrawals + investments;
+
+  double get netChange => closing - opening;
+}
 
 class PortfolioController extends GetxController {
   static PortfolioController get to => Get.find();
@@ -37,8 +79,9 @@ class PortfolioController extends GetxController {
   // Investment distribution: planName -> amount
   final RxMap<String, double> distribution = <String, double>{}.obs;
 
-  // Waterfall chart steps
-  final RxList<WaterfallStep> waterfallSteps = <WaterfallStep>[].obs;
+  // Investment flow breakdown for the selected period
+  final Rx<InvestmentFlowSnapshot> investmentFlow =
+      InvestmentFlowSnapshot.empty.obs;
 
   // Benchmark comparison: expected vs actual ROI per plan
   final RxList<Map<String, dynamic>> benchmarks = <Map<String, dynamic>>[].obs;
@@ -61,7 +104,10 @@ class PortfolioController extends GetxController {
     ever(_home.myInvestments, (_) => _computeAll());
     ever(_home.recentTransactions, (_) => _computeAll());
     ever(_home.dashboard, (_) => _computeAll());
-    ever(selectedPeriod, (_) => _buildGrowthData());
+    ever(selectedPeriod, (_) {
+      _buildGrowthData();
+      _buildInvestmentFlow();
+    });
   }
 
   @override
@@ -84,6 +130,7 @@ class PortfolioController extends GetxController {
       _computeMetrics();
       _computeDistribution();
       _buildGrowthData();
+      _buildInvestmentFlow();
       _computePeriodPerformance();
       _generateInsights();
     } catch (e, stack) {
@@ -233,21 +280,29 @@ class PortfolioController extends GetxController {
       growthData.value = points;
     }
 
-    _buildWaterfallSteps(filtered);
   }
 
-  void _buildWaterfallSteps(List<TransactionModel> filtered) {
-    if (filtered.isEmpty) {
-      waterfallSteps.value = [];
-      return;
-    }
+  void _buildInvestmentFlow() {
+    final transactions = _home.allTransactions.isNotEmpty
+        ? _home.allTransactions.toList()
+        : _home.recentTransactions.toList();
+
+    final now = DateTime.now();
+    final cutoff = _periodCutoff(selectedPeriod.value, now);
+
+    final filtered = transactions
+        .where((t) =>
+            t.createdAt != null &&
+            t.createdAt!.isAfter(cutoff) &&
+            t.status == 'completed')
+        .toList();
 
     double deposits = 0;
     double returns = 0;
     double withdrawals = 0;
     double investments = 0;
 
-    final profitTypes = {'profit', 'investment_return', 'reward'};
+    const profitTypes = {'profit', 'investment_return', 'reward'};
 
     for (final tx in filtered) {
       switch (tx.type) {
@@ -267,16 +322,30 @@ class PortfolioController extends GetxController {
       }
     }
 
-    final opening = netWorth.value - deposits - returns + withdrawals + investments;
+    var activeCount = 0;
+    var completedCount = 0;
+    for (final inv in _home.myInvestments) {
+      final status = inv.status.toLowerCase();
+      if (status == 'active') {
+        activeCount++;
+      } else if (status == 'completed' || status == 'matured') {
+        completedCount++;
+      }
+    }
 
-    waterfallSteps.value = [
-      WaterfallStep(label: 'Opening', value: opening, isTotal: true),
-      WaterfallStep(label: '+ Deposits', value: deposits),
-      WaterfallStep(label: '+ Returns', value: returns),
-      WaterfallStep(label: '- Withdrawals', value: -withdrawals),
-      WaterfallStep(label: '- Investments', value: -investments),
-      WaterfallStep(label: 'Closing', value: netWorth.value, isTotal: true),
-    ];
+    final opening =
+        netWorth.value - deposits - returns + withdrawals + investments;
+
+    investmentFlow.value = InvestmentFlowSnapshot(
+      opening: opening,
+      deposits: deposits,
+      returns: returns,
+      withdrawals: withdrawals,
+      investments: investments,
+      closing: netWorth.value,
+      activeInvestments: activeCount,
+      completedInvestments: completedCount,
+    );
   }
 
   void _computePeriodPerformance() {

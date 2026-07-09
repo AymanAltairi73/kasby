@@ -10,6 +10,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
 import 'package:kasby/core/widgets/error_state_widget.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 class InvestmentPlansView extends StatefulWidget {
@@ -210,12 +211,17 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
           }
 
           final sorted = _sortedPlans;
-          return ListView(
+          return KeyedSubtree(
+            key: TourTargetKeys.investPlansList,
+            child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              _buildSortBar(isDark),
+              KeyedSubtree(
+                key: TourTargetKeys.investActiveTab,
+                child: _buildFilterChips(isDark),
+              ),
               const SizedBox(height: KasbySpacing.md),
-              _buildFilterChips(isDark),
+              _buildSortBar(isDark),
               const SizedBox(height: KasbySpacing.lg),
               ...sorted.asMap().entries.map((entry) {
                 final index = entry.key;
@@ -228,7 +234,7 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
                 final planTitle = Get.locale?.languageCode == 'ar'
                     ? plan.nameAr
                     : (plan.nameEn ?? plan.nameAr);
-                return Padding(
+                final planWidget = Padding(
                   padding: const EdgeInsets.only(bottom: 20),
                   child: Semantics(
                     button: true,
@@ -252,9 +258,17 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
                       )
                       .slideY(begin: 0.2, end: 0),
                 );
+                if (index == 0) {
+                  return KeyedSubtree(
+                    key: TourTargetKeys.investClaimRewards,
+                    child: planWidget,
+                  );
+                }
+                return planWidget;
               }),
-              _buildRiskDisclosure(isDark),
+             // _buildRiskDisclosure(isDark),
             ],
+          ),
           );
         }),
       ),
@@ -343,35 +357,35 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
     );
   }
 
-  Widget _buildRiskDisclosure(bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(top: 4),
-      padding: const EdgeInsets.all(KasbySpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.textSecondary.withValues(alpha: 0.06),
-        borderRadius: KasbyRadius.cardR,
-        border: Border.all(
-          color: AppColors.textSecondary.withValues(alpha: 0.15),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline_rounded,
-              size: 18, color: AppColors.textSecondary),
-          const SizedBox(width: KasbySpacing.sm),
-          Expanded(
-            child: Text(
-              'risk_disclosure'.tr,
-              style: TextStyle(
-                fontSize: 11,
-                height: 1.5,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildRiskDisclosure(bool isDark) {
+  //   return Container(
+  //     margin: const EdgeInsets.only(top: 4),
+  //     padding: const EdgeInsets.all(KasbySpacing.lg),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.textSecondary.withValues(alpha: 0.06),
+  //       borderRadius: KasbyRadius.cardR,
+  //       border: Border.all(
+  //         color: AppColors.textSecondary.withValues(alpha: 0.15),
+  //       ),
+  //     ),
+  //     child: Row(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Icon(Icons.info_outline_rounded,
+  //             size: 18, color: AppColors.textSecondary),
+  //         const SizedBox(width: KasbySpacing.sm),
+  //         Expanded(
+  //           child: Text(
+  //             'risk_disclosure'.tr,
+  //             style: TextStyle(
+  //               fontSize: 11,
+  //               height: 1.5,
+  //               color: AppColors.textSecondary,
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }

@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
-import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/services/notification_navigation_service.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
-import 'package:lottie/lottie.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -23,8 +20,6 @@ class _SplashViewState extends State<SplashView>
   late Animation<double> _fadeAnimation;
   bool _hasNavigated = false;
   Worker? _authWorker;
-  String _versionLabel = '';
-  bool _isRestoringSession = false;
 
   @override
   void initState() {
@@ -37,7 +32,6 @@ class _SplashViewState extends State<SplashView>
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
     _controller.forward();
-    _loadVersion();
 
     _authWorker = ever(AuthController.to.authStatus, (status) {
       if (status != AuthStatus.initial) {
@@ -49,8 +43,6 @@ class _SplashViewState extends State<SplashView>
       final status = AuthController.to.authStatus.value;
       if (status != AuthStatus.initial) {
         _navigateToNext(status);
-      } else {
-        setState(() => _isRestoringSession = true);
       }
     });
 
@@ -59,17 +51,6 @@ class _SplashViewState extends State<SplashView>
         _navigateToNext(AuthStatus.unauthenticated);
       }
     });
-  }
-
-  Future<void> _loadVersion() async {
-    try {
-      final info = await PackageInfo.fromPlatform();
-      if (mounted) {
-        setState(() {
-          _versionLabel = 'v${info.version} (${info.buildNumber})';
-        });
-      }
-    } catch (_) {}
   }
 
   void _navigateToNext(AuthStatus status) {
@@ -92,8 +73,7 @@ class _SplashViewState extends State<SplashView>
       if (status == AuthStatus.authenticated) {
         Get.offAllNamed(Routes.home);
         NotificationNavigationService.processPendingNavigation();
-      }
-      else if (!AuthOtpConfig.tempSkipEmailVerification &&
+      } else if (!AuthOtpConfig.tempSkipEmailVerification &&
           AuthController.to.pendingVerificationEmail.value?.isNotEmpty == true) {
         Get.offAllNamed(
           Routes.verifyEmail,
@@ -102,7 +82,7 @@ class _SplashViewState extends State<SplashView>
           },
         );
       } else {
-        Get.offAllNamed(Routes.onboarding);
+        Get.offAllNamed(Routes.login);
       }
     });
   }
@@ -117,6 +97,7 @@ class _SplashViewState extends State<SplashView>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? Colors.white : AppColors.primaryLight;
 
     return Scaffold(
       body: Container(
@@ -136,110 +117,30 @@ class _SplashViewState extends State<SplashView>
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
-                Semantics(
-                  label: 'app_name'.tr,
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    width: 120,
-                    height: 120,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                      'assets/images/logo2.jpg',
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: KasbySpacing.lg),
-                SizedBox(
-                  width: 140,
-                  height: 140,
-                  child: Lottie.asset(
-                    'assets/lottie/splash_secure.json',
-                    repeat: true,
-                    animate: KasbyMotion.enabled(context),
-                  ),
-                ),
-                const SizedBox(height: KasbySpacing.md),
-                Text(
-                  'app_name'.tr,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: isDark ? Colors.white : AppColors.primaryLight,
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: KasbySpacing.sm),
-                Text(
-                  'splash_secured_platform'.tr,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textSecondaryLight,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: KasbySpacing.xs),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.lock_outline_rounded,
-                      size: 14,
-                      color: AppColors.darkGold.withValues(alpha: 0.9),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'splash_protected_encryption'.tr,
-                      style: TextStyle(
-                        color: AppColors.darkGold.withValues(alpha: 0.9),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const Spacer(flex: 2),
-                if (_isRestoringSession)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: KasbySpacing.md),
-                    child: Text(
-                      'restoring_session'.tr,
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.textSecondary
-                            : AppColors.textSecondaryLight,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    color: isDark ? Colors.white : AppColors.primaryLight,
-                    strokeWidth: 2,
-                  ),
-                ),
-                const SizedBox(height: KasbySpacing.xl),
-                if (_versionLabel.isNotEmpty)
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   Text(
-                    _versionLabel,
-                    style: TextStyle(
-                      color: (isDark
-                              ? AppColors.textSecondary
-                              : AppColors.textSecondaryLight)
-                          .withValues(alpha: 0.6),
-                      fontSize: 11,
+                    'app_name'.tr,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: accent,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      color: AppColors.darkGold,
+                      strokeWidth: 2.5,
+                      strokeCap: StrokeCap.round,
                     ),
                   ),
-                const SizedBox(height: KasbySpacing.xl),
-              ],
+                ],
+              ),
             ),
           ),
         ),

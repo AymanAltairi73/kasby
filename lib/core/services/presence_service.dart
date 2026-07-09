@@ -113,8 +113,9 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        if (SupabaseService.isLoggedIn && _presenceChannel == null) {
-          _setupPresence();
+        if (SupabaseService.isLoggedIn) {
+          if (_presenceChannel == null) _setupPresence();
+          _updateLastSeen();
         }
         break;
       case AppLifecycleState.paused:

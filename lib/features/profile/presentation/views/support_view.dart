@@ -5,6 +5,7 @@ import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/tour/widgets/tour_settings_sheet.dart';
 
 class SupportView extends StatefulWidget {
   const SupportView({super.key});
@@ -145,6 +146,8 @@ class _SupportViewState extends State<SupportView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSearchBar(),
+                  const SizedBox(height: 16),
+                  _buildAppTutorialCard(),
                   const SizedBox(height: 24),
                   _buildCategories(),
                   const SizedBox(height: 32),
@@ -228,6 +231,33 @@ class _SupportViewState extends State<SupportView> {
   //     );
   //   }
   // }
+
+  Widget _buildAppTutorialCard() {
+    return KasbyCard(
+      padding: EdgeInsets.zero,
+      child: ListTile(
+        leading: Icon(Icons.tour_rounded, color: AppColors.darkGold),
+        title: Text(
+          'app_tour'.tr,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          'tour_settings_desc'.tr,
+          style: TextStyle(
+            fontSize: 12,
+            color: isDark
+                ? AppColors.textSecondary
+                : AppColors.textSecondaryLight,
+          ),
+        ),
+        trailing: Icon(
+          Icons.play_circle_outline_rounded,
+          color: AppColors.darkGold,
+        ),
+        onTap: () => TourSettingsSheet.show(context),
+      ),
+    );
+  }
 
   Widget _buildSearchBar() {
     return Container(

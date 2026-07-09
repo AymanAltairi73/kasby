@@ -4,6 +4,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
+import 'package:kasby/core/services/transaction_auth_service.dart';
 import '../../domain/models/marketplace_order.dart';
 import '../controllers/marketplace_cart_controller.dart';
 import '../controllers/marketplace_checkout_controller.dart';
@@ -86,6 +87,18 @@ class MarketplaceCheckoutView extends StatelessWidget {
               const SizedBox(height: KasbySpacing.md),
               _paymentTile(checkout, MarketplacePaymentMethod.wallet, Icons.account_balance_wallet_rounded, 'marketplace_pay_wallet'.tr),
               _paymentTile(checkout, MarketplacePaymentMethod.ksp, Icons.diamond_rounded, 'marketplace_pay_ksp'.tr),
+              Obx(() {
+                if (checkout.selectedPayment.value != MarketplacePaymentMethod.ksp) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: KasbySpacing.sm),
+                  child: Text(
+                    '${'ksp_balance'.tr}: ${checkout.effectiveKsp} KSP · ${'marketplace_ksp_cost'.tr}: ${checkout.kspCheckoutCost} KSP',
+                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600),
+                  ),
+                );
+              }),
               const SizedBox(height: KasbySpacing.lg),
               Text('marketplace_estimated_delivery'.tr, style: const TextStyle(fontWeight: FontWeight.w600)),
               Text('marketplace_delivery_instant'.tr, style: TextStyle(color: Colors.grey.shade600)),
@@ -126,6 +139,12 @@ class MarketplaceCheckoutView extends StatelessWidget {
       ),
     );
     if (confirmed != true) return;
+
+    final authOk = await TransactionAuthService.to.requireConfirmation(
+      purpose: 'marketplace_checkout',
+    );
+    if (!authOk) return;
+
     final ok = await checkout.processCheckout();
     if (ok && checkout.completedOrder.value != null) {
       MarketplaceCheckoutSuccessDialog.show(checkout.completedOrder.value!);

@@ -171,6 +171,7 @@ class NotificationNavigationService {
         return Routes.myTeam;
       case 'kyc_approved':
       case 'kyc_rejected':
+        return Routes.kyc;
       case 'account_flagged':
       case 'account_frozen':
       case 'account_unblocked':
@@ -180,6 +181,7 @@ class NotificationNavigationService {
         return Routes.personalProfile;
       case 'social_friend_request':
       case 'social_friend_accepted':
+      case 'social_friend_removed':
         return Routes.friendRequests;
       case 'social_chat':
         return Routes.socialChat;

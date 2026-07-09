@@ -211,6 +211,22 @@ class SafeGetx {
     }
   }
 
+  /// Closes only the top overlay (dialog/bottom sheet) without popping routes.
+  static void dismissOverlayIfOpen({bool closeSnackbar = false}) {
+    if (closeSnackbar) closeSnackbarIfOpen();
+    if (Get.isDialogOpen ?? false) {
+      try {
+        Get.back(closeOverlays: false);
+        return;
+      } catch (_) {}
+    }
+    if (Get.isBottomSheetOpen ?? false) {
+      try {
+        Get.back(closeOverlays: false);
+      } catch (_) {}
+    }
+  }
+
   static void snackbar({
     required String title,
     required String message,

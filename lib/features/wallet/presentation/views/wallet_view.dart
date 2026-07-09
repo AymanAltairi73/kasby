@@ -14,6 +14,7 @@ import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/core/utils/date_helper.dart';
 
 class WalletView extends StatefulWidget {
@@ -108,11 +109,19 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24),
             child: Column(
               children: [
-                _buildBalanceSummary(),
+                KeyedSubtree(
+                  key: TourTargetKeys.walletBalance,
+                  child: _buildBalanceSummary(),
+                ),
+                const SizedBox(height: 20),
+                _buildKspRewardsCard(),
                 const SizedBox(height: 40),
                 _buildActionButtons(),
                 const SizedBox(height: 40),
-                _buildTransactionHistory(),
+                KeyedSubtree(
+                  key: TourTargetKeys.walletHistory,
+                  child: _buildTransactionHistory(),
+                ),
               ],
             ),
           ),
@@ -491,6 +500,62 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
     ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1));
   }
 
+  Widget _buildKspRewardsCard() {
+    return Obx(
+      () {
+        final effective = homeController.userPoints.value;
+        final reward = homeController.rewardKsp.value;
+        final walletPart = homeController.walletKsp.value;
+        final hidden = currencyController.isBalanceHidden.value;
+        return GlassCard(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Image.asset('assets/images/ksp_coin.png', width: 36, height: 36),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ksp_balance'.tr,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        hidden ? '**********' : '$effective KSP',
+                        style: TextStyle(
+                          color: AppColors.darkGold,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        'ksp_effective_breakdown'.trParams({
+                          'wallet': walletPart.toString(),
+                          'reward': reward.toString(),
+                        }),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCardChip() {
     return Container(
       width: 48,
@@ -558,29 +623,35 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
         Row(
           children: [
             Expanded(
-              child: Obx(
-                () => _buildSquareActionButton(
-                  label: 'withdraw'.tr,
-                  isLocked: !authController.isVerified.value,
-                  icon: Icons.remove_circle_outline_rounded,
-                  iconColor: AppColors.darkGold,
-                  onTap: () {
-                    if (authController.isVerified.value) {
-                      Get.toNamed(Routes.withdraw);
-                    } else {
-                      _showKYCPrompt();
-                    }
-                  },
+              child: KeyedSubtree(
+                key: TourTargetKeys.walletWithdraw,
+                child: Obx(
+                  () => _buildSquareActionButton(
+                    label: 'withdraw'.tr,
+                    isLocked: !authController.isVerified.value,
+                    icon: Icons.remove_circle_outline_rounded,
+                    iconColor: AppColors.darkGold,
+                    onTap: () {
+                      if (authController.isVerified.value) {
+                        Get.toNamed(Routes.withdraw);
+                      } else {
+                        _showKYCPrompt();
+                      }
+                    },
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _buildSquareActionButton(
-                label: 'deposit'.tr,
-                icon: Icons.add_circle_outline_rounded,
-                iconColor: AppColors.softGreen,
-                onTap: () => Get.toNamed(Routes.deposit),
+              child: KeyedSubtree(
+                key: TourTargetKeys.walletDeposit,
+                child: _buildSquareActionButton(
+                  label: 'deposit'.tr,
+                  icon: Icons.add_circle_outline_rounded,
+                  iconColor: AppColors.softGreen,
+                  onTap: () => Get.toNamed(Routes.deposit),
+                ),
               ),
             ),
           ],
@@ -589,19 +660,22 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
         Row(
           children: [
             Expanded(
-              child: Obx(
-                () => _buildTransferButton(
-                  label: 'p2p_transfer'.tr,
-                  isLocked: !authController.isVerified.value,
-                  icon: Icons.swap_horizontal_circle_outlined,
-                  iconColor: AppColors.softGreen,
-                  onTap: () {
-                    if (authController.isVerified.value) {
-                      Get.toNamed(Routes.transfer);
-                    } else {
-                      _showKYCPrompt();
-                    }
-                  },
+              child: KeyedSubtree(
+                key: TourTargetKeys.walletTransfer,
+                child: Obx(
+                  () => _buildTransferButton(
+                    label: 'p2p_transfer'.tr,
+                    isLocked: !authController.isVerified.value,
+                    icon: Icons.swap_horizontal_circle_outlined,
+                    iconColor: AppColors.softGreen,
+                    onTap: () {
+                      if (authController.isVerified.value) {
+                        Get.toNamed(Routes.transfer);
+                      } else {
+                        _showKYCPrompt();
+                      }
+                    },
+                  ),
                 ),
               ),
             ),

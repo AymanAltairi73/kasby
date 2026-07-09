@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/tour/tour_controller.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/features/home/presentation/views/home_view.dart';
 import 'package:kasby/features/wallet/presentation/views/wallet_view.dart';
 import 'package:kasby/features/wallet/presentation/views/all_transactions_view.dart';
@@ -19,6 +21,7 @@ class MainShellView extends StatefulWidget {
 
 class _MainShellViewState extends State<MainShellView> {
   final shellController = ShellController.to;
+  Worker? _tabTourWorker;
 
   List<Widget> get _pages {
     return [
@@ -32,6 +35,7 @@ class _MainShellViewState extends State<MainShellView> {
 
   @override
   void initState() {
+    TourTargetKeys.recreateKeys();
     super.initState();
     SafeGetx.debugTrace(
       className: 'MainShellView',
@@ -40,10 +44,22 @@ class _MainShellViewState extends State<MainShellView> {
       status: 'INFO',
       params: {'tabCount': 5},
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await TourController.to.tryConsumePendingAutoHomeTour(context);
+      if (!mounted) return;
+      await TourController.to.tryStartAutoHomeTour(context);
+    });
+    _tabTourWorker = ever<int>(shellController.currentIndex, (index) {
+      if (!mounted) return;
+      TourController.to.tryStartShellTabTour(context, index);
+    });
   }
 
   @override
   void dispose() {
+    _tabTourWorker?.dispose();
+    TourController.to.dismissActiveTour();
     SafeGetx.debugTrace(
       className: 'MainShellView',
       method: 'dispose',
@@ -190,11 +206,14 @@ class _MainShellViewState extends State<MainShellView> {
                   ),
                 ),
                 Expanded(
-                  child: _buildNavItem(
-                    4,
-                    Icons.person_rounded,
-                    Icons.person_outline_rounded,
-                    'nav_profile'.tr,
+                  child: KeyedSubtree(
+                    key: TourTargetKeys.profileNav,
+                    child: _buildNavItem(
+                      4,
+                      Icons.person_rounded,
+                      Icons.person_outline_rounded,
+                      'nav_profile'.tr,
+                    ),
                   ),
                 ),
               ],
@@ -285,7 +304,9 @@ class _MainShellViewState extends State<MainShellView> {
             shellController.setIndex(2);
           }
         },
-        child: Container(
+        child: KeyedSubtree(
+          key: TourTargetKeys.investNav,
+          child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -336,6 +357,7 @@ class _MainShellViewState extends State<MainShellView> {
           ],
         ),
       ),
+        ),
       ),
     );
   }

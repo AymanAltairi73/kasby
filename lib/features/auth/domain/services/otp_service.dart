@@ -1,37 +1,44 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
-import 'package:kasby/core/services/email_delivery_logger.dart';
-import 'package:kasby/features/auth/domain/auth_otp_config.dart';
+import 'package:kasby/features/auth/domain/repositories/authentication_repository.dart';
+import 'package:kasby/features/auth/domain/services/email_otp_service.dart';
+import 'package:kasby/features/auth/domain/services/phone_otp_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:convert';
 
-/// Unified Twilio Verify OTP platform (phone + email).
-///
-/// All verification flows route through Supabase Edge Functions:
-///   - send-phone-otp / verify-phone-otp
-///   - send-email-otp / verify-email-otp
+/// Backward-compatible facade — delegates to Supabase Auth OTP services only.
 class OTPService extends GetxService {
   static OTPService get to => Get.find();
 
-  final _supabase = Supabase.instance.client;
+  AuthenticationRepository get _repo => AuthenticationRepository.to;
+  EmailOtpService get _email => EmailOtpService.to;
+  PhoneOtpService get _phone => PhoneOtpService.to;
 
   Future<void> sendPhoneOtp({
     required String phone,
     required String purpose,
     Map<String, dynamic>? provision,
   }) async {
-    await _send(
-      function: 'send-phone-otp',
-      flow: purpose.toUpperCase(),
-      body: {
-        'phone': _normalizePhone(phone),
-        'purpose': purpose,
-        if (provision != null) ...provision,
-      },
-      phone: phone,
-    );
+    switch (purpose) {
+      case 'password_reset':
+        await _repo.sendPasswordResetPhone(phone);
+        break;
+      case 'phone_change':
+        await _repo.initiatePhoneChange(phone);
+        break;
+      case 'verification':
+      case 'phone_confirm':
+      case 'signup':
+        await _repo.sendPhoneVerificationOtp(phone);
+        break;
+      case 'sensitive_action':
+        await _repo.sendStepUpOtp(phone);
+        break;
+      default:
+        await _phone.sendOtp(
+          phone: phone,
+          shouldCreateUser: false,
+          data: provision?['provision_metadata'] as Map<String, dynamic>?,
+        );
+    }
   }
 
   Future<void> sendEmailOtp({
@@ -39,69 +46,20 @@ class OTPService extends GetxService {
     required String purpose,
     Map<String, dynamic>? provision,
   }) async {
-    await _send(
-      function: 'send-email-otp',
-      flow: purpose.toUpperCase(),
-      body: {
-        'email': email.trim().toLowerCase(),
-        'purpose': purpose,
-        if (provision != null) ...provision,
-      },
-      email: email,
-    );
-  }
-
-  Future<void> _send({
-    required String function,
-    required String flow,
-    required Map<String, dynamic> body,
-    String? email,
-    String? phone,
-  }) async {
-    EmailDeliveryLogger.logRequest(
-      flow: flow,
-      source: function,
-      email: email,
-      phone: phone,
-    );
-
-    try {
-      final response = await _invoke(function, body: body);
-      final data = _decode(response.body);
-
-      if (response.statusCode != 200 || data['success'] != true) {
-        final error = data['error']?.toString() ?? 'otp_resend_failed'.tr;
-        final code = data['code']?.toString() ?? '';
-        EmailDeliveryLogger.logFailure(
-          flow: flow,
-          source: function,
-          error: error,
-          httpStatus: response.statusCode,
-          email: email,
-          phone: phone,
-          extra: {'code': code},
-        );
-        throw OTPDispatchException(message: error, code: code);
-      }
-
-      EmailDeliveryLogger.logSuccess(
-        flow: flow,
-        source: function,
-        httpStatus: response.statusCode,
-        delivery: data['delivery']?.toString(),
-      );
-    } catch (e, stack) {
-      if (e is! OTPDispatchException) {
-        EmailDeliveryLogger.logFailure(
-          flow: flow,
-          source: function,
-          error: e,
-          stackTrace: stack,
-          email: email,
-          phone: phone,
-        );
-      }
-      rethrow;
+    switch (purpose) {
+      case 'password_reset':
+      case 'recovery':
+        await _repo.sendPasswordResetEmail(email);
+        break;
+      case 'email_change':
+        await _repo.initiateEmailChange(email);
+        break;
+      case 'signup':
+      case 'verification':
+        await _repo.sendSignupEmailOtp(email);
+        break;
+      default:
+        await _email.sendSignupVerification(email);
     }
   }
 
@@ -112,18 +70,25 @@ class OTPService extends GetxService {
     String? newValue,
     String? newPassword,
   }) async {
-    return _verify(
-      function: 'verify-phone-otp',
-      flow: purpose.toUpperCase(),
-      body: {
-        'phone': _normalizePhone(phone),
-        'code': AuthOtpConfig.normalize(code),
-        'purpose': purpose,
-        if (newValue != null) 'new_value': newValue,
-        if (newPassword != null) 'new_password': newPassword,
-      },
-      phone: phone,
-    );
+    OtpType type;
+    switch (purpose) {
+      case 'password_reset':
+        type = OtpType.recovery;
+        break;
+      case 'phone_change':
+        type = OtpType.phoneChange;
+        break;
+      default:
+        type = OtpType.sms;
+    }
+
+    await _repo.verifyPhoneOtp(phone: phone, code: code, type: type);
+
+    if (newPassword != null && newPassword.isNotEmpty) {
+      await _repo.completePasswordReset(newPassword);
+    }
+
+    return {'success': true};
   }
 
   Future<Map<String, dynamic>> verifyEmailOtp({
@@ -133,44 +98,31 @@ class OTPService extends GetxService {
     String? newValue,
     String? newPassword,
   }) async {
-    return _verify(
-      function: 'verify-email-otp',
-      flow: purpose.toUpperCase(),
-      body: {
-        'email': email.trim().toLowerCase(),
-        'code': AuthOtpConfig.normalize(code),
-        'purpose': purpose,
-        if (newValue != null) 'new_value': newValue,
-        if (newPassword != null) 'new_password': newPassword,
-      },
-      email: email,
-    );
-  }
-
-  Future<Map<String, dynamic>> _verify({
-    required String function,
-    required String flow,
-    required Map<String, dynamic> body,
-    String? email,
-    String? phone,
-  }) async {
-    final response = await _invoke(function, body: body);
-    final data = _decode(response.body);
-
-    if (response.statusCode != 200 || data['success'] != true) {
-      final error = data['error']?.toString() ?? 'invalid_otp'.tr;
-      final code = data['code']?.toString() ?? '';
-      throw OTPVerificationException(
-        message: error,
-        code: code,
-        remainingAttempts: data['remaining_attempts'] as int?,
-      );
+    OtpType type;
+    switch (purpose) {
+      case 'password_reset':
+      case 'recovery':
+        type = OtpType.recovery;
+        break;
+      case 'email_change':
+        type = OtpType.emailChange;
+        break;
+      default:
+        type = OtpType.signup;
     }
 
-    if (kDebugMode) {
-      debugPrint('[OTP] Verified via $function ($flow)');
+    if (type == OtpType.emailChange) {
+      await _repo.confirmEmailChange(newEmail: email, code: code);
+    } else if (type == OtpType.recovery) {
+      await _repo.verifyPasswordResetEmailOtp(email: email, code: code);
+      if (newPassword != null && newPassword.isNotEmpty) {
+        await _repo.completePasswordReset(newPassword);
+      }
+    } else {
+      await _repo.verifySignupEmailOtp(email: email, code: code);
     }
-    return Map<String, dynamic>.from(data);
+
+    return {'success': true};
   }
 
   Future<void> resetPasswordSecure({
@@ -194,40 +146,6 @@ class OTPService extends GetxService {
         newPassword: newPassword,
       );
     }
-  }
-
-  Future<http.Response> _invoke(
-    String functionName, {
-    required Map<String, dynamic> body,
-  }) async {
-    final supabaseUrl = dotenv.env['SUPABASE_URL']!;
-    final anonKey = dotenv.env['SUPABASE_ANON_KEY']!;
-    final url = Uri.parse('$supabaseUrl/functions/v1/$functionName');
-    final session = _supabase.auth.currentSession;
-
-    return http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': anonKey,
-        if (session?.accessToken != null)
-          'Authorization': 'Bearer ${session!.accessToken}',
-      },
-      body: jsonEncode(body),
-    );
-  }
-
-  Map<String, dynamic> _decode(String body) {
-    final data = jsonDecode(body);
-    if (data is Map<String, dynamic>) return data;
-    if (data is Map) return Map<String, dynamic>.from(data);
-    return {};
-  }
-
-  String _normalizePhone(String phone) {
-    var value = phone.trim().replaceAll(RegExp(r'[\s\-()]'), '');
-    if (!value.startsWith('+')) value = '+$value';
-    return value;
   }
 }
 

@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/models/kasby_receipt_data.dart';
+import 'package:kasby/core/services/receipt_export_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/snack_service.dart';
@@ -9,25 +11,31 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart' as intl;
 
 class TransactionReceipt extends StatefulWidget {
-  final String transactionId;
-  final String recipientName;
-  final double amount;
-  final String type;
-  final DateTime date;
+  final KasbyReceiptData data;
 
   const TransactionReceipt({
     super.key,
-    required this.transactionId,
-    required this.recipientName,
-    required this.amount,
-    required this.type,
-    required this.date,
+    required this.data,
   });
+
+  /// Legacy constructor for existing call sites.
+  TransactionReceipt.legacy({
+    super.key,
+    required String transactionId,
+    required String recipientName,
+    required double amount,
+    required String type,
+    required DateTime date,
+  }) : data = KasbyReceiptData.legacy(
+          transactionId: transactionId,
+          recipientName: recipientName,
+          amount: amount,
+          type: type,
+          date: date,
+        );
 
   @override
   State<TransactionReceipt> createState() => _TransactionReceiptState();
@@ -47,11 +55,11 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
       status: 'INFO',
       message: 'Receipt displayed',
       params: {
-        'type': widget.type,
-        'amount': widget.amount,
-        'txId': widget.transactionId.length > 8
-            ? '${widget.transactionId.substring(0, 8)}...'
-            : widget.transactionId,
+        'type': widget.data.operationType,
+        'amount': widget.data.amount,
+        'txId': widget.data.transactionId.length > 8
+            ? '${widget.data.transactionId.substring(0, 8)}...'
+            : widget.data.transactionId,
       },
     );
   }
@@ -69,7 +77,7 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
       if (image != null) {
         final directory = await getTemporaryDirectory();
         final imagePath =
-            File('${directory.path}/receipt_${widget.transactionId}.png');
+            File('${directory.path}/receipt_${widget.data.transactionId}.png');
         await imagePath.writeAsBytes(image);
 
         await SharePlus.instance.share(
@@ -95,85 +103,9 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
   }
 
   Future<void> _downloadPdf() async {
-    SafeGetx.debugTrace(
-      className: 'TransactionReceipt',
-      method: '_downloadPdf',
-      feature: 'Wallet',
-      status: 'INFO',
-    );
     setState(() => _isExporting = true);
     try {
-      final regularFontData = await rootBundle.load(
-        'assets/fonts/IBM_Plex_Sans_Arabic/IBMPlexSansArabic-Regular.ttf',
-      );
-      final boldFontData = await rootBundle.load(
-        'assets/fonts/IBM_Plex_Sans_Arabic/IBMPlexSansArabic-Bold.ttf',
-      );
-
-      final regularFont = pw.Font.ttf(regularFontData);
-      final boldFont = pw.Font.ttf(boldFontData);
-
-      final baseStyle = pw.TextStyle(font: regularFont, fontBold: boldFont);
-      final titleStyle = pw.TextStyle(
-        font: boldFont,
-        fontSize: 24,
-        fontWeight: pw.FontWeight.bold,
-      );
-      final subtitleStyle = pw.TextStyle(font: regularFont, fontSize: 18);
-
-      final pdf = pw.Document();
-
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          theme: pw.ThemeData.withFont(base: regularFont, bold: boldFont),
-          build: (pw.Context context) {
-            return pw.Center(
-              child: pw.Column(
-                mainAxisAlignment: pw.MainAxisAlignment.center,
-                children: [
-                  pw.Text('KASBY INVESTMENT', style: titleStyle),
-                  pw.SizedBox(height: 20),
-                  pw.Text('transaction_receipt'.tr, style: subtitleStyle),
-                  pw.Divider(),
-                  pw.SizedBox(height: 20),
-                  _pdfRow('transaction_id'.tr, widget.transactionId, baseStyle),
-                  _pdfRow('recipient'.tr, widget.recipientName, baseStyle),
-                  _pdfRow(
-                    'amount'.tr,
-                    '\$${widget.amount.toStringAsFixed(2)}',
-                    baseStyle,
-                  ),
-                  _pdfRow('type'.tr, widget.type, baseStyle),
-                  _pdfRow(
-                    'date'.tr,
-                    intl.DateFormat(
-                      'yyyy-MM-dd HH:mm',
-                    ).format(widget.date),
-                    baseStyle,
-                  ),
-                  pw.SizedBox(height: 40),
-                  pw.Text('thank_you_note'.tr, style: baseStyle),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-
-      final pdfBytes = await pdf.save();
-
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/receipt_${widget.transactionId}.pdf');
-      await file.writeAsBytes(pdfBytes);
-
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path, mimeType: 'application/pdf')],
-          text: 'receipt_share_text'.tr,
-        ),
-      );
-
+      await ReceiptExportService.exportPdf(widget.data);
       AppSnack.success('success'.tr, 'pdf_saved'.tr);
     } catch (e, stackTrace) {
       SafeGetx.debugTrace(
@@ -186,24 +118,8 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
       );
       AppSnack.error('error'.tr, 'pdf_error'.tr);
     } finally {
-      setState(() => _isExporting = false);
+      if (mounted) setState(() => _isExporting = false);
     }
-  }
-
-  pw.Widget _pdfRow(String label, String value, pw.TextStyle baseStyle) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 8),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(label, style: baseStyle),
-          pw.Text(
-            value,
-            style: baseStyle.copyWith(fontWeight: pw.FontWeight.bold),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -329,7 +245,8 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  intl.DateFormat('MMM dd, yyyy • hh:mm a').format(widget.date),
+                  intl.DateFormat('MMM dd, yyyy • hh:mm a')
+                      .format(widget.data.date),
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
@@ -345,11 +262,40 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
             padding: const EdgeInsets.all(32),
             child: Column(
               children: [
-                _receiptRow('transaction_id'.tr, widget.transactionId, isDark, canCopy: true),
+                _receiptRow(
+                  'transaction_id'.tr,
+                  widget.data.transactionId,
+                  isDark,
+                  canCopy: true,
+                ),
                 const SizedBox(height: 12),
-                _receiptRow('recipient'.tr, widget.recipientName, isDark),
-                const SizedBox(height: 12),
-                _receiptRow('type'.tr, widget.type.tr, isDark),
+                if (widget.data.recipientName != null &&
+                    widget.data.recipientName!.isNotEmpty)
+                  _receiptRow('recipient'.tr, widget.data.recipientName!, isDark),
+                if (widget.data.recipientName != null &&
+                    widget.data.recipientName!.isNotEmpty)
+                  const SizedBox(height: 12),
+                _receiptRow(
+                  'operation_type'.tr,
+                  widget.data.operationType.tr,
+                  isDark,
+                ),
+                if (widget.data.referenceNumber != null) ...[
+                  const SizedBox(height: 12),
+                  _receiptRow(
+                    'reference'.tr,
+                    widget.data.referenceNumber!,
+                    isDark,
+                  ),
+                ],
+                if (widget.data.walletBalanceAfter != null) ...[
+                  const SizedBox(height: 12),
+                  _receiptRow(
+                    'wallet_balance_after'.tr,
+                    '\$${widget.data.walletBalanceAfter!.toStringAsFixed(2)}',
+                    isDark,
+                  ),
+                ],
                 
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
@@ -368,7 +314,9 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                       ),
                     ),
                     Text(
-                      '\$${widget.amount.toStringAsFixed(2)}',
+                      widget.data.currency.toUpperCase() == 'KSP'
+                          ? '${widget.data.amount.toInt()} KSP'
+                          : '\$${widget.data.amount.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 28,

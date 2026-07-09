@@ -360,17 +360,6 @@ class _SupportChatViewState extends State<SupportChatView> {
             setState(() => _showSearch = !_showSearch);
           },
         ),
-        PopupMenuButton(
-          icon: const Icon(Icons.more_vert_rounded),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              child: Text('clear_conversation'.tr),
-              onTap: () {
-                AppSnack.info('soon'.tr, 'feature_soon_desc'.tr);
-              },
-            ),
-          ],
-        ),
       ],
     );
   }

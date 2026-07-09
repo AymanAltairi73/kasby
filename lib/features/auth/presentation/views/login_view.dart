@@ -40,7 +40,7 @@ class _LoginViewState extends State<LoginView> {
                   'welcome_back'.tr,
                   style: Theme.of(context).textTheme.displaySmall,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 20),
                 Text(
                   'sign_in_desc'.tr,
                   style: TextStyle(
@@ -50,42 +50,8 @@ class _LoginViewState extends State<LoginView> {
                     height: 1.5,
                   ),
                 ),
-                const SizedBox(height: 32),
-                Obx(() {
-                  if (!biometric.isAvailable.value ||
-                      !biometric.isEnabled.value) {
-                    return const SizedBox.shrink();
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    child: Semantics(
-                      button: true,
-                      label: 'biometric_login'.tr,
-                      child: OutlinedButton.icon(
-                        onPressed: () async {
-                          final ok = await biometric.attemptBiometricLogin();
-                          if (!ok && mounted) {
-                            setState(
-                              () => _autoValidate = AutovalidateMode.onUserInteraction,
-                            );
-                          }
-                        },
-                        icon: Icon(Icons.fingerprint_rounded,
-                            color: AppColors.darkGold),
-                        label: Text('biometric_login'.tr),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(
-                            AccessibilityUtils.minTouchTarget,
-                          ),
-                          side: BorderSide(
-                            color: AppColors.darkGold.withValues(alpha: 0.5),
-                          ),
-                          foregroundColor: AppColors.darkGold,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
+               const SizedBox(height: 12),
+
                 Semantics(
                   textField: true,
                   label: 'email_or_phone'.tr,
@@ -93,7 +59,7 @@ class _LoginViewState extends State<LoginView> {
                     label: 'email_or_phone'.tr,
                     hint: 'enter_email_phone'.tr,
                     controller: controller.loginIdentifierController,
-                    keyboardType: TextInputType.emailAddress,
+                    keyboardType: TextInputType.text,
                     autocorrect: false,
                     textCapitalization: TextCapitalization.none,
                     onChanged: (_) {
@@ -237,8 +203,46 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       ),
                     ),
+
                   ],
                 ),
+                const SizedBox(height: 32),
+                Obx(() {
+                  if (!biometric.isAvailable.value ||
+                      !biometric.isEnabled.value) {
+                    return const SizedBox.shrink();
+                  }
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Semantics(
+                        button: true,
+                        label: 'biometric_login'.tr,
+                        child: IconButton(
+                          onPressed: () async {
+                            final ok = await biometric.attemptBiometricLogin();
+                            if (!ok && mounted) {
+                              setState(
+                                () => _autoValidate =
+                                    AutovalidateMode.onUserInteraction,
+                              );
+                            }
+                          },
+                          icon: Icon(
+                            Icons.fingerprint_rounded,
+                            color: AppColors.darkGold,
+                            size: 40,
+                          ),
+                          style: IconButton.styleFrom(
+                            minimumSize: Size.square(
+                              AccessibilityUtils.minTouchTarget,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ],
             ),
           ),

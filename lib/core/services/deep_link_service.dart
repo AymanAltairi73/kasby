@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/auth_security_service.dart';
+import 'package:kasby/core/services/authentication_logger.dart';
 import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
@@ -70,12 +71,49 @@ class DeepLinkService extends GetxService {
     );
 
     if (AuthSecurityService.isAuthCallbackUri(uri)) {
+      final sw = AuthenticationLogger.logStart(
+        'email_verification_deep_link',
+        method: '_handleUri',
+        authMethod: 'email_link',
+        params: {'coldStart': isColdStart, 'path': uri.path},
+      );
       try {
         await AuthSecurityService.handleAuthCallback(uri);
+        await AuthController.to.handleEmailVerificationDeepLink();
         AppSnack.success('success'.tr, 'auth_link_success'.tr);
+        AuthenticationLogger.logSuccess(
+          'email_verification_deep_link',
+          stopwatch: sw,
+          method: '_handleUri',
+          authMethod: 'email_link',
+          params: {'coldStart': isColdStart},
+        );
       } on AuthException catch (e) {
-        AppSnack.error('error'.tr, AuthSecurityService.translateAuthError(e));
+        AuthenticationLogger.logFailure(
+          'email_verification_deep_link',
+          e,
+          stopwatch: sw,
+          method: '_handleUri',
+          authMethod: 'email_link',
+          params: {'coldStart': isColdStart},
+        );
+        final message = AuthSecurityService.translateAuthError(e);
+        if (message.toLowerCase().contains('expired') ||
+            message.toLowerCase().contains('invalid')) {
+          AppSnack.error('error'.tr, 'verification_link_invalid'.tr);
+        } else {
+          AppSnack.error('error'.tr, message);
+        }
       } catch (e, stack) {
+        AuthenticationLogger.logFailure(
+          'email_verification_deep_link',
+          e,
+          stopwatch: sw,
+          method: '_handleUri',
+          authMethod: 'email_link',
+          stackTrace: stack,
+          params: {'coldStart': isColdStart},
+        );
         SafeGetx.debugTrace(
           className: 'DeepLinkService',
           method: '_handleUri',

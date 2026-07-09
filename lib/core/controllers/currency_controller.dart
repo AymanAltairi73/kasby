@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:math' show Random;
 import 'package:get/get.dart';
 import 'package:kasby/core/models/currency_model.dart';
 import 'package:kasby/core/models/wallet_model.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -51,9 +54,12 @@ class CurrencyController extends GetxController {
     );
     super.onInit();
     _loadBalancePrivacy();
-    fetchCurrencies();
-    fetchWalletBalances();
-    _listenToWallet();
+    // Initial wallet/currency load is owned by HomeController.fetchAll().
+  }
+
+  /// Starts the wallet realtime listener after the initial data fetch settles.
+  void startWalletListener({Duration delay = const Duration(seconds: 3)}) {
+    Future.delayed(delay, _listenToWallet);
   }
 
   @override
@@ -143,6 +149,7 @@ class CurrencyController extends GetxController {
           .from('wallets')
           .select()
           .eq('user_id', SupabaseService.userId!)
+          .eq('currency', 'USD')
           .maybeSingle();
 
       if (response != null) {
@@ -153,6 +160,11 @@ class CurrencyController extends GetxController {
         pendingBalance.value = wallet.pendingBalance;
         isWalletFrozen.value = wallet.isFrozen;
         walletFrozenReason.value = wallet.frozenReason;
+      }
+      if (Get.isRegistered<KspBalanceService>() &&
+          Get.isRegistered<HomeController>()) {
+        await KspBalanceService.to.refresh();
+        HomeController.to.syncKspFromService();
       }
       SafeGetx.debugTrace(
         className: 'CurrencyController',
@@ -180,28 +192,68 @@ class CurrencyController extends GetxController {
   /// Stream subscription for real-time wallet updates.
   StreamSubscription? _walletSubscription;
   Timer? _walletReconnectTimer;
+  Duration _walletReconnectDelay = const Duration(seconds: 2);
+
+  bool _isRealtimeTimeout(Object error) {
+    return error.toString().contains('RealtimeSubscribeStatus.timedOut');
+  }
+
+  Timer _scheduleWalletReconnect() {
+    final delay = _walletReconnectDelay;
+    _walletReconnectDelay = Duration(
+      seconds: (_walletReconnectDelay.inSeconds * 2).clamp(2, 60),
+    );
+    final jitterMs = Random().nextInt(800);
+    return Timer(delay + Duration(milliseconds: jitterMs), _listenToWallet);
+  }
   
   void _listenToWallet() {
     if (!SupabaseService.isLoggedIn) return;
     
+    _walletReconnectTimer?.cancel();
     _walletSubscription?.cancel();
     _walletSubscription = SupabaseService.client
       .from('wallets')
       .stream(primaryKey: ['id'])
       .eq('user_id', SupabaseService.userId!)
       .listen((data) {
-        if (data.isNotEmpty) {
-          final wallet = WalletModel.fromJson(data.first);
+        _walletReconnectDelay = const Duration(seconds: 2);
+        final usdRows = data
+            .where((row) => (row['currency'] as String?) == 'USD')
+            .toList();
+        if (usdRows.isEmpty && data.isNotEmpty) {
+          // Fallback when currency column missing on older rows
+          usdRows.add(data.first);
+        }
+        if (usdRows.isNotEmpty) {
+          final wallet = WalletModel.fromJson(usdRows.first);
           totalBalance.value = wallet.availableBalance;
           profitBalance.value = wallet.profitBalance;
           investedBalance.value = wallet.investedBalance;
           pendingBalance.value = wallet.pendingBalance;
+          isWalletFrozen.value = wallet.isFrozen;
+          walletFrozenReason.value = wallet.frozenReason;
+          if (Get.isRegistered<HomeController>()) {
+            HomeController.to.syncDashboardFreezeState(
+              isFrozen: wallet.isFrozen,
+              frozenReason: wallet.frozenReason,
+            );
+          }
+          if (Get.isRegistered<KspBalanceService>() &&
+              Get.isRegistered<HomeController>()) {
+            unawaited(
+              KspBalanceService.to.refresh().then((_) {
+                HomeController.to.syncKspFromService();
+              }),
+            );
+          }
           SafeGetx.debugTrace(
             className: 'CurrencyController',
             method: '_listenToWallet',
             feature: 'Wallet',
             status: 'INFO',
             message: 'Wallet updated via stream',
+            params: {'isFrozen': wallet.isFrozen},
           );
         }
       }, onError: (e, stack) {
@@ -209,15 +261,15 @@ class CurrencyController extends GetxController {
           className: 'CurrencyController',
           method: '_listenToWallet',
           feature: 'Wallet',
-          status: 'ERROR',
+          status: _isRealtimeTimeout(e) ? 'WARN' : 'ERROR',
+          message: _isRealtimeTimeout(e)
+              ? 'Wallet stream timed out; retry scheduled'
+              : null,
           error: e,
           stackTrace: stack,
         );
         _walletReconnectTimer?.cancel();
-        _walletReconnectTimer = Timer(
-          const Duration(seconds: 5),
-          () => _listenToWallet(),
-        );
+        _walletReconnectTimer = _scheduleWalletReconnect();
       });
   }
 

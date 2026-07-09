@@ -11,6 +11,8 @@ import 'package:kasby/features/home/presentation/widgets/home_kyc_banner.dart';
 import 'package:kasby/features/home/presentation/widgets/home_portfolio_insights.dart';
 import 'package:kasby/features/home/presentation/widgets/home_quick_actions.dart';
 import 'package:kasby/features/home/presentation/widgets/home_recent_transactions.dart';
+import 'package:kasby/core/tour/tour_controller.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/features/home/presentation/widgets/home_slider.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -36,6 +38,12 @@ class _HomeViewState extends State<HomeView> {
       status: 'INFO',
       message: 'Tab mounted in MainShell',
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await TourController.to.tryConsumePendingAutoHomeTour(context);
+      if (!mounted) return;
+      await TourController.to.tryStartAutoHomeTour(context);
+    });
   }
 
   @override
@@ -59,6 +67,7 @@ class _HomeViewState extends State<HomeView> {
         backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
         onRefresh: () => homeController.refreshAll(),
         child: CustomScrollView(
+          controller: TourTargetKeys.homeScroll,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             const HomeAppBar(),
@@ -68,7 +77,14 @@ class _HomeViewState extends State<HomeView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const HomeSlider()
+                    KeyedSubtree(
+                      key: TourTargetKeys.welcome,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 216,
+                        child: HomeSlider(),
+                      ),
+                    )
                         .animate(autoPlay: motion)
                         .fadeIn(
                           duration: KasbyMotion.duration(
@@ -88,7 +104,10 @@ class _HomeViewState extends State<HomeView> {
                       }
                       return const SizedBox.shrink();
                     }),
-                    const HomeBalanceCard()
+                    HomeBalanceCard(
+                      kspSectionKey: TourTargetKeys.kspRewards,
+                      tourKey: TourTargetKeys.wallet,
+                    )
                         .animate(autoPlay: motion)
                         .fadeIn(
                           delay: KasbyMotion.duration(
@@ -98,9 +117,15 @@ class _HomeViewState extends State<HomeView> {
                         )
                         .scale(begin: const Offset(0.95, 0.95)),
                     const SizedBox(height: 24),
-                    const HomePortfolioInsights(),
+                    KeyedSubtree(
+                      key: TourTargetKeys.referralSummary,
+                      child: const HomePortfolioInsights(),
+                    ),
                     const SizedBox(height: 24),
-                    const HomeQuickActions()
+                    HomeQuickActions(
+                      tourKey: TourTargetKeys.quickActions,
+                      marketplaceKey: TourTargetKeys.marketplace,
+                    )
                         .animate(autoPlay: motion)
                         .fadeIn(
                           delay: KasbyMotion.duration(
@@ -121,7 +146,7 @@ class _HomeViewState extends State<HomeView> {
                           ),
                         ),
                     const SizedBox(height: 16),
-                    const HomeRecentTransactions()
+                    HomeRecentTransactions(key: TourTargetKeys.transactions)
                         .animate(autoPlay: motion)
                         .fadeIn(
                           delay: KasbyMotion.duration(

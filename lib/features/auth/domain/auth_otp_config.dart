@@ -7,9 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AuthOtpConfig {
   AuthOtpConfig._();
 
-  /// TEMP: Skip email verification UI and OTP during signup.
-  /// Requires "Confirm email" disabled in Supabase Auth settings.
-  static const bool tempSkipEmailVerification = true;
+  /// Production: email verification required after signup (Supabase Email OTP).
+  static const bool tempSkipEmailVerification = false;
 
   static const int defaultLength = 6;
 

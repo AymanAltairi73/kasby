@@ -26,6 +26,12 @@ class _KycViewState extends State<KycView> {
       feature: 'Profile',
       status: 'INFO',
     );
+    _refreshKycState();
+  }
+
+  Future<void> _refreshKycState() async {
+    await HomeController.to.fetchProfile();
+    await HomeController.to.fetchDashboard();
   }
 
   @override
@@ -57,19 +63,33 @@ class _KycViewState extends State<KycView> {
           onPressed: () => Get.safeBack(),
         ),
       ),
-      body: Obx(() {
+      body: RefreshIndicator(
+        onRefresh: _refreshKycState,
+        color: AppColors.darkGold,
+        child: Obx(() {
         final profile = HomeController.to.profile.value;
         final status = profile?.kycStatus ?? 'none';
 
         if (status == 'verified') {
-          return _buildVerifiedState(context);
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [_buildVerifiedState(context)],
+          );
         } else if (status == 'pending') {
-          return _buildPendingState(context);
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [_buildPendingState(context)],
+          );
+        } else if (status == 'rejected') {
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [_buildRejectedState(context, profile?.kycRejectionReason)],
+          );
         }
 
         return Column(
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             _buildStepper(context, controller),
             Expanded(
               child: Obx(() {
@@ -82,6 +102,8 @@ class _KycViewState extends State<KycView> {
                     return _buildDocumentsStep(context, controller);
                   case 3:
                     return _buildSelfieStep(context, controller);
+                  case 4:
+                    return _buildReviewStep(context, controller);
                   default:
                     return const SizedBox();
                 }
@@ -91,6 +113,7 @@ class _KycViewState extends State<KycView> {
           ],
         );
       }),
+      ),
     );
   }
 
@@ -128,6 +151,87 @@ class _KycViewState extends State<KycView> {
             KasbyButton(
               text: 'go_back'.tr,
               onPressed: () => Get.safeBack(),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn().scale();
+  }
+
+  Widget _buildRejectedState(BuildContext context, String? reason) {
+    final controller = Get.find<KycController>();
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 80,
+                color: AppColors.error,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              'kyc_rejected_title'.tr,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'kyc_rejected_desc'.tr,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            if (reason != null && reason.trim().isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'rejection_reason'.tr,
+                      style: TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      reason.trim(),
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 40),
+            KasbyButton(
+              text: 'resubmit_kyc'.tr,
+              onPressed: () {
+                controller.resetForResubmission();
+              },
+            ),
+            const SizedBox(height: 12),
+            KasbyButton(
+              text: 'go_back'.tr,
+              onPressed: () => Get.safeBack(),
+              isSecondary: true,
             ),
           ],
         ),
@@ -181,7 +285,7 @@ class _KycViewState extends State<KycView> {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Row(
-          children: List.generate(4, (index) {
+          children: List.generate(5, (index) {
             final isDark = Theme.of(context).brightness == Brightness.dark;
             bool isActive = controller.currentStep.value >= index;
             bool isCurrent = controller.currentStep.value == index;
@@ -234,7 +338,7 @@ class _KycViewState extends State<KycView> {
                             ),
                     ),
                   ),
-                  if (index < 3)
+                  if (index < 4)
                     Expanded(
                       child: Container(
                         height: 2,
@@ -491,84 +595,197 @@ class _KycViewState extends State<KycView> {
 
   Widget _buildSelfieStep(BuildContext context, KycController controller) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
+    return ListView(
       padding: const EdgeInsets.all(24),
-      child: Column(
+      children: [
+        Text(
+          'step_selfie'.tr,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'kyc_selfie_liveness_desc'.tr,
+          style: TextStyle(
+            color: isDark
+                ? AppColors.textSecondary
+                : AppColors.textSecondaryLight,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Obx(() {
+          if (controller.hasCompleteSelfieSet) {
+            return Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: _selfiePreview(controller.selfieFrontPath.value, 'kyc_selfie_step_front'.tr, isDark)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _selfiePreview(controller.selfieRightPath.value, 'kyc_selfie_step_right'.tr, isDark)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _selfiePreview(controller.selfieLeftPath.value, 'kyc_selfie_step_left'.tr, isDark)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: controller.startSelfieLivenessCapture,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text('kyc_selfie_retake_all'.tr),
+                ),
+              ],
+            );
+          }
+
+          return Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.darkGold, width: 2),
+                  color: AppColors.darkGold.withValues(alpha: 0.08),
+                ),
+                child: Icon(
+                  Icons.face_retouching_natural_rounded,
+                  size: 72,
+                  color: AppColors.darkGold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              KasbyButton(
+                text: 'kyc_selfie_start_capture'.tr,
+                isLoading: controller.isLaunchingSelfie.value,
+                onPressed: controller.startSelfieLivenessCapture,
+              ),
+            ],
+          );
+        }),
+      ],
+    ).animate().fadeIn().slideX(begin: 0.1, end: 0);
+  }
+
+  Widget _selfiePreview(String path, String label, bool isDark) {
+    return Column(
+      children: [
+        Container(
+          height: 90,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(45),
+            border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.4)),
+            image: path.isNotEmpty
+                ? DecorationImage(
+                    image: FileImage(File(path)),
+                    fit: BoxFit.cover,
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(label, style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
+  Widget _buildReviewStep(BuildContext context, KycController controller) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        Text(
+          'kyc_review_title'.tr,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'kyc_review_desc'.tr,
+          style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+        ),
+        const SizedBox(height: 20),
+        _reviewRow('select_id_type'.tr, controller.idTypeLabel),
+        _reviewRow('full_name'.tr, controller.nameController.text.trim()),
+        _reviewRow('id_number'.tr, controller.idNumberController.text.trim()),
+        _reviewRow('dob'.tr, controller.dob.value),
+        const SizedBox(height: 16),
+        Text(
+          'step_documents'.tr,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _reviewThumb(controller.frontImagePath.value, isDark),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _reviewThumb(controller.backImagePath.value, isDark),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'kyc_selfie_review_title'.tr,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _reviewThumb(controller.selfieFrontPath.value, isDark, round: true),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _reviewThumb(controller.selfieRightPath.value, isDark, round: true),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _reviewThumb(controller.selfieLeftPath.value, isDark, round: true),
+            ),
+          ],
+        ),
+      ],
+    ).animate().fadeIn().slideX(begin: 0.1, end: 0);
+  }
+
+  Widget _reviewRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'step_selfie'.tr,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+          SizedBox(
+            width: 110,
+            child: Text(label, style: TextStyle(color: AppColors.textSecondary)),
           ),
-          const SizedBox(height: 40),
-          Obx(
-            () =>
-                InkWell(
-                      onTap: () => controller.pickImage('selfie'),
-                      customBorder: const CircleBorder(),
-                      child: Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.darkGold,
-                            width: 2,
-                          ),
-                          image: controller.selfiePath.value.isNotEmpty
-                              ? DecorationImage(
-                                  image: FileImage(
-                                    File(controller.selfiePath.value),
-                                  ),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.darkGold.withValues(alpha: 0.1),
-                              blurRadius: 30,
-                              spreadRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: controller.selfiePath.value.isEmpty
-                            ? Center(
-                                child: Icon(
-                                  Icons.face_retouching_natural_rounded,
-                                  size: 80,
-                                  color: AppColors.darkGold,
-                                ),
-                              )
-                            : Container(
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.black26,
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.camera_alt_rounded,
-                                    color: Colors.white,
-                                    size: 40,
-                                  ),
-                                ),
-                              ),
-                      ),
-                    )
-                    .animate(onPlay: (c) => c.repeat())
-                    .shimmer(duration: const Duration(seconds: 3)),
-          ),
-          const SizedBox(height: 40),
-          Text(
-            'selfie_instruction'.tr,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isDark
-                  ? AppColors.textSecondary
-                  : AppColors.textSecondaryLight,
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
       ),
-    ).animate().fadeIn().slideX(begin: 0.1, end: 0);
+    );
+  }
+
+  Widget _reviewThumb(String path, bool isDark, {bool round = false}) {
+    return Container(
+      height: 90,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(round ? 45 : 12),
+        border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.4)),
+        image: path.isNotEmpty
+            ? DecorationImage(
+                image: FileImage(File(path)),
+                fit: BoxFit.cover,
+              )
+            : null,
+      ),
+      child: path.isEmpty
+          ? Icon(Icons.image_not_supported_outlined, color: AppColors.textSecondary)
+          : null,
+    );
   }
 
   Widget _buildBottomBar(BuildContext context, KycController controller) {
@@ -603,18 +820,11 @@ class _KycViewState extends State<KycView> {
             flex: 2,
             child: Obx(
               () => KasbyButton(
-                text: controller.currentStep.value == 3
+                text: controller.currentStep.value == KycController.reviewStepIndex
                     ? 'submit_kyc'.tr
                     : 'next_step'.tr,
                 isLoading: controller.isLoading.value,
-                onPressed: () {
-                  if (controller.currentStep.value == 0 &&
-                      controller.selectedIdType.isEmpty) {
-                    Get.snackbar('Error', 'Please select an ID type');
-                    return;
-                  }
-                  controller.nextStep();
-                },
+                onPressed: controller.nextStep,
               ),
             ),
           ),

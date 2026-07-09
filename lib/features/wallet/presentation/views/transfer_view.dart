@@ -7,14 +7,15 @@ import 'package:flutter/services.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/core/services/account_restriction_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
-import 'package:kasby/core/services/sensitive_operation_guard.dart';
-import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/services/transaction_auth_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
-import 'package:kasby/core/services/session_service.dart';
-import 'package:kasby/core/widgets/transaction_receipt.dart';
+import 'package:kasby/core/models/kasby_receipt_data.dart';
+import 'package:kasby/core/services/receipt_export_service.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/services/financial_repository.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/core/services/fee_service.dart';
 import 'package:kasby/core/widgets/fee_breakdown_card.dart';
 
@@ -52,10 +53,7 @@ class _TransferViewState extends State<TransferView> {
       if (args['from_qr_scan'] == true) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          final amount = double.tryParse(args['amount']?.toString() ?? '');
-          if (amount != null && amount > 0 && _idController.text.isNotEmpty) {
-            _showConfirmationDialog(amount);
-          }
+          _handleTransfer();
         });
       }
     }
@@ -441,9 +439,28 @@ class _TransferViewState extends State<TransferView> {
   }
 
   void _handleTransfer() async {
-    if (!AccountRestrictionService.to.checkWriteAccess()) return;
-    if (HomeController.to.dashboard.value?.isFrozen == true) {
-      Get.snackbar('error'.tr, 'wallet_frozen'.tr);
+    if (!await AccountRestrictionService.to.checkWriteAccessAsync()) return;
+
+    if (HomeController.to.kycStatus != 'verified') {
+      Get.snackbar(
+        'kyc_verification'.tr,
+        'verified_account_required'.tr,
+        backgroundColor: AppColors.darkGold.withValues(alpha: 0.8),
+        colorText: Colors.black,
+        mainButton: TextButton(
+          onPressed: () {
+            Get.back();
+            Get.toNamed(Routes.kyc);
+          },
+          child: Text(
+            'verify_now'.tr,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
       return;
     }
 
@@ -495,7 +512,7 @@ class _TransferViewState extends State<TransferView> {
 
     // Balance check
     if (isPoints) {
-      final points = HomeController.to.userPoints.value;
+      final points = KspBalanceService.to.balance;
       if (amount > points) {
         Get.snackbar(
           'error'.tr,
@@ -518,9 +535,10 @@ class _TransferViewState extends State<TransferView> {
       }
     }
 
-    // Biometric/PIN Authentication
-    final authenticated = await SessionService.to.authenticate();
-    if (!authenticated) {
+    final confirmed = await TransactionAuthService.to.requireConfirmation(
+      purpose: 'wallet_transfer',
+    );
+    if (!confirmed) {
       Get.snackbar(
         'security'.tr,
         'auth_failed_desc'.tr,
@@ -529,11 +547,6 @@ class _TransferViewState extends State<TransferView> {
       );
       return;
     }
-
-    final otpVerified = await SensitiveOperationGuard.requirePhoneOtp(
-      purpose: 'wallet_transfer',
-    );
-    if (!otpVerified) return;
 
     // Show confirmation dialog
     _showConfirmationDialog(amount);
@@ -620,31 +633,17 @@ class _TransferViewState extends State<TransferView> {
     setState(() => _isSubmitting = true);
 
     try {
-      final result = await SafeGetx.traceAsync(
-        className: 'TransferView',
-        method: '_executeTransfer',
-        feature: 'Wallet',
-        params: {
-          'table': 'transactions',
-          'operation': 'RPC',
-          'rpc': 'create_transfer',
-          'amount': amount,
-          'type': isPoints ? 'points' : 'funds',
-        },
-        operation: () => SupabaseService.client.rpc(
-          'create_transfer',
-          params: {
-            'p_amount': amount,
-            'p_receiver_referral_code':
-                ReferralService.normalizeCode(_idController.text),
-            'p_transfer_type': isPoints ? 'points' : 'funds',
-          },
-        ),
+      final response = await FinancialRepository.createTransfer(
+        amount: amount,
+        receiverReferralCode: ReferralService.normalizeCode(_idController.text),
+        isKsp: isPoints,
       );
 
-      final response = result as Map<String, dynamic>;
-
       if (response['success'] == true) {
+        await KspBalanceService.to.afterFinancialMutation(response);
+        if (Get.isRegistered<CurrencyController>()) {
+          await CurrencyController.to.fetchWalletBalances();
+        }
         HomeController.to.refreshAll();
         _showSuccessOverlay(
           response['receiver_name'] ?? '',
@@ -662,7 +661,7 @@ class _TransferViewState extends State<TransferView> {
         );
         Get.snackbar(
           'error'.tr,
-          response['error']?.toString() ?? 'transfer_error'.tr,
+          FinancialRepository.mapErrorMessage(response, 'transfer_error'.tr),
           backgroundColor: AppColors.error.withValues(alpha: 0.7),
           colorText: Colors.white,
         );
@@ -685,18 +684,23 @@ class _TransferViewState extends State<TransferView> {
     String transactionId,
     double amount,
   ) {
-    Get.bottomSheet(
-      TransactionReceipt(
+    final profile = HomeController.to.profile.value;
+    ReceiptExportService.showReceiptSheet(
+      KasbyReceiptData(
         transactionId: transactionId,
-        recipientName: receiverName,
-        amount: amount,
-        type: isPoints ? 'send_points'.tr : 'send_funds'.tr,
+        operationType: isPoints ? 'send_points' : 'transfer',
+        referenceNumber: transactionId,
         date: DateTime.now(),
+        userName: profile?.fullName,
+        userId: profile?.id,
+        invitationCode: profile?.referralCode,
+        amount: amount,
+        currency: isPoints ? 'KSP' : 'USD',
+        status: 'completed',
+        recipientName: receiverName,
+        notes: message.isNotEmpty ? message : null,
+        qrPayload: transactionId,
       ),
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-    ).then((_) {
-      Get.until((route) => route.settings.name == Routes.wallet || route.isFirst);
-    });
+    );
   }
 }

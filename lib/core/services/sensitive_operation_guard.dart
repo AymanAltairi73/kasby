@@ -5,7 +5,10 @@ import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Step-up phone OTP verification before sensitive financial or account actions.
+/// Account-level step-up OTP (email/phone change, password change).
+///
+/// **Not used for wallet transfers, withdrawals, or QR payments.**
+/// Financial operations use [TransactionAuthService] (biometric + transaction PIN).
 class SensitiveOperationGuard {
   SensitiveOperationGuard._();
 
@@ -50,7 +53,9 @@ class SensitiveOperationGuard {
   /// Clears cached step-up state (e.g. on logout).
   static void clearStepUp() {
     if (Get.isRegistered<SensitiveOperationGuardService>()) {
-      Get.find<SensitiveOperationGuardService>().verifiedAt = null;
+      final svc = Get.find<SensitiveOperationGuardService>();
+      svc.verifiedAt = null;
+      svc.nativeStepUpOtp = false;
     }
   }
 
@@ -132,4 +137,7 @@ class SensitiveOperationGuard {
 /// GetX service backing [SensitiveOperationGuard.hasRecentStepUp].
 class SensitiveOperationGuardService extends GetxService {
   DateTime? verifiedAt;
+
+  /// True when step-up OTP was sent via Supabase Auth (edge function unavailable).
+  bool nativeStepUpOtp = false;
 }

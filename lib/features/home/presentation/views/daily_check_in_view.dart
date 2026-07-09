@@ -9,6 +9,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/fcm_service.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
@@ -191,8 +192,10 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
         // Cancel reminder notifications since user checked in
         FCMService.to.cancelCheckInNotifications();
 
-        // Refresh points
-        HomeController.to.fetchPoints();
+        await HomeController.to.fetchKspBalance();
+        if (Get.isRegistered<KspBalanceService>()) {
+          await KspBalanceService.to.afterFinancialMutation(response);
+        }
 
         HapticFeedback.heavyImpact();
 

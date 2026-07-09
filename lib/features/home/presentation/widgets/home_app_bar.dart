@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -167,7 +168,9 @@ class HomeAppBar extends StatelessWidget {
           tooltip: 'global_search'.tr,
           onPressed: () => Get.toNamed(Routes.globalSearch),
         ),
-        Stack(
+        KeyedSubtree(
+          key: TourTargetKeys.notifications,
+          child: Stack(
           children: [
             IconButton(
               icon: Icon(
@@ -212,6 +215,7 @@ class HomeAppBar extends StatelessWidget {
                   : const SizedBox.shrink(),
             ),
           ],
+        ),
         ),
         const SizedBox(width: 8),
       ],

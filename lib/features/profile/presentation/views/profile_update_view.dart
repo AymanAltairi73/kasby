@@ -248,26 +248,13 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                       text: 'next'.tr,
                       onPressed: () async {
                         final newValue = _buildTargetValue();
-                        if (newValue.isEmpty || newValue == currentValue) {
-                          return;
-                        }
-
-                        if (isEmailChange) {
-                          final success = await profileCtrl.sendUpdateOtp(
-                            target: newValue,
-                            type: type,
-                          );
-                          if (success) {
-                            currentStep.value = 2;
-                          }
-                        } else {
-                          final success = await profileCtrl.sendUpdateOtp(
-                            target: newValue,
-                            type: type,
-                          );
-                          if (success) {
-                            currentStep.value = 2;
-                          }
+                        final success = await profileCtrl.sendUpdateOtp(
+                          target: newValue,
+                          type: type,
+                          currentValue: currentValue,
+                        );
+                        if (success) {
+                          currentStep.value = 2;
                         }
                       },
                     ).animate().fadeIn(delay: 250.ms),
@@ -453,6 +440,7 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                                 : () => profileCtrl.sendUpdateOtp(
                                       target: _buildTargetValue(),
                                       type: type,
+                                      currentValue: currentValue,
                                     ),
                             child: Text(
                               profileCtrl.resendTimer.value > 0

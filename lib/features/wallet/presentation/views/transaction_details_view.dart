@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -6,6 +8,8 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/utils/date_helper.dart';
+import 'package:kasby/core/services/financial_repository.dart';
+import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -20,6 +24,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
   TransactionModel? _tx;
   String? _heroTag;
   bool _hasValidArgs = true;
+  Map<String, dynamic>? _serverDetails;
+  bool _isLoadingDetails = false;
+  StreamSubscription<List<Map<String, dynamic>>>? _txSub;
 
   @override
   void initState() {
@@ -60,6 +67,38 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
         'amount': tx.amount,
       },
     );
+
+    _loadServerDetails(tx.id);
+    _listenToTransactionUpdates(tx.id);
+  }
+
+  @override
+  void dispose() {
+    _txSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadServerDetails(String transactionId) async {
+    setState(() => _isLoadingDetails = true);
+    final details = await FinancialRepository.fetchTransactionDetails(transactionId);
+    if (mounted) {
+      setState(() {
+        _serverDetails = details;
+        _isLoadingDetails = false;
+      });
+    }
+  }
+
+  void _listenToTransactionUpdates(String transactionId) {
+    if (!SupabaseService.isLoggedIn) return;
+    _txSub = SupabaseService.client
+        .from('transactions')
+        .stream(primaryKey: ['id'])
+        .eq('id', transactionId)
+        .listen((rows) async {
+      if (rows.isEmpty) return;
+      await _loadServerDetails(transactionId);
+    });
   }
 
   @override
@@ -137,6 +176,37 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                     currencyController,
                     isDark,
                   ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05),
+                  if (_isLoadingDetails)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  if (_serverDetails?['counterpart'] != null) ...[
+                    const SizedBox(height: 16),
+                    _buildPartyCard(
+                      title: 'counterparty'.tr,
+                      party: Map<String, dynamic>.from(
+                        _serverDetails!['counterpart'] as Map,
+                      ),
+                      isDark: isDark,
+                    ),
+                  ],
+                  if (_serverDetails?['agent'] != null) ...[
+                    const SizedBox(height: 16),
+                    _buildPartyCard(
+                      title: 'deposit_agent'.tr,
+                      party: Map<String, dynamic>.from(
+                        _serverDetails!['agent'] as Map,
+                      ),
+                      isDark: isDark,
+                      isAgent: true,
+                    ),
+                  ],
+                  if (_serverDetails?['proof_url'] != null &&
+                      (_serverDetails!['proof_url'] as String).isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildProofCard(_serverDetails!['proof_url'] as String, isDark),
+                  ],
                   if (tx.description != null && tx.description!.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     _buildDescriptionCard(
@@ -894,5 +964,144 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
           'icon': Icons.info_outline_rounded,
         };
     }
+  }
+
+  Widget _buildPartyCard({
+    required String title,
+    required Map<String, dynamic> party,
+    required bool isDark,
+    bool isAgent = false,
+  }) {
+    final name = party['full_name']?.toString() ?? '—';
+    final id = party['id']?.toString() ?? party['user_id']?.toString() ?? '';
+    final isVerified = party['is_verified'] == true ||
+        party['kyc_status']?.toString() == 'verified';
+    final avatarUrl = party['avatar_url']?.toString();
+    final country = party['country']?.toString();
+    final role = party['role']?.toString();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.grey.shade200,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.onSurfaceLight,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundImage:
+                    avatarUrl != null && avatarUrl.isNotEmpty
+                        ? NetworkImage(avatarUrl)
+                        : null,
+                child: avatarUrl == null || avatarUrl.isEmpty
+                    ? Text(name.isNotEmpty ? name[0] : '?')
+                    : null,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.onSurfaceLight,
+                            ),
+                          ),
+                        ),
+                        if (isVerified) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.verified_rounded,
+                            size: 18,
+                            color: AppColors.softGreen,
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (id.isNotEmpty)
+                      Text(
+                        'ID: ${id.length > 8 ? id.substring(0, 8) : id}...',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    if (country != null && country.isNotEmpty)
+                      Text(country, style: const TextStyle(fontSize: 12)),
+                    if (isAgent || role == 'agent')
+                      Chip(
+                        label: Text('agent'.tr, style: const TextStyle(fontSize: 11)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProofCard(String proofUrl, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'proof_image'.tr,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.onSurfaceLight,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.network(
+              proofUrl,
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                height: 120,
+                alignment: Alignment.center,
+                child: Text('couldnt_load_data'.tr),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

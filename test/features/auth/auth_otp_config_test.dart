@@ -4,9 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   group('AuthOtpConfig', () {
-    test('email change defaults to 8 digits', () {
-      expect(AuthOtpConfig.lengthForPurpose('email_change'), 8);
-      expect(AuthOtpConfig.lengthForOtpType(OtpType.emailChange), 8);
+    test('email change defaults to 6 digits (Supabase unified OTP)', () {
+      expect(AuthOtpConfig.lengthForPurpose('email_change'), 6);
+      expect(AuthOtpConfig.lengthForOtpType(OtpType.emailChange), 6);
     });
 
     test('signup and recovery default to 6 digits', () {
@@ -20,9 +20,9 @@ void main() {
     });
 
     test('isComplete validates exact length', () {
-      expect(AuthOtpConfig.isComplete('12345678', 8), isTrue);
-      expect(AuthOtpConfig.isComplete('1234567', 8), isFalse);
-      expect(AuthOtpConfig.isComplete('123456789', 8), isFalse);
+      expect(AuthOtpConfig.isComplete('123456', 6), isTrue);
+      expect(AuthOtpConfig.isComplete('12345', 6), isFalse);
+      expect(AuthOtpConfig.isComplete('1234567', 6), isFalse);
     });
   });
 }

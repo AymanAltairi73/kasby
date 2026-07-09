@@ -31,9 +31,11 @@ import '../features/wallet/presentation/views/loan_view.dart';
 import '../features/profile/presentation/views/edit_profile_view.dart';
 import '../features/profile/presentation/views/personal_profile_view.dart';
 import '../core/widgets/lock_screen.dart';
-import '../features/profile/presentation/views/social_network_view.dart';
+import '../features/social/presentation/views/social_network_view.dart';
+import '../features/social/presentation/bindings/social_binding.dart';
 import '../features/wallet/presentation/views/agency_apply_view.dart';
 import '../features/profile/presentation/views/my_team_view.dart';
+import '../features/profile/presentation/controllers/team_controller.dart';
 import '../features/profile/presentation/views/kyc_view.dart';
 import '../features/profile/presentation/views/change_password_view.dart';
 import '../features/support/presentation/views/support_chat_view.dart';
@@ -41,6 +43,7 @@ import '../features/wallet/presentation/views/all_transactions_view.dart';
 import '../features/wallet/presentation/views/transaction_details_view.dart';
 import '../features/profile/presentation/views/agent_dashboard_view.dart';
 import '../features/profile/presentation/views/profile_update_view.dart';
+import '../features/profile/presentation/controllers/profile_update_controller.dart';
 import '../features/qr_payment/presentation/views/qr_scanner_view.dart';
 import '../features/qr_payment/presentation/views/my_qr_view.dart';
 import '../features/profile/presentation/views/security_center_view.dart';
@@ -62,6 +65,7 @@ import '../features/marketplace/presentation/views/marketplace_search_view.dart'
 import '../features/marketplace/presentation/views/marketplace_wishlist_view.dart';
 import '../features/marketplace/presentation/views/marketplace_notifications_view.dart';
 import '../features/marketplace/presentation/views/marketplace_health_view.dart';
+import '../features/auth/presentation/middleware/auth_verification_middleware.dart';
 
 class AppPages {
   static const initial = Routes.splash;
@@ -76,12 +80,16 @@ class AppPages {
     Widget Function() builder, {
     Bindings? binding,
     Transition? transition,
+    List<GetMiddleware>? middlewares,
   }) {
     return GetPage(
       name: name,
       page: () => _loggedScreen(screen, builder()),
       binding: binding,
       transition: transition,
+      middlewares: middlewares != null
+          ? List<GetMiddleware>.from(middlewares)
+          : <GetMiddleware>[],
     );
   }
 
@@ -101,7 +109,12 @@ class AppPages {
       'VerifyEmailView',
       () => const VerifyEmailView(),
     ),
-    _route(Routes.home, 'MainShellView', () => const MainShellView()),
+    _route(
+      Routes.home,
+      'MainShellView',
+      () => const MainShellView(),
+      middlewares: [AuthVerificationMiddleware()],
+    ),
     _route(
       Routes.investmentPlans,
       'InvestmentPlansView',
@@ -156,13 +169,21 @@ class AppPages {
       Routes.friendRequests,
       'SocialNetworkView',
       () => const SocialNetworkView(),
+      binding: SocialBinding(),
     ),
     _route(
       Routes.agencyApply,
       'AgencyApplyView',
       () => const AgencyApplyView(),
     ),
-    _route(Routes.myTeam, 'MyTeamView', () => const MyTeamView()),
+    _route(
+      Routes.myTeam,
+      'MyTeamView',
+      () => const MyTeamView(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<TeamController>(() => TeamController());
+      }),
+    ),
     _route(Routes.kyc, 'KycView', () => const KycView()),
     _route(
       Routes.changePassword,
@@ -199,6 +220,9 @@ class AppPages {
             agentName: map?['user_name'] as String?,
             isAgentChat: map?['is_agent_chat'] as bool? ?? false,
             predefinedConversationId: map?['conversation_id'] as String?,
+            initialConversation: map?['conversation'] is Map
+                ? Map<String, dynamic>.from(map!['conversation'] as Map)
+                : null,
           ),
         );
       }),
@@ -233,6 +257,11 @@ class AppPages {
       Routes.profileUpdate,
       'ProfileUpdateView',
       () => const ProfileUpdateView(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<ProfileUpdateController>()) {
+          Get.lazyPut(() => ProfileUpdateController());
+        }
+      }),
     ),
     _route(Routes.qrScanner, 'QrScannerView', () => const QrScannerView()),
     _route(Routes.myQr, 'MyQrView', () => const MyQrView()),

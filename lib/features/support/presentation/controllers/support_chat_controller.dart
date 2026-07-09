@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/services/enterprise_operations_logger.dart';
 import 'package:kasby/core/services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/core/services/presence_service.dart';
@@ -22,6 +23,7 @@ class SupportChatController extends GetxController {
   final String? agentName;
   final bool isAgentChat;
   final String? predefinedConversationId;
+  final Map<String, dynamic>? initialConversation;
 
   SupportChatController({
     this.friendId, 
@@ -30,6 +32,7 @@ class SupportChatController extends GetxController {
     this.agentName,
     this.isAgentChat = false,
     this.predefinedConversationId,
+    this.initialConversation,
   });
 
   bool get isSocialChat => friendId != null;
@@ -133,6 +136,8 @@ class SupportChatController extends GetxController {
       params: {
         'isSocialChat': isSocialChat,
         'isAgentChat': isAgentChat,
+        'predefinedConversationId': predefinedConversationId,
+        'hasInitialConversation': initialConversation != null,
       },
     );
     super.onInit();
@@ -192,10 +197,19 @@ class SupportChatController extends GetxController {
         durationMs: stopwatch.elapsedMilliseconds,
         error: e,
         stackTrace: stack,
+        params: {
+          'isAgentChat': isAgentChat,
+          'isSocialChat': isSocialChat,
+          'predefinedConversationId': predefinedConversationId,
+          'currentUserId': SupabaseService.userId,
+          'agentUserId': agentUserId,
+        },
       );
       Get.snackbar(
         'error'.tr,
-        'chat_connection_error'.tr,
+        isAgentChat
+            ? '${'chat_connection_error'.tr}\n${e.toString()}'
+            : 'chat_connection_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withValues(alpha: 0.8),
         colorText: Colors.white,
@@ -207,6 +221,41 @@ class SupportChatController extends GetxController {
   }
 
   Future<Map<String, dynamic>> _getOrCreateConversation() async {
+    if (isAgentChat) {
+      if (initialConversation != null) {
+        SafeGetx.debugTrace(
+          className: 'SupportChatController',
+          method: '_getOrCreateConversation',
+          feature: 'AgentChat',
+          status: 'INFO',
+          message: 'Using RPC-provided agent conversation',
+          params: {
+            'conversationId': initialConversation!['id'],
+            'agentUserId': agentUserId,
+          },
+        );
+        _applyConversationIds(initialConversation!);
+        return initialConversation!;
+      }
+
+      if (predefinedConversationId != null) {
+        final conv = await SupabaseService.client
+            .from('chat_conversations')
+            .select()
+            .eq('id', predefinedConversationId!)
+            .maybeSingle();
+        if (conv != null) {
+          _applyConversationIds(conv);
+          return conv;
+        }
+        throw Exception(
+          'Agent conversation not readable (id=$predefinedConversationId)',
+        );
+      }
+
+      throw Exception('Agent chat requires conversation context');
+    }
+
     if (predefinedConversationId != null) {
       final conv = await SupabaseService.client
           .from('chat_conversations')
@@ -491,6 +540,14 @@ class SupportChatController extends GetxController {
 
   Future<void> sendMessage(String content, {String type = 'text'}) async {
     if (content.trim().isEmpty || _conversationId == null) return;
+
+    EnterpriseOperationsLogger.log(
+      domain: 'chat',
+      operation: 'send_message',
+      phase: 'START',
+      entityId: _conversationId,
+      params: {'messageType': type},
+    );
 
     final String? replyToId = replyMessage.value?.id;
 

@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
+import 'package:kasby/core/tour/tour_feature_host.dart';
+import 'package:kasby/core/tour/tour_ids.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
 import 'package:kasby/core/widgets/error_state_widget.dart';
@@ -12,8 +15,21 @@ import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/widgets/mini_charts.dart';
 import 'package:kasby/features/referral/presentation/controllers/referral_analytics_controller.dart';
 
-class ReferralAnalyticsView extends StatelessWidget {
+class ReferralAnalyticsView extends StatefulWidget {
   const ReferralAnalyticsView({super.key});
+
+  @override
+  State<ReferralAnalyticsView> createState() => _ReferralAnalyticsViewState();
+}
+
+class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) TourFeatureHost.scheduleForRoute(context, TourId.referral);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,11 +70,20 @@ class ReferralAnalyticsView extends StatelessWidget {
             children: [
               _buildHeroMetrics(controller, isDark),
               const SizedBox(height: KasbySpacing.xl),
-              _buildPeriodSelector(controller, isDark),
+              KeyedSubtree(
+                key: TourTargetKeys.referralLink,
+                child: _buildPeriodSelector(controller, isDark),
+              ),
               const SizedBox(height: KasbySpacing.xl),
-              _buildTeamGrowthChart(controller, isDark),
+              KeyedSubtree(
+                key: TourTargetKeys.referralTeam,
+                child: _buildTeamGrowthChart(controller, isDark),
+              ),
               const SizedBox(height: KasbySpacing.lg),
-              _buildEarningsChart(controller, isDark),
+              KeyedSubtree(
+                key: TourTargetKeys.referralCommission,
+                child: _buildEarningsChart(controller, isDark),
+              ),
               const SizedBox(height: KasbySpacing.xl),
               _buildMetricsGrid(controller, isDark),
               const SizedBox(height: KasbySpacing.xl),
@@ -74,7 +99,8 @@ class ReferralAnalyticsView extends StatelessWidget {
   }
 
   Widget _buildShimmerState() {
-    return Padding(
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(KasbySpacing.lg),
       child: Column(
         children: [
@@ -117,12 +143,15 @@ class ReferralAnalyticsView extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _MetricCard(
-            label: 'total_referrals'.tr,
-            value: controller.totalReferrals.value.toString(),
-            icon: Icons.group_rounded,
-            color: AppColors.primary,
-            isDark: isDark,
+          child: KeyedSubtree(
+            key: TourTargetKeys.referralCode,
+            child: _MetricCard(
+              label: 'total_referrals'.tr,
+              value: controller.totalReferrals.value.toString(),
+              icon: Icons.group_rounded,
+              color: AppColors.primary,
+              isDark: isDark,
+            ),
           ),
         ),
         const SizedBox(width: KasbySpacing.sm),
@@ -137,13 +166,16 @@ class ReferralAnalyticsView extends StatelessWidget {
         ),
         const SizedBox(width: KasbySpacing.sm),
         Expanded(
-          child: _MetricCard(
-            label: 'referral_earnings'.tr,
-            value: CurrencyController.to
-                .formatToUSD(controller.referralEarnings.value),
-            icon: Icons.monetization_on_rounded,
-            color: AppColors.darkGold,
-            isDark: isDark,
+          child: KeyedSubtree(
+            key: TourTargetKeys.referralRewards,
+            child: _MetricCard(
+              label: 'referral_earnings'.tr,
+              value: CurrencyController.to
+                  .formatToUSD(controller.referralEarnings.value),
+              icon: Icons.monetization_on_rounded,
+              color: AppColors.darkGold,
+              isDark: isDark,
+            ),
           ),
         ),
       ],

@@ -9,6 +9,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
+import 'package:kasby/features/auth/domain/repositories/authentication_repository.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/core/utils/mask_utils.dart';
 import 'package:kasby/features/auth/presentation/widgets/auth_otp_input.dart';
@@ -212,12 +213,18 @@ class _OtpViewState extends State<OtpView> {
 
       if (_isPhone) {
         if (_isRecovery || _purpose == 'password_reset') {
-          Get.toNamed(
+          await AuthenticationRepository.to.verifyPasswordResetPhoneOtp(
+            phone: _identifier,
+            code: otp,
+          );
+          setState(() => _isVerified = true);
+          await Future.delayed(const Duration(milliseconds: 400));
+          Get.offNamed(
             Routes.changePassword,
             arguments: {
               'isRecovery': true,
+              'otpVerified': true,
               'identifier': _identifier,
-              'otp': otp,
               'isPhone': true,
             },
           );
@@ -273,14 +280,36 @@ class _OtpViewState extends State<OtpView> {
 
   Future<void> _verifyFreeOtp(String otp) async {
     if (_isRecovery || _purpose == 'password_reset') {
-      Get.toNamed(
-        Routes.changePassword,
-        arguments: {
-          'isRecovery': true,
-          'identifier': _identifier,
-          'otp': otp,
-        },
-      );
+      setState(() => _isLoading = true);
+      try {
+        if (_isPhone) {
+          await AuthenticationRepository.to.verifyPasswordResetPhoneOtp(
+            phone: _identifier,
+            code: otp,
+          );
+        } else {
+          await AuthenticationRepository.to.verifyPasswordResetEmailOtp(
+            email: _identifier,
+            code: otp,
+          );
+        }
+        setState(() => _isVerified = true);
+        await Future.delayed(const Duration(milliseconds: 400));
+        Get.offNamed(
+          Routes.changePassword,
+          arguments: {
+            'isRecovery': true,
+            'otpVerified': true,
+            'identifier': _identifier,
+            'isPhone': _isPhone,
+          },
+        );
+      } on AuthException catch (e) {
+        AppSnack.error('error'.tr, AuthController.to.translateOtpError(e));
+        _otpKey.currentState?.clear();
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
       return;
     }
 

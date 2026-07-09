@@ -1,6 +1,9 @@
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/tour/tour_feature_host.dart';
+import 'package:kasby/core/tour/tour_ids.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
@@ -8,6 +11,8 @@ import 'dart:math' as math;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
+import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/models/spin_reward_model.dart';
 import 'dart:async';
@@ -28,7 +33,6 @@ class _SpinWheelViewState extends State<SpinWheelView>
   bool _isSpinning = false;
   int _selectedRewardIndex = 0;
   int _lastGrantedPoints = 0;
-  int _userPoints = 0;
   int _storedSpins = 0;
   List<SpinReward> _dbRewards = SpinReward.defaultRewards;
   bool _showWinHighlight = false;
@@ -66,6 +70,9 @@ class _SpinWheelViewState extends State<SpinWheelView>
       duration: const Duration(seconds: 2),
     );
     _fetchInitialData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) TourFeatureHost.scheduleForRoute(context, TourId.luckyWheel);
+    });
   }
 
   void _updateFreeSpinStatus() {
@@ -109,7 +116,8 @@ class _SpinWheelViewState extends State<SpinWheelView>
   Future<void> _fetchInitialData() async {
     final stopwatch = Stopwatch()..start();
     await Future.wait([
-      _fetchUserPoints(),
+      KspBalanceService.to.refresh(),
+      HomeController.to.fetchKspBalance(),
       _fetchRewards(),
       _fetchFreeSpinStatus(),
     ]);
@@ -122,7 +130,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
       durationMs: stopwatch.elapsedMilliseconds,
       params: {
         'rewards': _dbRewards.length,
-        'points': _userPoints,
+        'points': KspBalanceService.to.balance,
         'storedSpins': _storedSpins,
       },
     );
@@ -182,6 +190,32 @@ class _SpinWheelViewState extends State<SpinWheelView>
     }
   }
 
+  Widget _buildKspBalanceChip(int balance) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset('assets/images/ksp_coin.png', width: 18, height: 18),
+          const SizedBox(width: 8),
+          Text(
+            '${'ksp_balance'.tr}: $balance KSP',
+            style: const TextStyle(
+              color: Color(0xFFC9A24D),
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTriesIndicator() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -214,24 +248,64 @@ class _SpinWheelViewState extends State<SpinWheelView>
     );
   }
 
-  Future<void> _fetchUserPoints() async {
+  Future<void> _purchaseBundle(String type, int cost) async {
+    final balance = await KspBalanceService.to.refresh();
+    await HomeController.to.fetchKspBalance();
+    if (balance < cost) {
+      Get.snackbar(
+        'insufficient_points'.tr,
+        'need_more_points'.tr,
+        backgroundColor: AppColors.error.withValues(alpha: 0.7),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    SafeGetx.dismissOverlayIfOpen();
     try {
-      final userId = SupabaseService.userId;
-      if (userId == null) return;
-
-      final response = await SupabaseService.client
-          .from('user_points')
-          .select('current_balance')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (response != null && mounted) {
+      final response = await KspBalanceService.to.buySpinsBundle(type);
+      if (response['success'] == true) {
         setState(() {
-          _userPoints = (response['current_balance'] as num?)?.toInt() ?? 0;
+          _storedSpins =
+              (response['stored_spins'] as num?)?.toInt() ?? _storedSpins;
         });
+        await _fetchFreeSpinStatus();
+        await KspBalanceService.to.afterFinancialMutation(
+          Map<String, dynamic>.from(response),
+        );
+        if (Get.isRegistered<HomeController>()) {
+          await HomeController.to.fetchKspBalance();
+        }
+        SafeGetx.debugTrace(
+          className: 'SpinWheelView',
+          method: '_purchaseBundle',
+          feature: 'Home',
+          status: 'SUCCESS',
+          params: {'bundleType': type, 'storedSpins': _storedSpins},
+        );
+        Get.snackbar(
+          'success'.tr,
+          'bundle_purchased_successfully'.tr,
+          backgroundColor: AppColors.softGreen.withValues(alpha: 0.7),
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          'error'.tr,
+          KspBalanceService.mapRpcError(response['error']?.toString()),
+          backgroundColor: AppColors.error.withValues(alpha: 0.7),
+          colorText: Colors.white,
+        );
       }
-    } catch (e) {
-      debugPrint('Error fetching points: $e');
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SpinWheelView',
+        method: '_purchaseBundle',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -315,10 +389,13 @@ class _SpinWheelViewState extends State<SpinWheelView>
       setState(() {
         _isSpinning = false;
         _showWinHighlight = true;
-        _userPoints = (response['new_balance'] as num?)?.toInt() ?? _userPoints;
         _storedSpins =
             (response['stored_spins'] as num?)?.toInt() ?? _storedSpins;
       });
+
+      unawaited(KspBalanceService.to.afterFinancialMutation(
+        response is Map ? Map<String, dynamic>.from(response) : null,
+      ));
 
       _startWinHighlightPulse();
       if (_lastGrantedPoints > 0) {
@@ -387,6 +464,10 @@ class _SpinWheelViewState extends State<SpinWheelView>
                 style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 24),
+              Obx(
+                () => _buildKspBalanceChip(HomeController.to.userPoints.value),
+              ),
+              const SizedBox(height: 16),
               _buildBundleOption(
                 'single',
                 'one_spin'.tr,
@@ -425,51 +506,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
       children: [
         KasbyButton(
           text: '$title ($cost ${'points'.tr})',
-          onPressed: () async {
-            if (_userPoints >= cost) {
-              Get.safeBack();
-              try {
-                final response = await SupabaseService.client.rpc(
-                  'buy_spins_bundle',
-                  params: {'p_bundle_type': type},
-                );
-                if (response['success'] == true) {
-                  setState(() {
-                    _userPoints =
-                        (response['new_balance'] as num?)?.toInt() ??
-                        _userPoints;
-                    _storedSpins =
-                        (response['stored_spins'] as num?)?.toInt() ??
-                        _storedSpins;
-                  });
-                  // Refresh data from server to ensure balance and spins are synced
-                  _fetchInitialData();
-                  Get.snackbar(
-                    'success'.tr,
-                    'bundle_purchased_successfully'.tr,
-                    backgroundColor: AppColors.softGreen.withValues(alpha: 0.7),
-                    colorText: Colors.white,
-                  );
-                } else {
-                  Get.snackbar(
-                    'error'.tr,
-                    response['error']?.toString() ?? 'unknown_error'.tr,
-                    backgroundColor: AppColors.error.withValues(alpha: 0.7),
-                    colorText: Colors.white,
-                  );
-                }
-              } catch (e) {
-                debugPrint('Buy bundle error: $e');
-              }
-            } else {
-              Get.snackbar(
-                'insufficient_points'.tr,
-                'need_more_points'.tr,
-                backgroundColor: AppColors.error.withValues(alpha: 0.7),
-                colorText: Colors.white,
-              );
-            }
-          },
+          onPressed: () => _purchaseBundle(type, cost),
         ),
         if (isBestValue)
           Positioned(
@@ -635,7 +672,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
                     _highlightPulse = 0;
                   });
                   _highlightTimer?.cancel();
-                  Get.safeBack();
+                  Get.back(closeOverlays: false);
                 },
               ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.1, end: 0),
             ],
@@ -692,12 +729,12 @@ class _SpinWheelViewState extends State<SpinWheelView>
                 Text(
                   'feeling_lucky'.tr,
                   style: const TextStyle(
-                    fontSize: 32,
+                    fontSize: 25,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFFC9A24D),
                   ),
                 ).animate().fadeIn().slideY(begin: -0.2, end: 0),
-              const SizedBox(height: 12),
+              const SizedBox(height: 7),
               Text(
                 'spin_desc'.tr,
                 textAlign: TextAlign.center,
@@ -706,14 +743,23 @@ class _SpinWheelViewState extends State<SpinWheelView>
                   fontSize: 16,
                 ),
               ).animate().fadeIn(delay: 200.ms),
-              const SizedBox(height: 48),
+              const SizedBox(height: 12),
+              Obx(
+                () => KeyedSubtree(
+                  key: TourTargetKeys.spinHistory,
+                  child: _buildKspBalanceChip(HomeController.to.userPoints.value),
+                ),
+              ),
+              const SizedBox(height: 40),
 
               Builder(
                 builder: (context) {
                   final wheelSize = kasbySpinWheelDiameter(context);
                   final innerSize = wheelSize * 0.882;
                   final hubSize = wheelSize * 0.229;
-                  return SizedBox(
+                  return KeyedSubtree(
+                    key: TourTargetKeys.spinWheel,
+                    child: SizedBox(
                     width: wheelSize,
                     height: wheelSize + 20,
                     child: Stack(
@@ -762,16 +808,22 @@ class _SpinWheelViewState extends State<SpinWheelView>
                         ),
                       ],
                     ),
+                  ),
                   );
                 },
               ),
 
-              const SizedBox(height: 60),
-              _buildTriesIndicator(),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
+              KeyedSubtree(
+                key: TourTargetKeys.spinFreeSpin,
+                child: _buildTriesIndicator(),
+              ),
+              const SizedBox(height: 20),
 
               // WOW Primary Action Button
-              Container(
+              KeyedSubtree(
+                key: TourTargetKeys.spinBuy,
+                child: Container(
                     width: double.infinity,
                     height: 60,
                     decoration: BoxDecoration(
@@ -839,7 +891,8 @@ class _SpinWheelViewState extends State<SpinWheelView>
                               ],
                             ),
                     ),
-                  )
+                  ),
+              )
                   .animate(
                     onPlay: (c) =>
                         _isFreeSpinAvailable ||
@@ -854,7 +907,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
                     curve: Curves.easeInOut,
                   ),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: 30),
               Text(
                 'spin_disclaimer_text'.tr,
                 textAlign: TextAlign.center,

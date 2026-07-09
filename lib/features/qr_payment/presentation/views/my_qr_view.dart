@@ -14,7 +14,9 @@ import 'package:kasby/features/home/presentation/controllers/home_controller.dar
 import 'package:kasby/features/qr_payment/presentation/controllers/qr_payment_controller.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/routes/app_routes.dart';
 
 class MyQrView extends StatefulWidget {
   const MyQrView({super.key});
@@ -57,8 +59,66 @@ class _MyQrViewState extends State<MyQrView> {
 
   @override
   Widget build(BuildContext context) {
-    final profile = HomeController.to.profile.value;
-    
+    return Obx(() {
+      final profile = HomeController.to.profile.value;
+      final isVerified = HomeController.to.kycStatus == 'verified';
+
+      if (!isVerified) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text('my_qr'.tr),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded),
+              onPressed: () => Get.back(),
+            ),
+          ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.verified_user_outlined,
+                    size: 72,
+                    color: AppColors.darkGold.withValues(alpha: 0.8),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'kyc_verification'.tr,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'verified_account_required'.tr,
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLight,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 28),
+                  KasbyButton(
+                    text: 'verify_now'.tr,
+                    onPressed: () => Get.toNamed(Routes.kyc),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      return _buildQrContent(context, profile);
+    });
+  }
+
+  Widget _buildQrContent(BuildContext context, profile) {
     return Scaffold(
       appBar: AppBar(
         title: Text('my_qr'.tr),
@@ -101,7 +161,9 @@ class _MyQrViewState extends State<MyQrView> {
             // 2. QR Card
             RepaintBoundary(
             key: _qrKey,
-            child: GlassCard(
+            child: KeyedSubtree(
+              key: TourTargetKeys.qrReceive,
+              child: GlassCard(
               padding: const EdgeInsets.all(32),
               child: Column(
                 children: [
@@ -154,6 +216,7 @@ class _MyQrViewState extends State<MyQrView> {
                 ],
               ),
             ),
+            ),
             ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
 
             const SizedBox(height: 40),
@@ -178,10 +241,13 @@ class _MyQrViewState extends State<MyQrView> {
             Row(
               children: [
                 Expanded(
-                  child: KasbyButton(
-                    text: 'share_qr'.tr,
-                    onPressed: _shareQr,
-                    isSecondary: true,
+                  child: KeyedSubtree(
+                    key: TourTargetKeys.qrShare,
+                    child: KasbyButton(
+                      text: 'share_qr'.tr,
+                      onPressed: _shareQr,
+                      isSecondary: true,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),

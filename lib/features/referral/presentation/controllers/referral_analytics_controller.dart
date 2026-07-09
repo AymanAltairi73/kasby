@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
-import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 
 class ReferralAnalyticsController extends GetxController {
   static ReferralAnalyticsController get to => Get.find();
@@ -60,19 +59,14 @@ class ReferralAnalyticsController extends GetxController {
       operation: () async {
         if (!SupabaseService.isLoggedIn) return;
 
-        final userId = SupabaseService.userId!;
-        final referralCode =
-            HomeController.to.profile.value?.referralCode ?? '';
-
         try {
-          final response = await SupabaseService.client
-              .from('profiles')
-              .select('id, full_name, created_at, status, referral_code')
-              .or('referred_by_id.eq.$userId,referred_by_id.eq.$referralCode')
-              .order('created_at', ascending: false);
-
-          final list = (response as List).cast<Map<String, dynamic>>();
-          teamMembers.assignAll(list);
+          final response = await SupabaseService.client.rpc('get_my_team');
+          if (response is Map && response['success'] == true) {
+            final members = List<Map<String, dynamic>>.from(
+              response['tree'] ?? response['members'] ?? [],
+            );
+            teamMembers.assignAll(members.where((m) => (m['level'] as int? ?? 1) == 1));
+          }
         } catch (e) {
           SafeGetx.debugTrace(
             className: 'ReferralAnalyticsController',

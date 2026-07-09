@@ -10,6 +10,7 @@ class DashboardModel {
   final double investedBalance;
   final double pendingBalance;
   final bool isFrozen;
+  final String? frozenReason;
   final String currency;
   final int pointBalance;
   final int activeInvestments;
@@ -27,6 +28,7 @@ class DashboardModel {
     required this.investedBalance,
     required this.pendingBalance,
     required this.isFrozen,
+    this.frozenReason,
     required this.currency,
     required this.pointBalance,
     required this.activeInvestments,
@@ -47,6 +49,7 @@ class DashboardModel {
       investedBalance: (json['invested_balance'] as num?)?.toDouble() ?? 0.0,
       pendingBalance: (json['pending_balance'] as num?)?.toDouble() ?? 0.0,
       isFrozen: json['is_frozen'] as bool? ?? false,
+      frozenReason: json['frozen_reason'] as String?,
       currency: json['currency'] as String? ?? 'USD',
       pointBalance: (json['point_balance'] as num?)?.toInt() ?? 0,
       activeInvestments: (json['active_investments'] as num?)?.toInt() ?? 0,

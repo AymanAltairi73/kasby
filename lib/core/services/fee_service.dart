@@ -114,6 +114,7 @@ class FeeService {
       _fees.where((f) => f.category == category && f.isActive).toList();
 
   static double totalFee(String category, double amount) {
+    // Prefer cached fees loaded from DB (same rules as server fn_calculate_fee)
     final applicable = feesFor(category);
     if (applicable.isEmpty) return 0;
     double total = 0;
@@ -121,6 +122,44 @@ class FeeService {
       total += fee.calculate(amount);
     }
     return total;
+  }
+
+  /// Server-authoritative fee preview — Flutter must not be the source of truth.
+  static Future<Map<String, double>> previewFeeFromServer(
+    String category,
+    double amount,
+  ) async {
+    try {
+      final response = await SupabaseService.client.rpc(
+        'fn_preview_fee',
+        params: {'p_category': category, 'p_amount': amount},
+      );
+      if (response is Map) {
+        return {
+          'gross': (response['gross_amount'] as num?)?.toDouble() ?? amount,
+          'fee': (response['fee'] as num?)?.toDouble() ?? 0,
+          'net': (response['net_amount'] as num?)?.toDouble() ?? amount,
+          'wallet_deduction':
+              (response['wallet_deduction'] as num?)?.toDouble() ?? amount,
+        };
+      }
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'FeeService',
+        method: 'previewFeeFromServer',
+        feature: 'Core',
+        status: 'FAILED',
+        error: e,
+        stackTrace: stack,
+      );
+    }
+    final fee = totalFee(category, amount);
+    return {
+      'gross': amount,
+      'fee': fee,
+      'net': amount - fee,
+      'wallet_deduction': amount + fee,
+    };
   }
 
   /// Human-readable fee lines for UI (percentage + fixed parts).

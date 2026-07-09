@@ -141,8 +141,8 @@ class _LoanViewState extends State<LoanView>
             const SizedBox(height: 32),
             _buildRepaymentBreakdown(),
             const SizedBox(height: 32),
-            _buildTypeToggle(),
-            const SizedBox(height: 32),
+            // _buildTypeToggle(),
+            // const SizedBox(height: 32),
             _buildTermsSection(),
             const SizedBox(height: 48),
             _buildSubmitButton(),
@@ -732,87 +732,87 @@ class _LoanViewState extends State<LoanView>
     );
   }
 
-  Widget _buildTypeToggle() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'loan_type'.tr,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildTypeItem(
-                false,
-                'wallets'.tr,
-                Icons.account_balance_wallet_rounded,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildTypeItem(
-                true,
-                'points'.tr,
-                'assets/images/ksp_coin.png',
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  // Widget _buildTypeToggle() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         'loan_type'.tr,
+  //         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+  //       ),
+  //       const SizedBox(height: 16),
+  //       Row(
+  //         children: [
+  //           Expanded(
+  //             child: _buildTypeItem(
+  //               false,
+  //               'wallets'.tr,
+  //               Icons.account_balance_wallet_rounded,
+  //             ),
+  //           ),
+  //           const SizedBox(width: 16),
+  //           Expanded(
+  //             child: _buildTypeItem(
+  //               true,
+  //               'points'.tr,
+  //               'assets/images/ksp_coin.png',
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  Widget _buildTypeItem(bool value, String label, dynamic icon) {
-    final bool isSelected = receiveAsPoints == value;
-    return GestureDetector(
-      onTap: () => setState(() => receiveAsPoints = value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.darkGold
-              : (isDark ? AppColors.surface : AppColors.surfaceLight),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.darkGold
-                : (isDark ? Colors.white10 : Colors.black12),
-          ),
-        ),
-        child: Column(
-          children: [
-            icon is String
-                ? Image.asset(
-                    icon,
-                    width: 24,
-                    height: 24,
-                    color: isSelected
-                        ? Colors.black
-                        : (isDark ? Colors.white54 : Colors.black54),
-                  )
-                : Icon(
-                    icon as IconData,
-                    color: isSelected
-                        ? Colors.black
-                        : (isDark ? Colors.white54 : Colors.black54),
-                  ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected
-                    ? Colors.black
-                    : (isDark ? Colors.white54 : Colors.black54),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildTypeItem(bool value, String label, dynamic icon) {
+  //   final bool isSelected = receiveAsPoints == value;
+  //   return GestureDetector(
+  //     onTap: () => setState(() => receiveAsPoints = value),
+  //     child: Container(
+  //       padding: const EdgeInsets.symmetric(vertical: 16),
+  //       decoration: BoxDecoration(
+  //         color: isSelected
+  //             ? AppColors.darkGold
+  //             : (isDark ? AppColors.surface : AppColors.surfaceLight),
+  //         borderRadius: BorderRadius.circular(16),
+  //         border: Border.all(
+  //           color: isSelected
+  //               ? AppColors.darkGold
+  //               : (isDark ? Colors.white10 : Colors.black12),
+  //         ),
+  //       ),
+  //       child: Column(
+  //         children: [
+  //           icon is String
+  //               ? Image.asset(
+  //                   icon,
+  //                   width: 24,
+  //                   height: 24,
+  //                   color: isSelected
+  //                       ? Colors.black
+  //                       : (isDark ? Colors.white54 : Colors.black54),
+  //                 )
+  //               : Icon(
+  //                   icon as IconData,
+  //                   color: isSelected
+  //                       ? Colors.black
+  //                       : (isDark ? Colors.white54 : Colors.black54),
+  //                 ),
+  //           const SizedBox(height: 8),
+  //           Text(
+  //             label,
+  //             style: TextStyle(
+  //               color: isSelected
+  //                   ? Colors.black
+  //                   : (isDark ? Colors.white54 : Colors.black54),
+  //               fontWeight: FontWeight.bold,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildTermsSection() {
     return Row(

@@ -16,10 +16,11 @@ class MarketplaceHealthView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Marketplace Health'),
+        title: Text('marketplace_health_title'.tr),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'refresh'.tr,
             onPressed: controller.refreshHealth,
           ),
         ],
@@ -44,25 +45,40 @@ class MarketplaceHealthView extends StatelessWidget {
             padding: const EdgeInsets.all(KasbySpacing.md),
             children: [
               _statusCard(
-                title: 'Reloadly Status',
-                value: live['reloadlyStatus']?.toString() ?? 'unknown',
+                title: 'marketplace_reloadly_status'.tr,
+                value: _localizeStatus(live['reloadlyStatus']?.toString()),
                 icon: Icons.cloud_done_rounded,
                 ok: live['reloadlyStatus'] == 'healthy',
               ),
               const SizedBox(height: KasbySpacing.sm),
-              _metricCard('OAuth Status', live['oauthStatus']?.toString() ?? '—'),
-              _metricCard('OAuth Latency', '${live['oauthLatencyMs'] ?? '—'} ms'),
-              _metricCard('API Latency', '${live['apiLatencyMs'] ?? '—'} ms'),
-              _metricCard('Catalog Count', '${live['catalogCount'] ?? data['catalogCount'] ?? 0}'),
               _metricCard(
-                'Balance',
+                'marketplace_oauth_status'.tr,
+                _localizeStatus(live['oauthStatus']?.toString()),
+              ),
+              _metricCard(
+                'marketplace_oauth_latency'.tr,
+                '${live['oauthLatencyMs'] ?? '—'} ms',
+              ),
+              _metricCard(
+                'marketplace_api_latency'.tr,
+                '${live['apiLatencyMs'] ?? '—'} ms',
+              ),
+              _metricCard(
+                'marketplace_catalog_count'.tr,
+                '${live['catalogCount'] ?? data['catalogCount'] ?? 0}',
+              ),
+              _metricCard(
+                'marketplace_balance'.tr,
                 live['balanceAmount'] != null
                     ? '${live['balanceAmount']} ${live['balanceCurrency'] ?? ''}'
-                    : 'N/A',
+                    : 'not_available'.tr,
               ),
-              _metricCard('Environment', live['environment']?.toString() ?? '—'),
               _metricCard(
-                'Failed Requests (24h)',
+                'marketplace_environment'.tr,
+                live['environment']?.toString() ?? '—',
+              ),
+              _metricCard(
+                'marketplace_failed_requests_24h'.tr,
                 '${(data['dashboard'] as Map?)?['recentFailures'] is List ? ((data['dashboard'] as Map)['recentFailures'] as List).length : data['failed_requests_24h'] ?? 0}',
               ),
               if (live['oauthError'] != null) ...[
@@ -75,7 +91,9 @@ class MarketplaceHealthView extends StatelessWidget {
               ],
               const SizedBox(height: KasbySpacing.lg),
               Text(
-                'Last checked: ${live['checkedAt'] ?? '—'}',
+                'marketplace_last_checked'.trParams({
+                  'time': live['checkedAt']?.toString() ?? '—',
+                }),
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
             ],
@@ -83,6 +101,12 @@ class MarketplaceHealthView extends StatelessWidget {
         );
       }),
     );
+  }
+
+  String _localizeStatus(String? status) {
+    if (status == null || status.isEmpty) return 'status_unknown'.tr;
+    final key = 'status_${status.toLowerCase()}';
+    return key.tr;
   }
 
   Widget _statusCard({

@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:kasby/core/localization/kasby_translations.dart';
+import 'package:kasby/core/localization/kasby_l10n.dart';
+import 'package:kasby/core/localization/localization_logger.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 /// Locale utilities for contexts where GetX may not be available (e.g. scheduled notifications).
@@ -14,7 +15,12 @@ class LocaleHelper {
       params: {'storage': 'SharedPreferences'},
       operation: () async {
         final prefs = await SharedPreferences.getInstance();
-        return prefs.getString(localeKey) ?? 'ar';
+        final code = prefs.getString(localeKey) ?? KasbyL10n.defaultLanguageCode;
+        if (!KasbyL10n.supportedLanguageCodes.contains(code)) {
+          LocalizationLogger.unsupportedLocale(code);
+          return KasbyL10n.defaultLanguageCode;
+        }
+        return code;
       },
       onSuccessParams: (code) => {'languageCode': code},
     );
@@ -27,6 +33,10 @@ class LocaleHelper {
       feature: 'Core',
       params: {'languageCode': code, 'storage': 'SharedPreferences'},
       operation: () async {
+        if (!KasbyL10n.supportedLanguageCodes.contains(code)) {
+          LocalizationLogger.unsupportedLocale(code);
+          return;
+        }
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(localeKey, code);
       },
@@ -39,8 +49,6 @@ class LocaleHelper {
   }
 
   static String translateForLanguage(String key, String lang) {
-    final locale = lang == 'ar' ? 'ar_SA' : 'en_US';
-    final translations = KasbyTranslations();
-    return translations.keys[locale]?[key] ?? key;
+    return KasbyL10n.forLanguage(key, languageCode: lang);
   }
 }

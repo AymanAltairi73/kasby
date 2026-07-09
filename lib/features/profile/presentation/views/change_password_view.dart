@@ -9,6 +9,7 @@ import 'package:kasby/core/services/sensitive_operation_guard.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/features/auth/domain/repositories/authentication_repository.dart';
 import 'package:kasby/features/auth/domain/services/otp_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
@@ -32,6 +33,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
 
   String get _recoveryIdentifier => Get.arguments?['identifier'] ?? '';
   String get _recoveryOtp => Get.arguments?['otp'] ?? '';
+  bool get _otpAlreadyVerified => Get.arguments?['otpVerified'] == true;
 
   @override
   void initState() {
@@ -67,17 +69,18 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
 
     try {
       if (_isRecovery) {
-        if (_recoveryIdentifier.isNotEmpty && _recoveryOtp.isNotEmpty) {
+        final newPassword = _newPasswordController.text.trim();
+        if (_otpAlreadyVerified) {
+          await AuthenticationRepository.to.completePasswordReset(newPassword);
+        } else if (_recoveryIdentifier.isNotEmpty && _recoveryOtp.isNotEmpty) {
           await OTPService.to.resetPasswordSecure(
             target: _recoveryIdentifier,
             otpCode: _recoveryOtp,
-            newPassword: _newPasswordController.text.trim(),
+            newPassword: newPassword,
             isPhone: Get.arguments?['isPhone'] == true,
           );
         } else {
-          await AuthSecurityService.updatePassword(
-            _newPasswordController.text.trim(),
-          );
+          await AuthenticationRepository.to.completePasswordReset(newPassword);
         }
       } else {
         final otpVerified = await SensitiveOperationGuard.requirePhoneOtp(
@@ -110,6 +113,9 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
       );
       if (mounted) {
         setState(() => _isLoading = false);
+        if (!_isRecovery) {
+          // Security activity + notification handled by AuthenticationRepository.updatePassword
+        }
 
         if (_isRecovery) {
           await SupabaseService.auth.signOut();
@@ -140,9 +146,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
       );
       if (mounted) {
         setState(() => _isLoading = false);
-        final message = e.message.contains('expired') || e.message.contains('invalid')
-            ? 'auth_link_invalid'.tr
-            : e.message;
+        final message = AuthSecurityService.translateAuthError(e);
         Get.snackbar(
           'error'.tr,
           message,
@@ -287,8 +291,8 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
             if (value == null || value.isEmpty) {
               return 'fill_all_data'.tr;
             }
-            if (value.length < 6) {
-              return 'password_too_short'.tr;
+            if (value.length < 8) {
+              return 'weak_password'.tr;
             }
             return null;
           },

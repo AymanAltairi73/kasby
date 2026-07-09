@@ -58,3 +58,33 @@ class KasbyMotion {
   static const Duration normal = Duration(milliseconds: 300);
   static const Duration slow = Duration(milliseconds: 600);
 }
+
+/// Screen-level layout tokens — Material 3 spacing on an 8pt grid.
+class KasbyLayout {
+  KasbyLayout._();
+
+  /// Standard horizontal screen padding (phones).
+  static const double screenPaddingH = KasbySpacing.lg;
+
+  /// Compact vertical gap between list items.
+  static const double listItemGap = KasbySpacing.sm;
+
+  /// Standard list outer padding.
+  static EdgeInsets listPadding(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    final hPad = w >= 600 ? KasbySpacing.xxl : KasbySpacing.lg;
+    return EdgeInsets.fromLTRB(hPad, KasbySpacing.md, hPad, KasbySpacing.lg);
+  }
+
+  /// Responsive grid column count (2 on phone, 3 on tablet).
+  static int gridColumns(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= 900 ? 3 : 2;
+
+  /// Responsive stats grid aspect ratio.
+  static double statsAspectRatio(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    if (w >= 900) return 1.9;
+    if (w >= 600) return 1.75;
+    return 1.55;
+  }
+}

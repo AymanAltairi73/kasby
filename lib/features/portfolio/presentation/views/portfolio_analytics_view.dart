@@ -77,13 +77,13 @@ class PortfolioAnalyticsView extends StatelessWidget {
 
               const SizedBox(height: KasbySpacing.lg),
 
-              if (controller.waterfallSteps.isNotEmpty) ...[
-                _WaterfallSection(
-                  steps: controller.waterfallSteps,
-                  isDark: isDark,
-                ).animate().fadeIn(duration: 400.ms, delay: 120.ms).slideY(begin: 0.05, end: 0),
-                const SizedBox(height: KasbySpacing.lg),
-              ],
+              _InvestmentFlowSection(
+                controller: controller,
+                currency: currency,
+                isDark: isDark,
+              ).animate().fadeIn(duration: 400.ms, delay: 120.ms).slideY(begin: 0.05, end: 0),
+
+              const SizedBox(height: KasbySpacing.lg),
 
               if (controller.benchmarks.isNotEmpty) ...[
                 _BenchmarkSection(
@@ -607,39 +607,633 @@ class _AllocationSection extends StatelessWidget {
   }
 }
 
-// ─── WATERFALL SECTION ────────────────────────────────────────
+// ─── INVESTMENT FLOW SECTION ──────────────────────────────────
 
-class _WaterfallSection extends StatelessWidget {
-  final RxList<WaterfallStep> steps;
+class _InvestmentFlowSection extends StatelessWidget {
+  final PortfolioController controller;
+  final CurrencyController currency;
   final bool isDark;
 
-  const _WaterfallSection({required this.steps, required this.isDark});
+  const _InvestmentFlowSection({
+    required this.controller,
+    required this.currency,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final flow = controller.investmentFlow.value;
+      final periodLabel =
+          controller.periodLabel(controller.selectedPeriod.value);
+      final titleColor = isDark ? Colors.white : AppColors.onSurfaceLight;
+      final subtitleColor = AppColors.textSecondary;
+
       return KasbyCard(
         padding: const EdgeInsets.all(KasbySpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'investment_waterfall'.tr,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : AppColors.onSurfaceLight,
-              ),
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.darkGold.withValues(alpha: 0.12),
+                    borderRadius: KasbyRadius.inputR,
+                  ),
+                  child: Icon(
+                    Icons.swap_vert_rounded,
+                    color: AppColors.darkGold,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: KasbySpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'investment_waterfall'.tr,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'investment_flow_desc'.tr,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: subtitleColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: KasbySpacing.lg),
-            KasbyWaterfallChart(
-              steps: steps.toList(),
-              height: 200,
+            _FlowSummaryStrip(
+              totalInvested: controller.totalInvested.value,
+              totalReturns: controller.totalReturns.value,
+              activeCount: flow.activeInvestments,
+              completedCount: flow.completedInvestments,
+              currency: currency,
+              isDark: isDark,
             ),
+            const SizedBox(height: KasbySpacing.lg),
+            if (!flow.hasActivity)
+              _FlowEmptyState(isDark: isDark)
+            else ...[
+              Text(
+                '$periodLabel • ${'flow_period_activity'.tr}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: subtitleColor,
+                ),
+              ),
+              const SizedBox(height: KasbySpacing.md),
+              _FlowCategoryBlock(
+                title: 'flow_inflows'.tr,
+                titleColor: AppColors.softGreen,
+                maxAmount: [
+                  flow.deposits,
+                  flow.returns,
+                  flow.totalInflows,
+                ].reduce((a, b) => a > b ? a : b),
+                rows: [
+                  _FlowRowData(
+                    label: 'flow_deposits'.tr,
+                    tooltip: 'flow_deposits_tooltip'.tr,
+                    amount: flow.deposits,
+                    icon: Icons.add_circle_outline_rounded,
+                    color: AppColors.softGreen,
+                  ),
+                  _FlowRowData(
+                    label: 'flow_returns'.tr,
+                    tooltip: 'flow_returns_tooltip'.tr,
+                    amount: flow.returns,
+                    icon: Icons.trending_up_rounded,
+                    color: AppColors.softGreen,
+                  ),
+                ],
+                currency: currency,
+                isDark: isDark,
+              ),
+              const SizedBox(height: KasbySpacing.lg),
+              _FlowCategoryBlock(
+                title: 'flow_outflows'.tr,
+                titleColor: AppColors.error,
+                maxAmount: [
+                  flow.withdrawals,
+                  flow.investments,
+                  flow.totalOutflows,
+                ].reduce((a, b) => a > b ? a : b),
+                rows: [
+                  _FlowRowData(
+                    label: 'flow_withdrawals'.tr,
+                    tooltip: 'flow_withdrawals_tooltip'.tr,
+                    amount: flow.withdrawals,
+                    icon: Icons.remove_circle_outline_rounded,
+                    color: AppColors.error,
+                  ),
+                  _FlowRowData(
+                    label: 'flow_investments'.tr,
+                    tooltip: 'flow_investments_tooltip'.tr,
+                    amount: flow.investments,
+                    icon: Icons.savings_outlined,
+                    color: AppColors.darkGold,
+                  ),
+                ],
+                currency: currency,
+                isDark: isDark,
+              ),
+              const SizedBox(height: KasbySpacing.lg),
+              _FlowNetFooter(
+                opening: flow.opening,
+                closing: flow.closing,
+                netChange: flow.netChange,
+                currency: currency,
+                isDark: isDark,
+              ),
+            ],
           ],
         ),
       );
     });
+  }
+}
+
+class _FlowRowData {
+  final String label;
+  final String tooltip;
+  final double amount;
+  final IconData icon;
+  final Color color;
+
+  const _FlowRowData({
+    required this.label,
+    required this.tooltip,
+    required this.amount,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class _FlowSummaryStrip extends StatelessWidget {
+  final double totalInvested;
+  final double totalReturns;
+  final int activeCount;
+  final int completedCount;
+  final CurrencyController currency;
+  final bool isDark;
+
+  const _FlowSummaryStrip({
+    required this.totalInvested,
+    required this.totalReturns,
+    required this.activeCount,
+    required this.completedCount,
+    required this.currency,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final labelColor = AppColors.textSecondary;
+    final valueColor = isDark ? Colors.white : AppColors.onSurfaceLight;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 360;
+        final children = [
+          _FlowSummaryTile(
+            label: 'total_invested'.tr,
+            value: currency.formatToUSD(totalInvested),
+            valueColor: valueColor,
+            labelColor: labelColor,
+          ),
+          _FlowSummaryTile(
+            label: 'total_returns'.tr,
+            value: currency.formatToUSD(totalReturns),
+            valueColor: AppColors.softGreen,
+            labelColor: labelColor,
+          ),
+          _FlowSummaryTile(
+            label: 'flow_active_completed'.tr,
+            value: '$activeCount / $completedCount',
+            valueColor: valueColor,
+            labelColor: labelColor,
+          ),
+        ];
+
+        if (isCompact) {
+          return Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const SizedBox(height: KasbySpacing.sm),
+                children[i],
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) const SizedBox(width: KasbySpacing.sm),
+              Expanded(child: children[i]),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FlowSummaryTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+  final Color labelColor;
+
+  const _FlowSummaryTile({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+    required this.labelColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: KasbySpacing.md,
+        vertical: KasbySpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.5),
+        borderRadius: KasbyRadius.inputR,
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: labelColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlowCategoryBlock extends StatelessWidget {
+  final String title;
+  final Color titleColor;
+  final double maxAmount;
+  final List<_FlowRowData> rows;
+  final CurrencyController currency;
+  final bool isDark;
+
+  const _FlowCategoryBlock({
+    required this.title,
+    required this.titleColor,
+    required this.maxAmount,
+    required this.rows,
+    required this.currency,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = maxAmount > 0 ? maxAmount : 1.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: titleColor,
+          ),
+        ),
+        const SizedBox(height: KasbySpacing.sm),
+        for (final row in rows) ...[
+          _FlowMetricRow(
+            label: row.label,
+            tooltip: row.tooltip,
+            amount: row.amount,
+            maxAmount: scale,
+            icon: row.icon,
+            color: row.color,
+            formattedAmount: currency.formatToUSD(row.amount),
+            isDark: isDark,
+          ),
+          if (row != rows.last) const SizedBox(height: KasbySpacing.sm),
+        ],
+      ],
+    );
+  }
+}
+
+class _FlowMetricRow extends StatelessWidget {
+  final String label;
+  final String tooltip;
+  final double amount;
+  final double maxAmount;
+  final IconData icon;
+  final Color color;
+  final String formattedAmount;
+  final bool isDark;
+
+  const _FlowMetricRow({
+    required this.label,
+    required this.tooltip,
+    required this.amount,
+    required this.maxAmount,
+    required this.icon,
+    required this.color,
+    required this.formattedAmount,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = maxAmount > 0 ? (amount / maxAmount).clamp(0.0, 1.0) : 0.0;
+    final labelColor = isDark ? Colors.white : AppColors.onSurfaceLight;
+
+    return Tooltip(
+      message: tooltip,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: KasbySpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: labelColor,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      formattedAmount,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: KasbyRadius.chipR,
+                  child: SizedBox(
+                    height: 8,
+                    child: Stack(
+                      children: [
+                        Container(
+                          color: color.withValues(alpha: 0.12),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: fraction,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Container(color: color),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlowNetFooter extends StatelessWidget {
+  final double opening;
+  final double closing;
+  final double netChange;
+  final CurrencyController currency;
+  final bool isDark;
+
+  const _FlowNetFooter({
+    required this.opening,
+    required this.closing,
+    required this.netChange,
+    required this.currency,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPositive = netChange >= 0;
+    final netColor = isPositive ? AppColors.softGreen : AppColors.error;
+    final labelColor = AppColors.textSecondary;
+    final valueColor = isDark ? Colors.white : AppColors.onSurfaceLight;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(KasbySpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.5),
+        borderRadius: KasbyRadius.inputR,
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _FlowNetItem(
+                  label: 'flow_opening'.tr,
+                  value: currency.formatToUSD(opening),
+                  labelColor: labelColor,
+                  valueColor: valueColor,
+                ),
+              ),
+              Icon(
+                Icons.compare_arrows_rounded,
+                size: 16,
+                color: labelColor,
+              ),
+              Expanded(
+                child: _FlowNetItem(
+                  label: 'flow_closing'.tr,
+                  value: currency.formatToUSD(closing),
+                  labelColor: labelColor,
+                  valueColor: valueColor,
+                  alignEnd: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: KasbySpacing.sm),
+          Divider(
+            height: 1,
+            color: AppColors.textSecondary.withValues(alpha: 0.15),
+          ),
+          const SizedBox(height: KasbySpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'flow_net_change'.tr,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: labelColor,
+                ),
+              ),
+              Text(
+                '${isPositive ? '+' : ''}${currency.formatToUSD(netChange)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: netColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlowNetItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color labelColor;
+  final Color valueColor;
+  final bool alignEnd;
+
+  const _FlowNetItem({
+    required this.label,
+    required this.value,
+    required this.labelColor,
+    required this.valueColor,
+    this.alignEnd = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: labelColor,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FlowEmptyState extends StatelessWidget {
+  final bool isDark;
+
+  const _FlowEmptyState({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: KasbySpacing.lg,
+        vertical: KasbySpacing.xxl,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.35),
+        borderRadius: KasbyRadius.inputR,
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.insights_outlined,
+            size: 36,
+            color: AppColors.textSecondary.withValues(alpha: 0.7),
+          ),
+          const SizedBox(height: KasbySpacing.md),
+          Text(
+            'investment_flow_empty'.tr,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : AppColors.onSurfaceLight,
+            ),
+          ),
+          const SizedBox(height: KasbySpacing.xs),
+          Text(
+            'investment_flow_empty_desc'.tr,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

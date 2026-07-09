@@ -514,16 +514,16 @@ class _InvestmentsListState extends State<_InvestmentsList> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'total_portfolio_value'.tr,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '\$${(totalInvested + totalReturns).toStringAsFixed(2)}',
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: KasbySpacing.lg),
+          // Text(
+          //   'total_portfolio_value'.tr,
+          //   style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          // ),
+          // const SizedBox(height: 4),
+          // Text(
+          //   '\$${(totalInvested + totalReturns).toStringAsFixed(2)}',
+          //   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+          // ),
+          //const SizedBox(height: KasbySpacing.lg),
           Row(
             children: [
               Expanded(

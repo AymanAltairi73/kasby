@@ -39,6 +39,22 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    const isEmail = target.includes('@')
+    const { data: deletedCheck, error: deletedError } = await supabaseAdmin.rpc(
+      'fn_check_deleted_account',
+      isEmail ? { p_email: target, p_phone: null } : { p_email: null, p_phone: target },
+    )
+    if (deletedError) throw deletedError
+    if (deletedCheck && typeof deletedCheck === 'object' && (deletedCheck as Record<string, unknown>).deleted === true) {
+      return new Response(
+        JSON.stringify({
+          error: 'ACCOUNT_DELETED',
+          deletion_type: (deletedCheck as Record<string, unknown>).deletion_type ?? 'admin',
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
     const authHeader = req.headers.get('Authorization')
     let userId: string | null = null
     if (authHeader && authHeader.startsWith('Bearer ')) {

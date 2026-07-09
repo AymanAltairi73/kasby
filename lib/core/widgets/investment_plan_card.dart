@@ -109,20 +109,22 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                       : AppColors.darkGold.withValues(alpha: 0.2),
                   width: 1.5,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(20),
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(), // Don't block parent scrolling
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                        child: Image.asset(
+                          widget.imagePath,
+                          height: 160,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                      child: Image.asset(
-                        widget.imagePath,
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
                     Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
@@ -201,7 +203,8 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                     ),
                   ],
                 ),
-              )
+              ),
+            )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .shimmer(
                 duration: const Duration(seconds: 4),

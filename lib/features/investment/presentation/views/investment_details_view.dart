@@ -31,7 +31,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
   double estimatedProfit = 0.0;
   bool _isSubmitting = false;
 
-  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  bool get isDark => Get.isDarkMode;
 
   @override
   void dispose() {
@@ -319,24 +319,24 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                     'plan': plan['title'].toString(),
                   }),
                 ),
-                const SizedBox(height: 12),
-                // C8: risk disclosure + explicit terms acceptance before purchase.
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.textSecondary.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'risk_disclosure'.tr,
-                    style: TextStyle(
-                      fontSize: 11,
-                      height: 1.4,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
+                // const SizedBox(height: 12),
+                // // C8: risk disclosure + explicit terms acceptance before purchase.
+                // Container(
+                //   padding: const EdgeInsets.all(12),
+                //   decoration: BoxDecoration(
+                //     color: AppColors.textSecondary.withValues(alpha: 0.06),
+                //     borderRadius: BorderRadius.circular(12),
+                //   ),
+                //   child: Text(
+                //     'risk_disclosure'.tr,
+                //     style: TextStyle(
+                //       fontSize: 11,
+                //       height: 1.4,
+                //       color: AppColors.textSecondary,
+                //     ),
+                //   ),
+                // ),
+                // const SizedBox(height: 8),
                 InkWell(
                   onTap: () =>
                       setLocalState(() => termsAccepted = !termsAccepted),
@@ -365,13 +365,13 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
             ),
             actions: [
               TextButton(
-                  onPressed: () => Get.safeBack(), child: Text('cancel'.tr)),
+                  onPressed: () => SafeGetx.dismissOverlayIfOpen(), child: Text('cancel'.tr)),
               KasbyButton(
                 width: 120,
                 text: 'confirm'.tr,
                 onPressed: termsAccepted
                     ? () {
-                        Get.safeBack();
+                        SafeGetx.dismissOverlayIfOpen();
                         _executeInvestment();
                       }
                     : null,
@@ -423,14 +423,17 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           },
         ),
         onSuccessParams: (rpcResult) {
-          final rpcResponse = rpcResult as Map<String, dynamic>;
+          final rpcResponse = rpcResult is Map ? Map<String, dynamic>.from(rpcResult as Map) : <String, dynamic>{};
           return {
             'investmentId': rpcResponse['investment_id']?.toString(),
           };
         },
       );
 
-      final response = result as Map<String, dynamic>;
+      if (result is! Map) {
+        throw Exception('Invalid RPC response format: expected Map, got ${result?.runtimeType}');
+      }
+      final response = Map<String, dynamic>.from(result as Map);
 
       if (response['success'] == true) {
         HapticFeedback.heavyImpact();
@@ -440,6 +443,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
         ReferralService.processReferralCommission(
           investmentAmount: amount,
           investmentId: response['investment_id']?.toString(),
+          planName: plan['title']?.toString(),
         );
 
         _showSuccessOverlay(
@@ -466,7 +470,16 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
         ));
         AppSnack.error('error'.tr, response['error'] ?? 'unexpected_error'.tr);
       }
-    } catch (_) {
+    } catch (e, st) {
+      SafeGetx.debugTrace(
+        className: 'InvestmentDetailsView',
+        method: '_executeInvestment',
+        feature: 'Investment',
+        status: 'ERROR',
+        message: 'Exception in _executeInvestment',
+        error: e,
+        stackTrace: st,
+      );
       AppSnack.error('error'.tr, 'error_executing_operation'.tr);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

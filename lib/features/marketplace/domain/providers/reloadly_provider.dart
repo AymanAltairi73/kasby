@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -640,6 +642,9 @@ class ReloadlyProvider implements MarketplaceProvider {
       final order = await _orderStore.getOrderById(userId: userId, orderId: orderId);
       if (order == null) {
         throw SettlementException('Order not found after completion');
+      }
+      if (Get.isRegistered<KspBalanceService>()) {
+        await KspBalanceService.to.afterFinancialMutation();
       }
       return MarketplaceCheckoutResult(order: order, success: true);
     } on SettlementException catch (e) {

@@ -9,14 +9,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/controllers/theme_controller.dart';
 import '../../../support/presentation/controllers/support_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
-// import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/account_deletion_service.dart';
 import 'package:kasby/core/services/auth_security_service.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
-import 'package:kasby/core/services/tour_service.dart';
+import 'package:kasby/core/tour/tour_target_keys.dart';
+import 'package:kasby/core/tour/widgets/tour_settings_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 
@@ -86,28 +87,20 @@ class _ProfileViewState extends State<ProfileView> {
                       context,
                       isDark,
                       Icons.analytics_rounded,
-                      'portfolio_analytics'.tr,
+                      'referral_analytics'.tr,
                       Colors.blueAccent,
-                      () => Get.toNamed(Routes.portfolioAnalytics),
+                      () => Get.toNamed(Routes.referralAnalytics),
                     ),
-                    _buildProfileItem(
-                      context,
-                      isDark,
-                      Icons.tour_rounded,
-                      'guided_tour'.tr,
-                      Colors.amberAccent,
-                      () async {
-                        await TourService.resetTour();
-                        Get.toNamed(Routes.guidedTour);
-                      },
-                    ),
-                    _buildProfileItem(
+                    KeyedSubtree(
+                      key: TourTargetKeys.profileSecurity,
+                      child: _buildProfileItem(
                       context,
                       isDark,
                       Icons.security_rounded,
                       'security_center'.tr,
                       Colors.redAccent,
                       () => Get.toNamed(Routes.securityCenter),
+                    ),
                     ),
                     // C11: Statements entry
                     _buildProfileItem(
@@ -118,7 +111,9 @@ class _ProfileViewState extends State<ProfileView> {
                       Colors.tealAccent,
                       () => Get.toNamed(Routes.statements),
                     ),
-                    _buildProfileItem(
+                    KeyedSubtree(
+                      key: TourTargetKeys.profilePin,
+                      child: _buildProfileItem(
                       context,
                       isDark,
                       Icons.lock_outline_rounded,
@@ -126,7 +121,10 @@ class _ProfileViewState extends State<ProfileView> {
                       Colors.purpleAccent,
                       () => Get.toNamed(Routes.changePassword),
                     ),
-                    _buildProfileItem(
+                    ),
+                    KeyedSubtree(
+                      key: TourTargetKeys.profileKyc,
+                      child: _buildProfileItem(
                       context,
                       isDark,
                       Icons.verified_user_outlined,
@@ -164,6 +162,7 @@ class _ProfileViewState extends State<ProfileView> {
                         );
                       }),
                     ),
+                    ),
                     if (AuthController.to.userRole == 'agent' || AuthController.to.userRole == 'admin')
                       _buildProfileItem(
                         context,
@@ -188,13 +187,16 @@ class _ProfileViewState extends State<ProfileView> {
                           ),
                         ),
                       ),
-                    _buildProfileItem(
+                    KeyedSubtree(
+                      key: TourTargetKeys.profileLanguage,
+                      child: _buildProfileItem(
                       context,
                       isDark,
                       Icons.language_rounded,
                       'language'.tr,
                       Colors.greenAccent,
                       () => _showLanguageSelector(context, isDark),
+                    ),
                     ),
 
                     _buildThemeToggle(context, isDark),
@@ -216,6 +218,14 @@ class _ProfileViewState extends State<ProfileView> {
                       'support_faq'.tr,
                       Colors.cyanAccent,
                       () => Get.toNamed(Routes.support),
+                    ),
+                    _buildProfileItem(
+                      context,
+                      isDark,
+                      Icons.tour_rounded,
+                      'app_tour'.tr,
+                      Colors.amberAccent,
+                      () => TourSettingsSheet.show(context),
                     ),
                     _buildProfileItem(
                       context,
@@ -631,6 +641,77 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'delete_account'.tr,
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'delete_account_confirm'.tr,
+              style: TextStyle(
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppColors.textSecondaryLight,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'delete_account_final_confirm'.tr,
+              style: TextStyle(
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppColors.textSecondaryLight,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              _showDeleteAccountPasswordDialog(context);
+            },
+            child: Text(
+              'continue'.tr,
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountPasswordDialog(BuildContext context) {
     final passwordController = TextEditingController();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     var isDeleting = false;
@@ -642,21 +723,19 @@ class _ProfileViewState extends State<ProfileView> {
             backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text(
-              'delete_account'.tr,
-              style: TextStyle(
-                color: AppColors.error,
-                fontWeight: FontWeight.bold,
-              ),
+              'enter_current_password'.tr,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'delete_account_confirm'.tr,
+                  'delete_account_desc'.tr,
                   style: TextStyle(
                     color: isDark
                         ? AppColors.textSecondary
                         : AppColors.textSecondaryLight,
+                    fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -694,27 +773,19 @@ class _ProfileViewState extends State<ProfileView> {
                         setState(() => isDeleting = true);
                         try {
                           await _verifyPasswordForDelete(password);
-
-                          final userId = SupabaseService.userId;
-                          if (userId != null) {
-                            await SupabaseService.client.functions.invoke(
-                              'admin-proxy',
-                              body: {
-                                'operation': 'delete_user',
-                                'params': {'user_id': userId},
-                              },
-                            );
-                          }
+                          await AccountDeletionService.deleteOwnAccount();
                           Get.back();
-                          await SupabaseService.auth.signOut();
                           if (Get.isRegistered<HomeController>()) {
                             HomeController.to.clearData();
                           }
-                          Get.offAllNamed(Routes.login);
+                          await AuthController.to.logout();
                           AppSnack.success('success'.tr, 'account_deleted'.tr);
-                        } on AuthException {
+                        } on AuthException catch (e) {
                           setState(() => isDeleting = false);
-                          AppSnack.error('error'.tr, 'incorrect_password'.tr);
+                          final message = e.message.startsWith('DELETED_ACCOUNT:')
+                              ? AuthSecurityService.translateAuthError(e)
+                              : 'incorrect_password'.tr;
+                          AppSnack.error('error'.tr, message);
                         } catch (e) {
                           setState(() => isDeleting = false);
                           AppSnack.error('error'.tr, e.toString());

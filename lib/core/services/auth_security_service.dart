@@ -1,36 +1,29 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
-import 'package:kasby/core/controllers/currency_controller.dart';
+import 'package:kasby/core/services/authentication_logger.dart';
+import 'package:kasby/core/services/enterprise_operations_logger.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
-import 'package:kasby/features/auth/domain/auth_otp_config.dart';
-import 'package:kasby/features/auth/domain/services/otp_service.dart';
-import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
+import 'package:kasby/features/auth/domain/repositories/authentication_repository.dart';
+import 'package:kasby/features/auth/domain/services/email_otp_service.dart';
+import 'package:kasby/features/auth/domain/services/phone_otp_service.dart';
+import 'package:kasby/features/auth/domain/utils/login_identifier_utils.dart';
+import 'package:kasby/core/services/sensitive_operation_guard.dart';
+import 'package:kasby/core/utils/input_validators.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 
-/// Centralized Supabase Auth security operations (verification, reset, reauth).
+/// Centralized Supabase Auth security operations — Supabase Auth only.
 class AuthSecurityService {
   AuthSecurityService._();
 
-  static const String defaultRedirect = 'io.supabase.kasby://login-callback';
+  static const _deletedAccountPrefix = 'DELETED_ACCOUNT:';
 
-  static String get authRedirectUrl {
-    final fromEnv = dotenv.env['SUPABASE_AUTH_REDIRECT'];
-    if (fromEnv != null && fromEnv.trim().isNotEmpty) {
-      return fromEnv.trim();
-    }
-    return defaultRedirect;
-  }
+  static AuthenticationRepository get _repo => AuthenticationRepository.to;
+  static EmailOtpService get _emailOtp => EmailOtpService.to;
+  static PhoneOtpService get _phoneOtp => PhoneOtpService.to;
 
-  static OTPService get _otp => OTPService.to;
-
-  static String _otpErrorMessage(Object error) {
-    if (error is OTPDispatchException || error is OTPVerificationException) {
-      return error.toString();
-    }
-    return extractAuthErrorMessage(error);
-  }
+  static String get authRedirectUrl => AuthenticationRepository.authRedirectUrl;
+  static const String defaultRedirect = AuthenticationRepository.defaultRedirect;
 
   static void _log(
     String method,
@@ -52,15 +45,9 @@ class AuthSecurityService {
     );
   }
 
-  /// Whether the user must verify their email before accessing the app.
-  static bool isEmailVerificationRequired(User? user) {
-    if (user == null) return false;
-    final email = user.email;
-    if (email == null || email.isEmpty) return false;
-    return user.emailConfirmedAt == null;
-  }
+  static bool isEmailVerificationRequired(User? user) =>
+      _repo.isEmailVerificationRequired(user);
 
-  /// Detect Supabase auth callback deep links (signup, recovery, email change).
   static bool isAuthCallbackUri(Uri uri) {
     if (uri.queryParameters.containsKey('code')) return true;
     if (uri.queryParameters.containsKey('error')) return true;
@@ -76,8 +63,16 @@ class AuthSecurityService {
     return false;
   }
 
-  /// Exchange an auth deep link for a session.
   static Future<void> handleAuthCallback(Uri uri) async {
+    final sw = AuthenticationLogger.logStart(
+      'email_verification_deep_link',
+      method: 'handleAuthCallback',
+      authMethod: 'email_link',
+      params: {
+        'host': uri.host,
+        'hasCode': uri.queryParameters.containsKey('code'),
+      },
+    );
     _log('handleAuthCallback', 'Processing auth callback', params: {
       'host': uri.host,
       'hasCode': uri.queryParameters.containsKey('code'),
@@ -88,19 +83,35 @@ class AuthSecurityService {
       final description = uri.queryParameters['error_description'] ??
           uri.queryParameters['error'] ??
           'auth_link_invalid'.tr;
-      _log(
-        'handleAuthCallback',
-        'Auth callback returned error',
-        status: 'ERROR',
-        params: {'description': description},
+      final error = AuthException(description);
+      AuthenticationLogger.logFailure(
+        'email_verification_deep_link',
+        error,
+        stopwatch: sw,
+        method: 'handleAuthCallback',
+        authMethod: 'email_link',
       );
-      throw AuthException(description);
+      throw error;
     }
 
     try {
       await SupabaseService.auth.getSessionFromUrl(uri);
       _log('handleAuthCallback', 'Session established from auth callback');
+      AuthenticationLogger.logSuccess(
+        'email_verification_deep_link',
+        stopwatch: sw,
+        method: 'handleAuthCallback',
+        authMethod: 'email_link',
+      );
     } on AuthException catch (e, stack) {
+      AuthenticationLogger.logFailure(
+        'email_verification_deep_link',
+        e,
+        stopwatch: sw,
+        method: 'handleAuthCallback',
+        authMethod: 'email_link',
+        stackTrace: stack,
+      );
       _log(
         'handleAuthCallback',
         'Failed to establish session from callback',
@@ -112,76 +123,31 @@ class AuthSecurityService {
     }
   }
 
-  /// Resend signup verification OTP via Twilio Verify platform.
-  static Future<void> resendSignupVerification(String email) async {
-    await ensureSignupVerificationSent(email);
-  }
+  static Future<void> resendSignupVerification(String email) =>
+      ensureSignupVerificationSent(email);
 
-  /// Resend or send OTP for a given auth flow type.
   static Future<void> resendOtp({
     required String email,
     required OtpType type,
-  }) async {
-    final sanitized = email.trim().toLowerCase();
-    _log('resendOtp', 'Resending OTP', params: {'type': type.name});
-    await SupabaseService.auth.resend(type: type, email: sanitized);
-    _log('resendOtp', 'OTP resent', params: {'type': type.name});
-  }
+  }) =>
+      _repo.resendEmailOtp(email: email, type: type);
 
-  /// Verify a Supabase email OTP (length validated against [AuthOtpConfig]).
   static Future<void> verifyOtpCode({
     required String email,
     required String token,
     required OtpType type,
   }) async {
-    final sanitized = email.trim().toLowerCase();
-    final normalized = AuthOtpConfig.normalize(token);
-    final expectedLength = AuthOtpConfig.lengthForOtpType(type);
-    if (normalized.length != expectedLength) {
-      throw AuthException(
-        'otp_length_mismatch'.trParams({'count': '$expectedLength'}),
-      );
-    }
-    _log(
-      'verifyOtpCode',
-      'Verifying OTP',
-      params: {'type': type.name, 'length': expectedLength},
-    );
-    await SupabaseService.auth.verifyOTP(
-      type: type,
-      token: normalized,
-      email: sanitized,
-    );
+    await _emailOtp.verify(email: email, token: token, type: type);
     await _syncUserAfterOtpVerification();
-    _log('verifyOtpCode', 'OTP verified', params: {'type': type.name});
   }
 
-  /// Fetches the latest user record from Supabase Auth (not cached JWT claims).
-  static Future<User?> fetchFreshUser() async {
-    try {
-      final response = await SupabaseService.auth.getUser();
-      return response.user;
-    } catch (e, stack) {
-      _log(
-        'fetchFreshUser',
-        'getUser failed — falling back to refreshSession',
-        status: 'WARN',
-        error: e,
-        stackTrace: stack,
-      );
-      try {
-        await SupabaseService.auth.refreshSession();
-      } catch (_) {}
-      return SupabaseService.auth.currentUser;
-    }
-  }
+  static Future<User?> fetchFreshUser() => _repo.fetchFreshUser();
 
   static Future<void> _syncUserAfterOtpVerification() async {
-    await fetchFreshUser();
+    await _repo.fetchFreshUser();
     await SupabaseService.hardRefreshSession();
   }
 
-  /// Extracts a human-readable message from Supabase [AuthException] payloads.
   static String extractAuthErrorMessage(Object error) {
     if (error is AuthException) {
       return normalizeAuthErrorMessage(error.message);
@@ -189,7 +155,6 @@ class AuthSecurityService {
     return normalizeAuthErrorMessage(error.toString());
   }
 
-  /// Parses GoTrue JSON error bodies (`{"code":"...","message":"..."}`).
   static String normalizeAuthErrorMessage(String raw) {
     final trimmed = raw.trim();
     if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
@@ -206,11 +171,9 @@ class AuthSecurityService {
     return trimmed;
   }
 
-  /// Maps Supabase OTP verification errors to user-facing OTP messages.
   static String translateOtpError(Object error) {
     final message = extractAuthErrorMessage(error);
     final lower = message.toLowerCase();
-    // GoTrue may return "Email link is invalid or has expired" for OTP failures.
     if (lower.contains('link') &&
         (lower.contains('invalid') || lower.contains('expired'))) {
       return lower.contains('expired') ? 'otp_expired'.tr : 'invalid_otp'.tr;
@@ -236,16 +199,17 @@ class AuthSecurityService {
     return message;
   }
 
-  /// True when phone login OTP was sent with [shouldCreateUser: false] but no
-  /// auth user exists for that phone yet.
   static bool isPhoneAccountNotFoundError(Object error) {
     final message = extractAuthErrorMessage(error).toLowerCase();
     return message.contains('signups not allowed') && message.contains('otp');
   }
 
-  /// Maps general Supabase auth errors (login, signup, links).
   static String translateAuthError(Object error) {
     final message = extractAuthErrorMessage(error);
+    if (message.startsWith(_deletedAccountPrefix)) {
+      final type = message.substring(_deletedAccountPrefix.length);
+      return deletedAccountMessage(type);
+    }
     final lower = message.toLowerCase();
     if (lower.contains('invalid login credentials')) {
       return 'auth_error_invalid_credentials'.tr;
@@ -258,6 +222,10 @@ class AuthSecurityService {
     }
     if (lower.contains('password should be')) {
       return 'auth_error_weak_password'.tr;
+    }
+    if (lower.contains('same_password') ||
+        lower.contains('different from the old password')) {
+      return 'auth_error_same_password'.tr;
     }
     if (lower.contains('rate limit')) {
       return 'auth_error_rate_limit'.tr;
@@ -303,23 +271,15 @@ class AuthSecurityService {
         lower.contains('unexpected_failure') ||
         lower.contains('badcredentials') ||
         lower.contains('username and password not accepted') ||
-        lower.contains('535 5.7.8') ||
-        lower.contains('resend_api_key') ||
-        lower.contains('resend delivery failed');
+        lower.contains('535 5.7.8');
   }
 
-  /// Maps edge-function OTP dispatch failures to a user-facing delivery message.
   static String normalizeOtpDispatchError(String message) {
     final lower = message.toLowerCase();
-    if (lower.contains('resend_api_key') ||
-        lower.contains('resend delivery failed') ||
-        isEmailDeliveryFailure(message)) {
+    if (isEmailDeliveryFailure(message)) {
       return 'auth_error_email_delivery'.tr;
     }
-    if (lower.contains('user not found')) {
-      return 'auth_error_email_delivery'.tr;
-    }
-    if (lower.contains('rate_limit')) {
+    if (lower.contains('rate_limit') || lower.contains('rate limit')) {
       return 'rate_limit_exceeded_friend'.tr;
     }
     return message;
@@ -339,152 +299,344 @@ class AuthSecurityService {
         lower.contains('verification code');
   }
 
-  /// Resend password recovery OTP via Resend (unified with phone reset path).
-  static Future<void> resendPasswordRecovery(String email) async {
-    await sendPasswordResetOtpViaResend(email);
-  }
+  static Future<void> resendPasswordRecovery(String email) =>
+      sendPasswordResetEmail(email);
 
-  /// Refresh session when possible; returns verification status.
-  static Future<bool> refreshAndCheckEmailVerified() async {
-    _log('refreshAndCheckEmailVerified', 'Checking verification status');
-    await fetchFreshUser();
-    await SupabaseService.hardRefreshSession();
-    final user = await fetchFreshUser();
-    if (user == null) return false;
+  static Future<bool> refreshAndCheckEmailVerified() =>
+      _repo.refreshAndCheckEmailVerified();
 
-    final verified = !isEmailVerificationRequired(user);
-    _log(
-      'refreshAndCheckEmailVerified',
-      'Verification status checked',
-      params: {
-        'verified': verified,
-        'emailConfirmedAt': user.emailConfirmedAt,
-      },
-    );
-    return verified;
-  }
-
-  /// Send password reset OTP via Resend (not Supabase SMTP magic link).
   static Future<void> sendPasswordResetEmail(String email) async {
-    await sendPasswordResetOtpViaResend(email);
-  }
-
-  /// Dispatches a password-reset OTP through Twilio Verify platform.
-  static Future<void> sendPasswordResetOtpViaResend(String email) async {
     final sanitized = email.trim().toLowerCase();
-    _log('sendPasswordResetOtpViaResend', 'Sending password reset OTP');
+    await guardAgainstDeletedAccount(
+      email: sanitized,
+      operation: 'password_reset_email',
+    );
     try {
-      await _otp.sendEmailOtp(email: sanitized, purpose: 'password_reset');
+      await _repo.sendPasswordResetEmail(sanitized);
     } catch (e) {
-      throw AuthException(normalizeOtpDispatchError(_otpErrorMessage(e)));
+      throw AuthException(normalizeOtpDispatchError(extractAuthErrorMessage(e)));
     }
-    _log('sendPasswordResetOtpViaResend', 'Password reset OTP dispatched');
   }
 
-  /// Creates auth user when signup SMTP fails, then sends signup OTP.
+  static Future<void> sendPasswordResetOtpViaResend(String email) =>
+      sendPasswordResetEmail(email);
+
   static Future<void> provisionSignupAndSendOtp({
     required String email,
     required String password,
     Map<String, dynamic>? metadata,
   }) async {
-    final sanitized = email.trim().toLowerCase();
-    _log('provisionSignupAndSendOtp', 'Provisioning user and sending signup OTP');
+    await _repo.sendSignupEmailOtp(email.trim().toLowerCase());
+  }
+
+  static Future<void> reauthenticateWithPassword(String password) =>
+      _repo.reauthenticateWithPassword(password);
+
+  static Future<void> requestEmailChange(String newEmail) =>
+      _repo.initiateEmailChange(newEmail);
+
+  static Future<void> updatePassword(String newPassword) =>
+      _repo.updatePassword(newPassword);
+
+  static Future<void> refreshUserProfileState() =>
+      _repo.refreshUserProfileState();
+
+  static Future<bool> isPhoneAvailable(String phone) async {
+    final sanitized = PhoneOtpService.to.toE164(phone.trim());
+    if (!InputValidators.isValidE164Phone(sanitized)) return false;
+
+    final sw = AuthenticationLogger.logStart(
+      'phone_availability_check',
+      method: 'isPhoneAvailable',
+      authMethod: 'phone_otp',
+      phone: sanitized,
+    );
     try {
-      await _otp.sendEmailOtp(
-        email: sanitized,
-        purpose: 'signup',
-        provision: {
-          'provision_password': password,
-          if (metadata != null) 'provision_metadata': metadata,
+      final response = await SupabaseService.client.rpc(
+        'fn_check_phone_available',
+        params: {'p_phone': sanitized},
+      );
+      if (response is! Map) {
+        throw AuthException('unexpected_error'.tr);
+      }
+      if (response['reason'] == 'deleted') {
+        final deletionType = response['deletion_type']?.toString() ?? 'admin';
+        throw deletedAccountException(deletionType);
+      }
+      final available = response['available'] == true;
+      AuthenticationLogger.logSuccess(
+        'phone_availability_check',
+        stopwatch: sw,
+        method: 'isPhoneAvailable',
+        authMethod: 'phone_otp',
+        phone: sanitized,
+        params: {'available': available},
+      );
+      return available;
+    } catch (e, stack) {
+      AuthenticationLogger.logFailure(
+        'phone_availability_check',
+        e,
+        stopwatch: sw,
+        method: 'isPhoneAvailable',
+        authMethod: 'phone_otp',
+        phone: sanitized,
+        stackTrace: stack,
+      );
+      if (e is AuthException) rethrow;
+      throw AuthException('unexpected_error'.tr);
+    }
+  }
+
+  static String deletedAccountTitle(String deletionType) {
+    if (deletionType == 'admin') {
+      return 'account_deleted_by_admin_title'.tr;
+    }
+    return 'account_self_deleted_title'.tr;
+  }
+
+  static String deletedAccountMessage(String deletionType) {
+    if (deletionType == 'admin') {
+      return 'account_deleted_by_admin_message'.tr;
+    }
+    return 'account_self_deleted_message'.tr;
+  }
+
+  static AuthException deletedAccountException(String deletionType) {
+    return AuthException('$_deletedAccountPrefix$deletionType');
+  }
+
+  static Future<String?> resolveDeletedAccountType({
+    String? email,
+    String? phone,
+  }) async {
+    try {
+      final response = await SupabaseService.client.rpc(
+        'fn_check_deleted_account',
+        params: {
+          'p_email': email?.trim().toLowerCase(),
+          'p_phone': phone?.trim(),
         },
       );
-    } catch (e) {
-      throw AuthException(normalizeOtpDispatchError(_otpErrorMessage(e)));
+      if (response is Map && response['deleted'] == true) {
+        return response['deletion_type']?.toString() ?? 'admin';
+      }
+    } catch (e, stack) {
+      _log(
+        'resolveDeletedAccountType',
+        'Deleted account lookup failed',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
-    _log('provisionSignupAndSendOtp', 'Signup OTP dispatched after provision');
+    return null;
   }
 
-  /// Reauthenticate with current password (required before sensitive updates).
-  static Future<void> reauthenticateWithPassword(String password) async {
-    final email = SupabaseService.currentUser?.email;
-    if (email == null || email.isEmpty) {
-      throw AuthException('cannot_verify_identity'.tr);
-    }
-    _log('reauthenticateWithPassword', 'Reauthenticating user');
-    await SupabaseService.auth.signInWithPassword(
+  static Future<void> guardAgainstDeletedAccount({
+    String? email,
+    String? phone,
+    required String operation,
+  }) async {
+    final deletionType = await resolveDeletedAccountType(
       email: email,
-      password: password.trim(),
+      phone: phone,
     );
-    _log('reauthenticateWithPassword', 'Reauthentication successful');
-  }
+    if (deletionType == null) return;
 
-  /// Request email change via Supabase Auth (confirmation email sent).
-  static Future<void> requestEmailChange(String newEmail) async {
-    final sanitized = newEmail.trim().toLowerCase();
-    _log('requestEmailChange', 'Requesting email change');
-    await SupabaseService.auth.updateUser(UserAttributes(email: sanitized));
-    _log('requestEmailChange', 'Email change confirmation sent');
-  }
-
-  /// Update password and refresh session.
-  static Future<void> updatePassword(String newPassword) async {
-    _log('updatePassword', 'Updating password');
-    await SupabaseService.auth.updateUser(
-      UserAttributes(password: newPassword.trim()),
+    EnterpriseOperationsLogger.log(
+      domain: 'authentication',
+      operation: 'deleted_account_attempt',
+      phase: 'BLOCKED',
+      status: 'WARN',
+      params: {
+        'authOperation': operation,
+        'deletionType': deletionType,
+        'channel': email != null ? 'email' : 'phone',
+      },
     );
-    await SupabaseService.hardRefreshSession();
-    _log('updatePassword', 'Password updated and session refreshed');
+
+    throw deletedAccountException(deletionType);
   }
 
-  /// Refresh session and reload all user-facing profile state.
-  static Future<void> refreshUserProfileState() async {
-    _log('refreshUserProfileState', 'Refreshing session and profile data');
-    await fetchFreshUser();
-    await SupabaseService.hardRefreshSession();
-    if (Get.isRegistered<HomeController>()) {
-      await HomeController.to.fetchProfile();
-      await HomeController.to.fetchAll();
-      HomeController.to.reconnectStreams();
+  static Future<bool> accountExistsByEmail(String email) async {
+    final sanitized = email.trim().toLowerCase();
+    if (!InputValidators.isValidEmail(sanitized)) return false;
+
+    final sw = AuthenticationLogger.logStart(
+      'account_existence_check',
+      method: 'accountExistsByEmail',
+      authMethod: 'email',
+      email: sanitized,
+      params: {'channel': 'email'},
+    );
+    try {
+      final response = await SupabaseService.client.rpc(
+        'recover_account_by_email',
+        params: {'p_email': sanitized},
+      );
+      if (response is Map && response['deleted'] == true) {
+        final deletionType = response['deletion_type']?.toString() ?? 'admin';
+        AuthenticationLogger.logSuccess(
+          'account_existence_check',
+          stopwatch: sw,
+          method: 'accountExistsByEmail',
+          authMethod: 'email',
+          email: sanitized,
+          params: {'exists': false, 'deleted': true, 'deletionType': deletionType},
+        );
+        throw deletedAccountException(deletionType);
+      }
+      final exists = response is Map && response['success'] == true;
+      AuthenticationLogger.logSuccess(
+        'account_existence_check',
+        stopwatch: sw,
+        method: 'accountExistsByEmail',
+        authMethod: 'email',
+        email: sanitized,
+        params: {'exists': exists},
+      );
+      return exists;
+    } catch (e, stack) {
+      AuthenticationLogger.logFailure(
+        'account_existence_check',
+        e,
+        stopwatch: sw,
+        method: 'accountExistsByEmail',
+        authMethod: 'email',
+        email: sanitized,
+        stackTrace: stack,
+      );
+      _log(
+        'accountExistsByEmail',
+        'Account lookup failed',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
     }
-    if (Get.isRegistered<CurrencyController>()) {
-      await CurrencyController.to.fetchWalletBalances();
-    }
-    _log('refreshUserProfileState', 'Profile state refreshed');
   }
 
-  /// Returns true when a pending email change has been confirmed.
-  static Future<bool> isPendingEmailChangeComplete(String targetEmail) async {
-    await fetchFreshUser();
-    await SupabaseService.hardRefreshSession();
-    final user = await fetchFreshUser();
-    if (user == null) return false;
+  static Future<bool> accountExistsByPhone(String phone) async {
+    final sanitized = PhoneOtpService.to.toE164(phone.trim());
+    if (!InputValidators.isValidE164Phone(sanitized)) return false;
 
-    final normalizedTarget = targetEmail.trim().toLowerCase();
-    final currentEmail = user.email?.trim().toLowerCase();
-
-    if (currentEmail == normalizedTarget) {
-      return user.emailConfirmedAt != null;
+    final sw = AuthenticationLogger.logStart(
+      'account_existence_check',
+      method: 'accountExistsByPhone',
+      authMethod: 'phone_otp',
+      phone: sanitized,
+      params: {'channel': 'phone'},
+    );
+    try {
+      final response = await SupabaseService.client.rpc(
+        'recover_account_by_phone',
+        params: {'p_phone': sanitized},
+      );
+      if (response is Map && response['deleted'] == true) {
+        final deletionType = response['deletion_type']?.toString() ?? 'admin';
+        AuthenticationLogger.logSuccess(
+          'account_existence_check',
+          stopwatch: sw,
+          method: 'accountExistsByPhone',
+          authMethod: 'phone_otp',
+          phone: sanitized,
+          params: {'exists': false, 'deleted': true, 'deletionType': deletionType},
+        );
+        throw deletedAccountException(deletionType);
+      }
+      final exists = response is Map && response['success'] == true;
+      AuthenticationLogger.logSuccess(
+        'account_existence_check',
+        stopwatch: sw,
+        method: 'accountExistsByPhone',
+        authMethod: 'phone_otp',
+        phone: sanitized,
+        params: {'exists': exists},
+      );
+      return exists;
+    } catch (e, stack) {
+      AuthenticationLogger.logFailure(
+        'account_existence_check',
+        e,
+        stopwatch: sw,
+        method: 'accountExistsByPhone',
+        authMethod: 'phone_otp',
+        phone: sanitized,
+        stackTrace: stack,
+      );
+      _log(
+        'accountExistsByPhone',
+        'Account lookup failed',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+      rethrow;
     }
-
-    return false;
   }
 
-  /// Whether status polling can refresh the session (logged-in flows).
+  static Future<bool> isEmailAvailable(String email) async {
+    final sanitized = email.trim().toLowerCase();
+    if (!InputValidators.isValidEmail(sanitized)) return false;
+
+    final sw = AuthenticationLogger.logStart(
+      'email_availability_check',
+      method: 'isEmailAvailable',
+      authMethod: 'email',
+      email: sanitized,
+    );
+    try {
+      final response = await SupabaseService.client.rpc(
+        'fn_check_email_available',
+        params: {'p_email': sanitized},
+      );
+      if (response is! Map) {
+        throw AuthException('unexpected_error'.tr);
+      }
+      if (response['reason'] == 'deleted') {
+        final deletionType = response['deletion_type']?.toString() ?? 'admin';
+        throw deletedAccountException(deletionType);
+      }
+      final available = response['available'] == true;
+      AuthenticationLogger.logSuccess(
+        'email_availability_check',
+        stopwatch: sw,
+        method: 'isEmailAvailable',
+        authMethod: 'email',
+        email: sanitized,
+        params: {'available': available},
+      );
+      return available;
+    } catch (e, stack) {
+      AuthenticationLogger.logFailure(
+        'email_availability_check',
+        e,
+        stopwatch: sw,
+        method: 'isEmailAvailable',
+        authMethod: 'email',
+        email: sanitized,
+        stackTrace: stack,
+      );
+      if (e is AuthException) rethrow;
+      throw AuthException('unexpected_error'.tr);
+    }
+  }
+
+  static Future<bool> ensureUserProfile() => _repo.ensureUserProfile();
+
+  static Future<bool> isPendingEmailChangeComplete(String targetEmail) =>
+      _repo.isPendingEmailChangeComplete(targetEmail);
+
   static bool canPollVerificationStatus({required String purpose}) {
-    if (purpose == 'email_change') {
-      return SupabaseService.auth.currentSession?.refreshToken != null;
-    }
     return SupabaseService.auth.currentSession?.refreshToken != null &&
         SupabaseService.auth.currentSession!.refreshToken!.isNotEmpty;
   }
 
-  /// Ensures signup verification OTP is dispatched via Twilio Verify platform.
   static Future<void> ensureSignupVerificationSent(String email) async {
-    final sanitized = email.trim().toLowerCase();
-    _log('ensureSignupVerificationSent', 'Sending signup verification OTP');
     try {
-      await _otp.sendEmailOtp(email: sanitized, purpose: 'signup');
-      _log('ensureSignupVerificationSent', 'Signup OTP sent');
+      await _repo.sendSignupEmailOtp(email.trim().toLowerCase());
     } catch (e, stack) {
       _log(
         'ensureSignupVerificationSent',
@@ -493,192 +645,85 @@ class AuthSecurityService {
         error: e,
         stackTrace: stack,
       );
-      throw AuthException(normalizeOtpDispatchError(_otpErrorMessage(e)));
+      throw AuthException(normalizeOtpDispatchError(extractAuthErrorMessage(e)));
     }
   }
 
-  /// Verify signup OTP and mark email confirmed server-side.
   static Future<void> confirmSignupEmailOtp({
     required String email,
     required String code,
   }) async {
-    final sanitized = email.trim().toLowerCase();
-    final normalized = AuthOtpConfig.normalize(code);
-    if (normalized.length != AuthOtpConfig.unifiedOtpLength) {
-      throw AuthException(
-        'otp_length_mismatch'.trParams({
-          'count': '${AuthOtpConfig.unifiedOtpLength}',
-        }),
-      );
-    }
-
-    _log('confirmSignupEmailOtp', 'Confirming signup OTP');
     try {
-      await _otp.verifyEmailOtp(
-        email: sanitized,
-        code: normalized,
-        purpose: 'signup',
-      );
+      await _repo.verifySignupEmailOtp(email: email, code: code);
     } catch (e) {
       throw AuthException(translateOtpError(e));
     }
-    await _syncUserAfterOtpVerification();
-    _log('confirmSignupEmailOtp', 'Signup email confirmed');
   }
 
-  /// Sign in immediately after signup email confirmation (no session yet).
   static Future<void> signInAfterSignup({
     required String email,
     required String password,
-  }) async {
-    final sanitized = email.trim().toLowerCase();
-    _log('signInAfterSignup', 'Creating session after signup verification');
-    await SupabaseService.auth.signInWithPassword(
-      email: sanitized,
-      password: password.trim(),
-    );
-    await SupabaseService.hardRefreshSession();
-    _log('signInAfterSignup', 'Session created');
-  }
+  }) =>
+      _repo.signInAfterSignup(email: email, password: password);
 
-  /// Sends phone verification OTP via Twilio Verify (SMS).
   static Future<void> ensurePhoneVerificationSent({
     required String phone,
     String purpose = 'verification',
   }) async {
-    final e164 = _phoneForOtpLookup(_normalizePhone(phone));
-    _log('ensurePhoneVerificationSent', 'Sending phone verification OTP', params: {
-      'phone': e164,
-      'purpose': purpose,
-    });
     try {
-      await _otp.sendPhoneOtp(phone: e164, purpose: purpose);
-      _log('ensurePhoneVerificationSent', 'Phone OTP sent via Twilio Verify');
+      await _repo.sendPhoneVerificationOtp(phone);
     } catch (e) {
       throw AuthException(translateOtpError(e));
     }
   }
 
-  /// Sends OTP for profile email/phone change via Twilio Verify platform.
   static Future<void> sendProfileChangeOtp({
     required String target,
     required String targetType,
     required String purpose,
   }) async {
-    final normalizedTarget = targetType == 'email'
-        ? target.trim().toLowerCase()
-        : _phoneForOtpLookup(normalizePhone(target.trim()));
-
-    _log('sendProfileChangeOtp', 'Sending profile change OTP', params: {
-      'targetType': targetType,
-      'purpose': purpose,
-    });
-
     try {
       if (targetType == 'email') {
-        await _otp.sendEmailOtp(email: normalizedTarget, purpose: purpose);
+        await _repo.initiateEmailChange(target.trim().toLowerCase());
       } else {
-        await _otp.sendPhoneOtp(phone: normalizedTarget, purpose: purpose);
+        await _repo.initiatePhoneChange(target.trim());
       }
-      _log('sendProfileChangeOtp', 'Profile change OTP sent');
     } catch (e) {
       throw AuthException(
         targetType == 'email'
-            ? normalizeOtpDispatchError(_otpErrorMessage(e))
+            ? normalizeOtpDispatchError(extractAuthErrorMessage(e))
             : translateOtpError(e),
       );
     }
   }
 
-  // ─── PHONE AUTH (Twilio Verify) ───────────────────────
   static Future<AuthResponse> signUpWithEmailVerification({
     required String email,
     required String password,
     required Map<String, dynamic> data,
-  }) async {
-    final sanitized = email.trim().toLowerCase();
-    _log('signUpWithEmailVerification', 'Registering user');
+  }) =>
+      _repo.register(email: email, password: password, metadata: data);
 
-    try {
-      if (AuthOtpConfig.tempSkipEmailVerification) {
-        return await SupabaseService.auth.signUp(
-          email: sanitized,
-          password: password,
-          data: data,
-        );
-      }
-      return await SupabaseService.auth.signUp(
-        email: sanitized,
-        password: password,
-        data: data,
-        emailRedirectTo: authRedirectUrl,
-      );
-    } on AuthException catch (e) {
-      if (AuthOtpConfig.tempSkipEmailVerification &&
-          isEmailDeliveryFailureError(e)) {
-        _log(
-          'signUpWithEmailVerification',
-          'Signup email failed — attempting direct sign-in',
-          status: 'WARN',
-        );
-        return await SupabaseService.auth.signInWithPassword(
-          email: sanitized,
-          password: password.trim(),
-        );
-      }
-      rethrow;
-    }
-  }
-
-  /// Creates a session after signup when email verification is temporarily skipped.
   static Future<bool> completeRegistrationSession({
     required String email,
     required String password,
   }) async {
-    final sanitized = email.trim().toLowerCase();
     if (SupabaseService.auth.currentSession != null) return true;
-
     try {
-      await signInAfterSignup(email: sanitized, password: password);
+      await signInAfterSignup(email: email, password: password);
       return SupabaseService.auth.currentSession != null;
-    } on AuthException catch (e, stack) {
-      _log(
-        'completeRegistrationSession',
-        'Sign-in after signup failed',
-        status: 'ERROR',
-        error: e.message,
-        stackTrace: stack,
-      );
+    } catch (_) {
       return false;
     }
   }
 
-  // ─── PHONE AUTH (Supabase + Twilio) ───────────────────────
+  static int get phoneOtpLength => _repo.phoneOtpLength;
 
-  /// Configured SMS OTP length (Supabase dashboard: 6 digits).
-  static int get phoneOtpLength =>
-      AuthOtpConfig.lengthForOtpType(OtpType.sms);
+  static String? getUserPhone() => _repo.getUserPhone();
 
-  /// Returns E.164 phone from auth user or profile metadata.
-  static String? getUserPhone() {
-    final user = SupabaseService.currentUser;
-    if (user == null) return null;
-    final authPhone = user.phone?.trim();
-    if (authPhone != null && authPhone.isNotEmpty) return authPhone;
-    final metaPhone = user.userMetadata?['phone']?.toString().trim();
-    if (metaPhone != null && metaPhone.isNotEmpty) return metaPhone;
-    return null;
-  }
+  static bool isPhoneVerificationRequired(User? user) =>
+      _repo.isPhoneVerificationRequired(user);
 
-  /// Whether the user must confirm their phone before accessing the app.
-  static bool isPhoneVerificationRequired(User? user) {
-    if (user == null) return false;
-    final phone = user.phone?.trim();
-    if (phone == null || phone.isEmpty) return false;
-    return user.phoneConfirmedAt == null;
-  }
-
-  /// Whether email or phone verification is pending.
   static bool isIdentityVerificationRequired(User? user) {
     if (user == null) return false;
     if (isEmailVerificationRequired(user)) return true;
@@ -686,66 +731,45 @@ class AuthSecurityService {
     return false;
   }
 
-  /// Send phone OTP via Twilio Verify (SMS).
   static Future<void> sendPhoneOtp({
     required String phone,
     bool shouldCreateUser = false,
     Map<String, dynamic>? data,
     String purpose = 'signup',
   }) async {
-    final e164 = _phoneForOtpLookup(_normalizePhone(phone));
-    _log('sendPhoneOtp', 'Sending Twilio phone OTP', params: {
-      'phone': e164,
-      'purpose': purpose,
-    });
-    try {
-      await _otp.sendPhoneOtp(
-        phone: e164,
-        purpose: purpose,
-        provision: shouldCreateUser && data != null
-            ? {'provision_metadata': data}
-            : null,
+    if (shouldCreateUser || purpose == 'signup') {
+      await guardAgainstDeletedAccount(
+        phone: phone,
+        operation: 'phone_otp_signup',
       );
+    }
+    try {
+      if (purpose == 'phone_change') {
+        await _repo.initiatePhoneChange(phone);
+      } else {
+        await _phoneOtp.sendOtp(
+          phone: phone,
+          shouldCreateUser: shouldCreateUser,
+          data: data,
+        );
+      }
     } catch (e) {
       throw AuthException(translateOtpError(e));
     }
-    _log('sendPhoneOtp', 'OTP sent via Twilio Verify');
   }
 
-  /// Resend phone OTP via Twilio Verify.
   static Future<void> resendPhoneOtp({
     required String phone,
     OtpType type = OtpType.sms,
     String purpose = 'verification',
   }) async {
-    final e164 = _phoneForOtpLookup(_normalizePhone(phone));
-    final resolvedPurpose = type == OtpType.phoneChange ? 'phone_change' : purpose;
-    _log('resendPhoneOtp', 'Resending phone OTP', params: {
-      'type': type.name,
-      'purpose': resolvedPurpose,
-    });
     try {
-      await _otp.sendPhoneOtp(phone: e164, purpose: resolvedPurpose);
+      await _repo.resendPhoneOtp(phone: phone, type: type);
     } catch (e) {
       throw AuthException(translateOtpError(e));
     }
-    _log('resendPhoneOtp', 'Phone OTP resent');
   }
 
-  static String _purposeFromOtpType(OtpType type, String fallback) {
-    switch (type) {
-      case OtpType.phoneChange:
-        return 'phone_change';
-      case OtpType.recovery:
-        return 'password_reset';
-      case OtpType.signup:
-        return 'signup';
-      default:
-        return fallback;
-    }
-  }
-
-  /// Verify phone OTP via Twilio Verify and refresh session state.
   static Future<AuthResponse> verifyPhoneOtpCode({
     required String phone,
     required String token,
@@ -753,88 +777,43 @@ class AuthSecurityService {
     String purpose = 'verification',
     String? newValue,
   }) async {
-    final e164 = _phoneForOtpLookup(_normalizePhone(phone));
-    final normalizedToken = AuthOtpConfig.normalize(token);
-    if (normalizedToken.length != AuthOtpConfig.unifiedOtpLength) {
-      throw AuthException(
-        'otp_length_mismatch'.trParams({
-          'count': '${AuthOtpConfig.unifiedOtpLength}',
-        }),
-      );
-    }
-
-    final resolvedPurpose = _purposeFromOtpType(type, purpose);
-    _log('verifyPhoneOtpCode', 'Verifying phone OTP', params: {
-      'type': type.name,
-      'purpose': resolvedPurpose,
-    });
-
     try {
-      await _otp.verifyPhoneOtp(
-        phone: e164,
-        code: normalizedToken,
-        purpose: resolvedPurpose,
-        newValue: newValue,
-      );
+      if (type == OtpType.phoneChange) {
+        await _repo.confirmPhoneChange(newPhone: phone, code: token);
+      } else {
+        await _repo.verifyPhoneOtp(phone: phone, code: token, type: type);
+      }
     } catch (e) {
       throw AuthException(translateOtpError(e));
     }
-
     await _syncUserAfterOtpVerification();
-    _log('verifyPhoneOtpCode', 'Phone OTP verified');
     return AuthResponse(
       session: SupabaseService.auth.currentSession,
       user: SupabaseService.auth.currentUser,
     );
   }
 
-  /// Request phone number change — sends OTP to new number via Twilio.
-  static Future<void> requestPhoneChange(String newPhone) async {
-    final e164 = _phoneForOtpLookup(_normalizePhone(newPhone));
-    _log('requestPhoneChange', 'Requesting phone change OTP');
-    try {
-      await _otp.sendPhoneOtp(phone: e164, purpose: 'phone_change');
-    } catch (e) {
-      throw AuthException(translateOtpError(e));
-    }
-    _log('requestPhoneChange', 'Phone change OTP sent');
-  }
+  static Future<void> requestPhoneChange(String newPhone) =>
+      _repo.initiatePhoneChange(newPhone);
 
-  /// Verify pending phone change OTP.
   static Future<void> confirmPhoneChange({
     required String phone,
     required String token,
   }) async {
-    await verifyPhoneOtpCode(
-      phone: phone,
-      token: token,
-      type: OtpType.phoneChange,
-      purpose: 'phone_change',
-      newValue: _phoneForOtpLookup(_normalizePhone(phone)),
-    );
-    await refreshUserProfileState();
-    _log('confirmPhoneChange', 'Phone updated successfully');
+    await _repo.confirmPhoneChange(newPhone: phone, code: token);
   }
 
-  /// Sends step-up OTP to the signed-in user's phone via Twilio Verify.
   static Future<void> requestStepUpOtp() async {
     final phone = getUserPhone();
     if (phone == null || phone.isEmpty) {
       throw AuthException('phone_verification_required'.tr);
     }
-    _log('requestStepUpOtp', 'Requesting step-up OTP');
-    try {
-      await _otp.sendPhoneOtp(
-        phone: _phoneForOtpLookup(phone),
-        purpose: 'sensitive_action',
-      );
-    } catch (e) {
-      throw AuthException(translateOtpError(e));
+    await _repo.sendStepUpOtp(phone);
+    if (Get.isRegistered<SensitiveOperationGuardService>()) {
+      Get.find<SensitiveOperationGuardService>().nativeStepUpOtp = true;
     }
-    _log('requestStepUpOtp', 'Step-up OTP sent');
   }
 
-  /// Verify step-up OTP after [requestStepUpOtp].
   static Future<void> verifyStepUpOtp({
     required String token,
     String? phone,
@@ -843,15 +822,12 @@ class AuthSecurityService {
     if (targetPhone == null || targetPhone.isEmpty) {
       throw AuthException('phone_verification_required'.tr);
     }
-    await verifyPhoneOtpCode(
-      phone: targetPhone,
-      token: token,
-      purpose: 'sensitive_action',
-    );
-    _log('verifyStepUpOtp', 'Step-up verification complete');
+    await _repo.verifyStepUpOtp(phone: targetPhone, code: token);
+    if (Get.isRegistered<SensitiveOperationGuardService>()) {
+      Get.find<SensitiveOperationGuardService>().nativeStepUpOtp = false;
+    }
   }
 
-  /// Reauthenticate with password (email) or phone OTP path.
   static Future<void> reauthenticateForSensitiveAction(String password) async {
     final user = SupabaseService.currentUser;
     if (user == null) throw AuthException('cannot_verify_identity'.tr);
@@ -871,7 +847,6 @@ class AuthSecurityService {
     throw AuthException('cannot_verify_identity'.tr);
   }
 
-  /// Normalizes to the format GoTrue stores in auth.users (E.164 without '+').
   static String normalizePhone(String phone) {
     var normalized = phone.trim().replaceAll(RegExp(r'[\s\-()]'), '');
     if (normalized.startsWith('+')) {
@@ -880,77 +855,25 @@ class AuthSecurityService {
     return normalized;
   }
 
-  static String _normalizePhone(String phone) => normalizePhone(phone);
+  static Future<String?> lookupEmailByPhone(String phone) =>
+      _repo.lookupEmailByPhone(phone);
 
-  static String _phoneForOtpLookup(String phone) {
-    final trimmed = phone.trim();
-    if (trimmed.startsWith('+')) return trimmed;
-    return '+$trimmed';
-  }
-
-  /// Looks up the email associated with a phone number for password login.
-  static Future<String?> lookupEmailByPhone(String phone) async {
-    final normalized = normalizePhone(phone);
-    if (normalized.isEmpty) return null;
-
-    _log('lookupEmailByPhone', 'Resolving login email by phone');
-    final response = await SupabaseService.client.rpc(
-      'lookup_login_by_phone',
-      params: {'p_phone': normalized},
-    );
-
-    if (response is! Map) return null;
-    if (response['found'] != true) return null;
-    final email = response['email']?.toString().trim().toLowerCase();
-    if (email == null || email.isEmpty) return null;
-    return email;
-  }
-
-  /// Signs in with email or phone + password, resolving phone to email when needed.
   static Future<void> signInWithIdentifier({
     required String identifier,
     required String password,
   }) async {
     final trimmed = identifier.trim();
-    final trimmedPassword = password.trim();
-
-    if (trimmed.contains('@')) {
-      _log('signInWithIdentifier', 'Signing in with email');
-      await SupabaseService.auth.signInWithPassword(
+    if (LoginIdentifierUtils.isEmail(trimmed)) {
+      await guardAgainstDeletedAccount(
         email: trimmed.toLowerCase(),
-        password: trimmedPassword,
+        operation: 'login',
       );
-      return;
-    }
-
-    final normalizedPhone = normalizePhone(trimmed);
-    _log('signInWithIdentifier', 'Signing in with phone', params: {
-      'phone': normalizedPhone,
-    });
-
-    try {
-      await SupabaseService.auth.signInWithPassword(
-        phone: normalizedPhone,
-        password: trimmedPassword,
+    } else {
+      await guardAgainstDeletedAccount(
+        phone: PhoneOtpService.to.toE164(trimmed),
+        operation: 'login',
       );
-      return;
-    } on AuthException catch (e) {
-      final message = extractAuthErrorMessage(e).toLowerCase();
-      final retriable = message.contains('invalid login credentials') ||
-          message.contains('invalid credentials') ||
-          message.contains('user not found');
-      if (!retriable) rethrow;
     }
-
-    final email = await lookupEmailByPhone(normalizedPhone);
-    if (email == null) {
-      throw AuthException('auth_error_invalid_credentials'.tr);
-    }
-
-    _log('signInWithIdentifier', 'Retrying sign-in with resolved email');
-    await SupabaseService.auth.signInWithPassword(
-      email: email,
-      password: trimmedPassword,
-    );
+    await _repo.signIn(identifier: identifier, password: password);
   }
 }

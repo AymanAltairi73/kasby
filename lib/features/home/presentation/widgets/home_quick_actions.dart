@@ -3,10 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
+import 'package:kasby/features/social/presentation/widgets/invite_friends_sheet.dart';
 import 'package:kasby/routes/app_routes.dart';
 
 /// Secondary actions surfaced in the "More" bottom sheet.
 List<Map<String, dynamic>> homeSecondaryActions() => [
+      {
+        'icon': Icons.calendar_today_rounded,
+        'label': 'check_in'.tr,
+        'onTap': () => Get.toNamed(Routes.dailyCheckIn),
+      },
       {
         'icon': Icons.storefront_rounded,
         'label': 'marketplace'.tr,
@@ -17,50 +23,57 @@ List<Map<String, dynamic>> homeSecondaryActions() => [
         'label': 'portfolio_analytics'.tr,
         'onTap': () => Get.toNamed(Routes.portfolioAnalytics),
       },
-      {
-        'icon': Icons.leaderboard_rounded,
-        'label': 'referral_analytics'.tr,
-        'onTap': () => Get.toNamed(Routes.referralAnalytics),
-      },
-      {
-        'icon': Icons.calendar_today_rounded,
-        'label': 'check_in'.tr,
-        'onTap': () => Get.toNamed(Routes.dailyCheckIn),
-      },
-      {
-        'icon': Icons.trending_up_rounded,
-        'label': 'investment_plans'.tr,
-        'onTap': () => Get.toNamed(Routes.investmentPlans),
-      },
-      {
-        'icon': Icons.add_circle_outline_rounded,
-        'label': 'deposit'.tr,
-        'onTap': () => Get.toNamed(Routes.deposit),
-      },
-      {
-        'icon': Icons.remove_circle_outline_rounded,
-        'label': 'withdraw'.tr,
-        'onTap': () => Get.toNamed(Routes.withdraw),
-      },
-      {
-        'icon': Icons.verified_user_outlined,
-        'label': 'kyc_verification'.tr,
-        'onTap': () => Get.toNamed(Routes.kyc),
-      },
-      {
-        'icon': Icons.qr_code_scanner_rounded,
-        'label': 'scan_qr'.tr,
-        'onTap': () => Get.toNamed(Routes.qrScanner),
-      },
+      // {
+      //   'icon': Icons.leaderboard_rounded,
+      //   'label': 'referral_analytics'.tr,
+      //   'onTap': () => Get.toNamed(Routes.referralAnalytics),
+      // },
+      // {
+      //   'icon': Icons.trending_up_rounded,
+      //   'label': 'investment_plans'.tr,
+      //   'onTap': () => Get.toNamed(Routes.investmentPlans),
+      // },
+      // {
+      //   'icon': Icons.add_circle_outline_rounded,
+      //   'label': 'deposit'.tr,
+      //   'onTap': () => Get.toNamed(Routes.deposit),
+      // },
+      // {
+      //   'icon': Icons.remove_circle_outline_rounded,
+      //   'label': 'withdraw'.tr,
+      //   'onTap': () => Get.toNamed(Routes.withdraw),
+      // },
+      // {
+      //   'icon': Icons.verified_user_outlined,
+      //   'label': 'kyc_verification'.tr,
+      //   'onTap': () => Get.toNamed(Routes.kyc),
+      // },
+      // {
+      //   'icon': Icons.qr_code_scanner_rounded,
+      //   'label': 'scan_qr'.tr,
+      //   'onTap': () => Get.toNamed(Routes.qrScanner),
+      // },
       {
         'icon': Icons.description_outlined,
         'label': 'statements'.tr,
         'onTap': () => Get.toNamed(Routes.statements),
       },
+      {
+        'icon': Icons.person_add_alt_1_rounded,
+        'label': 'invite_friends'.tr,
+        'onTap': InviteFriendsSheet.show,
+      },
     ];
 
 class HomeQuickActions extends StatelessWidget {
-  const HomeQuickActions({super.key});
+  const HomeQuickActions({
+    super.key,
+    this.tourKey,
+    this.marketplaceKey,
+  });
+
+  final Key? tourKey;
+  final Key? marketplaceKey;
 
   List<Map<String, dynamic>> _primaryActions(BuildContext context) => [
         {
@@ -127,25 +140,38 @@ class HomeQuickActions extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: KasbySpacing.xl),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 4,
-                mainAxisSpacing: 20,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.8,
-                children: homeSecondaryActions()
-                    .map(
-                      (a) => HomeQuickActionItem(
-                        icon: a['icon'] as IconData,
-                        label: a['label'] as String,
-                        onPressed: () {
-                          Get.back();
-                          (a['onTap'] as VoidCallback)();
-                        },
-                      ),
-                    )
-                    .toList(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final crossAxisCount = width < 340 ? 3 : 4;
+                  const crossAxisSpacing = 14.0;
+                  const mainAxisSpacing = 18.0;
+                  final itemWidth = (width -
+                          crossAxisSpacing * (crossAxisCount - 1)) /
+                      crossAxisCount;
+                  final itemHeight = 112.0;
+                  return GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: crossAxisCount,
+                    mainAxisSpacing: mainAxisSpacing,
+                    crossAxisSpacing: crossAxisSpacing,
+                    childAspectRatio: itemWidth / itemHeight,
+                    children: homeSecondaryActions()
+                        .map(
+                          (a) => HomeQuickActionItem(
+                            icon: a['icon'] as IconData,
+                            label: a['label'] as String,
+                            maxLabelWidth: itemWidth,
+                            onPressed: () {
+                              Get.back();
+                              (a['onTap'] as VoidCallback)();
+                            },
+                          ),
+                        )
+                        .toList(),
+                  );
+                },
               ),
             ],
           ),
@@ -158,24 +184,42 @@ class HomeQuickActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final actions = _primaryActions(context);
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 8,
-        mainAxisExtent: 100,
+    return KeyedSubtree(
+      key: tourKey,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          const crossAxisCount = 4;
+          const crossAxisSpacing = 12.0;
+          const mainAxisSpacing = 16.0;
+          const mainAxisExtent = 112.0;
+          final itemWidth =
+              (width - crossAxisSpacing * (crossAxisCount - 1)) / crossAxisCount;
+
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: mainAxisSpacing,
+              crossAxisSpacing: crossAxisSpacing,
+              mainAxisExtent: mainAxisExtent,
+            ),
+            itemCount: actions.length,
+            itemBuilder: (context, index) {
+              final action = actions[index];
+              final isMarketplaceMore = index == actions.length - 1;
+              return HomeQuickActionItem(
+                key: isMarketplaceMore ? marketplaceKey : null,
+                icon: action['icon'] as IconData,
+                label: action['label'] as String,
+                maxLabelWidth: itemWidth,
+                onPressed: action['onTap'] as VoidCallback,
+              );
+            },
+          );
+        },
       ),
-      itemCount: actions.length,
-      itemBuilder: (context, index) {
-        final action = actions[index];
-        return HomeQuickActionItem(
-          icon: action['icon'] as IconData,
-          label: action['label'] as String,
-          onPressed: action['onTap'] as VoidCallback,
-        );
-      },
     );
   }
 }
@@ -186,11 +230,13 @@ class HomeQuickActionItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onPressed,
+    this.maxLabelWidth,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
+  final double? maxLabelWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -228,16 +274,19 @@ class HomeQuickActionItem extends StatelessWidget {
               ),
               child: Icon(icon, color: AppColors.darkGold, size: 28),
             ),
-            const SizedBox(height: 10),
-            Expanded(
+            const SizedBox(height: 8),
+            SizedBox(
+              width: maxLabelWidth,
               child: Text(
                 label,
                 textAlign: TextAlign.center,
                 maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
+                softWrap: true,
+                overflow: TextOverflow.fade,
+                style: TextStyle(
+                  fontSize: (maxLabelWidth ?? 72) < 68 ? 10 : 11,
                   fontWeight: FontWeight.w500,
+                  height: 1.2,
                 ),
               ),
             ),

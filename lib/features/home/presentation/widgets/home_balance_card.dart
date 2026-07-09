@@ -10,7 +10,14 @@ import 'package:kasby/features/home/presentation/controllers/home_controller.dar
 import 'package:kasby/features/home/presentation/widgets/ksp_rewards_explainer.dart';
 
 class HomeBalanceCard extends StatelessWidget {
-  const HomeBalanceCard({super.key});
+  const HomeBalanceCard({
+    super.key,
+    this.tourKey,
+    this.kspSectionKey,
+  });
+
+  final Key? tourKey;
+  final Key? kspSectionKey;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +72,9 @@ class HomeBalanceCard extends StatelessWidget {
         ),
         Hero(
           tag: 'home_balance',
-          child: KasbyCard(
+          child: KeyedSubtree(
+            key: tourKey,
+            child: KasbyCard(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.03)
                 : AppColors.surfaceLight,
@@ -184,50 +193,74 @@ class HomeBalanceCard extends StatelessWidget {
                                 ),
                             if (!hidden) ...[
                               const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.darkGold
-                                      .withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: AppColors.darkGold
-                                        .withValues(alpha: 0.18),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Image.asset(
-                                      'assets/images/ksp_coin.png',
-                                      width: 18,
-                                      height: 18,
+                              Obx(
+                                () {
+                                  final effective =
+                                      homeController.userPoints.value;
+                                  final reward =
+                                      homeController.rewardKsp.value;
+                                  final walletPart =
+                                      homeController.walletKsp.value;
+                                  return Container(
+                                    key: kspSectionKey,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'ksp_equivalent'.trParams({
-                                        'amount': currencyController
-                                            .formatKspFromUsd(balance),
-                                      }),
-                                      style: TextStyle(
-                                        color: AppColors.darkGold,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 14,
-                                        letterSpacing: 0.2,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.darkGold
+                                          .withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: AppColors.darkGold
+                                            .withValues(alpha: 0.18),
                                       ),
                                     ),
-                                  ],
-                                ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Image.asset(
+                                              'assets/images/ksp_coin.png',
+                                              width: 18,
+                                              height: 18,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              '${'ksp_balance'.tr}: ${currencyController.formatKspAmount(effective.toDouble())}',
+                                              style: TextStyle(
+                                                color: AppColors.darkGold,
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'ksp_effective_breakdown'.trParams({
+                                            'wallet': walletPart.toString(),
+                                            'reward': reward.toString(),
+                                          }),
+                                          style: TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      'ksp_rate_hint'.tr,
+                                      'ksp_rewards_hint'.tr,
                                       style: TextStyle(
                                         color: AppColors.textSecondary,
                                         fontSize: 10,
@@ -606,6 +639,7 @@ class HomeBalanceCard extends StatelessWidget {
                 }),
               ],
             ),
+          ),
           ),
         ),
       ],

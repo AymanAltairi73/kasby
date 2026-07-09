@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/utils/date_helper.dart';
+import 'package:kasby/core/localization/model_localization_extensions.dart';
 import 'package:kasby/core/widgets/directional_chevron.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
@@ -88,9 +89,7 @@ class HomeRecentTransactions extends StatelessWidget {
           final isOut = tx.isDebit;
           return Semantics(
             button: true,
-            label: (tx.description != null && tx.description!.isNotEmpty)
-                ? tx.description!.tr
-                : 'enum_txn_${tx.type}'.tr,
+            label: tx.localizedDescription,
             child: GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
@@ -139,10 +138,7 @@ class HomeRecentTransactions extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            (tx.description != null &&
-                                    tx.description!.isNotEmpty)
-                                ? tx.description!.tr
-                                : 'enum_txn_${tx.type}'.tr,
+                            tx.localizedDescription,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
