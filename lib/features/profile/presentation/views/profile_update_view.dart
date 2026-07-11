@@ -5,6 +5,8 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/features/auth/domain/auth_otp_config.dart';
+import 'package:kasby/features/auth/presentation/widgets/auth_otp_input.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -26,7 +28,7 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
   late final String currentValue;
   late final TextEditingController inputController;
   late final TextEditingController passwordController;
-  late final TextEditingController otpController;
+  final GlobalKey<AuthOtpInputState> _otpKey = GlobalKey<AuthOtpInputState>();
   final RxInt currentStep = 0.obs;
   final Rx<Country> selectedCountry = CountryData.defaultCountry.obs;
 
@@ -45,7 +47,6 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
 
     inputController = TextEditingController();
     passwordController = TextEditingController();
-    otpController = TextEditingController();
 
     if (!isEmailChange && currentValue.isNotEmpty) {
       selectedCountry.value = CountryData.countryForPhone(currentValue);
@@ -68,7 +69,6 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
   void dispose() {
     inputController.dispose();
     passwordController.dispose();
-    otpController.dispose();
     SafeGetx.debugTrace(
       className: 'ProfileUpdateView',
       method: 'dispose',
@@ -274,69 +274,187 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                       ),
                     ),
                   ] else if (currentStep.value == 2) ...[
-                    if (isEmailChange) ...[
-                      Text(
-                        'email_change_pending_title'.tr,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ).animate().fadeIn(delay: 100.ms),
-                      const SizedBox(height: 6),
-                      Text(
-                        'email_change_pending_desc'.trParams({
-                          'target': _buildTargetValue(),
-                        }),
-                        style: TextStyle(
-                          fontSize: 13,
-                          height: 1.5,
-                          color: isDark ? Colors.white54 : Colors.black45,
-                        ),
-                      ).animate().fadeIn(delay: 150.ms),
-                      const SizedBox(height: 20),
-                      KasbyTextField(
-                        key: const ValueKey('email_change_otp'),
-                        controller: otpController,
-                        hint: 'enter_otp'.tr,
-                        isPassword: false,
-                        prefixIcon: Icon(
-                          Icons.security_rounded,
-                          color: AppColors.darkGold,
-                        ),
-                        keyboardType: TextInputType.number,
+                    // ─── Unified OTP verification step ───
+                    Text(
+                      isEmailChange
+                          ? 'email_change_pending_title'.tr
+                          : 'verify_otp_title'.tr,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
-                      const SizedBox(height: 32),
-                      profileCtrl.isLoading.value
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16),
-                                child: CircularProgressIndicator(),
-                              ),
-                            )
-                          : KasbyButton(
-                              text: 'verify'.tr,
-                              onPressed: () async {
-                                final code = otpController.text.trim();
-                                if (code.isEmpty) return;
-                                final success = await profileCtrl.verifyAndUpdate(
-                                  type: type,
-                                  newValue: _buildTargetValue(),
-                                  otpCode: code,
-                                );
-                                if (success) {
-                                  profileCtrl.resetFlow();
-                                  if (_isEmbedded && context.mounted) {
-                                    Navigator.of(context).pop();
-                                  } else {
-                                    Get.offNamed(Routes.personalProfile);
-                                  }
-                                }
-                              },
-                            ).animate().fadeIn(delay: 250.ms),
-                      const SizedBox(height: 20),
+                    ).animate().fadeIn(delay: 100.ms),
+                    const SizedBox(height: 6),
+                    Text(
+                      isEmailChange
+                          ? 'email_change_pending_desc'.trParams({
+                              'target': _buildTargetValue(),
+                            })
+                          : 'otp_sent_to'
+                              .trParams({'target': _buildTargetValue()}),
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.5,
+                        color: isDark ? Colors.white54 : Colors.black45,
+                      ),
+                    ).animate().fadeIn(delay: 150.ms),
+                    if (!isEmailChange) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'otp_sent_notification'.tr,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                        ),
+                      ).animate().fadeIn(delay: 200.ms),
+                    ],
+                    const SizedBox(height: 24),
+
+                    // ─── OTP expiry countdown ───
+                    if (profileCtrl.otpExpiryCountdown.value > 0 ||
+                        profileCtrl.otpExpired.value)
                       Center(
-                        child: TextButton(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: profileCtrl.otpExpired.value
+                                ? Colors.red.withValues(alpha: 0.08)
+                                : AppColors.darkGold.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: profileCtrl.otpExpired.value
+                                  ? Colors.red.withValues(alpha: 0.2)
+                                  : AppColors.darkGold.withValues(alpha: 0.15),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                profileCtrl.otpExpired.value
+                                    ? Icons.timer_off_rounded
+                                    : Icons.timer_outlined,
+                                size: 18,
+                                color: profileCtrl.otpExpired.value
+                                    ? Colors.red
+                                    : AppColors.darkGold,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                profileCtrl.otpExpired.value
+                                    ? 'otp_has_expired'.tr
+                                    : '${'otp_expires_in'.tr} ${profileCtrl.formattedExpiry}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: profileCtrl.otpExpired.value
+                                      ? Colors.red
+                                      : AppColors.darkGold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 180.ms),
+
+                    const SizedBox(height: 20),
+
+                    // ─── 6-box OTP input ───
+                    AuthOtpInput(
+                      key: _otpKey,
+                      length: AuthOtpConfig.lengthForPurpose(
+                          isEmailChange ? 'email_change' : 'phone_change'),
+                      enabled: !profileCtrl.isLoading.value &&
+                          !profileCtrl.otpExpired.value,
+                      onCompleted: (code) async {
+                        final success = await profileCtrl.verifyAndUpdate(
+                          type: type,
+                          newValue: _buildTargetValue(),
+                          otpCode: code,
+                        );
+                        if (success) {
+                          profileCtrl.resetFlow();
+                          if (_isEmbedded && context.mounted) {
+                            Navigator.of(context).pop();
+                          } else {
+                            Get.offNamed(Routes.personalProfile);
+                          }
+                        } else {
+                          _otpKey.currentState?.clear();
+                        }
+                      },
+                    ).animate().fadeIn(delay: 250.ms),
+
+                    const SizedBox(height: 24),
+
+                    // ─── Verify button ───
+                    profileCtrl.isLoading.value
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : KasbyButton(
+                            text: 'verify'.tr,
+                            onPressed: profileCtrl.otpExpired.value
+                                ? null
+                                : () async {
+                                    final code =
+                                        _otpKey.currentState?.code ?? '';
+                                    if (code.isEmpty) return;
+                                    final success =
+                                        await profileCtrl.verifyAndUpdate(
+                                      type: type,
+                                      newValue: _buildTargetValue(),
+                                      otpCode: code,
+                                    );
+                                    if (success) {
+                                      profileCtrl.resetFlow();
+                                      if (_isEmbedded && context.mounted) {
+                                        Navigator.of(context).pop();
+                                      } else {
+                                        Get.offNamed(Routes.personalProfile);
+                                      }
+                                    } else {
+                                      _otpKey.currentState?.clear();
+                                    }
+                                  },
+                          ).animate().fadeIn(delay: 280.ms),
+
+                    const SizedBox(height: 20),
+
+                    // ─── Resend OTP button ───
+                    Center(
+                      child: TextButton(
+                        onPressed: profileCtrl.resendTimer.value > 0 ||
+                                profileCtrl.isLoading.value
+                            ? null
+                            : () async {
+                                await profileCtrl.resendUpdateOtp();
+                                _otpKey.currentState?.clear();
+                              },
+                        child: Text(
+                          profileCtrl.resendTimer.value > 0
+                              ? '${'resend_code'.tr} (${profileCtrl.resendTimer.value}s)'
+                              : 'resend_code'.tr,
+                          style: TextStyle(
+                            color: profileCtrl.resendTimer.value > 0
+                                ? Colors.grey
+                                : AppColors.darkGold,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // ─── Check verification status (email only) ───
+                    if (isEmailChange) ...[
+                      const SizedBox(height: 4),
+                      Center(
+                        child: TextButton.icon(
                           onPressed: profileCtrl.isLoading.value
                               ? null
                               : () async {
@@ -358,7 +476,9 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                                     );
                                   }
                                 },
-                          child: Text(
+                          icon: Icon(Icons.refresh_rounded,
+                              size: 18, color: AppColors.darkGold),
+                          label: Text(
                             'check_verification_status'.tr,
                             style: TextStyle(
                               color: AppColors.darkGold,
@@ -367,96 +487,23 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                           ),
                         ),
                       ),
-                    ] else ...[
-                      Text(
-                        'verify_otp_title'.tr,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ).animate().fadeIn(delay: 100.ms),
-                      const SizedBox(height: 6),
-                      Text(
-                        'otp_sent_to'.trParams({'target': _buildTargetValue()}),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white70 : Colors.black54,
-                        ),
-                      ).animate().fadeIn(delay: 150.ms),
-                      const SizedBox(height: 4),
-                      Text(
-                        'otp_sent_notification'.tr,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white38 : Colors.black38,
-                        ),
-                      ).animate().fadeIn(delay: 200.ms),
-                      const SizedBox(height: 20),
-                      KasbyTextField(
-                        key: const ValueKey('profile_update_otp'),
-                        controller: otpController,
-                        hint: 'enter_otp'.tr,
-                        isPassword: false,
-                        prefixIcon: Icon(
-                          Icons.security_rounded,
-                          color: AppColors.darkGold,
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                      const SizedBox(height: 32),
-                      profileCtrl.isLoading.value
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16),
-                                child: CircularProgressIndicator(),
-                              ),
-                            )
-                          : KasbyButton(
-                              text: 'verify'.tr,
-                              onPressed: () async {
-                                final success = await profileCtrl.verifyAndUpdate(
-                                  type: type,
-                                  newValue: _buildTargetValue(),
-                                  otpCode: otpController.text.trim(),
-                                );
-                                if (success) {
-                                  profileCtrl.resetFlow();
-                                  if (_isEmbedded && context.mounted) {
-                                    Navigator.of(context).pop();
-                                  } else {
-                                    Get.offNamed(Routes.personalProfile);
-                                  }
-                                }
-                              },
-                            ).animate().fadeIn(delay: 250.ms),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: Obx(
-                          () => TextButton(
-                            onPressed: profileCtrl.resendTimer.value > 0
-                                ? null
-                                : () => profileCtrl.sendUpdateOtp(
-                                      target: _buildTargetValue(),
-                                      type: type,
-                                      currentValue: currentValue,
-                                    ),
-                            child: Text(
-                              profileCtrl.resendTimer.value > 0
-                                  ? '${'resend_code'.tr} (${profileCtrl.resendTimer.value}s)'
-                                  : 'resend_code'.tr,
-                              style: TextStyle(
-                                color: profileCtrl.resendTimer.value > 0
-                                    ? Colors.grey
-                                    : AppColors.darkGold,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
+
+                    const SizedBox(height: 16),
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: () => currentStep.value = 1,
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        label: Text(
+                          'back'.tr,
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
                   ],
                 ],
               )),

@@ -15,6 +15,8 @@ class UserInvestmentModel {
   final DateTime? endDate;
   final DateTime? maturedAt;
   final DateTime? lastPayoutAt;
+  final DateTime? nextPayoutAt;
+  final bool autoRestartEnabled;
   final String? approvedBy;
   final DateTime? createdAt;
   final InvestmentPlanModel? investment;
@@ -33,10 +35,15 @@ class UserInvestmentModel {
     this.endDate,
     this.maturedAt,
     this.lastPayoutAt,
+    this.nextPayoutAt,
+    this.autoRestartEnabled = false,
     this.approvedBy,
     this.createdAt,
     this.investment,
   });
+
+  /// Whether this investment's daily cycle is waiting to be manually started
+  bool get isCycleWaiting => status == 'active' && nextPayoutAt == null;
 
   /// Remaining days until maturity. Returns null if no end date.
   int? get remainingDays {
@@ -69,6 +76,10 @@ class UserInvestmentModel {
         lastPayoutAt: json['last_payout_at'] != null
             ? DateTime.parse(json['last_payout_at'])
             : null,
+        nextPayoutAt: json['next_payout_at'] != null
+            ? DateTime.parse(json['next_payout_at'])
+            : null,
+        autoRestartEnabled: json['auto_restart_enabled'] as bool? ?? false,
         approvedBy: json['approved_by'] as String?,
         createdAt: json['created_at'] != null
             ? DateTime.parse(json['created_at'])
@@ -104,6 +115,8 @@ class UserInvestmentModel {
       'start_date': startDate?.toIso8601String(),
       'end_date': endDate?.toIso8601String(),
       'last_payout_at': lastPayoutAt?.toIso8601String(),
+      'next_payout_at': nextPayoutAt?.toIso8601String(),
+      'auto_restart_enabled': autoRestartEnabled,
     };
   }
 
@@ -121,6 +134,8 @@ class UserInvestmentModel {
     DateTime? endDate,
     DateTime? maturedAt,
     DateTime? lastPayoutAt,
+    DateTime? nextPayoutAt,
+    bool? autoRestartEnabled,
     String? approvedBy,
     DateTime? createdAt,
     InvestmentPlanModel? investment,
@@ -139,6 +154,8 @@ class UserInvestmentModel {
       endDate: endDate ?? this.endDate,
       maturedAt: maturedAt ?? this.maturedAt,
       lastPayoutAt: lastPayoutAt ?? this.lastPayoutAt,
+      nextPayoutAt: nextPayoutAt ?? this.nextPayoutAt,
+      autoRestartEnabled: autoRestartEnabled ?? this.autoRestartEnabled,
       approvedBy: approvedBy ?? this.approvedBy,
       createdAt: createdAt ?? this.createdAt,
       investment: investment ?? this.investment,

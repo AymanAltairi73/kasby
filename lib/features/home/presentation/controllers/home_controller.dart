@@ -80,6 +80,10 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   // Per-investment countdowns [InvestmentID -> CountdownText]
   final RxMap<String, String> investmentCountdowns = <String, String>{}.obs;
 
+  // Loading states for starting next cycle and toggling auto-restart
+  final RxMap<String, bool> cycleRestartLoading = <String, bool>{}.obs;
+  final RxMap<String, bool> autoRestartToggleLoading = <String, bool>{}.obs;
+
   Timer? _rewardTimer;
   Timer? _notificationReconnectTimer;
   Timer? _profileReconnectTimer;
@@ -122,6 +126,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     }
     return 0.0;
   }
+
   double get profitPercentage => dashboard.value?.profitPercentage ?? 0.0;
   String get referralCode =>
       ReferralService.formatDisplayCode(profile.value?.referralCode);
@@ -151,15 +156,16 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     final cutoff = DateTime.now().subtract(Duration(days: days));
     final current = _currentPortfolioValue;
 
-    final txs = recentTransactions
-        .where(
-          (t) =>
-              t.createdAt != null &&
-              !t.createdAt!.isBefore(cutoff) &&
-              t.status == 'completed',
-        )
-        .toList()
-      ..sort((a, b) => a.createdAt!.compareTo(b.createdAt!));
+    final txs =
+        recentTransactions
+            .where(
+              (t) =>
+                  t.createdAt != null &&
+                  !t.createdAt!.isBefore(cutoff) &&
+                  t.status == 'completed',
+            )
+            .toList()
+          ..sort((a, b) => a.createdAt!.compareTo(b.createdAt!));
 
     if (txs.isEmpty) {
       if (current <= 0) return const [0, 0];
@@ -281,10 +287,13 @@ class HomeController extends GetxController with WidgetsBindingObserver {
                 .toList();
 
             if (!_isInitialLoad && newList.length > notifications.length) {
-              final newItems = newList.where((n) => !notifications.any((old) => old.id == n.id)).toList();
-              
+              final newItems = newList
+                  .where((n) => !notifications.any((old) => old.id == n.id))
+                  .toList();
+
               for (var item in newItems) {
-                if (!item.isRead && FCMService.to.isNotificationsEnabled.value) {
+                if (!item.isRead &&
+                    FCMService.to.isNotificationsEnabled.value) {
                   _pendingNotifications.add(item);
                 }
               }
@@ -311,7 +320,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
               stackTrace: stack,
             );
             _notificationReconnectTimer?.cancel();
-            _notificationReconnectTimer = _scheduleReconnect(_listenToNotifications);
+            _notificationReconnectTimer = _scheduleReconnect(
+              _listenToNotifications,
+            );
           },
         );
   }
@@ -320,9 +331,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     _batchTimer?.cancel();
     _batchTimer = Timer(const Duration(milliseconds: 1500), () {
       if (_pendingNotifications.isEmpty) return;
-      
+
       NotificationService().playNotificationSound();
-      
+
       if (_pendingNotifications.length == 1) {
         final latest = _pendingNotifications.first;
         _showNotificationSnack(latest);
@@ -340,10 +351,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       snackPosition: SnackPosition.TOP,
       backgroundColor: AppColors.surface.withValues(alpha: 0.9),
       colorText: Colors.white,
-      icon: Icon(
-        Icons.notifications_active_rounded,
-        color: AppColors.darkGold,
-      ),
+      icon: Icon(Icons.notifications_active_rounded, color: AppColors.darkGold),
       margin: const EdgeInsets.all(12),
       borderRadius: 16,
       duration: const Duration(seconds: 4),
@@ -354,21 +362,20 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   void _showMultipleNotificationsSnack(int count) {
     SafeGetx.snackbar(
       title: 'notifications'.tr,
-      message: 'you_have_multiple_notifications'.trParams({'count': count.toString()}),
+      message: 'you_have_multiple_notifications'.trParams({
+        'count': count.toString(),
+      }),
       snackPosition: SnackPosition.TOP,
       backgroundColor: AppColors.surface.withValues(alpha: 0.9),
       colorText: Colors.white,
-      icon: Icon(
-        Icons.notifications_active_rounded,
-        color: AppColors.darkGold,
-      ),
+      icon: Icon(Icons.notifications_active_rounded, color: AppColors.darkGold),
       margin: const EdgeInsets.all(12),
       borderRadius: 16,
       duration: const Duration(seconds: 4),
-      onTap: (_) => NotificationNavigationService.navigateFromPayload(
-        {'type': 'notification', 'route': '/notifications'},
-        fromUserTap: true,
-      ),
+      onTap: (_) => NotificationNavigationService.navigateFromPayload({
+        'type': 'notification',
+        'route': '/notifications',
+      }, fromUserTap: true),
     );
   }
 
@@ -394,10 +401,12 @@ class HomeController extends GetxController with WidgetsBindingObserver {
               if (Get.isRegistered<AccountRestrictionService>()) {
                 AccountRestrictionService.to.onProfileUpdated();
               }
-              unawaited(onProfileFieldsChanged(
-                previousKycStatus: previousKyc,
-                previousStatus: previousStatus,
-              ));
+              unawaited(
+                onProfileFieldsChanged(
+                  previousKycStatus: previousKyc,
+                  previousStatus: previousStatus,
+                ),
+              );
               _resetBackoff();
               _log(
                 'Profile updated via real-time stream',
@@ -451,7 +460,10 @@ class HomeController extends GetxController with WidgetsBindingObserver {
               fetchAllTransactions(reset: true);
             }
             _resetBackoff();
-            _log('Transactions updated via real-time stream', method: '_listenToTransactions');
+            _log(
+              'Transactions updated via real-time stream',
+              method: '_listenToTransactions',
+            );
           },
           onError: (error, stack) {
             _log(
@@ -465,7 +477,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
               stackTrace: stack,
             );
             _transactionReconnectTimer?.cancel();
-            _transactionReconnectTimer = _scheduleReconnect(_listenToTransactions);
+            _transactionReconnectTimer = _scheduleReconnect(
+              _listenToTransactions,
+            );
           },
         );
   }
@@ -492,12 +506,23 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             // Update countdowns whenever investments refresh
             _updateRewardDistributionInfo();
             _resetBackoff();
-            _log('Investments updated via real-time stream', method: '_listenToInvestments');
+            _log(
+              'Investments updated via real-time stream',
+              method: '_listenToInvestments',
+            );
           },
           onError: (error, stack) {
-            _log('Investments stream error', method: '_listenToInvestments', isError: true, error: error, stackTrace: stack);
+            _log(
+              'Investments stream error',
+              method: '_listenToInvestments',
+              isError: true,
+              error: error,
+              stackTrace: stack,
+            );
             _investmentReconnectTimer?.cancel();
-            _investmentReconnectTimer = _scheduleReconnect(_listenToInvestments);
+            _investmentReconnectTimer = _scheduleReconnect(
+              _listenToInvestments,
+            );
           },
         );
   }
@@ -519,25 +544,46 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             if (data.isNotEmpty) {
               _resetBackoff();
               final row = data.first;
-              totalEarnedKsp.value = (row['total_earned'] as num?)?.toInt() ?? 0;
+              totalEarnedKsp.value =
+                  (row['total_earned'] as num?)?.toInt() ?? 0;
               totalSpentKsp.value = (row['total_spent'] as num?)?.toInt() ?? 0;
               if (Get.isRegistered<KspBalanceService>()) {
                 unawaited(
-                  KspBalanceService.to.refresh().then((_) => syncKspFromService()),
+                  KspBalanceService.to.refresh().then(
+                    (_) => syncKspFromService(),
+                  ),
                 );
               }
-              _log('Points updated via real-time stream', method: '_listenToPoints', params: {'balance': userPoints.value});
+              _log(
+                'Points updated via real-time stream',
+                method: '_listenToPoints',
+                params: {'balance': userPoints.value},
+              );
             }
           },
           onError: (error, stack) {
-            _log('Points stream error', method: '_listenToPoints', isError: true, error: error, stackTrace: stack);
+            _log(
+              'Points stream error',
+              method: '_listenToPoints',
+              isError: true,
+              error: error,
+              stackTrace: stack,
+            );
             _pointsReconnectTimer?.cancel();
             _pointsReconnectTimer = _scheduleReconnect(_listenToPoints);
           },
         );
   }
 
-  void _log(String message, {String method = 'event', bool isError = false, bool isWarn = false, Object? error, StackTrace? stackTrace, Map<String, Object?>? params}) {
+  void _log(
+    String message, {
+    String method = 'event',
+    bool isError = false,
+    bool isWarn = false,
+    Object? error,
+    StackTrace? stackTrace,
+    Map<String, Object?>? params,
+  }) {
     SafeGetx.debugTrace(
       className: 'HomeController',
       method: method,
@@ -561,7 +607,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     _streamsStarted = false;
     _resetBackoff();
     _startRealtimeListeners();
-    CurrencyController.to.startWalletListener(delay: const Duration(seconds: 2));
+    CurrencyController.to.startWalletListener(
+      delay: const Duration(seconds: 2),
+    );
   }
 
   @override
@@ -726,10 +774,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           operation: 'profile_status_sync',
           phase: 'COMPLETE',
           userId: current.id,
-          params: {
-            'previousStatus': previousStatus,
-            'status': current.status,
-          },
+          params: {'previousStatus': previousStatus, 'status': current.status},
         );
       }
     }
@@ -821,8 +866,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   Future<ProfileModel?> _tryProvisionMissingProfile() async {
     if (!SupabaseService.isLoggedIn) return null;
     try {
-      final response =
-          await SupabaseService.client.rpc('fn_ensure_user_profile');
+      final response = await SupabaseService.client.rpc(
+        'fn_ensure_user_profile',
+      );
       final success = response is Map && response['success'] == true;
       if (!success) return null;
 
@@ -880,7 +926,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         dashboard.value = null;
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchDashboard', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'fetchDashboard',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       dashboard.value = null;
     } finally {
       isLoadingDashboard.value = false;
@@ -904,7 +957,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           .map((json) => TransactionModel.fromJson(json))
           .toList();
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchRecentTransactions', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'fetchRecentTransactions',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingTransactions.value = false;
     }
@@ -1003,7 +1063,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       allTransactions.addAll(fetchedList);
       _transactionsPage++;
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchAllTransactions', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'fetchAllTransactions',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingAllTransactions.value = false;
     }
@@ -1042,9 +1109,11 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
       if (response is Map && response['success'] == true) {
         final rows = (response['data'] as List? ?? [])
-            .map((json) => NotificationModel.fromJson(
-                  Map<String, dynamic>.from(json as Map),
-                ))
+            .map(
+              (json) => NotificationModel.fromJson(
+                Map<String, dynamic>.from(json as Map),
+              ),
+            )
             .toList();
 
         if (reset) {
@@ -1054,8 +1123,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         }
         notificationTotalCount.value =
             (response['total'] as num?)?.toInt() ?? notifications.length;
-        unreadNotificationCount.value =
-            notifications.where((n) => !n.isRead).length;
+        unreadNotificationCount.value = notifications
+            .where((n) => !n.isRead)
+            .length;
         return;
       }
       await _fetchNotificationsFallback(reset: reset);
@@ -1095,7 +1165,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     } else {
       notifications.addAll(list);
     }
-    unreadNotificationCount.value = notifications.where((n) => !n.isRead).length;
+    unreadNotificationCount.value = notifications
+        .where((n) => !n.isRead)
+        .length;
   }
 
   Future<void> loadMoreNotifications() async {
@@ -1129,7 +1201,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             .length;
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'markNotificationRead', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'markNotificationRead',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -1161,7 +1240,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
       HapticFeedback.mediumImpact();
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'markAllAsRead', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'markAllAsRead',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -1181,7 +1267,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           .map((json) => UserInvestmentModel.fromJson(json))
           .toList();
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchMyInvestments', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'fetchMyInvestments',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingInvestments.value = false;
     }
@@ -1225,7 +1318,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         totalSpentKsp.value = (stats['total_spent'] as num?)?.toInt() ?? 0;
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchKspBalance', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'fetchKspBalance',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingPoints.value = false;
     }
@@ -1261,13 +1361,23 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
       recentRecipients.value = recipients;
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchRecentRecipients', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'fetchRecentRecipients',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
   /// Try to extract a referral code from a transfer description.
   String _extractReferralCode(String description) {
-    final match = RegExp(r'K-?\w+', caseSensitive: false).firstMatch(description);
+    final match = RegExp(
+      r'K-?\w+',
+      caseSensitive: false,
+    ).firstMatch(description);
     if (match != null) {
       return ReferralService.normalizeCode(match.group(0)!);
     }
@@ -1291,7 +1401,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
       _updateRewardDistributionInfo();
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'fetchPendingRewards', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'fetchPendingRewards',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -1306,20 +1423,12 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       earliest = nextManual;
     }
 
-    // 2. Check active investments (new automated system)
+    // 2. Check active investments (automated system)
     final activeInvs = myInvestments.where((inv) => inv.status == 'active');
     for (final inv in activeInvs) {
-      final start = inv.startDate ?? inv.createdAt;
-      if (start != null) {
-        // Calculate the next repeating milestone (every 24h from start)
-        DateTime milestone = start.add(const Duration(hours: 24));
-        // If milestone + 60 mins is in the past, move to the next 24h milestone
-        while (milestone.add(const Duration(minutes: 60)).isBefore(now)) {
-          milestone = milestone.add(const Duration(hours: 24));
-        }
-
-        if (earliest == null || milestone.isBefore(earliest)) {
-          earliest = milestone;
+      if (inv.nextPayoutAt != null) {
+        if (earliest == null || inv.nextPayoutAt!.isBefore(earliest)) {
+          earliest = inv.nextPayoutAt;
         }
       }
     }
@@ -1332,7 +1441,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         // Within 60 min processing window
         isProcessingUI.value = true;
         canClaimRewards.value = pendingRewards.isNotEmpty;
-        rewardCountdownText.value = pendingRewards.isNotEmpty ? '' : 'reward_processing'.tr;
+        rewardCountdownText.value = pendingRewards.isNotEmpty
+            ? ''
+            : 'reward_processing'.tr;
       } else {
         isProcessingUI.value = false;
         canClaimRewards.value = false;
@@ -1355,13 +1466,15 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       // Update Summary Counter
       if (nextRewardRelease.value != null) {
         final difference = nextRewardRelease.value!.difference(now);
-        
+
         if (difference.isNegative) {
           // Within Processing Window
           isProcessingUI.value = true;
           canClaimRewards.value = pendingRewards.isNotEmpty;
-          rewardCountdownText.value = pendingRewards.isNotEmpty ? '' : 'reward_processing'.tr;
-          
+          rewardCountdownText.value = pendingRewards.isNotEmpty
+              ? ''
+              : 'reward_processing'.tr;
+
           // If we just entered the next milestone (crossed the 60m threshold), refresh
           if (difference.inMinutes <= -60) {
             _updateRewardDistributionInfo();
@@ -1376,19 +1489,17 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
       // Update Individual Investment Timers
       for (final inv in myInvestments.where((i) => i.status == 'active')) {
-        final start = inv.startDate ?? inv.createdAt;
-        if (start != null) {
-          DateTime milestone = start.add(const Duration(hours: 24));
-          while (milestone.add(const Duration(minutes: 60)).isBefore(now)) {
-            milestone = milestone.add(const Duration(hours: 24));
-          }
-          
-          final diff = milestone.difference(now);
+        if (inv.isCycleWaiting) {
+          investmentCountdowns[inv.id] = 'waiting_next_cycle'.tr;
+        } else if (inv.nextPayoutAt != null) {
+          final diff = inv.nextPayoutAt!.difference(now);
           if (diff.isNegative) {
             investmentCountdowns[inv.id] = 'reward_processing'.tr;
           } else {
             investmentCountdowns[inv.id] = _formatDuration(diff);
           }
+        } else {
+          investmentCountdowns[inv.id] = '--:--:--';
         }
       }
     });
@@ -1420,9 +1531,90 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         );
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'HomeController', method: 'claimRewards', feature: 'Home', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'claimRewards',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isClaimingLoading.value = false;
+    }
+  }
+
+  // ─── CYCLE MANAGEMENT ─────────────────────────────────
+
+  Future<void> startNextCycle(String investmentId) async {
+    if (cycleRestartLoading[investmentId] == true) return;
+
+    cycleRestartLoading[investmentId] = true;
+    try {
+      final response = await SupabaseService.client.rpc(
+        'fn_start_next_cycle',
+        params: {'p_investment_id': investmentId},
+      );
+
+      final success = response is Map && response['success'] == true;
+      if (success) {
+        HapticFeedback.mediumImpact();
+        AppSnack.success('success'.tr, 'cycle_started_success'.tr);
+        await fetchMyInvestments();
+        await fetchDashboard();
+      } else {
+        final errorMsg = response is Map ? response['error']?.toString() : null;
+        AppSnack.error('error'.tr, errorMsg ?? 'unexpected_error'.tr);
+      }
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'startNextCycle',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
+    } finally {
+      cycleRestartLoading[investmentId] = false;
+    }
+  }
+
+  Future<void> toggleAutoRestart(String investmentId, bool enabled) async {
+    if (autoRestartToggleLoading[investmentId] == true) return;
+
+    autoRestartToggleLoading[investmentId] = true;
+    try {
+      final response = await SupabaseService.client.rpc(
+        'fn_toggle_auto_restart',
+        params: {'p_investment_id': investmentId, 'p_enabled': enabled},
+      );
+
+      final success = response is Map && response['success'] == true;
+      if (success) {
+        HapticFeedback.lightImpact();
+        AppSnack.success(
+          'success'.tr,
+          enabled ? 'auto_restart_enabled'.tr : 'auto_restart_disabled'.tr,
+        );
+        await fetchMyInvestments();
+      } else {
+        final errorMsg = response is Map ? response['error']?.toString() : null;
+        AppSnack.error('error'.tr, errorMsg ?? 'unexpected_error'.tr);
+      }
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'toggleAutoRestart',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
+    } finally {
+      autoRestartToggleLoading[investmentId] = false;
     }
   }
 }

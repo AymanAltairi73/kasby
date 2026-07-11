@@ -19,7 +19,15 @@ class ProfileUpdateController extends GetxController {
 
   final RxBool isLoading = false.obs;
   final RxInt resendTimer = 0.obs;
+  final RxInt otpExpiryCountdown = 0.obs;
+  final RxBool otpExpired = false.obs;
   Timer? _timer;
+  Timer? _expiryTimer;
+
+  /// Cached values for resend convenience
+  String? _lastTarget;
+  String? _lastType;
+  String? _lastCurrentValue;
 
   @override
   void onInit() {
@@ -127,6 +135,10 @@ class ProfileUpdateController extends GetxController {
     }
 
     isLoading.value = true;
+    _lastTarget = target;
+    _lastType = type;
+    _lastCurrentValue = currentValue;
+
     final operation =
         isEmailChange ? 'email_change_request' : 'phone_change_request';
     final sw = AuthenticationLogger.logStart(
@@ -147,6 +159,7 @@ class ProfileUpdateController extends GetxController {
         }
         await _authRepo.initiateEmailChange(normalizedTarget);
         _startResendTimer();
+        _startExpiryTimer();
         AuthenticationLogger.logSuccess(
           operation,
           stopwatch: sw,
@@ -167,6 +180,7 @@ class ProfileUpdateController extends GetxController {
 
       await _authRepo.initiatePhoneChange(normalizedTarget);
       _startResendTimer();
+      _startExpiryTimer();
       AuthenticationLogger.logSuccess(
         operation,
         stopwatch: sw,
@@ -276,6 +290,11 @@ class ProfileUpdateController extends GetxController {
       return false;
     }
 
+    if (otpExpired.value) {
+      AppSnack.error('error'.tr, 'otp_has_expired'.tr);
+      return false;
+    }
+
     isLoading.value = true;
     final operation =
         type == 'email_change' ? 'email_change_confirm' : 'phone_change_confirm';
@@ -297,12 +316,15 @@ class ProfileUpdateController extends GetxController {
           code: otpCode.trim(),
         );
       }
+      _expiryTimer?.cancel();
       AuthenticationLogger.logSuccess(
         operation,
         stopwatch: sw,
         method: 'verifyAndUpdate',
         authMethod: type == 'email_change' ? 'email_otp' : 'phone_otp',
       );
+      _log('OTP verified successfully',
+          method: 'verifyAndUpdate', params: {'type': type});
       AppSnack.success('success'.tr, 'profile_updated_success'.tr);
       return true;
     } on AuthException catch (e) {
@@ -313,6 +335,11 @@ class ProfileUpdateController extends GetxController {
         method: 'verifyAndUpdate',
         authMethod: type == 'email_change' ? 'email_otp' : 'phone_otp',
       );
+      _log('OTP verification failed',
+          method: 'verifyAndUpdate',
+          isError: true,
+          error: e.message,
+          params: {'type': type, 'statusCode': e.statusCode});
       AppSnack.error('error'.tr, AuthSecurityService.translateOtpError(e));
       return false;
     } catch (e, stack) {
@@ -333,11 +360,27 @@ class ProfileUpdateController extends GetxController {
     }
   }
 
+  /// Convenience method to resend OTP with cached target values.
+  Future<bool> resendUpdateOtp() async {
+    if (_lastTarget == null || _lastType == null) return false;
+    return sendUpdateOtp(
+      target: _lastTarget!,
+      type: _lastType!,
+      currentValue: _lastCurrentValue,
+    );
+  }
+
   void resetFlow() {
     isPasswordVerified.value = false;
     isVerifyingPassword.value = false;
     resendTimer.value = 0;
+    otpExpiryCountdown.value = 0;
+    otpExpired.value = false;
     _timer?.cancel();
+    _expiryTimer?.cancel();
+    _lastTarget = null;
+    _lastType = null;
+    _lastCurrentValue = null;
   }
 
   void _startResendTimer() {
@@ -350,6 +393,29 @@ class ProfileUpdateController extends GetxController {
         _timer?.cancel();
       }
     });
+  }
+
+  void _startExpiryTimer() {
+    otpExpired.value = false;
+    otpExpiryCountdown.value = AuthOtpConfig.expirySeconds;
+    _expiryTimer?.cancel();
+    _expiryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (otpExpiryCountdown.value > 0) {
+        otpExpiryCountdown.value--;
+      } else {
+        otpExpired.value = true;
+        _expiryTimer?.cancel();
+        _log('OTP expired', method: '_startExpiryTimer');
+      }
+    });
+  }
+
+  /// Formats expiry seconds as mm:ss.
+  String get formattedExpiry {
+    final total = otpExpiryCountdown.value;
+    final m = (total ~/ 60).toString().padLeft(2, '0');
+    final s = (total % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 
   void _log(String message,
@@ -373,6 +439,7 @@ class ProfileUpdateController extends GetxController {
   @override
   void onClose() {
     _timer?.cancel();
+    _expiryTimer?.cancel();
     super.onClose();
   }
 }

@@ -13,6 +13,7 @@ import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/widgets/kasby_button.dart';
 
 class MyInvestmentsView extends StatelessWidget {
   const MyInvestmentsView({super.key});
@@ -408,11 +409,39 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                       const SizedBox(height: 8),
                       if (isActive)
                         Obx(() {
-                          final countdown = HomeController.to.investmentCountdowns[inv.id] ?? '--:--:--';
-                          return _buildProgressRow(
-                            'next_profit'.tr,
-                            countdown,
-                            AppColors.darkGold,
+                          final countdown =
+                              HomeController.to.investmentCountdowns[inv.id] ??
+                              '--:--:--';
+                          final isWaiting = inv.isCycleWaiting;
+                          final isStarting =
+                              HomeController.to.cycleRestartLoading[inv.id] ==
+                              true;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildProgressRow(
+                                'next_profit'.tr,
+                                countdown,
+                                AppColors.darkGold,
+                              ),
+                              if (isWaiting) ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: KasbyButton(
+                                    text: 'start_next_cycle'.tr,
+                                    isLoading: isStarting,
+                                    onPressed: () async {
+                                      await HomeController.to.startNextCycle(
+                                        inv.id,
+                                      );
+                                      await _fetchInvestments();
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ],
                           );
                         }),
                       const SizedBox(height: 8),
@@ -444,6 +473,64 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                             minHeight: 6,
                           ),
                         ),
+                      ],
+                      if (isActive &&
+                          (HomeController.to.profile.value?.accountTier ==
+                                  'vip' ||
+                              HomeController.to.profile.value?.accountTier ==
+                                  'premium')) ...[
+                        const SizedBox(height: 12),
+                        const Divider(height: 1),
+                        const SizedBox(height: 12),
+                        Obx(() {
+                          final isToggling =
+                              HomeController.to.autoRestartToggleLoading[inv
+                                  .id] ==
+                              true;
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.autorenew_rounded,
+                                    size: 18,
+                                    color: AppColors.darkGold,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'auto_restart'.tr,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              isToggling
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              AppColors.darkNavy,
+                                            ),
+                                      ),
+                                    )
+                                  : Switch.adaptive(
+                                      value: inv.autoRestartEnabled,
+                                      activeColor: AppColors.darkGold,
+                                      onChanged: (val) async {
+                                        await HomeController.to
+                                            .toggleAutoRestart(inv.id, val);
+                                        await _fetchInvestments();
+                                      },
+                                    ),
+                            ],
+                          );
+                        }),
                       ],
                     ],
                   ),

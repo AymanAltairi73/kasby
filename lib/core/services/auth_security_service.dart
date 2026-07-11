@@ -183,6 +183,28 @@ class AuthSecurityService {
         lower.contains('otp_expired')) {
       return 'otp_expired'.tr;
     }
+    if (lower.contains('otp_disabled') ||
+        lower.contains('otp is disabled')) {
+      return 'otp_channel_error'.tr;
+    }
+    if (lower.contains('sms send') ||
+        lower.contains('sms_send_failed') ||
+        lower.contains('twilio') ||
+        lower.contains('unable to send sms')) {
+      return 'otp_send_failed_sms'.tr;
+    }
+    if (lower.contains('unable to verify channel') ||
+        lower.contains('channel') && lower.contains('unavailable')) {
+      return 'otp_channel_error'.tr;
+    }
+    if (lower.contains('email already in use') ||
+        lower.contains('a user with this email address')) {
+      return 'email_already_in_use'.tr;
+    }
+    if (lower.contains('phone already in use') ||
+        lower.contains('a user with this phone number')) {
+      return 'phone_already_in_use'.tr;
+    }
     if (lower.contains('invalid') ||
         lower.contains('otp') ||
         lower.contains('token') ||
@@ -190,8 +212,10 @@ class AuthSecurityService {
         lower.contains('does not match')) {
       return 'invalid_otp'.tr;
     }
-    if (lower.contains('rate limit') || lower.contains('too many')) {
-      return 'auth_error_rate_limit'.tr;
+    if (lower.contains('rate limit') ||
+        lower.contains('too many') ||
+        lower.contains('over_') && lower.contains('_limit')) {
+      return 'too_many_attempts'.tr;
     }
     if (isPhoneAccountNotFoundError(message)) {
       return 'auth_error_phone_not_registered'.tr;

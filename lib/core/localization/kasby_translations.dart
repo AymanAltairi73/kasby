@@ -2242,6 +2242,12 @@ class KasbyTranslations extends Translations {
       'status_healthy': 'Healthy',
       'status_unhealthy': 'Unhealthy',
       'status_unknown': 'Unknown',
+      'start_next_cycle': 'Start Next Cycle',
+      'cycle_started_success': 'Investment cycle restarted successfully.',
+      'auto_restart': 'Auto-Restart',
+      'auto_restart_enabled': 'Auto-restart enabled successfully.',
+      'auto_restart_disabled': 'Auto-restart disabled successfully.',
+      'waiting_next_cycle': 'Waiting for next cycle',
     },
     'ar_SA': {
       'app_name': 'Kasby',
@@ -4392,6 +4398,12 @@ class KasbyTranslations extends Translations {
       'status_healthy': 'سليم',
       'status_unhealthy': 'غير سليم',
       'status_unknown': 'غير معروف',
+      'start_next_cycle': 'بدء الدورة التالية',
+      'cycle_started_success': 'تم إعادة بدء دورة الاستثمار بنجاح.',
+      'auto_restart': 'إعادة بدء تلقائي',
+      'auto_restart_enabled': 'تم تفعيل إعادة البدء التلقائي بنجاح.',
+      'auto_restart_disabled': 'تم تعطيل إعادة البدء التلقائي بنجاح.',
+      'waiting_next_cycle': 'بانتظار الدورة التالية',
     },
   };
 }
