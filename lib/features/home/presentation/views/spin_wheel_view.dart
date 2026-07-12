@@ -907,16 +907,16 @@ class _SpinWheelViewState extends State<SpinWheelView>
                     curve: Curves.easeInOut,
                   ),
 
-              const SizedBox(height: 30),
-              Text(
-                'spin_disclaimer_text'.tr,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                ),
-                ).animate().fadeIn(delay: 700.ms),
+             // const SizedBox(height: 30),
+              // Text(
+              //   'spin_disclaimer_text'.tr,
+              //   textAlign: TextAlign.center,
+              //   style: TextStyle(
+              //     color: Colors.white.withValues(alpha: 0.4),
+              //     fontSize: 12,
+              //     fontStyle: FontStyle.italic,
+              //   ),
+              //   ).animate().fadeIn(delay: 700.ms),
               ],
             ),
           ),
