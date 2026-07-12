@@ -138,7 +138,11 @@ class AuthController extends GetxController {
 
   void _setupReferralListener() {
     referralCodeController.addListener(() {
-      final code = ReferralService.normalizeCode(referralCodeController.text);
+      final rawText = referralCodeController.text;
+      final code = ReferralService.normalizeCode(rawText);
+      
+      _log('Referral code input changed: raw=${rawText.length} chars, normalized=$code (${code.length} chars)');
+      
       if (code.isEmpty) {
         referralCodeValid.value = null;
         _referralDebounceTimer?.cancel();
@@ -159,24 +163,25 @@ class AuthController extends GetxController {
   }
 
   Future<void> checkReferralCode(String code) async {
-    final normalized = ReferralService.normalizeCode(code);
-    if (normalized.isEmpty) {
+    // Code is already normalized when passed from listener
+    if (code.isEmpty) {
       referralCodeValid.value = null;
       return;
     }
 
-    if (!ReferralService.isValidFormat(normalized)) {
+    if (!ReferralService.isValidFormat(code)) {
+      _log('Referral code format invalid: $code');
       referralCodeValid.value = false;
       return;
     }
 
     try {
       isCheckingReferral.value = true;
-      _log('Checking referral code: $normalized');
+      _log('Checking referral code: $code');
 
-      final referrerId = await ReferralService.validateReferralCode(normalized);
-      referralCodeValid.value = referrerId != null;
-      _log('Referral code $normalized validity: ${referralCodeValid.value}');
+      final lookup = await ReferralService.validateReferralCode(code);
+      referralCodeValid.value = lookup != null;
+      _log('Referral code $code validity: ${referralCodeValid.value}, referrerId: ${lookup?.referrerId}');
     } catch (e) {
       _log('Error checking referral code', isError: true, error: e);
       referralCodeValid.value = false;
@@ -958,9 +963,11 @@ class AuthController extends GetxController {
         AppSnack.error('error'.tr, 'phone_already_used'.tr);
         return;
       }
-      final referralCodeInput = referralCodeController.text
-          .trim()
-          .toUpperCase();
+      final referralCodeInput = ReferralService.normalizeCode(
+        referralCodeController.text,
+      );
+
+      _log('Registering with referral code: ${referralCodeInput.isNotEmpty ? referralCodeInput : "none"}');
 
       // Validate referral code if provided
       ReferralCodeLookup? referralLookup;
@@ -969,10 +976,12 @@ class AuthController extends GetxController {
           referralCodeInput,
         );
         if (referralLookup == null) {
+          _log('Referral code validation failed during registration: $referralCodeInput');
           isLoading.value = false;
           AppSnack.error('error'.tr, 'invalid_referral_code'.tr);
           return;
         }
+        _log('Referral code validated successfully during registration, referrerId: ${referralLookup.referrerId}');
       }
 
       SafeGetx.debugTrace(

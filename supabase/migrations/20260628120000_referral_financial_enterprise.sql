@@ -167,7 +167,7 @@ DECLARE
 BEGIN
   v_normalized := UPPER(REPLACE(TRIM(COALESCE(p_code, '')), '-', ''));
 
-  IF v_normalized = '' OR v_normalized !~ '^K[A-Z0-9]{4,}$' THEN
+  IF v_normalized = '' OR v_normalized !~ '^K[A-Z0-9]{3,}$' THEN
     RETURN json_build_object('valid', FALSE, 'reason', 'invalid_format');
   END IF;
 

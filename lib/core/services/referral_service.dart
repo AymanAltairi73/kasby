@@ -19,7 +19,7 @@ class ReferralCodeLookup {
 class ReferralService {
   ReferralService._();
 
-  static final RegExp _codeFormat = RegExp(r'^K[A-Z0-9]{4,}$');
+  static final RegExp _codeFormat = RegExp(r'^K[A-Z0-9]{3,}$');
 
   static void _log(
     String message, {
@@ -62,9 +62,19 @@ class ReferralService {
     if (normalized.isEmpty || !isValidFormat(normalized)) return null;
 
     try {
+      _log(
+        'Validating referral code',
+        method: 'validateReferralCode',
+        params: {
+          'inputLength': code.length,
+          'normalizedLength': normalized.length,
+          'normalized': normalized,
+        },
+      );
+
       final result = await SupabaseService.client.rpc(
         'validate_referral_code',
-        params: {'p_code': code.trim()},
+        params: {'p_code': normalized},
       );
 
       final payload = _coerceJsonMap(result);
@@ -87,7 +97,10 @@ class ReferralService {
       _log(
         'Referral code validated',
         method: 'validateReferralCode',
-        params: {'referrerId': referrerId},
+        params: {
+          'referrerId': referrerId,
+          'canonicalCode': canonicalCode,
+        },
       );
       return ReferralCodeLookup(
         referrerId: referrerId,
@@ -166,7 +179,7 @@ class ReferralService {
       );
 
       final Map<String, dynamic>? response =
-          result is Map ? Map<String, dynamic>.from(result as Map) : null;
+          result is Map<String, dynamic> ? result : null;
 
       if (response != null && response['success'] == true) {
         final commission = response['commission'] as num?;
