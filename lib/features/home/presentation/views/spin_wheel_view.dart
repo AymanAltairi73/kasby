@@ -723,7 +723,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
           children: [
             SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
             child: Column(
               children: [
                 Text(
@@ -743,14 +743,14 @@ class _SpinWheelViewState extends State<SpinWheelView>
                   fontSize: 16,
                 ),
               ).animate().fadeIn(delay: 200.ms),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
               Obx(
                 () => KeyedSubtree(
                   key: TourTargetKeys.spinHistory,
                   child: _buildKspBalanceChip(HomeController.to.userPoints.value),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
 
               Builder(
                 builder: (context) {

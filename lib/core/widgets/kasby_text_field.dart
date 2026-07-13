@@ -11,6 +11,7 @@ class KasbyTextField extends StatefulWidget {
   final TextInputType keyboardType;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
+  final Widget? passwordFieldSuffixIcon;
   final Function(String)? onChanged;
   final String? Function(String?)? validator;
   final bool readOnly;
@@ -29,6 +30,7 @@ class KasbyTextField extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.prefixIcon,
     this.suffixIcon,
+    this.passwordFieldSuffixIcon,
     this.onChanged,
     this.validator,
     this.readOnly = false,
@@ -103,18 +105,27 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
                 fillColor: Theme.of(context).colorScheme.surface,
                 prefixIcon: widget.prefixIcon,
                 suffixIcon: widget.isPassword
-                    ? IconButton(
-                        icon: Icon(
-                          _obscureText
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: AppColors.textSecondary,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureText = !_obscureText;
-                          });
-                        },
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.passwordFieldSuffixIcon != null) ...[
+                            widget.passwordFieldSuffixIcon!,
+                            const SizedBox(width: 8),
+                          ],
+                          IconButton(
+                            icon: Icon(
+                              _obscureText
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: AppColors.textSecondary,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureText = !_obscureText;
+                              });
+                            },
+                          ),
+                        ],
                       )
                     : widget.suffixIcon,
                 border: OutlineInputBorder(

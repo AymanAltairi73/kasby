@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/services/notification_navigation_service.dart';
@@ -68,8 +69,13 @@ class _SplashViewState extends State<SplashView>
     final elapsed = _controller.lastElapsedDuration ?? Duration.zero;
     final remaining = const Duration(seconds: 2) - elapsed;
 
-    Future.delayed(remaining > Duration.zero ? remaining : Duration.zero, () {
+    Future.delayed(remaining > Duration.zero ? remaining : Duration.zero, () async {
       if (!mounted) return;
+      
+      // Check if onboarding is completed
+      final prefs = await SharedPreferences.getInstance();
+      final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+      
       if (status == AuthStatus.authenticated) {
         Get.offAllNamed(Routes.home);
         NotificationNavigationService.processPendingNavigation();
@@ -81,7 +87,11 @@ class _SplashViewState extends State<SplashView>
             'email': AuthController.to.pendingVerificationEmail.value,
           },
         );
+      } else if (!onboardingCompleted) {
+        // First launch: show onboarding
+        Get.offAllNamed(Routes.onboarding);
       } else {
+        // Returning user: go to login
         Get.offAllNamed(Routes.login);
       }
     });

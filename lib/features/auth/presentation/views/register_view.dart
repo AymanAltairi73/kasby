@@ -5,6 +5,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:kasby/core/widgets/password_strength_meter.dart';
+import 'package:kasby/core/utils/password_generator.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/auth/presentation/widgets/kasby_intl_phone_field.dart';
 import 'package:kasby/features/auth/presentation/widgets/referral_code_formatter.dart';
@@ -17,6 +18,24 @@ class RegisterView extends StatefulWidget {
 }
 
 class _RegisterViewState extends State<RegisterView> {
+  void _generateSecurePassword() {
+    final controller = AuthController.to;
+    final generatedPassword = PasswordGenerator.generateSecurePassword(length: 16);
+    
+    controller.passwordController.text = generatedPassword;
+    controller.confirmPasswordController.text = generatedPassword;
+    
+    // Show success feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('password_generated_success'.tr),
+        backgroundColor: AppColors.softGreen,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = AuthController.to;
@@ -113,6 +132,15 @@ class _RegisterViewState extends State<RegisterView> {
                     Icons.lock_outline_rounded,
                     color: AppColors.darkGold,
                   ),
+                  passwordFieldSuffixIcon: IconButton(
+                    icon: Icon(
+                      Icons.refresh_rounded,
+                      color: AppColors.darkGold,
+                      size: 20,
+                    ),
+                    onPressed: _generateSecurePassword,
+                    tooltip: 'generate_password'.tr,
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'fill_all_data'.tr;
                     if (value.length < 8) return 'weak_password'.tr;
@@ -141,7 +169,7 @@ class _RegisterViewState extends State<RegisterView> {
                 const SizedBox(height: 20),
                 KasbyTextField(
                   label: 'referral_code_optional'.tr,
-                  hint: 'KXXXXXX',
+                  hint: 'Kxxxx',
                   controller: controller.referralCodeController,
                   textCapitalization: TextCapitalization.characters,
                   autocorrect: false,

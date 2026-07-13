@@ -9,7 +9,6 @@ import 'package:kasby/features/profile/presentation/controllers/agent_controller
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:kasby/core/widgets/deposit_proof_viewer.dart';
 import 'package:kasby/core/utils/sla_formatter.dart';
 // import 'package:kasby/routes/app_routes.dart';
 
@@ -495,8 +494,6 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
         ? SlaFormatter.levelFor(tx.createdAt!)
         : null;
     final color = isDeposit ? AppColors.softGreen : AppColors.darkGold;
-    final missingProof =
-        isDeposit && (tx.proofUrl == null || tx.proofUrl!.isEmpty);
 
     return KasbyCard(
       margin: const EdgeInsets.only(bottom: 12),
@@ -587,21 +584,6 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
                 '${'reference'.tr}: ${tx.id.substring(0, 8)}…',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
-              if (isDeposit) ...[
-                const SizedBox(height: 12),
-                DepositProofThumbnail(proofUrl: tx.proofUrl),
-                if (missingProof) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    'deposit_proof_missing'.tr,
-                    style: TextStyle(
-                      color: Colors.orange.shade700,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
               if (tx.rejectionReason != null &&
                   tx.rejectionReason!.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -619,10 +601,8 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
                         text: isDeposit
                             ? 'approve_deposit'.tr
                             : 'confirm_payout'.tr,
-                        onPressed: missingProof
-                            ? null
-                            : () =>
-                                _showConfirmDialog(context, tx, controller),
+                        onPressed: () =>
+                            _showConfirmDialog(context, tx, controller),
                       ),
                     ),
                     const SizedBox(width: 8),
