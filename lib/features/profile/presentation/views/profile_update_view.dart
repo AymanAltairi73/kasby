@@ -7,12 +7,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
 import 'package:kasby/features/auth/presentation/widgets/auth_otp_input.dart';
+import 'package:kasby/features/auth/presentation/widgets/kasby_intl_phone_field.dart';
 import 'package:kasby/features/profile/presentation/controllers/profile_update_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/utils/country_data.dart';
-import 'package:kasby/features/auth/domain/models/country_model.dart';
-import 'package:kasby/features/auth/presentation/widgets/country_selector.dart';
 
 class ProfileUpdateView extends StatefulWidget {
   final Map<String, dynamic>? embeddedArguments;
@@ -30,7 +29,8 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
   late final TextEditingController passwordController;
   final GlobalKey<AuthOtpInputState> _otpKey = GlobalKey<AuthOtpInputState>();
   final RxInt currentStep = 0.obs;
-  final Rx<Country> selectedCountry = CountryData.defaultCountry.obs;
+  String? initialCountryCode;
+  String? currentCompletePhone;
 
   bool get isEmailChange => type == 'email_change';
   String get label => isEmailChange ? 'new_email'.tr : 'new_phone'.tr;
@@ -49,10 +49,12 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
     passwordController = TextEditingController();
 
     if (!isEmailChange && currentValue.isNotEmpty) {
-      selectedCountry.value = CountryData.countryForPhone(currentValue);
+      final country = CountryData.countryForPhone(currentValue);
+      initialCountryCode = country.code;
+      currentCompletePhone = currentValue;
       inputController.text = CountryData.stripDialCode(
         currentValue,
-        selectedCountry.value,
+        country,
       );
     }
 
@@ -82,7 +84,7 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
     if (isEmailChange) {
       return inputController.text.trim();
     }
-    return '${selectedCountry.value.dialCode}${inputController.text.trim()}';
+    return currentCompletePhone?.trim() ?? '';
   }
 
   @override
@@ -228,20 +230,14 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                         ),
                       )
                     else
-                      Obx(
-                        () => KasbyTextField(
-                          key: const ValueKey('profile_update_phone'),
-                          controller: inputController,
-                          hint: 'enter_phone_hint'.tr,
-                          isPassword: false,
-                          keyboardType: TextInputType.phone,
-                          prefixIcon: CountrySelector(
-                            selectedCountry: selectedCountry.value,
-                            onSelect: (country) =>
-                                selectedCountry.value = country,
-                            showBackground: false,
-                          ),
-                        ),
+                      KasbyIntlPhoneField(
+                        key: const ValueKey('profile_update_phone'),
+                        initialCountryCode: initialCountryCode ?? 'YE',
+                        initialValue: inputController.text,
+                        showLabel: false,
+                        onChanged: (completeNumber, countryCode) {
+                          currentCompletePhone = completeNumber;
+                        },
                       ),
                     const SizedBox(height: 32),
                     KasbyButton(

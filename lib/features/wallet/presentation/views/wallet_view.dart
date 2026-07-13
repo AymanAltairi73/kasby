@@ -6,6 +6,7 @@ import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
+import 'package:kasby/core/services/currency_conversion_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
@@ -535,6 +536,15 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
+                      if (!hidden)
+                        Text(
+                          CurrencyConversionService.getUsdEquivalentText(effective.toDouble()),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       Text(
                         'ksp_effective_breakdown'.trParams({
                           'wallet': walletPart.toString(),

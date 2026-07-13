@@ -11,6 +11,7 @@ import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/core/services/financial_repository.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/currency_conversion_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class TransactionDetailsView extends StatefulWidget {
@@ -305,7 +306,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
             const SizedBox(height: 8),
             // Amount
             Text(
-                  '${isOut ? '-' : '+'}${currencyController.formatToUSD(tx.amount)}',
+                  tx.currency == 'KSP' 
+                      ? '${isOut ? '-' : '+'}${CurrencyConversionService.formatKsp(tx.amount)} KSP'
+                      : '${isOut ? '-' : '+'}${currencyController.formatToUSD(tx.amount)}',
                   style: TextStyle(
                     fontSize: 38,
                     fontWeight: FontWeight.w900,
@@ -316,6 +319,15 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                 .animate()
                 .fadeIn(delay: 300.ms)
                 .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1)),
+            if (tx.currency == 'KSP')
+              Text(
+                CurrencyConversionService.getUsdEquivalentText(tx.amount),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                ),
+              ).animate().fadeIn(delay: 350.ms),
             const SizedBox(height: 12),
             // Status Badge
             Container(
@@ -520,14 +532,32 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
           _buildDivider(isDark),
           _buildDetailRow(
             'transaction_amount'.tr,
-            currencyController.formatToUSD(tx.amount),
+            tx.currency == 'KSP' 
+                ? '${CurrencyConversionService.formatKsp(tx.amount)} KSP'
+                : currencyController.formatToUSD(tx.amount),
             isDark,
           ),
+          if (tx.currency == 'KSP') ...[
+            _buildDivider(isDark),
+            _buildDetailRow(
+              'equivalent_usd'.tr,
+              CurrencyConversionService.formatUsdFromKsp(tx.amount),
+              isDark,
+            ),
+            _buildDivider(isDark),
+            _buildDetailRow(
+              'exchange_rate'.tr,
+              CurrencyConversionService.getExchangeRateText(),
+              isDark,
+            ),
+          ],
           if (tx.fee > 0) ...[
             _buildDivider(isDark),
             _buildDetailRow(
               'transaction_fee'.tr,
-              currencyController.formatToUSD(tx.fee),
+              tx.currency == 'KSP' 
+                  ? '${CurrencyConversionService.formatKsp(tx.fee)} KSP'
+                  : currencyController.formatToUSD(tx.fee),
               isDark,
             ),
           ],
@@ -535,7 +565,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
             _buildDivider(isDark),
             _buildDetailRow(
               'net_amount'.tr,
-              currencyController.formatToUSD(tx.netAmount!),
+              tx.currency == 'KSP' 
+                  ? '${CurrencyConversionService.formatKsp(tx.netAmount!)} KSP'
+                  : currencyController.formatToUSD(tx.netAmount!),
               isDark,
               valueColor: AppColors.softGreen,
             ),

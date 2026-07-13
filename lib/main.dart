@@ -11,6 +11,7 @@ import 'package:kasby/features/auth/presentation/controllers/auth_controller.dar
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/controllers/theme_controller.dart';
 import 'package:kasby/core/services/ksp_balance_service.dart';
+import 'package:kasby/core/services/currency_conversion_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/features/profile/presentation/controllers/agent_controller.dart';
 import 'package:kasby/core/controllers/shell_controller.dart';
@@ -151,6 +152,7 @@ Future<void> _bootstrap() async {
 
   Get.put(CurrencyController());
   Get.put(KspBalanceService(), permanent: true);
+  Get.put(CurrencyConversionService(), permanent: true);
   Get.put(HomeController(), permanent: true);
   Get.put(AccountRestrictionService(), permanent: true);
   Get.put(AuthController(), permanent: true);

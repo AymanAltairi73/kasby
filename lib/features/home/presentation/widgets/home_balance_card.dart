@@ -6,6 +6,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
+import 'package:kasby/core/services/currency_conversion_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/features/home/presentation/widgets/ksp_rewards_explainer.dart';
 
@@ -192,6 +193,15 @@ class HomeBalanceCard extends StatelessWidget {
                                   ),
                                 ),
                             if (!hidden) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '≈ ${CurrencyConversionService.formatKsp(CurrencyConversionService.usdToKsp(balance))} KSP',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               Obx(
                                 () {
@@ -238,6 +248,15 @@ class HomeBalanceCard extends StatelessWidget {
                                               ),
                                             ),
                                           ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          CurrencyConversionService.getUsdEquivalentText(effective.toDouble()),
+                                          style: TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 12,
+                                          ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
