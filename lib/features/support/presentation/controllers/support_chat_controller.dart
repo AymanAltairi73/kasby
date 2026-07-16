@@ -51,6 +51,7 @@ class SupportChatController extends GetxController {
   
   // Presence & Pagination
   final RxBool isRecipientOnline = false.obs;
+  final RxnString recipientAvatarUrl = RxnString();
   final Rxn<DateTime> recipientLastSeen = Rxn<DateTime>();
   static const int _pageSize = 50;
   final RxBool isLoadingMore = false.obs;
@@ -322,32 +323,35 @@ class SupportChatController extends GetxController {
       
       // Update initially
       isRecipientOnline.value = presenceService.isUserOnline(targetId);
-      if (!isRecipientOnline.value) _fetchRecipientLastSeen(targetId);
+      _fetchRecipientProfile(targetId);
       
       // Listen to changes
       _presenceWorker = ever(presenceService.onlineUsers, (_) {
         final isOnline = presenceService.isUserOnline(targetId);
         isRecipientOnline.value = isOnline;
         if (!isOnline) {
-          _fetchRecipientLastSeen(targetId);
+          _fetchRecipientProfile(targetId);
         }
       });
     }
   }
 
-  Future<void> _fetchRecipientLastSeen(String targetId) async {
+  Future<void> _fetchRecipientProfile(String targetId) async {
     try {
       final response = await SupabaseService.client
           .from('profiles')
-          .select('last_seen_at')
+          .select('avatar_url, last_seen_at')
           .eq('id', targetId)
           .maybeSingle();
       
-      if (response != null && response['last_seen_at'] != null) {
-        recipientLastSeen.value = DateTime.parse(response['last_seen_at']);
+      if (response != null) {
+        recipientAvatarUrl.value = response['avatar_url'] as String?;
+        if (response['last_seen_at'] != null) {
+          recipientLastSeen.value = DateTime.parse(response['last_seen_at']);
+        }
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: '_fetchRecipientLastSeen', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(className: 'SupportChatController', method: '_fetchRecipientProfile', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
     }
   }
 

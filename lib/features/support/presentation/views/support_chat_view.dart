@@ -237,22 +237,65 @@ class _SupportChatViewState extends State<SupportChatView> {
         children: [
           Stack(
             children: [
-              Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.darkGold, width: 2),
-                ),
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.darkGold,
-                  child: Icon(
-                    Icons.support_agent_rounded,
-                    color: Colors.black,
-                    size: 20,
+              Obx(() {
+                final isSupport = _chatController.isKasbySupportChat;
+                final avatarUrl = _chatController.recipientAvatarUrl.value;
+                final name = _chatController.chatTitle;
+
+                if (isSupport) {
+                  return Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.darkGold, width: 2),
+                    ),
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppColors.darkGold,
+                      child: const Icon(
+                        Icons.support_agent_rounded,
+                        color: Colors.black,
+                        size: 20,
+                      ),
+                    ),
+                  );
+                }
+
+                String initials(String value) {
+                  final parts = value.trim().split(' ');
+                  if (parts.length >= 2) {
+                    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+                  }
+                  return value.isNotEmpty ? value[0].toUpperCase() : '?';
+                }
+
+                final imageProvider = (avatarUrl != null && avatarUrl.isNotEmpty)
+                    ? NetworkImage(avatarUrl)
+                    : null;
+
+                return Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.darkGold, width: 2),
                   ),
-                ),
-              ),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.darkGold.withValues(alpha: 0.15),
+                    backgroundImage: imageProvider,
+                    child: imageProvider == null
+                        ? Text(
+                            initials(name),
+                            style: TextStyle(
+                              color: AppColors.darkGold,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          )
+                        : null,
+                  ),
+                );
+              }),
               Obx(() => (_chatController.isKasbySupportChat ||
                       _chatController.isRecipientOnline.value)
                   ? Positioned(
