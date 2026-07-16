@@ -8,6 +8,7 @@ import 'package:kasby/core/models/profile_model.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/models/notification_model.dart';
 import 'package:kasby/core/models/user_investment_model.dart';
+import 'package:kasby/core/models/investment_plan_model.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/models/dashboard_model.dart';
 
@@ -25,6 +26,7 @@ import 'package:kasby/core/services/fee_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/core/services/enterprise_operations_logger.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/events/earnings_events.dart';
 
 /// Central controller for the Home & Wallet screens.
 /// Fetches profile data, recent transactions, and notification count.
@@ -45,6 +47,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   final RxInt unreadNotificationCount = 0.obs;
   final RxList<NotificationModel> notifications = <NotificationModel>[].obs;
   final RxList<UserInvestmentModel> myInvestments = <UserInvestmentModel>[].obs;
+  final RxList<InvestmentPlanModel> allInvestmentPlans = <InvestmentPlanModel>[].obs;
   final RxBool isLoadingNotifications = false.obs;
   final RxBool isLoadingMoreNotifications = false.obs;
   final RxInt notificationTotalCount = 0.obs;
@@ -252,12 +255,13 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     if (_streamsStarted || !SupabaseService.isLoggedIn) return;
     _streamsStarted = true;
     _resetBackoff();
-    // Stagger subscriptions — Supabase realtime limits concurrent joins.
     _listenToNotifications();
     Future.delayed(const Duration(seconds: 2), _listenToProfile);
-    Future.delayed(const Duration(seconds: 4), _listenToTransactions);
-    Future.delayed(const Duration(seconds: 6), _listenToInvestments);
-    Future.delayed(const Duration(seconds: 8), _listenToPoints);
+    Future.delayed(const Duration(seconds: 3), _listenToPlans);
+    Future.delayed(const Duration(seconds: 5), _listenToTransactions);
+    Future.delayed(const Duration(seconds: 7), _listenToInvestments);
+    Future.delayed(const Duration(seconds: 9), _listenToPoints);
+    _setupEarningsListener();
   }
 
   bool _isRealtimeTimeout(Object error) {
@@ -486,6 +490,43 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   // ─── INVESTMENTS LISTENER ─────────────────────────────
   StreamSubscription? _investmentSubscription;
+  StreamSubscription? _plansSubscription;
+
+  void _listenToPlans() {
+    _plansSubscription?.cancel();
+    _plansSubscription = SupabaseService.client
+        .from('investment_plans')
+        .stream(primaryKey: ['id'])
+        .listen(
+          (data) {
+            allInvestmentPlans.value = data
+                .map((json) => InvestmentPlanModel.fromJson(json))
+                .toList();
+
+            // Hydrate current myInvestments with updated plans if they are already loaded
+            if (myInvestments.isNotEmpty) {
+              myInvestments.value = myInvestments.map((inv) {
+                final plan = allInvestmentPlans.firstWhereOrNull((p) => p.id == inv.planId);
+                return inv.copyWith(investment: plan);
+              }).toList();
+            }
+
+            _log(
+              'Investment plans cache updated via real-time stream',
+              method: '_listenToPlans',
+            );
+          },
+          onError: (error, stack) {
+            _log(
+              'Investment plans stream error',
+              method: '_listenToPlans',
+              isError: true,
+              error: error,
+              stackTrace: stack,
+            );
+          },
+        );
+  }
 
   void _listenToInvestments() {
     if (!SupabaseService.isLoggedIn) return;
@@ -500,7 +541,11 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         .listen(
           (data) {
             myInvestments.value = data
-                .map((json) => UserInvestmentModel.fromJson(json))
+                .map((json) {
+                  final model = UserInvestmentModel.fromJson(json);
+                  final plan = allInvestmentPlans.firstWhereOrNull((p) => p.id == model.planId);
+                  return model.copyWith(investment: plan);
+                })
                 .toList();
 
             // Update countdowns whenever investments refresh
@@ -575,6 +620,18 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         );
   }
 
+  /// Listen for earnings updates and refresh dashboard
+  void _setupEarningsListener() {
+    if (!Get.isRegistered<EarningsEventService>()) {
+      Get.put(EarningsEventService());
+    }
+    
+    // Register callback to refresh dashboard when earnings are updated
+    EarningsEventService.to.onEarningsUpdated(() {
+      fetchDashboard();
+    });
+  }
+
   void _log(
     String message, {
     String method = 'event',
@@ -626,6 +683,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     _profileSubscription?.cancel();
     _transactionSubscription?.cancel();
     _investmentSubscription?.cancel();
+    _plansSubscription?.cancel();
     _pointsSubscription?.cancel();
     _rewardTimer?.cancel();
     _notificationReconnectTimer?.cancel();
@@ -662,6 +720,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   Future<void> fetchAll() async {
     final stopwatch = Stopwatch()..start();
     await Future.wait([
+      fetchInvestmentPlans(),
       fetchProfile(),
       fetchDashboard(),
       fetchRecentTransactions(),
@@ -699,6 +758,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     recentTransactions.clear();
     notifications.clear();
     myInvestments.clear();
+    allInvestmentPlans.clear();
     recentRecipients.clear();
     unreadNotificationCount.value = 0;
     userPoints.value = 0;
@@ -1280,6 +1340,26 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  Future<void> fetchInvestmentPlans() async {
+    try {
+      final response = await SupabaseService.client
+          .from('investment_plans')
+          .select();
+      allInvestmentPlans.value = (response as List)
+          .map((json) => InvestmentPlanModel.fromJson(json))
+          .toList();
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'fetchInvestmentPlans',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+    }
+  }
+
   // ─── KSP BALANCE (Effective = wallet×1000 + reward) ───
 
   /// Mirrors [KspBalanceService] values into home observables (no network I/O).
@@ -1524,6 +1604,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         // Refresh all data
         await fetchAll();
         HapticFeedback.heavyImpact();
+        
+        // Trigger earnings update event for automatic refresh
+        if (Get.isRegistered<EarningsEventService>()) {
+          EarningsEventService.to.triggerEarningsUpdate(source: 'investments');
+        } else {
+          Get.put(EarningsEventService());
+          EarningsEventService.to.triggerEarningsUpdate(source: 'investments');
+        }
       } else {
         AppSnack.error(
           'error'.tr,
@@ -1541,6 +1629,19 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       );
     } finally {
       isClaimingLoading.value = false;
+    }
+  }
+
+  // ─── EARNINGS UPDATE TRIGGER ─────────────────────────────────
+
+  /// Trigger earnings update event
+  /// Call this method when earnings are successfully credited
+  void triggerEarningsUpdate({String? source}) {
+    if (Get.isRegistered<EarningsEventService>()) {
+      EarningsEventService.to.triggerEarningsUpdate(source: source);
+    } else {
+      Get.put(EarningsEventService());
+      EarningsEventService.to.triggerEarningsUpdate(source: source);
     }
   }
 
@@ -1562,6 +1663,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         AppSnack.success('success'.tr, 'cycle_started_success'.tr);
         await fetchMyInvestments();
         await fetchDashboard();
+        
+        // Trigger earnings update event for automatic refresh
+        triggerEarningsUpdate(source: 'investment_returns');
       } else {
         final errorMsg = response is Map ? response['error']?.toString() : null;
         AppSnack.error('error'.tr, errorMsg ?? 'unexpected_error'.tr);

@@ -97,6 +97,20 @@ class InvestmentPlanModel {
     };
   }
 
+  String get category {
+    final lowerName = (nameEn ?? nameAr).toLowerCase();
+    if (lowerName.contains('gold') || lowerName.contains('ذهب')) {
+      return 'gold';
+    }
+    if (lowerName.contains('silver') || lowerName.contains('sliver') || lowerName.contains('فض')) {
+      return 'silver';
+    }
+    if (lowerName.contains('real') || lowerName.contains('estate') || lowerName.contains('عقار')) {
+      return 'real_estate';
+    }
+    return 'other';
+  }
+
   InvestmentPlanModel copyWith({
     String? id,
     String? nameAr,

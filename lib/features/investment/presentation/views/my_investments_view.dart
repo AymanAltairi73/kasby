@@ -259,7 +259,7 @@ class _InvestmentsListState extends State<_InvestmentsList> {
     try {
       final response = await SupabaseService.client
           .from('user_investments')
-          .select()
+          .select('*, investment:investment_plans(*)')
           .eq('user_id', SupabaseService.userId!)
           .order('created_at', ascending: false);
 

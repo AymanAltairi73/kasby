@@ -314,62 +314,72 @@ class HomeBalanceCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.show_chart_rounded,
-                                color: AppColors.textSecondary,
-                                size: 12,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'daily_profit'.tr,
-                                style: TextStyle(
+                      child: InkWell(
+                        onTap: () => Get.toNamed('/earnings-analytics'),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.show_chart_rounded,
                                   color: AppColors.textSecondary,
-                                  fontSize: 12,
+                                  size: 12,
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Obx(
-                            () {
-                              final profit = homeController.dailyProfit;
-                              final hidden =
-                                  currencyController.isBalanceHidden.value;
-                              return Column(
-                                children: [
-                                  Text(
-                                    hidden
-                                        ? '••••'
-                                        : currencyController
-                                            .formatToUSD(profit),
-                                    style: TextStyle(
-                                      color: AppColors.softGreen,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 18,
-                                    ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'my_daily_earnings'.tr,
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
                                   ),
-                                  if (!hidden && profit > 0) ...[
-                                    const SizedBox(height: 4),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: AppColors.textSecondary,
+                                  size: 16,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Obx(
+                              () {
+                                final profit = homeController.dailyProfit;
+                                final hidden =
+                                    currencyController.isBalanceHidden.value;
+                                return Column(
+                                  children: [
                                     Text(
-                                      currencyController
-                                          .formatKspFromUsd(profit),
+                                      hidden
+                                          ? '••••'
+                                          : currencyController
+                                              .formatToUSD(profit),
                                       style: TextStyle(
-                                        color: AppColors.darkGold,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 11,
+                                        color: AppColors.softGreen,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 18,
                                       ),
                                     ),
+                                    if (!hidden && profit > 0) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        currencyController
+                                            .formatKspFromUsd(profit),
+                                        style: TextStyle(
+                                          color: AppColors.darkGold,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                ],
-                              );
-                            },
-                          ),
-                        ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     Container(
@@ -466,12 +476,13 @@ class HomeBalanceCard extends StatelessWidget {
                   double total = 0;
 
                   for (var inv in investments) {
-                    final planName =
-                        inv.investment?.nameEn?.toLowerCase() ?? '';
-                    if (planName.contains('gold')) {
+                    final cat = inv.investment?.category ?? 'other';
+                    if (cat == 'gold') {
                       gold += inv.amount;
-                    } else if (planName.contains('silver')) {
+                    } else if (cat == 'silver') {
                       silver += inv.amount;
+                    } else if (cat == 'real_estate') {
+                      realEstate += inv.amount;
                     } else {
                       realEstate += inv.amount;
                     }

@@ -91,6 +91,14 @@ class _ProfileViewState extends State<ProfileView> {
                       Colors.blueAccent,
                       () => Get.toNamed(Routes.referralAnalytics),
                     ),
+                    _buildProfileItem(
+                      context,
+                      isDark,
+                      Icons.account_balance_wallet_rounded,
+                      'earnings_analytics'.tr,
+                      Colors.greenAccent,
+                      () => Get.toNamed(Routes.earningsAnalytics),
+                    ),
                     KeyedSubtree(
                       key: TourTargetKeys.profileSecurity,
                       child: _buildProfileItem(

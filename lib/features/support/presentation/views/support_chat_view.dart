@@ -217,11 +217,6 @@ class _SupportChatViewState extends State<SupportChatView> {
               );
             }),
           ),
-          Obx(
-            () => _chatController.messages.isNotEmpty
-                ? _buildQuickActions()
-                : const SizedBox.shrink(),
-          ),
           if (_editingMessage != null) _buildEditingIndicator(),
           _buildMessageInput(),
         ],
@@ -1014,76 +1009,6 @@ class _SupportChatViewState extends State<SupportChatView> {
       ),
     );
   }
-
-  Widget _buildQuickActions() {
-    final actions = [
-      {'icon': Icons.help_outline_rounded, 'text': 'support_faq'.tr},
-      {'icon': Icons.report_problem_outlined, 'text': 'report_issue'.tr},
-      {
-        'icon': Icons.account_balance_wallet_outlined,
-        'text': 'wallet_issue'.tr,
-      },
-      {'icon': Icons.verified_user_outlined, 'text': 'kyc_verification'.tr},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.5),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: actions.map((action) {
-            return Container(
-              margin: const EdgeInsets.only(right: 8),
-              child: InkWell(
-                onTap: () => _sendMessage(action['text'] as String),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppColors.darkGold.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        action['icon'] as IconData,
-                        color: AppColors.darkGold,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        action['text'] as String,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    ).animate().fadeIn().slideY(begin: 0.3, end: 0);
-  }
-
   Widget _buildMessageInput() {
     return Obx(() {
       final replyMsg = _chatController.replyMessage.value;

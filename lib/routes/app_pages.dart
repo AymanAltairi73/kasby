@@ -65,6 +65,8 @@ import '../features/marketplace/presentation/views/marketplace_search_view.dart'
 import '../features/marketplace/presentation/views/marketplace_wishlist_view.dart';
 import '../features/marketplace/presentation/views/marketplace_notifications_view.dart';
 import '../features/marketplace/presentation/views/marketplace_health_view.dart';
+import '../features/earnings/presentation/views/earnings_analytics_view.dart';
+import '../features/earnings/presentation/controllers/earnings_analytics_controller.dart';
 import '../features/auth/presentation/middleware/auth_verification_middleware.dart';
 
 class AppPages {
@@ -195,13 +197,13 @@ class AppPages {
       'SupportChatView',
       () => const SupportChatView(),
       binding: BindingsBuilder(() {
+        Get.delete<SupportChatController>(force: true);
         final args = Get.arguments;
         final map = args is Map<String, dynamic> ? args : null;
-        Get.lazyPut(
-          () => SupportChatController(
+        Get.put(
+          SupportChatController(
             predefinedConversationId: map?['conversation_id'] as String?,
           ),
-          fenix: true,
         );
       }),
     ),
@@ -210,10 +212,11 @@ class AppPages {
       'SupportChatView',
       () => const SupportChatView(),
       binding: BindingsBuilder(() {
+        Get.delete<SupportChatController>(force: true);
         final args = Get.arguments;
         final map = args is Map<String, dynamic> ? args : null;
-        Get.lazyPut(
-          () => SupportChatController(
+        Get.put(
+          SupportChatController(
             friendId: map?['friendId'] as String?,
             friendName: map?['friendName'] as String?,
             agentUserId: map?['user_id'] as String?,
@@ -310,5 +313,13 @@ class AppPages {
     _route(Routes.marketplaceWishlist, 'MarketplaceWishlistView', () => const MarketplaceWishlistView()),
     _route(Routes.marketplaceNotifications, 'MarketplaceNotificationsView', () => const MarketplaceNotificationsView()),
     _route(Routes.marketplaceHealth, 'MarketplaceHealthView', () => const MarketplaceHealthView()),
+    _route(
+      Routes.earningsAnalytics,
+      'EarningsAnalyticsView',
+      () => const EarningsAnalyticsView(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => EarningsAnalyticsController());
+      }),
+    ),
   ];
 }

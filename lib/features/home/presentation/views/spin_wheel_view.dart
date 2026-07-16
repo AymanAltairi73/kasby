@@ -15,6 +15,7 @@ import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/models/spin_reward_model.dart';
+import 'package:kasby/core/events/earnings_events.dart';
 import 'dart:async';
 import '../widgets/kasby_spin_wheel.dart';
 
@@ -412,6 +413,15 @@ class _SpinWheelViewState extends State<SpinWheelView>
       _showVictoryOverlay();
 
       _fetchFreeSpinStatus();
+      
+      // Trigger earnings update event for automatic refresh
+      if (Get.isRegistered<EarningsEventService>()) {
+        EarningsEventService.to.triggerEarningsUpdate(source: 'lucky_wheel');
+      } else {
+        Get.put(EarningsEventService());
+        EarningsEventService.to.triggerEarningsUpdate(source: 'lucky_wheel');
+      }
+      
       SafeGetx.debugTrace(
         className: 'SpinWheelView',
         method: '_spin',

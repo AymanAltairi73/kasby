@@ -60,4 +60,5 @@ abstract class Routes {
   static const marketplaceWishlist = '/marketplace-wishlist';
   static const marketplaceNotifications = '/marketplace-notifications';
   static const marketplaceHealth = '/marketplace-health';
+  static const earningsAnalytics = '/earnings-analytics';
 }
