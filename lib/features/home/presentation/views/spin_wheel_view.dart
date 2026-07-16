@@ -143,7 +143,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
 
       final response = await SupabaseService.client
           .from('profiles')
-          .select('last_free_spin_at, stored_spins')
+          .select('last_free_spin_at, stored_spins, first_free_spin_granted')
           .eq('id', userId)
           .maybeSingle();
 
@@ -152,6 +152,14 @@ class _SpinWheelViewState extends State<SpinWheelView>
           _lastFreeSpinAt = DateTime.parse(response['last_free_spin_at']);
         }
         _storedSpins = (response['stored_spins'] as num?)?.toInt() ?? 0;
+        
+        // First free spin is now granted on registration via database trigger
+        // No need to manually set to 25 hours ago
+        final firstFreeSpinGranted = response['first_free_spin_granted'] as bool? ?? false;
+        if (!firstFreeSpinGranted && _lastFreeSpinAt == null) {
+          // Fallback for users who registered before the migration
+          _lastFreeSpinAt = DateTime.now().subtract(const Duration(hours: 25));
+        }
       } else {
         // If never spun, set to long ago so free spin is available
         _lastFreeSpinAt = DateTime.now().subtract(const Duration(hours: 25));

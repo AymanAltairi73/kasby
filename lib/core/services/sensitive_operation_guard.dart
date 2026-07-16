@@ -35,6 +35,9 @@ class SensitiveOperationGuard {
   /// Returns the user's verified phone for step-up OTP, or null if unavailable.
   static String? get stepUpPhone => AuthSecurityService.getUserPhone();
 
+  /// Returns the user's email for step-up OTP, or null if unavailable.
+  static String? get stepUpEmail => AuthSecurityService.getUserEmail();
+
   /// Whether a recent step-up OTP verification is still valid (5 minutes).
   static bool get hasRecentStepUp {
     if (!Get.isRegistered<SensitiveOperationGuardService>()) return false;
@@ -106,7 +109,7 @@ class SensitiveOperationGuard {
       return false;
     }
 
-    final verified = await Get.toNamed<bool>(
+    final result = await Get.toNamed(
       Routes.otp,
       arguments: {
         'identifier': phone,
@@ -119,7 +122,9 @@ class SensitiveOperationGuard {
       },
     );
 
-    if (verified == true) {
+    final verified = result == true;
+
+    if (verified) {
       markStepUpVerified();
       _log('requirePhoneOtp', 'Step-up OTP verified', params: {
         'purpose': purpose,
@@ -128,6 +133,86 @@ class SensitiveOperationGuard {
     }
 
     _log('requirePhoneOtp', 'Step-up OTP not completed', status: 'WARN', params: {
+      'purpose': purpose,
+    });
+    return false;
+  }
+
+  /// Requires Supabase email OTP verification before proceeding.
+  ///
+  /// Returns `true` when the user completed step-up verification.
+  static Future<bool> requireEmailOtp({
+    required String purpose,
+    bool force = false,
+  }) async {
+    if (!force && hasRecentStepUp) {
+      _log('requireEmailOtp', 'Recent step-up still valid', params: {
+        'purpose': purpose,
+      });
+      return true;
+    }
+
+    final email = stepUpEmail;
+    if (email == null || email.isEmpty) {
+      _log(
+        'requireEmailOtp',
+        'No email on account',
+        status: 'ERROR',
+        params: {'purpose': purpose},
+      );
+      AppSnack.error('error'.tr, 'email_verification_required'.tr);
+      return false;
+    }
+
+    try {
+      _log('requireEmailOtp', 'About to request email step-up OTP', params: {
+        'purpose': purpose,
+        'email': email,
+      });
+      await AuthSecurityService.requestEmailStepUpOtp();
+      _log('requireEmailOtp', 'Step-up OTP sent', params: {
+        'purpose': purpose,
+        'email': email,
+      });
+    } catch (e) {
+      _log(
+        'requireEmailOtp',
+        'Failed to send step-up OTP',
+        status: 'ERROR',
+        params: {'purpose': purpose},
+        error: e,
+      );
+      AppSnack.error(
+        'error'.tr,
+        AuthSecurityService.translateOtpError(e),
+      );
+      return false;
+    }
+
+    final result = await Get.toNamed(
+      Routes.otp,
+      arguments: {
+        'identifier': email,
+        'isPhone': false,
+        'isFreeOtp': false,
+        'type': OtpType.emailChange,
+        'purpose': purpose,
+        'isStepUp': true,
+        'otpLength': 6,
+      },
+    );
+
+    final verified = result == true;
+
+    if (verified) {
+      markStepUpVerified();
+      _log('requireEmailOtp', 'Step-up OTP verified', params: {
+        'purpose': purpose,
+      });
+      return true;
+    }
+
+    _log('requireEmailOtp', 'Step-up OTP not completed', status: 'WARN', params: {
       'purpose': purpose,
     });
     return false;

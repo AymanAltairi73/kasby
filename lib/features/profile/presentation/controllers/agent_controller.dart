@@ -441,10 +441,27 @@ class AgentController extends GetxController {
     isLoading.value = true;
     Map<String, dynamic>? parsed;
     try {
+      SafeGetx.debugTrace(
+        className: 'AgentController',
+        method: 'approveDeposit',
+        feature: 'Profile',
+        status: 'INFO',
+        params: {'transactionId': transactionId},
+      );
+      
       final response = await SupabaseService.client.rpc(
         'agent_approve_deposit',
         params: {'p_transaction_id': transactionId},
       );
+      
+      SafeGetx.debugTrace(
+        className: 'AgentController',
+        method: 'approveDeposit',
+        feature: 'Profile',
+        status: 'INFO',
+        params: {'response': response},
+      );
+      
       parsed = _parseRpcResponse(response);
 
       if (parsed?['success'] == true) {
@@ -459,6 +476,13 @@ class AgentController extends GetxController {
         );
         await refreshData();
       } else {
+        SafeGetx.debugTrace(
+          className: 'AgentController',
+          method: 'approveDeposit',
+          feature: 'Profile',
+          status: 'ERROR',
+          params: {'parsedResponse': parsed},
+        );
         SafeGetx.snackbar(
           title: 'error'.tr,
           message: _rpcErrorMessage('', parsed),

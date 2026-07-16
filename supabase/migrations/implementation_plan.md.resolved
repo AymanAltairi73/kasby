@@ -1,0 +1,114 @@
+# Fix Agent Transaction Authorization Error — Root Cause Analysis & Plan
+
+## Evidence-Based Root Cause Analysis
+
+### Live Database State (queried via service_role key)
+
+**Agent:**
+| Field | Value |
+|-------|-------|
+| `id` | `3b88140f-b87d-401e-9169-7135a8b1376d` |
+| `user_id` | `8f1720d1-69d5-4d29-a496-03e1f3ea81ab` |
+| `name` | المهندس محمد العراقي |
+| `status` | `active` |
+
+**Stuck Transactions (status = `processing`):**
+| Transaction ID | Type | Status | reference_id |
+|---------------|------|--------|-------------|
+| `931939ef-...` | deposit | **processing** | `3b88140f-...` ✅ matches agent.id |
+| `e3cd65b7-...` | deposit | **processing** | `3b88140f-...` ✅ matches agent.id |
+| `dd70062b-...` | withdrawal | **processing** | `3b88140f-...` ✅ matches agent.id |
+| `bb028c9b-...` | withdrawal | **processing** | `462c8b2f-...` (different agent) |
+| `156eaaa4-...` | deposit | **processing** | `462c8b2f-...` (different agent) |
+
+**Key fact:** `schema.sql` was last modified **June 12, 2026** — over a month stale. It does NOT reflect the current DB function definitions. Migrations through `20260714` have been applied since.
+
+---
+
+### Three Concurrent Root Causes
+
+#### Root Cause A: `reference_id` TYPE MISMATCH
+> [!CAUTION]
+> The `transactions.reference_id` column is `TEXT`. The `v_agent_id` variable is `UUID`. Different migration versions handle this comparison differently — some crash, some silently fail.
+
+| Migration | Comparison Used | Problem |
+|-----------|----------------|---------|
+| `20260626160000` | `fn_tx_belongs_to_agent(reference_id, v_agent_id, v_agent_user_id)` | Function uses `p_reference_id = p_agent_id::TEXT` — correct |
+| `20260628120000` | `reference_id = v_agent_id::TEXT` | ✅ Correct |
+| `20260713000000` | `reference_id::UUID = v_agent_id` | ❌ **Crashes** if reference_id is NULL |
+| `20260714000000` | *(removed entirely)* | ❌ **Security bypass** — any agent can approve any transaction |
+
+#### Root Cause B: Transactions Stuck in `processing` Status
+The `agent_confirm_withdrawal` function uses a **two-phase update** pattern:
+```
+pending → processing → completed
+```
+If the function fails after the first UPDATE but before the second, the transaction is left **permanently stuck** in `processing` status. The latest `agent_approve_deposit` (from `20260714`) only checks `status = 'pending'`, so it **cannot find** these stuck transactions.
+
+#### Root Cause C: Migration `20260714` Removed Security Check
+```sql
+-- 20260714: REMOVED reference_id check entirely
+SELECT * INTO v_tx FROM transactions
+  WHERE id = p_transaction_id
+    AND type = 'deposit'
+    AND status = 'pending'  -- ← ONLY pending, not processing
+  FOR UPDATE;
+```
+This migration:
+1. **Removed** the `reference_id` authorization check (any active agent can approve ANY pending deposit)
+2. Only checks `status = 'pending'` — stuck `processing` transactions are invisible
+3. Did **NOT** redefine `agent_confirm_withdrawal` at all
+
+---
+
+## Proposed Changes
+
+### [NEW] Migration: `20260715000000_definitive_agent_approval_fix.sql`
+
+A single, self-contained migration that fixes everything:
+
+#### 1. Data Repair — Reset Stuck Transactions
+```sql
+UPDATE transactions SET status = 'pending'
+WHERE status = 'processing'
+  AND type IN ('deposit', 'withdrawal');
+```
+
+#### 2. Fix `agent_approve_deposit`
+- ✅ Explicit cast: `reference_id = v_agent_id::TEXT`
+- ✅ Status check: `status IN ('pending', 'processing')`
+- ✅ RAISE LOG instrumentation at every decision point
+- ✅ Admin notification support (from `20260714` version)
+- ✅ Commission processing
+- ✅ Financial audit logging
+
+#### 3. Fix `agent_confirm_withdrawal`
+- ✅ Explicit cast: `reference_id = v_agent_id::TEXT`
+- ✅ Status check: `status IN ('pending', 'processing')`
+- ✅ RAISE LOG instrumentation
+- ✅ Notification to user on completion
+- ✅ Agent stats update
+
+#### 4. Fix `agent_reject_transaction`
+- ✅ Explicit cast: `reference_id = v_agent_id::TEXT`
+- ✅ Status check: `status IN ('pending', 'processing')`
+- ✅ Admin notification support
+- ✅ Wallet rollback (deposit: reduce pending_balance; withdrawal: restore available_balance)
+
+> [!IMPORTANT]
+> No Flutter code changes required. The `AgentController` already calls the RPCs correctly — the bug is entirely server-side.
+
+## Verification Plan
+
+### Automated Tests
+1. After applying the migration via Supabase Dashboard SQL Editor:
+   - Query `SELECT status FROM transactions WHERE status = 'processing' AND type IN ('deposit','withdrawal')` → should return 0 rows
+   - Check Supabase logs for `[DEPOSIT_APPROVE]` / `[WITHDRAWAL_CONFIRM]` entries during next agent operation
+
+### Manual Verification
+1. Open Kasby Agent App as the agent user
+2. Create a test deposit request from a regular user account
+3. Approve the deposit from the agent dashboard → should succeed
+4. Create a test withdrawal request
+5. Confirm the withdrawal from the agent dashboard → should succeed
+6. Reject a pending transaction → should succeed with reason

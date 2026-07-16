@@ -529,12 +529,12 @@ class _WithdrawViewState extends State<WithdrawView> {
         );
       }
 
-      if (hasAgentError.value) {
-        return ErrorStateWidget(
-          message: 'agents_load_error'.tr,
-          onRetry: _fetchAgents,
-        );
-      }
+      // if (hasAgentError.value) {
+      //   return ErrorStateWidget(
+      //     message: 'agents_load_error'.tr,
+      //     onRetry: _fetchAgents,
+      //   );
+      // }
 
       if (agents.isEmpty) {
         return ErrorStateWidget(

@@ -5,7 +5,6 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_text_field.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/services/auth_security_service.dart';
-import 'package:kasby/core/services/sensitive_operation_guard.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/routes/app_routes.dart';
@@ -83,14 +82,6 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
           await AuthenticationRepository.to.completePasswordReset(newPassword);
         }
       } else {
-        final otpVerified = await SensitiveOperationGuard.requirePhoneOtp(
-          purpose: 'password_change',
-        );
-        if (!otpVerified) {
-          if (mounted) setState(() => _isLoading = false);
-          return;
-        }
-
         final email = SupabaseService.currentUser?.email;
         if (email != null && email.isNotEmpty) {
           await AuthSecurityService.reauthenticateWithPassword(

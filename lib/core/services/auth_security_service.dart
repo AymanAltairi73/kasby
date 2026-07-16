@@ -745,6 +745,8 @@ class AuthSecurityService {
 
   static String? getUserPhone() => _repo.getUserPhone();
 
+  static String? getUserEmail() => SupabaseService.currentUser?.email?.trim();
+
   static bool isPhoneVerificationRequired(User? user) =>
       _repo.isPhoneVerificationRequired(user);
 
@@ -847,6 +849,52 @@ class AuthSecurityService {
       throw AuthException('phone_verification_required'.tr);
     }
     await _repo.verifyStepUpOtp(phone: targetPhone, code: token);
+    if (Get.isRegistered<SensitiveOperationGuardService>()) {
+      Get.find<SensitiveOperationGuardService>().nativeStepUpOtp = false;
+    }
+  }
+
+  static Future<void> requestEmailStepUpOtp() async {
+    final email = getUserEmail();
+    _log('requestEmailStepUpOtp', 'Email: $email');
+    if (email == null || email.isEmpty) {
+      _log('requestEmailStepUpOtp', 'Email is null or empty', status: 'ERROR');
+      throw AuthException('email_verification_required'.tr);
+    }
+    // Use sendEmailChange to trigger email OTP for step-up verification
+    // This sends OTP to current email without changing it
+    _log('requestEmailStepUpOtp', 'Calling sendEmailChange with email: $email');
+    try {
+      await _emailOtp.sendEmailChange(email);
+      _log('requestEmailStepUpOtp', 'sendEmailChange succeeded');
+    } catch (e) {
+      _log('requestEmailStepUpOtp', 'sendEmailChange failed', status: 'ERROR', error: e);
+      rethrow;
+    }
+    if (Get.isRegistered<SensitiveOperationGuardService>()) {
+      Get.find<SensitiveOperationGuardService>().nativeStepUpOtp = true;
+    }
+  }
+
+  static Future<void> verifyEmailStepUpOtp({
+    required String token,
+    String? email,
+  }) async {
+    final targetEmail = email ?? getUserEmail();
+    _log('verifyEmailStepUpOtp', 'Target email: $targetEmail');
+    if (targetEmail == null || targetEmail.isEmpty) {
+      _log('verifyEmailStepUpOtp', 'Email is null or empty', status: 'ERROR');
+      throw AuthException('email_verification_required'.tr);
+    }
+    // Use emailChange type since updateUser triggers email change flow
+    _log('verifyEmailStepUpOtp', 'Verifying OTP with emailChange type');
+    try {
+      await _emailOtp.verify(email: targetEmail, token: token, type: OtpType.emailChange);
+      _log('verifyEmailStepUpOtp', 'OTP verification succeeded');
+    } catch (e) {
+      _log('verifyEmailStepUpOtp', 'OTP verification failed', status: 'ERROR', error: e);
+      rethrow;
+    }
     if (Get.isRegistered<SensitiveOperationGuardService>()) {
       Get.find<SensitiveOperationGuardService>().nativeStepUpOtp = false;
     }

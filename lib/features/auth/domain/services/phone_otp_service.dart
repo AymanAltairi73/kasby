@@ -210,8 +210,9 @@ class PhoneOtpService extends GetxService {
   }
 
   /// Step-up OTP for sensitive account operations (not financial).
+  /// Uses resend() for authenticated users to avoid "Signups not allowed" error.
   Future<void> sendStepUpOtp(String phone) async {
-    await sendOtp(phone: phone, shouldCreateUser: false);
+    await resend(phone: phone, type: OtpType.sms);
   }
 
   Future<void> verifyStepUpOtp({

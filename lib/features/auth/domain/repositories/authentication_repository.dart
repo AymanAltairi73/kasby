@@ -353,6 +353,24 @@ class AuthenticationRepository extends GetxService {
     required String newEmail,
     required String code,
   }) async {
+    // Supabase email change requires double confirmation - verifyOTP must be called twice
+    // First call accepts the token but throws AuthException (no session in response)
+    // Second call completes the email change
+    // See: https://github.com/supabase/supabase-flutter/issues/981
+    try {
+      await _emailOtp.verify(
+        email: newEmail,
+        token: code,
+        type: OtpType.emailChange,
+      );
+    } on AuthException catch (e) {
+      // Expected: first verification returns no session, throws exception
+      // Continue with second verification
+      if (e.message != 'An error occurred on token verification.') {
+        rethrow;
+      }
+    }
+    // Second verification completes the email change
     await _emailOtp.verify(
       email: newEmail,
       token: code,

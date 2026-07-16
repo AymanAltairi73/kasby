@@ -163,30 +163,30 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                               ),
                             ],
                           ),
-                          if (widget.riskLevel != null) ...[
-                            const SizedBox(height: 10),
-                            _buildRiskBadge(widget.riskLevel!),
-                          ],
-                          const SizedBox(height: 16),
+                          // if (widget.riskLevel != null) ...[
+                          //   const SizedBox(height: 10),
+                          //   _buildRiskBadge(widget.riskLevel!),
+                          // ],
+                          const SizedBox(height: 10),
+                          // Row(
+                          //   children: [
+                          //     _buildInfoItem(
+                          //       icon: Icons.account_balance_wallet_outlined,
+                          //       label: 'min_amount'.trParams({
+                          //         'amount': widget.minAmount,
+                          //       }),
+                          //       color: widget.color,
+                          //     ),
+                          //   ],
+                          // ),
+                          // const SizedBox(height: 8),
                           Row(
                             children: [
-                              _buildInfoItem(
-                                icon: Icons.account_balance_wallet_outlined,
-                                label: 'min_amount'.trParams({
-                                  'amount': widget.minAmount,
-                                }),
-                                color: widget.color,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              _buildInfoItem(
-                                icon: Icons.timer_outlined,
-                                label: widget.duration ?? '30_months_2_5_years'.tr,
-                                color: widget.color,
-                              ),
+                              // _buildInfoItem(
+                              //   icon: Icons.timer_outlined,
+                              //   label: widget.duration ?? '30_months_2_5_years'.tr,
+                              //   color: widget.color,
+                              // ),
                               const Spacer(),
                               Text(
                                 'invest_now'.tr,
@@ -238,38 +238,39 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
     );
   }
 
-  Widget _buildRiskBadge(String level) {
-    final normalized = level.toLowerCase();
-    late String label;
-    late Color color;
-    switch (normalized) {
-      case 'low':
-        label = 'risk_low'.tr;
-        color = AppColors.softGreen;
-        break;
-      case 'high':
-        label = 'risk_high'.tr;
-        color = AppColors.error;
-        break;
-      default:
-        label = 'risk_medium'.tr;
-        color = AppColors.darkGold;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
+  // Widget _buildRiskBadge(String level) {
+  //   final normalized = level.toLowerCase();
+  //   late String label;
+  //   late Color color;
+  //   switch (normalized) {
+  //     case 'low':
+  //       label = 'risk_low'.tr;
+  //       color = AppColors.softGreen;
+  //       break;
+  //     case 'high':
+  //       label = 'risk_high'.tr;
+  //       color = AppColors.error;
+  //       break;
+  //     default:
+  //       label = 'risk_medium'.tr;
+  //       color = AppColors.darkGold;
+  //   }
+    // return Container(
+    //   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    //   decoration: BoxDecoration(
+    //     color: color.withValues(alpha: 0.12),
+    //     borderRadius: BorderRadius.circular(8),
+    //     border: Border.all(color: color.withValues(alpha: 0.35)),
+    //   ),
+    //   child: Text(
+    //     label,
+    //     style: TextStyle(
+    //       color: color,
+    //       fontSize: 11,
+    //       fontWeight: FontWeight.bold,
+    //     ),
+    //   ),
+    // );
+  //}
+//}
 }
