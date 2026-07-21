@@ -66,6 +66,9 @@ class SupportChatController extends GetxController {
   final RxBool showScrollToBottom = false.obs;
   final RxInt newIncomingCount = 0.obs;
 
+  // Pinned message
+  final Rxn<ChatMessageModel> pinnedMessage = Rxn<ChatMessageModel>();
+
   void setReplyingTo(ChatMessageModel? message) {
     replyMessage.value = message;
   }
@@ -118,6 +121,7 @@ class SupportChatController extends GetxController {
   String? _conversationId;
   String? _userLowId;
   String? _assignedAdminId;
+  String? _conversationUserId;
   RealtimeChannel? _typingChannel;
 
   // Edit mode
@@ -176,6 +180,9 @@ class SupportChatController extends GetxController {
 
       // 2. Load existing messages
       await _loadMessages();
+
+      // 2.5. Load pinned message
+      await _loadPinnedMessage();
 
       // 3. Listen to new messages, conversation changes, and presence
       _listenToMessages();
@@ -310,27 +317,37 @@ class SupportChatController extends GetxController {
   void _applyConversationIds(Map<String, dynamic> conv) {
     _userLowId = conv['user_low_id'] as String?;
     _assignedAdminId = conv['assigned_admin_id'] as String?;
+    _conversationUserId = conv['user_id'] as String?;
   }
 
   void _listenToPresence() {
     // Determine the recipient ID based on conversation type.
-    final targetId = isAgentChat 
-        ? agentUserId 
-        : (isSocialChat ? friendId : _assignedAdminId);
+    final String? targetId;
+    if (isAgentChat) {
+      final myId = SupabaseService.userId;
+      if (myId == _conversationUserId) {
+        targetId = agentUserId;
+      } else {
+        targetId = _conversationUserId;
+      }
+    } else {
+      targetId = isSocialChat ? friendId : _assignedAdminId;
+    }
 
     if (targetId != null) {
       final presenceService = Get.find<PresenceService>();
+      final String nonNullTargetId = targetId;
       
       // Update initially
-      isRecipientOnline.value = presenceService.isUserOnline(targetId);
-      _fetchRecipientProfile(targetId);
+      isRecipientOnline.value = presenceService.isUserOnline(nonNullTargetId);
+      _fetchRecipientProfile(nonNullTargetId);
       
       // Listen to changes
       _presenceWorker = ever(presenceService.onlineUsers, (_) {
-        final isOnline = presenceService.isUserOnline(targetId);
+        final isOnline = presenceService.isUserOnline(nonNullTargetId);
         isRecipientOnline.value = isOnline;
         if (!isOnline) {
-          _fetchRecipientProfile(targetId);
+          _fetchRecipientProfile(nonNullTargetId);
         }
       });
     }
@@ -408,6 +425,34 @@ class SupportChatController extends GetxController {
     await _loadMessages(loadMore: false);
   }
 
+  Future<void> _loadPinnedMessage() async {
+    if (_conversationId == null) return;
+    try {
+      final conversation = await SupabaseService.client
+          .from('chat_conversations')
+          .select('pinned_message_id')
+          .eq('id', _conversationId!)
+          .maybeSingle();
+      
+      if (conversation != null && conversation['pinned_message_id'] != null) {
+        final pinnedMsgId = conversation['pinned_message_id'] as String;
+        final pinnedMsg = await SupabaseService.client
+            .from('chat_messages')
+            .select('*')
+            .eq('id', pinnedMsgId)
+            .maybeSingle();
+        
+        if (pinnedMsg != null) {
+          pinnedMessage.value = ChatMessageModel.fromJson(pinnedMsg);
+        }
+      } else {
+        pinnedMessage.value = null;
+      }
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: '_loadPinnedMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+    }
+  }
+
   void _listenToMessages() {
     if (_conversationId == null) return;
 
@@ -434,9 +479,16 @@ class SupportChatController extends GetxController {
             if (!messages.any((m) => m.id == newMsg.id)) {
               messages.add(newMsg);
 
-              final fromOther = isSocialChat
-                  ? newMsg.senderId != SupabaseService.userId
-                  : newMsg.senderType != 'user';
+              final bool fromOther;
+              if (isSocialChat) {
+                fromOther = newMsg.senderId != SupabaseService.userId;
+              } else if (isAgentChat) {
+                final isCurrentAgent = SupabaseService.userId != _conversationUserId;
+                fromOther = isCurrentAgent ? (newMsg.senderType == 'user') : (newMsg.senderType == 'agent');
+              } else {
+                fromOther = newMsg.senderType != 'user';
+              }
+
               if (fromOther) {
                 NotificationService().playNotificationSound();
                 if (showScrollToBottom.value) {
@@ -479,6 +531,13 @@ class SupportChatController extends GetxController {
         .listen((data) {
           if (data.isNotEmpty) {
             isTyping.value = false;
+            // Check if pinned message changed
+            final conv = data.first;
+            if (conv['pinned_message_id'] != null) {
+              _loadPinnedMessage();
+            } else {
+              pinnedMessage.value = null;
+            }
           }
         }, onError: (error, stack) {
           SafeGetx.debugTrace(className: 'SupportChatController', method: '_listenToConversation', feature: 'Support', status: 'ERROR', error: error, stackTrace: stack);
@@ -555,11 +614,18 @@ class SupportChatController extends GetxController {
 
     final String? replyToId = replyMessage.value?.id;
 
+    final String senderType;
+    if (isAgentChat) {
+      senderType = (SupabaseService.userId == _conversationUserId) ? 'user' : 'agent';
+    } else {
+      senderType = 'user';
+    }
+
     final optimisticMessage = ChatMessageModel(
       id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
       conversationId: _conversationId!,
       senderId: SupabaseService.userId!,
-      senderType: 'user',
+      senderType: senderType,
       content: content.trim(),
       messageType: type,
       replyToId: replyToId,
@@ -575,18 +641,31 @@ class SupportChatController extends GetxController {
     clearReply();
 
     try {
-      // 2. Insert into consolidated chat_messages table
-      final String idempotencyKey = 'msg-${DateTime.now().microsecondsSinceEpoch}-${SupabaseService.userId!.substring(0, 5)}';
+      if (isAgentChat && senderType == 'agent') {
+        // Agent replies must use the SECURITY DEFINER RPC
+        await SupabaseService.client.rpc(
+          'fn_send_chat_message',
+          params: {
+            'p_conversation_id': _conversationId,
+            'p_message_content': content.trim(),
+            'p_message_type': type,
+            'p_reply_to_id': replyToId,
+          },
+        );
+      } else {
+        // Customer or Social Chat sends message by direct insert
+        final String idempotencyKey = 'msg-${DateTime.now().microsecondsSinceEpoch}-${SupabaseService.userId!.substring(0, 5)}';
 
-      await SupabaseService.client.from('chat_messages').insert({
-        'conversation_id': _conversationId,
-        'sender_id': SupabaseService.userId,
-        'sender_type': 'user',
-        'message_content': content.trim(),
-        'message_type': type,
-        'idempotency_key': idempotencyKey,
-        'reply_to_id': replyToId,
-      });
+        await SupabaseService.client.from('chat_messages').insert({
+          'conversation_id': _conversationId,
+          'sender_id': SupabaseService.userId,
+          'sender_type': senderType,
+          'message_content': content.trim(),
+          'message_type': type,
+          'idempotency_key': idempotencyKey,
+          'reply_to_id': replyToId,
+        });
+      }
     } catch (e, stack) {
       SafeGetx.debugTrace(className: 'SupportChatController', method: 'sendMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
       // 3. Rollback Optimistic Update
@@ -658,6 +737,13 @@ class SupportChatController extends GetxController {
 
   Map<String, dynamic> _myUnreadClearPayload() {
     final userId = SupabaseService.userId;
+    if (isAgentChat && userId != null) {
+      if (userId != _conversationUserId) {
+        return {'unread_admin_count': 0};
+      } else {
+        return {'unread_user_count': 0};
+      }
+    }
     if (isSocialChat && userId != null && _userLowId != null) {
       if (userId == _userLowId) {
         return {'unread_user_count': 0};
@@ -758,10 +844,39 @@ class SupportChatController extends GetxController {
           .from('chat_messages')
           .update({'reactions': newReactions})
           .eq('id', messageId);
-      // Realtime listener will handle local update
     } catch (e, stack) {
       SafeGetx.debugTrace(className: 'SupportChatController', method: 'addReaction', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
-      Get.snackbar('error'.tr, 'chat_reaction_error'.tr);
+    }
+  }
+
+  Future<bool> pinMessage(String messageId) async {
+    if (_conversationId == null) return false;
+    try {
+      final result = await SupabaseService.client.rpc(
+        'pin_message',
+        params: {
+          'p_conversation_id': _conversationId,
+          'p_message_id': messageId,
+        },
+      );
+      return result as bool? ?? false;
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: 'pinMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      return false;
+    }
+  }
+
+  Future<bool> unpinMessage() async {
+    if (_conversationId == null) return false;
+    try {
+      final result = await SupabaseService.client.rpc(
+        'unpin_message',
+        params: {'p_conversation_id': _conversationId},
+      );
+      return result as bool? ?? false;
+    } catch (e, stack) {
+      SafeGetx.debugTrace(className: 'SupportChatController', method: 'unpinMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      return false;
     }
   }
 }

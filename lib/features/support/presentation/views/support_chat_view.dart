@@ -613,13 +613,23 @@ class _SupportChatViewState extends State<SupportChatView> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: keys.length + (_chatController.isTyping.value ? 1 : 0),
+              itemCount: keys.length + 
+                (_chatController.pinnedMessage.value != null ? 1 : 0) + 
+                (_chatController.isTyping.value ? 1 : 0),
               itemBuilder: (context, index) {
+                if (index == 0 && _chatController.pinnedMessage.value != null) {
+                  return _buildPinnedMessage();
+                }
                 if (index == keys.length && _chatController.isTyping.value) {
                   return _buildTypingIndicator();
                 }
 
-                final date = keys[index];
+                final adjustedIndex = _chatController.pinnedMessage.value != null ? index - 1 : index;
+                if (adjustedIndex >= keys.length) {
+                  return const SizedBox.shrink();
+                }
+
+                final date = keys[adjustedIndex];
                 final dateMessages = groupedMessages[date]!;
 
                 return Column(
@@ -686,6 +696,70 @@ class _SupportChatViewState extends State<SupportChatView> {
             ),
           ),
           Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPinnedMessage() {
+    final pinned = _chatController.pinnedMessage.value;
+    if (pinned == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.darkGold.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.push_pin, size: 16, color: AppColors.darkGold),
+              const SizedBox(width: 8),
+              Text(
+                'pinned_message'.tr,
+                style: TextStyle(
+                  color: AppColors.darkGold,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () async {
+                  final success = await _chatController.unpinMessage();
+                  if (success) {
+                    Get.snackbar(
+                      'success'.tr,
+                      'message_unpinned'.tr,
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: AppColors.softGreen,
+                      colorText: Colors.white,
+                    );
+                  }
+                },
+                child: const Icon(Icons.close, size: 16, color: Colors.white54),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (pinned.messageType == 'image')
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: ChatAttachmentImage(content: pinned.content),
+            )
+          else
+            Text(
+              pinned.content,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
         ],
       ),
     );
@@ -983,6 +1057,27 @@ class _SupportChatViewState extends State<SupportChatView> {
             _buildOptionItem(Icons.copy_rounded, 'copy_text'.tr, () {
               Get.safeBack();
               _copyMessage(message.content);
+            }),
+            _buildOptionItem(Icons.push_pin_rounded, 'pin_message'.tr, () async {
+              Get.safeBack();
+              final success = await _chatController.pinMessage(message.id);
+              if (success) {
+                Get.snackbar(
+                  'success'.tr,
+                  'message_pinned'.tr,
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: AppColors.softGreen,
+                  colorText: Colors.white,
+                );
+              } else {
+                Get.snackbar(
+                  'error'.tr,
+                  'pin_message_failed'.tr,
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              }
             }),
             if (message.isFromUser) ...[
               _buildOptionItem(Icons.edit_rounded, 'edit_message'.tr, () {

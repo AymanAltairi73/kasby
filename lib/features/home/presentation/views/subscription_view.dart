@@ -49,7 +49,7 @@ class _SubscriptionViewState extends State<SubscriptionView> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('premium_account'.tr),
+        title: Text('subscriptions'.tr),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -265,26 +265,11 @@ class _SubscriptionViewState extends State<SubscriptionView> {
   }
 
   Widget _buildPlanSelection() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildPlanCardItem(
-            'free_plan'.tr,
-            'price_free'.tr,
-            0,
-            AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildPlanCardItem(
-            'premium_account'.tr,
-            isYearly ? 'price_year'.tr : 'price_month'.tr,
-            1,
-            AppColors.darkGold,
-          ),
-        ),
-      ],
+    return _buildPlanCardItem(
+      'premium_account'.tr,
+      isYearly ? 'price_year'.tr : 'price_month'.tr,
+      1,
+      AppColors.darkGold,
     );
   }
 

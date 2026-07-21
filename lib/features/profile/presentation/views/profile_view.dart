@@ -119,17 +119,17 @@ class _ProfileViewState extends State<ProfileView> {
                       Colors.tealAccent,
                       () => Get.toNamed(Routes.statements),
                     ),
-                    KeyedSubtree(
-                      key: TourTargetKeys.profilePin,
-                      child: _buildProfileItem(
-                      context,
-                      isDark,
-                      Icons.lock_outline_rounded,
-                      'change_password'.tr,
-                      Colors.purpleAccent,
-                      () => Get.toNamed(Routes.changePassword),
-                    ),
-                    ),
+                    // KeyedSubtree(
+                    //   key: TourTargetKeys.profilePin,
+                    //   child: _buildProfileItem(
+                    //   context,
+                    //   isDark,
+                    //   Icons.lock_outline_rounded,
+                    //   'change_password'.tr,
+                    //   Colors.purpleAccent,
+                    //   () => Get.toNamed(Routes.changePassword),
+                    // ),
+                    // ),
                     KeyedSubtree(
                       key: TourTargetKeys.profileKyc,
                       child: _buildProfileItem(

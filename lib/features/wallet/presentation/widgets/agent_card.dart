@@ -15,12 +15,14 @@ class AgentCard extends StatelessWidget {
     required this.isDark,
     required this.onTap,
     required this.onChat,
+    this.unreadCount = 0,
   });
 
   final AgentModel agent;
   final bool isDark;
   final VoidCallback onTap;
   final VoidCallback onChat;
+  final int unreadCount;
 
   bool get _isVerified =>
       agent.kycStatus == 'verified' || agent.status == 'active';
@@ -212,19 +214,50 @@ class AgentCard extends StatelessWidget {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      color: AppColors.darkGold,
-                      size: 22,
-                    ),
-                    tooltip: 'send_message'.tr,
-                    onPressed: onChat,
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(40, 40),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          color: AppColors.darkGold,
+                          size: 22,
+                        ),
+                        tooltip: 'send_message'.tr,
+                        onPressed: onChat,
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(40, 40),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                      if (unreadCount > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.darkGold,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: isDark ? AppColors.surface : AppColors.surfaceLight, width: 2),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Text(
+                              unreadCount > 99 ? '99+' : '$unreadCount',
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   DirectionalChevron(

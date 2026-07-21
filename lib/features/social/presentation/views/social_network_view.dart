@@ -32,6 +32,10 @@ import 'package:kasby/features/social/presentation/widgets/social_avatar.dart';
 
 import 'package:kasby/features/social/presentation/widgets/social_dashboard_header.dart';
 
+import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
+
+import 'package:kasby/features/agent_chat/presentation/views/agent_conversations_view.dart';
+
 
 
 class SocialNetworkView extends StatefulWidget {
@@ -64,6 +68,8 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
+  bool get _isAgent => Get.isRegistered<AuthController>() && AuthController.to.userRole == 'agent';
+
 
 
   @override
@@ -72,7 +78,7 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
 
     super.initState();
 
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: _isAgent ? 6 : 5, vsync: this);
 
     _userSearchController.addListener(() {
 
@@ -186,6 +192,8 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
 
             Tab(text: 'search_users'.tr),
 
+            if (_isAgent) Tab(text: 'users_chats_tab'.tr),
+
           ],
 
         ),
@@ -209,6 +217,8 @@ class _SocialNetworkViewState extends State<SocialNetworkView>
           _buildFriendsTab(),
 
           _buildSearchTab(),
+
+          if (_isAgent) const AgentConversationsView(),
 
         ],
 

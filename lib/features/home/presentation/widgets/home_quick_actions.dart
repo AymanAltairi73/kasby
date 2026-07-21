@@ -103,7 +103,7 @@ class HomeQuickActions extends StatelessWidget {
         },
         {
           'icon': Icons.card_membership_rounded,
-          'label': 'investments'.tr,
+          'label': 'subscriptions'.tr,
           'onTap': () => Get.toNamed(Routes.subscription),
         },
         {

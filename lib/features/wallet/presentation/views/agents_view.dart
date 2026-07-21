@@ -29,6 +29,8 @@ class _AgentsViewState extends State<AgentsView> {
   final TextEditingController _searchController = TextEditingController();
   final RxString _searchQuery = ''.obs;
   StreamSubscription<List<Map<String, dynamic>>>? _profilesSub;
+  final RxMap<String, int> unreadCounts = <String, int>{}.obs; // agentId -> unread count
+  StreamSubscription<List<Map<String, dynamic>>>? _conversationsSub;
 
   @override
   void initState() {
@@ -72,6 +74,7 @@ class _AgentsViewState extends State<AgentsView> {
     );
     _searchController.dispose();
     _profilesSub?.cancel();
+    _conversationsSub?.cancel();
     super.dispose();
   }
 
@@ -83,6 +86,7 @@ class _AgentsViewState extends State<AgentsView> {
       agents.value = await AgentService.fetchActiveAgents(limit: 50);
       _filterAgents();
       _listenProfileUpdates();
+      _listenConversationUpdates();
       SafeGetx.debugTrace(
         className: 'AgentsView',
         method: '_fetchAgents',
@@ -105,6 +109,35 @@ class _AgentsViewState extends State<AgentsView> {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void _listenConversationUpdates() {
+    _conversationsSub?.cancel();
+    if (!SupabaseService.isLoggedIn) return;
+
+    final userId = SupabaseService.userId;
+    if (userId == null) return;
+
+    _conversationsSub = SupabaseService.client
+        .from('chat_conversations')
+        .stream(primaryKey: ['id'])
+        .listen((rows) {
+          final newCounts = <String, int>{};
+          for (final row in rows) {
+            final rowUserId = row['user_id']?.toString();
+            final isAgentChat = row['is_agent_chat'] as bool? ?? false;
+            
+            // Filter for current user's agent conversations
+            if (rowUserId != userId || !isAgentChat) continue;
+            
+            final agentId = row['agent_id']?.toString();
+            final unreadCount = row['unread_user_count'] as int? ?? 0;
+            if (agentId != null && unreadCount > 0) {
+              newCounts[agentId] = unreadCount;
+            }
+          }
+          unreadCounts.assignAll(newCounts);
+        });
   }
 
   void _listenProfileUpdates() {
@@ -486,6 +519,7 @@ class _AgentsViewState extends State<AgentsView> {
         return AgentCard(
           agent: agent,
           isDark: isDark,
+          unreadCount: unreadCounts[agent.id] ?? 0,
           onTap: () {
             HapticFeedback.lightImpact();
             Get.toNamed(
