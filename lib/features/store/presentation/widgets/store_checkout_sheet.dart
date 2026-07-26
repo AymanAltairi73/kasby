@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/features/store/domain/models/store_product_model.dart';
@@ -26,10 +27,10 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
     final textColor = isDark ? Colors.white : Colors.black87;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Obx(() {
         final usdAvailable = controller.usdBalance.value;
@@ -49,21 +50,29 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
             // Drag indicator
             Center(
               child: Container(
-                width: 40,
+                width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.4),
+                  color: Colors.grey.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
             // Header title
             Row(
               children: [
-                const Icon(Icons.shopping_cart_checkout, color: AppColors.primaryGold),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGold.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.shopping_cart_checkout_rounded,
+                      color: AppColors.primaryGold, size: 22),
+                ),
+                const SizedBox(width: 10),
                 Text(
                   'تأكيد الدفع والشراء',
                   style: TextStyle(
@@ -74,31 +83,42 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            // Selected Product preview
+            // Selected Product preview card
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF202028) : Colors.grey[100],
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF2A2A35) : Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.15)),
                     ),
-                    child: widget.product.imageUrl != null &&
-                            widget.product.imageUrl!.isNotEmpty
-                        ? Image.network(widget.product.imageUrl!, fit: BoxFit.cover)
-                        : const Icon(Icons.card_giftcard, color: AppColors.primaryGold),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: widget.product.imageUrl != null &&
+                              widget.product.imageUrl!.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: widget.product.imageUrl!,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => const Icon(
+                                Icons.card_giftcard_rounded,
+                                color: AppColors.primaryGold,
+                              ),
+                            )
+                          : const Icon(Icons.card_giftcard_rounded, color: AppColors.primaryGold),
+                    ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,13 +128,19 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                           style: TextStyle(
                             color: textColor,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 15,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          'التسليم: تلقائي فوري',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                        Row(
+                          children: [
+                            const Icon(Icons.bolt_rounded, color: Colors.green, size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                              'التسليم: تلقائي فوري',
+                              style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -144,7 +170,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                   color: _selectedMethod == 'wallet'
                       ? AppColors.primaryGold.withValues(alpha: 0.15)
                       : (isDark ? const Color(0xFF202028) : Colors.grey[100]),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _selectedMethod == 'wallet'
                         ? AppColors.primaryGold
@@ -154,14 +180,22 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.account_balance_wallet, color: AppColors.primaryGold),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryGold.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.account_balance_wallet_rounded,
+                          color: AppColors.primaryGold, size: 20),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'رصيد المحفظة بالدولار (USD Wallet)',
+                            'رصيد المحفظة (USD Wallet)',
                             style: TextStyle(
                               color: textColor,
                               fontWeight: FontWeight.bold,
@@ -174,6 +208,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                             style: TextStyle(
                               color: isUsdSufficient ? Colors.green : Colors.red,
                               fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -184,7 +219,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                       style: const TextStyle(
                         color: AppColors.primaryGold,
                         fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                        fontSize: 16,
                       ),
                     ),
                   ],
@@ -202,7 +237,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                     color: _selectedMethod == 'ksp'
                         ? Colors.amber.withValues(alpha: 0.15)
                         : (isDark ? const Color(0xFF202028) : Colors.grey[100]),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: _selectedMethod == 'ksp' ? Colors.amber : Colors.transparent,
                       width: 2,
@@ -210,14 +245,21 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.stars, color: Colors.amber),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.stars_rounded, color: Colors.amber, size: 20),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'رصيد عملة KSP',
+                              'رصيد نقاط KSP',
                               style: TextStyle(
                                 color: textColor,
                                 fontWeight: FontWeight.bold,
@@ -230,6 +272,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                               style: TextStyle(
                                 color: isKspSufficient ? Colors.green : Colors.red,
                                 fontSize: 11,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -240,7 +283,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                         style: const TextStyle(
                           color: Colors.amber,
                           fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                          fontSize: 16,
                         ),
                       ),
                     ],
@@ -267,8 +310,8 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                     Expanded(
                       child: Text(
                         _selectedMethod == 'wallet'
-                            ? 'رصيد المحفظة بالدولار غير كافٍ لإتمام عملية الشراء.'
-                            : 'رصيد نقاط KSP غير كافٍ لإتمام عملية الشراء.',
+                            ? 'رصيد المحفظة غير كافٍ لإتمام العملية.'
+                            : 'رصيد نقاط KSP غير كافٍ لإتمام العملية.',
                         style: const TextStyle(color: Colors.red, fontSize: 12),
                       ),
                     ),
@@ -279,11 +322,12 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
             // Action Buy Button
             SizedBox(
               width: double.infinity,
-              height: 52,
+              height: 54,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryGold,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
                 onPressed: (!isCurrentSufficient || controller.isPurchasing.value)
                     ? null
@@ -309,13 +353,20 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                         height: 24,
                         child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
                       )
-                    : const Text(
-                        'تأكيد الدفع والشراء الآن',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle_rounded, color: Colors.black, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'تأكيد الدفع والشراء الآن',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
               ),
             ),
@@ -337,18 +388,18 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
       barrierDismissible: false,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1A22),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: const Color(0xFF1E1E26),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Colors.green,
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 48),
+                child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 48),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -364,23 +415,23 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                 productName,
                 style: TextStyle(color: Colors.grey[400], fontSize: 13),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
               // Code Display Container
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111116),
-                  borderRadius: BorderRadius.circular(14),
+                  color: const Color(0xFF121216),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.primaryGold),
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      'الكود الخاص بك:',
-                      style: TextStyle(color: Colors.grey, fontSize: 11),
+                    Text(
+                      'كود البطاقة الخاص بك:',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 11),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     SelectableText(
                       code,
                       style: const TextStyle(
@@ -388,6 +439,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
+                        fontFamily: 'monospace',
                       ),
                     ),
                     if (serialNumber != null && serialNumber.isNotEmpty) ...[
@@ -409,18 +461,19 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.primaryGold),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: code));
                         AppSnack.success(
-                          'تم نسخ الكود',
-                          'تم نسخ كود البطاقة إلى الحافظة بنجاح.',
+                          'تم النسخ',
+                          'تم نسخ كود البطاقة بنجاح.',
                         );
                       },
-                      icon: const Icon(Icons.copy, color: AppColors.primaryGold, size: 18),
+                      icon: const Icon(Icons.copy_rounded, color: AppColors.primaryGold, size: 18),
                       label: const Text(
                         'نسخ الكود',
-                        style: TextStyle(color: AppColors.primaryGold),
+                        style: TextStyle(color: AppColors.primaryGold, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -430,6 +483,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryGold,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () {
                         Get.back();

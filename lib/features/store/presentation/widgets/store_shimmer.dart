@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kasby/core/theme/app_colors.dart';
 
 class StoreShimmer extends StatelessWidget {
   final double height;
