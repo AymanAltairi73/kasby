@@ -46,7 +46,6 @@ import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/widgets/app_error_widget.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/tour/tour_controller.dart';
-import 'package:kasby/features/marketplace/domain/services/marketplace_api_service.dart';
 
 void main() {
   CrashReportingService.runAppWithCrashGuards(_bootstrap);
@@ -163,7 +162,6 @@ Future<void> _bootstrap() async {
   Get.put(BiometricLoginService(), permanent: true);
   Get.put(SecurityActivityService(), permanent: true);
   Get.put(ConfettiService(), permanent: true);
-  await Get.putAsync(() => MarketplaceApiService().init(), permanent: true);
   Get.lazyPut(() => AgentController());
   Get.lazyPut(() => QrPaymentController(), fenix: true);
   Get.put(AppVersionService(), permanent: true);

@@ -16,7 +16,7 @@ List<Map<String, dynamic>> homeSecondaryActions() => [
       {
         'icon': Icons.storefront_rounded,
         'label': 'marketplace'.tr,
-        'onTap': () => Get.toNamed(Routes.marketplace),
+        'onTap': () => Get.toNamed(Routes.store),
       },
       {
         'icon': Icons.analytics_rounded,

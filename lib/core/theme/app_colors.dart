@@ -26,6 +26,8 @@ class AppColors {
   static const Color textBodyDark = Color(0xFFE0E0E0);
   static const Color textSecondaryDark = Color(0xFFA0A0A0);
   static const Color goldDark = Color(0xFFC9A24D);
+  static const Color primaryGold = Color(0xFFC9A24D);
+  static const Color darkBackground = Color(0xFF0E0E11);
   static const Color darkNavy = Color(0xFF0E0E11);
 
   // Light Mode Colors (Professional Requested Palette)

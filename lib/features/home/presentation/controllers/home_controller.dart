@@ -1523,7 +1523,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         canClaimRewards.value = pendingRewards.isNotEmpty;
         rewardCountdownText.value = pendingRewards.isNotEmpty
             ? ''
-            : 'reward_processing'.tr;
+            : '00:00:00';
       } else {
         isProcessingUI.value = false;
         canClaimRewards.value = false;
@@ -1553,7 +1553,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           canClaimRewards.value = pendingRewards.isNotEmpty;
           rewardCountdownText.value = pendingRewards.isNotEmpty
               ? ''
-              : 'reward_processing'.tr;
+              : '00:00:00';
 
           // If we just entered the next milestone (crossed the 60m threshold), refresh
           if (difference.inMinutes <= -60) {
@@ -1574,7 +1574,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         } else if (inv.nextPayoutAt != null) {
           final diff = inv.nextPayoutAt!.difference(now);
           if (diff.isNegative) {
-            investmentCountdowns[inv.id] = 'reward_processing'.tr;
+            investmentCountdowns[inv.id] = '00:00:00';
           } else {
             investmentCountdowns[inv.id] = _formatDuration(diff);
           }
