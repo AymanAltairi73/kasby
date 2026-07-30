@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/sound_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/authentication_logger.dart';
 import 'package:kasby/features/auth/domain/auth_otp_config.dart';
@@ -325,6 +326,7 @@ class ProfileUpdateController extends GetxController {
       );
       _log('OTP verified successfully',
           method: 'verifyAndUpdate', params: {'type': type});
+      SoundService.to.playSuccess();
       AppSnack.success('success'.tr, 'profile_updated_success'.tr);
       return true;
     } on AuthException catch (e) {

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/sound_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/features/store/domain/models/store_banner_model.dart';
@@ -163,6 +164,7 @@ class StoreController extends GetxController {
       );
 
       if (result['success'] == true) {
+        SoundService.to.playPurchase();
         AppSnack.success(
           'تم الشراء بنجاح',
           'تم تسليم كود البطاقة بنجاح، يمكنك مشاهدته في سجل الطلبات.',

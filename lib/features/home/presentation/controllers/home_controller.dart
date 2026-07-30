@@ -1492,6 +1492,35 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  bool _isDistributingProfits = false;
+
+  /// Triggers automated profit distribution check on Supabase and refreshes data
+  Future<void> _triggerProfitDistributionCheck() async {
+    if (_isDistributingProfits || !SupabaseService.isLoggedIn) return;
+    _isDistributingProfits = true;
+    try {
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: '_triggerProfitDistributionCheck',
+        feature: 'Home',
+        status: 'INFO',
+      );
+      await SupabaseService.client.rpc('fn_cron_distribute_daily_profits');
+      await fetchAll();
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: '_triggerProfitDistributionCheck',
+        feature: 'Home',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+    } finally {
+      _isDistributingProfits = false;
+    }
+  }
+
   /// Calculates the next reward distribution time across all sources (Pending Rewards & Active Investments)
   void _updateRewardDistributionInfo() {
     DateTime? earliest;
@@ -1503,12 +1532,13 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       earliest = nextManual;
     }
 
-    // 2. Check active investments (automated system)
+    // 2. Check active investments (automated continuous system)
     final activeInvs = myInvestments.where((inv) => inv.status == 'active');
     for (final inv in activeInvs) {
-      if (inv.nextPayoutAt != null) {
-        if (earliest == null || inv.nextPayoutAt!.isBefore(earliest)) {
-          earliest = inv.nextPayoutAt;
+      final effective = inv.effectiveNextPayout;
+      if (effective != null) {
+        if (earliest == null || effective.isBefore(earliest)) {
+          earliest = effective;
         }
       }
     }
@@ -1518,15 +1548,17 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     if (earliest != null) {
       final diff = earliest.difference(now);
       if (diff.isNegative) {
-        // Within 60 min processing window
-        isProcessingUI.value = true;
+        _triggerProfitDistributionCheck();
+        DateTime nextTarget = earliest;
+        while (!nextTarget.isAfter(now)) {
+          nextTarget = nextTarget.add(const Duration(hours: 24));
+        }
+        isProcessingUI.value = false;
         canClaimRewards.value = pendingRewards.isNotEmpty;
-        rewardCountdownText.value = pendingRewards.isNotEmpty
-            ? ''
-            : '00:00:00';
+        rewardCountdownText.value = _formatDuration(nextTarget.difference(now));
       } else {
         isProcessingUI.value = false;
-        canClaimRewards.value = false;
+        canClaimRewards.value = pendingRewards.isNotEmpty;
         rewardCountdownText.value = _formatDuration(diff);
       }
       _startRewardTimer();
@@ -1544,49 +1576,66 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       final now = DateTime.now();
 
       // Update Summary Counter
-      if (nextRewardRelease.value != null) {
-        final difference = nextRewardRelease.value!.difference(now);
+      DateTime? earliest;
+      if (pendingRewards.isNotEmpty) {
+        earliest = DateTime.parse(pendingRewards.first['release_at']);
+      }
+      final activeInvs = myInvestments.where((inv) => inv.status == 'active');
+      for (final inv in activeInvs) {
+        final effective = inv.effectiveNextPayout;
+        if (effective != null) {
+          if (earliest == null || effective.isBefore(earliest)) {
+            earliest = effective;
+          }
+        }
+      }
+      nextRewardRelease.value = earliest;
+
+      if (earliest != null) {
+        final difference = earliest.difference(now);
 
         if (difference.isNegative) {
-          // Within Processing Window
-          isProcessingUI.value = true;
-          canClaimRewards.value = pendingRewards.isNotEmpty;
-          rewardCountdownText.value = pendingRewards.isNotEmpty
-              ? ''
-              : '00:00:00';
-
-          // If we just entered the next milestone (crossed the 60m threshold), refresh
-          if (difference.inMinutes <= -60) {
-            _updateRewardDistributionInfo();
-            fetchAll();
+          _triggerProfitDistributionCheck();
+          DateTime nextTarget = earliest;
+          while (!nextTarget.isAfter(now)) {
+            nextTarget = nextTarget.add(const Duration(hours: 24));
           }
+          isProcessingUI.value = false;
+          canClaimRewards.value = pendingRewards.isNotEmpty;
+          rewardCountdownText.value = _formatDuration(nextTarget.difference(now));
         } else {
           isProcessingUI.value = false;
-          canClaimRewards.value = false;
+          canClaimRewards.value = pendingRewards.isNotEmpty;
           rewardCountdownText.value = _formatDuration(difference);
         }
+      } else {
+        rewardCountdownText.value = '';
       }
 
       // Update Individual Investment Timers
       for (final inv in myInvestments.where((i) => i.status == 'active')) {
-        if (inv.isCycleWaiting) {
-          investmentCountdowns[inv.id] = 'waiting_next_cycle'.tr;
-        } else if (inv.nextPayoutAt != null) {
-          final diff = inv.nextPayoutAt!.difference(now);
+        final effective = inv.effectiveNextPayout;
+        if (effective != null) {
+          final diff = effective.difference(now);
           if (diff.isNegative) {
-            investmentCountdowns[inv.id] = '00:00:00';
+            _triggerProfitDistributionCheck();
+            DateTime nextTarget = effective;
+            while (!nextTarget.isAfter(now)) {
+              nextTarget = nextTarget.add(const Duration(hours: 24));
+            }
+            investmentCountdowns[inv.id] = _formatDuration(nextTarget.difference(now));
           } else {
             investmentCountdowns[inv.id] = _formatDuration(diff);
           }
         } else {
-          investmentCountdowns[inv.id] = '--:--:--';
+          investmentCountdowns[inv.id] = '24:00:00';
         }
       }
     });
   }
 
   String _formatDuration(Duration d) {
-    if (d.isNegative) return "00:00:00";
+    if (d.isNegative) return "24:00:00";
     final h = d.inHours.toString().padLeft(2, '0');
     final m = (d.inMinutes % 60).toString().padLeft(2, '0');
     final s = (d.inSeconds % 60).toString().padLeft(2, '0');

@@ -43,7 +43,21 @@ class UserInvestmentModel {
   });
 
   /// Whether this investment's daily cycle is waiting to be manually started
-  bool get isCycleWaiting => status == 'active' && nextPayoutAt == null;
+  bool get isCycleWaiting => false;
+
+  /// Effective next profit distribution timestamp for active investments.
+  /// Always returns a valid future target timestamp (rolling over in 24h increments).
+  DateTime? get effectiveNextPayout {
+    if (status != 'active') return nextPayoutAt;
+    final now = DateTime.now();
+    DateTime base = nextPayoutAt ?? startDate ?? createdAt ?? now;
+    if (!base.isAfter(now)) {
+      final diffSeconds = now.difference(base).inSeconds;
+      final cycles = (diffSeconds / 86400).floor() + 1;
+      base = base.add(Duration(seconds: cycles * 86400));
+    }
+    return base;
+  }
 
   /// Remaining days until maturity. Returns null if no end date.
   int? get remainingDays {

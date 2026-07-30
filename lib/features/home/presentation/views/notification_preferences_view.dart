@@ -4,6 +4,7 @@ import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/core/services/notification_preferences_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/sound_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 class NotificationPreferencesView extends StatefulWidget {
@@ -184,6 +185,24 @@ class _NotificationPreferencesViewState
                           title: 'notification_settings'.tr,
                           value: FCMService.to.isNotificationsEnabled.value,
                           onChanged: _onGlobalToggle,
+                        )),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildSection(
+                  title: 'المؤثرات الصوتية',
+                  children: [
+                    Obx(() => _buildToggleItem(
+                          icon: SoundService.to.isSoundEnabled.value
+                              ? Icons.volume_up_rounded
+                              : Icons.volume_off_rounded,
+                          color: Colors.amber,
+                          title: 'المؤثرات الصوتية',
+                          subtitle: SoundService.to.isSoundEnabled.value
+                              ? 'تشغيل أصوات العمليات والشراء'
+                              : 'كتم المؤثرات الصوتية',
+                          value: SoundService.to.isSoundEnabled.value,
+                          onChanged: (val) => SoundService.to.toggleSound(val),
                         )),
                   ],
                 ),

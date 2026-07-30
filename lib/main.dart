@@ -36,6 +36,7 @@ import 'package:kasby/core/services/biometric_login_service.dart';
 import 'package:kasby/core/services/security_activity_service.dart';
 import 'package:kasby/core/utils/accessibility_utils.dart';
 import 'package:kasby/core/services/confetti_service.dart';
+import 'package:kasby/core/services/sound_service.dart';
 import 'package:kasby/features/qr_payment/presentation/controllers/qr_payment_controller.dart';
 import 'package:kasby/core/services/presence_service.dart';
 import 'package:kasby/core/services/app_version_service.dart';
@@ -162,6 +163,7 @@ Future<void> _bootstrap() async {
   Get.put(BiometricLoginService(), permanent: true);
   Get.put(SecurityActivityService(), permanent: true);
   Get.put(ConfettiService(), permanent: true);
+  Get.put(SoundService(), permanent: true);
   Get.lazyPut(() => AgentController());
   Get.lazyPut(() => QrPaymentController(), fenix: true);
   Get.put(AppVersionService(), permanent: true);
