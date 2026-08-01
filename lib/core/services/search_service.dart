@@ -7,6 +7,7 @@ import 'package:kasby/core/models/user_investment_model.dart';
 import 'package:kasby/core/models/notification_model.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
+import 'package:kasby/core/utils/number_formatter.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
@@ -164,7 +165,7 @@ class SearchService {
           title:
               '${_investmentPlanName(inv)} — ${_formatAmount(inv.amount)}',
           subtitle:
-              '${'status'.tr}: ${inv.status.tr} · ${'profit'.tr}: ${inv.profitPercentage}%',
+              '${'status'.tr}: ${inv.status.tr} · ${'profit'.tr}: ${KasbyNumberFormatter.formatProfitPercentage(inv.profitPercentage)}',
           category: 'investment',
           icon: Icons.trending_up_rounded,
           color: const Color(0xFF4CAF50),
@@ -192,7 +193,7 @@ class SearchService {
               title:
                   '${_investmentPlanName(inv)} — ${_formatAmount(inv.amount)}',
               subtitle:
-                  '${'status'.tr}: ${inv.status.tr} · ${'profit'.tr}: ${inv.profitPercentage}%',
+                  '${'status'.tr}: ${inv.status.tr} · ${'profit'.tr}: ${KasbyNumberFormatter.formatProfitPercentage(inv.profitPercentage)}',
               category: 'investment',
               icon: Icons.trending_up_rounded,
               color: const Color(0xFF4CAF50),

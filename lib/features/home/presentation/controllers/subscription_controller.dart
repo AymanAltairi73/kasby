@@ -16,7 +16,6 @@ class SubscriptionController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxMap<String, dynamic> activeSubscription = <String, dynamic>{}.obs;
   final RxString countdownText = ''.obs;
-  final RxBool isFreePlanActivationAvailable = true.obs;
   final RxDouble remainingPercentage = 0.0.obs;
   final Rx<Color> countdownColor = AppColors.softGreen.obs;
   
@@ -53,10 +52,10 @@ class SubscriptionController extends GetxController {
       _updateCountdown();
     });
   }
+
   void _updateCountdown() {
     if (activeSubscription.isEmpty) {
       countdownText.value = '';
-      isFreePlanActivationAvailable.value = true;
       remainingPercentage.value = 0.0;
       _notifiedExpiry = false;
       return;
@@ -75,7 +74,6 @@ class SubscriptionController extends GetxController {
 
     if (remaining.isNegative) {
       countdownText.value = '';
-      isFreePlanActivationAvailable.value = true;
       remainingPercentage.value = 0.0;
       
       if (!_notifiedExpiry && activeSubscription['status'] == 'active') {
@@ -88,7 +86,6 @@ class SubscriptionController extends GetxController {
       }
     } else {
       _notifiedExpiry = false;
-      isFreePlanActivationAvailable.value = false;
       
       // Calculate Percentage
       final double percent = (remaining.inSeconds / total.inSeconds.clamp(1, 99999999)).clamp(0.0, 1.0);
@@ -119,13 +116,9 @@ class SubscriptionController extends GetxController {
   }
 
   void _showExpiryNotification() {
-    final String tier = activeSubscription['tier'] ?? 'free';
-    final String title = tier == 'free' ? 'free_plan_ended'.tr : 'subscription_ended'.tr;
-    final String body = tier == 'free' ? 'free_plan_ended_desc'.tr : 'subscription_ended_desc'.tr;
-    
     FCMService.to.showNotification(
-      title: title,
-      body: body,
+      title: 'subscription_ended'.tr,
+      body: 'subscription_ended_desc'.tr,
     );
   }
 
@@ -146,7 +139,6 @@ class SubscriptionController extends GetxController {
         _updateCountdown();
       } else {
         activeSubscription.clear();
-        isFreePlanActivationAvailable.value = true;
       }
       SafeGetx.debugTrace(
         className: 'SubscriptionController',
@@ -166,57 +158,6 @@ class SubscriptionController extends GetxController {
         error: e,
         stackTrace: stack,
       );
-    }
-  }
-
-  Future<void> activateFreePlan() async {
-    if (activeSubscription.isNotEmpty) {
-      _showActiveSubscriptionWarning();
-      return;
-    }
-
-    isLoading.value = true;
-    final stopwatch = Stopwatch()..start();
-    try {
-      final response = await SupabaseService.client.rpc('activate_free_plan');
-
-      if (response['success'] == true) {
-        HapticFeedback.mediumImpact();
-        AppSnack.success('success'.tr, 'free_plan_activated'.tr);
-
-        await HomeController.to.fetchProfile();
-        await fetchActiveSubscription();
-        SafeGetx.debugTrace(
-          className: 'SubscriptionController',
-          method: 'activateFreePlan',
-          feature: 'Home',
-          status: 'SUCCESS',
-          durationMs: stopwatch.elapsedMilliseconds,
-        );
-      } else {
-        SafeGetx.debugTrace(
-          className: 'SubscriptionController',
-          method: 'activateFreePlan',
-          feature: 'Home',
-          status: 'ERROR',
-          message: response['error']?.toString(),
-          durationMs: stopwatch.elapsedMilliseconds,
-        );
-        AppSnack.error('error'.tr, response['error']?.toString() ?? 'unknown_error'.tr);
-      }
-    } catch (e, stack) {
-      SafeGetx.debugTrace(
-        className: 'SubscriptionController',
-        method: 'activateFreePlan',
-        feature: 'Home',
-        status: 'ERROR',
-        durationMs: stopwatch.elapsedMilliseconds,
-        error: e,
-        stackTrace: stack,
-      );
-      AppSnack.error('error'.tr, 'unknown_error'.tr);
-    } finally {
-      isLoading.value = false;
     }
   }
 

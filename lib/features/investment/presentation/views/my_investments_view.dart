@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/widgets/investment_plan_card.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/widgets/mini_charts.dart';
+import 'package:kasby/core/utils/number_formatter.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/models/investment_plan_model.dart';
 import 'package:kasby/core/models/user_investment_model.dart';
@@ -208,7 +209,7 @@ class _InvestmentPlansListState extends State<_InvestmentPlansList> {
                     child: InvestmentPlanCard(
                       id: plan.id,
                       title: plan.nameAr,
-                      profit: '${plan.profitPercentage.toInt()}%',
+                      profit: KasbyNumberFormatter.formatProfitPercentage(plan.profitPercentage),
                       minAmount: '\$${plan.minAmount.toInt()}',
                       imagePath: _getPlanImage(plan.nameEn ?? plan.nameAr),
                       color: _planColor(plan.riskLevel),
@@ -349,6 +350,28 @@ class _InvestmentsListState extends State<_InvestmentsList> {
             final inv = investments[index];
             final isActive = inv.status == 'active';
             final dailyProfit = (inv.amount * inv.profitPercentage / 100 / 30);
+            final isAr = Get.locale?.languageCode == 'ar';
+            final plan = inv.investment;
+            final nameAr = plan?.nameAr;
+            final nameEn = plan?.nameEn;
+            final String planName;
+            if (isAr) {
+              if (nameAr != null && nameAr.isNotEmpty) {
+                planName = nameAr;
+              } else if (nameEn != null && nameEn.isNotEmpty) {
+                planName = nameEn;
+              } else {
+                planName = 'خطة استثمارية';
+              }
+            } else {
+              if (nameEn != null && nameEn.isNotEmpty) {
+                planName = nameEn;
+              } else if (nameAr != null && nameAr.isNotEmpty) {
+                planName = nameAr;
+              } else {
+                planName = 'Investment Plan';
+              }
+            }
 
             return Hero(
               tag: 'inv_${inv.id}',
@@ -360,26 +383,49 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '\$${inv.amount.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  planName,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 18,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '\$${inv.amount.toStringAsFixed(0)} • ${KasbyNumberFormatter.formatProfitPercentage(inv.profitPercentage)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                    color: AppColors.darkGold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 10,
+                              vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color:
-                                  (isActive
-                                          ? AppColors.softGreen
-                                          : AppColors.textSecondary)
-                                      .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
+                              color: (isActive
+                                      ? AppColors.softGreen
+                                      : AppColors.textSecondary)
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: (isActive
+                                        ? AppColors.softGreen
+                                        : AppColors.textSecondary)
+                                    .withValues(alpha: 0.3),
+                              ),
                             ),
                             child: Text(
                               isActive ? 'active'.tr : inv.status.tr,
@@ -387,7 +433,7 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                                 color: isActive
                                     ? AppColors.softGreen
                                     : AppColors.textSecondary,
-                                fontSize: 10,
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

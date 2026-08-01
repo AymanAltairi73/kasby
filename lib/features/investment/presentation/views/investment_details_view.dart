@@ -319,24 +319,6 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                     'plan': plan['title'].toString(),
                   }),
                 ),
-                // const SizedBox(height: 12),
-                // // C8: risk disclosure + explicit terms acceptance before purchase.
-                // Container(
-                //   padding: const EdgeInsets.all(12),
-                //   decoration: BoxDecoration(
-                //     color: AppColors.textSecondary.withValues(alpha: 0.06),
-                //     borderRadius: BorderRadius.circular(12),
-                //   ),
-                //   child: Text(
-                //     'risk_disclosure'.tr,
-                //     style: TextStyle(
-                //       fontSize: 11,
-                //       height: 1.4,
-                //       color: AppColors.textSecondary,
-                //     ),
-                //   ),
-                // ),
-                // const SizedBox(height: 8),
                 InkWell(
                   onTap: () =>
                       setLocalState(() => termsAccepted = !termsAccepted),

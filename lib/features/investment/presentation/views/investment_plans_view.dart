@@ -6,6 +6,7 @@ import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/models/investment_plan_model.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/utils/number_formatter.dart';
 // import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
 import 'package:kasby/core/widgets/error_state_widget.dart';
@@ -144,9 +145,7 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
   }
 
   String _formatProfit(double percentage) {
-    return percentage == percentage.roundToDouble()
-        ? '${percentage.toInt()}%'
-        : '${percentage.toStringAsFixed(1)}%';
+    return KasbyNumberFormatter.formatProfitPercentage(percentage);
   }
 
   String _getPlanImage(String name) {

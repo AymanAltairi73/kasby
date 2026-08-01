@@ -38,9 +38,9 @@ class KasbyTranslations extends Translations {
       'register_step_activate': 'Activate your account',
       'register_step_start': 'Start using Kasby',
       'agent_pro_badge': 'PRO',
-      'risk_low': 'Low Risk',
-      'risk_medium': 'Medium Risk',
-      'risk_high': 'High Risk',
+      'risk_low': 'Starter Plan',
+      'risk_medium': 'Balanced Growth',
+      'risk_high': 'Maximum Growth',
       'ksp_explainer_title': 'About KSP Rewards',
       'ksp_what_is': 'What is KSP?',
       'ksp_what_is_desc':
@@ -81,8 +81,8 @@ class KasbyTranslations extends Translations {
       'accept_terms_required':
           'Please accept the Terms & Privacy Policy to continue.',
       'investment_disclaimer':
-          'Investments carry risk. Returns are not guaranteed and your capital may be at risk.',
-      'risk_disclosure': 'Risk Disclosure',
+          'Investments feature market-linked growth. Plan returns follow specified platform terms.',
+      'risk_disclosure': 'Investment Terms & Disclosure',
       'accept_plan_terms':
           'By confirming, you agree to the plan terms and lock-in period.',
       'security_center': 'Security Center',
@@ -468,7 +468,7 @@ class KasbyTranslations extends Translations {
           'Receive your earnings directly to your wallet every 24 hours.',
       'protected_investment': 'Secure Portfolio Management',
       'protected_investment_desc':
-          'Portfolio data is secured with industrial encryption. All investments carry market risks.',
+          'Portfolio data is secured with industrial encryption and transparent performance standards.',
       'priority_support': 'Priority Support',
       'priority_support_desc':
           'Access to 24/7 dedicated support for elite investors.',
@@ -952,7 +952,7 @@ class KasbyTranslations extends Translations {
       'legal_intro':
           'Welcome to Kasby, the premier investment platform for managing assets with precision and transparency. Our platform is dedicated to providing high-quality investment opportunities in tangible assets.',
       'legal_body':
-          '1. Services Provided:\nKasby provides a digital interface for investing in Gold, Silver, and Real Estate. We prioritize transparency, security, and integrity in all market interactions.\n\n2. Subscription & Activation:\nParticipation in investment plans require a verified account and an active subscription. Profit distribution cycles are initiated following the completion of the activation period.\n\n3. Deposit & Withdrawal:\nTransactional services are facilitated through authorized payment partners. Withdrawal requests are processed in accordance with the liquidity conditions of each respective investment plan.\n\n4. Data Protection:\nWe employ industry-standard encryption protocols to protect user data. Users are responsible for maintaining the confidentiality of their access credentials.\n\n5. Risk Disclosure:\nInvesting in physical and digital assets involves inherent market risks. Past performance and projections are not indicative of future results. All users should perform their own due diligence before committing capital.',
+          '1. Services Provided:\nKasby provides a digital interface for investing in Gold, Silver, and Real Estate. We prioritize transparency, security, and integrity in all market interactions.\n\n2. Subscription & Activation:\nParticipation in investment plans require a verified account and an active subscription. Profit distribution cycles are initiated following the completion of the activation period.\n\n3. Deposit & Withdrawal:\nTransactional services are facilitated through authorized payment partners. Withdrawal requests are processed in accordance with the liquidity conditions of each respective investment plan.\n\n4. Data Protection:\nWe employ industry-standard encryption protocols to protect user data. Users are responsible for maintaining the confidentiality of their access credentials.\n\n5. Investment Terms & Conditions:\nInvesting in physical and digital assets involves market conditions. Past performance and projections are indicative of platform models. All users should review plan terms before committing capital.',
       // Investment
       'expected_profit': 'Projected Return',
       'duration': 'Duration',
@@ -978,9 +978,10 @@ class KasbyTranslations extends Translations {
       'remaining_time': 'Remaining Time',
       'expired': 'Expired',
       'investment_plans': 'Investment Plans',
+      'active_investment': 'Active Investment',
       'up_to_profit': 'Target: @profit growth',
       'days': '@count Days',
-      'risk_disclaimer': 'Investing involves risk. Conduct your own research.',
+      'risk_disclaimer': 'Plan your investments carefully based on your goals.',
       'points_history': 'KSP History',
       'how_to_use_points': 'How to use KSP?',
       'points_guide':
@@ -1854,7 +1855,7 @@ class KasbyTranslations extends Translations {
       'no_portfolio_data_desc':
           'Start investing to see your portfolio analytics and performance metrics here.',
       'portfolio_insight_diversify':
-          'Consider diversifying across more investment plans to reduce risk.',
+          'Consider diversifying across more investment plans to optimize your returns.',
       'portfolio_insight_growth':
           'Your portfolio is growing well! Keep your current strategy going.',
       'portfolio_insight_reinvest':
@@ -1926,7 +1927,7 @@ class KasbyTranslations extends Translations {
           'Deposit, withdraw, transfer, and QR Pay — all one tap away.',
       'tour_home_investments_title': 'Investment Plans',
       'tour_home_investments_desc':
-          'Browse investment opportunities with expected returns, risk level, and duration.',
+          'Browse investment opportunities with expected returns and duration.',
       'tour_home_ksp_title': 'KSP Rewards',
       'tour_home_ksp_desc':
           'Earn KSP points through activities and spend them inside the Kasby ecosystem.',
@@ -1971,7 +1972,7 @@ class KasbyTranslations extends Translations {
       'tour_label_profile': 'Profile & Security Tour',
       'tour_invest_plans_title': 'Investment Plans',
       'tour_invest_plans_desc':
-          'Browse plans sorted by ROI, duration, and risk level.',
+          'Browse plans sorted by ROI and duration.',
       'tour_invest_active_title': 'Filter Plans',
       'tour_invest_active_desc':
           'Use filters to find short, medium, or long-term investments.',
@@ -2325,8 +2326,12 @@ class KasbyTranslations extends Translations {
       'silver_sector': 'Silver (@percent%)',
       'real_estate_sector': 'Real Estate (@percent%)',
       'other_sector': 'Other (@percent%)',
+      'daily_profit_notification_title': 'Daily Profit Received 💰',
+      'daily_profit_notification_body': 'Investment profit of \$@amount has been credited from @plan.',
     },
     'ar_SA': {
+      'daily_profit_notification_title': 'أرباح استثمار جديدة 💰',
+      'daily_profit_notification_body': 'تم إضافة أرباح بقيمة \$@amount من @plan',
       'app_name': 'Kasby',
       // ── إضافات تدقيق المنتج (تحسينات تطبيق المستخدم) ──
       'retry': 'إعادة المحاولة',
@@ -2362,9 +2367,9 @@ class KasbyTranslations extends Translations {
       'register_step_activate': 'فعّل حسابك',
       'register_step_start': 'ابدأ استخدام Kasby',
       'agent_pro_badge': 'PRO',
-      'risk_low': 'مخاطر منخفضة',
-      'risk_medium': 'مخاطر متوسطة',
-      'risk_high': 'مخاطر عالية',
+      'risk_low': 'خطة مبتدئة',
+      'risk_medium': 'نمو متوازن',
+      'risk_high': 'نمو أقصى',
       'ksp_explainer_title': 'عن مكافآت KSP',
       'ksp_what_is': 'ما هي KSP؟',
       'ksp_what_is_desc':
@@ -2399,8 +2404,8 @@ class KasbyTranslations extends Translations {
       'accept_terms_required':
           'يرجى الموافقة على الشروط وسياسة الخصوصية للمتابعة.',
       'investment_disclaimer':
-          'تنطوي الاستثمارات على مخاطر. العوائد غير مضمونة وقد يكون رأس مالك عرضة للمخاطر.',
-      'risk_disclosure': 'الإفصاح عن المخاطر',
+          'تتميز منتجات الاستثمار بعوائد مرتبطة بالسوق ووفق شروط كل خطة مالية.',
+      'risk_disclosure': 'الشروط والإفصاح الاستثماري',
       'accept_plan_terms': 'بالتأكيد، أنت توافق على شروط الخطة وفترة الإغلاق.',
       'security_center': 'مركز الأمان',
       'security_center_desc': 'البصمة والجلسات ونشاط تسجيل الدخول',
@@ -3286,7 +3291,7 @@ class KasbyTranslations extends Translations {
       'legal_intro':
           'مرحباً بك في تطبيق Kasby | كاسبي ، المنصة الاستثمارية الرائدة التي تمكّنك من إدارة أصولك بدقة وشفافية. تلتزم منصتنا بتوفير فرص استثمارية عالية الجودة في الأصول الملموسة والذهب.',
       'legal_body':
-          '1. الخدمات المقدمة:\nيوفر كاسبي واجهة رقمية للاستثمار في الذهب والفضة والعقارات. نحن نعتمد أعلى معايير الشفافية والأمان في جميع التداولات.\n\n2. الاشتراك والتفعيل:\nالمشاركة في خطط الاستثمار تتطلب حساباً موثقاً واشتراكاً نشطاً. تبدأ دورات توزيع العوائد بعد اكتمال فترة التفعيل المحددة.\n\n3. الإيداع والسحب:\nتتم تسهيل العمليات المالية عبر شركاء دفع معتمدين. تتم معالجة طلبات السحب وفقاً لشروط السيولة الخاصة بكل خطة استثمارية.\n\n4. حماية البيانات:\nنحن نطبق بروتوكولات تشفير معيارية لحماية بيانات المستخدمين. تقع مسؤولية الحفاظ على سرية بيانات الدخول على عاتق المستخدم.\n\n5. إخلاء المسؤولية عن المخاطر:\nالاستثمار في الأصول الملموسة والرقمية ينطوي على مخاطر سوقية متأصلة. النتائج والتوقعات السابقة لا تعتبر مؤشراً مضموناً للنتائج المستقبلية. ننصح جميع المستخدمين بالقيام بالبحث اللازم قبل تخصيص أي رأس مال.',
+          '1. الخدمات المقدمة:\nيوفر كاسبي واجهة رقمية للاستثمار في الذهب والفضة والعقارات. نحن نعتمد أعلى معايير الشفافية والأمان في جميع التداولات.\n\n2. الاشتراك والتفعيل:\nالمشاركة في خطط الاستثمار تتطلب حساباً موثقاً واشتراكاً نشطاً. تبدأ دورات توزيع العوائد بعد اكتمال فترة التفعيل المحددة.\n\n3. الإيداع والسحب:\nتتم تسهيل العمليات المالية عبر شركاء دفع معتمدين. تتم معالجة طلبات السحب وفقاً لشروط السيولة الخاصة بكل خطة استثمارية.\n\n4. حماية البيانات:\nنحن نطبق بروتوكولات تشفير معيارية لحماية بيانات المستخدمين. تقع مسؤولية الحفاظ على سرية بيانات الدخول على عاتق المستخدم.\n\n5. الشروط والإفصاح الاستثماري:\nالاستثمار في الأصول يعتمد على حركة السوق والظروف الاقتصادية. ننصح جميع المستخدمين بالاطلاع على شروط كل خطة قبل التخصيص.',
       // Investment
       'expected_profit': 'العائد التقديري',
       'duration': 'الفترة',
@@ -3313,10 +3318,11 @@ class KasbyTranslations extends Translations {
       'remaining_time': 'الوقت المتبقي',
       'expired': 'منتهية',
       'investment_plans': 'خطط الاستثمار',
+      'active_investment': 'استثمارك النشط',
       'up_to_profit': 'الهدف: نمو @profit',
       'days': '@count يوم',
       'risk_disclaimer':
-          'الاستثمار ينطوي على مخاطر. يرجى القيام بالبحث الخاص بك.',
+          'خطط لاستثماراتك بعناية بناءً على أهدافك المالية.',
       'points_history': 'سجل معاملات KSP',
       'how_to_use_points': 'كيفية استخدام KSP؟',
       'points_guide':
@@ -3383,7 +3389,7 @@ class KasbyTranslations extends Translations {
       'no_loan_history': 'لا يوجد سجل سلفات سابق',
       'no_active_loans': 'لا توجد سلفات نشطة حالياً',
       'points_label_short': 'KSP',
-      'release_countdown': 'الربح القادم خلال: ',
+      'release_countdown': 'أقرب ربح خلال: ',
       'claim_rewards': 'استلام الأرباح الآن',
       'due': 'قيد المعالجة...',
       'repay_active_loans': 'سداد السلفات النشطة',
@@ -4112,7 +4118,7 @@ class KasbyTranslations extends Translations {
       'no_portfolio_data_desc':
           'ابدأ الاستثمار لرؤية تحليلات محفظتك ومقاييس الأداء هنا.',
       'portfolio_insight_diversify':
-          'فكّر في التنويع عبر خطط استثمارية أكثر لتقليل المخاطر.',
+          'فكّر في التنويع عبر خطط استثمارية أكثر لتحسين نمو المحفظة.',
       'portfolio_insight_growth':
           'محفظتك تنمو بشكل جيد! استمر في استراتيجيتك الحالية.',
       'portfolio_insight_reinvest':
@@ -4183,7 +4189,7 @@ class KasbyTranslations extends Translations {
           'إيداع، سحب، تحويل، ودفع QR — كل ذلك بلمسة واحدة.',
       'tour_home_investments_title': 'خطط الاستثمار',
       'tour_home_investments_desc':
-          'تصفّح فرص الاستثمار مع العائد المتوقع ومستوى المخاطر والمدة.',
+          'تصفّح فرص الاستثمار مع العائد المتوقع والمدة.',
       'tour_home_ksp_title': 'مكافآت KSP',
       'tour_home_ksp_desc':
           'اكسب نقاط KSP من خلال الأنشطة وأنفقها داخل منظومة كاسبي.',
@@ -4225,7 +4231,7 @@ class KasbyTranslations extends Translations {
       'tour_label_referral': 'جولة الإحالات',
       'tour_label_profile': 'جولة الملف والأمان',
       'tour_invest_plans_title': 'خطط الاستثمار',
-      'tour_invest_plans_desc': 'تصفّح الخطط حسب العائد والمدة ومستوى المخاطر.',
+      'tour_invest_plans_desc': 'تصفّح الخطط حسب العائد والمدة.',
       'tour_invest_active_title': 'تصفية الخطط',
       'tour_invest_active_desc':
           'استخدم الفلاتر للعثور على استثمارات قصيرة أو متوسطة أو طويلة الأجل.',
@@ -4515,8 +4521,6 @@ class KasbyTranslations extends Translations {
       // ── Earnings Analytics ──
       'earnings_analytics': 'تحليلات الأرباح',
       'my_daily_earnings': 'أرباحي اليومية',
-      'statistics': 'الإحصائيات',
-      'total_earnings': 'إجمالي الأرباح',
       'today_earnings': 'أرباح اليوم',
       'highest_daily': 'أعلى يومي',
       'average_daily': 'المتوسط اليومي',
@@ -4524,13 +4528,11 @@ class KasbyTranslations extends Translations {
       'source_breakdown': 'تقسيم المصادر',
       'earnings_trend': 'اتجاه الأرباح',
       'earnings_timeline': 'الجدول الزمني للأرباح',
-      'today': 'اليوم',
       'last_7d': 'آخر 7 أيام',
       'last_30d': 'آخر 30 يوم',
       'this_month': 'هذا الشهر',
       'last_month': 'الشهر الماضي',
       'custom': 'نطاق مخصص',
-      'investments': 'الاستثمارات',
       'lucky_wheel': 'عجلة الحظ',
       'referral_rewards': 'مكافآت الإحالة',
       'registration_bonuses': 'مكافآت التسجيل',
@@ -4538,13 +4540,10 @@ class KasbyTranslations extends Translations {
       'investment_returns': 'عوائد الاستثمار',
       'no_earnings_data': 'لا توجد بيانات أرباح',
       'error_loading_analytics': 'خطأ في تحميل التحليلات',
-      'unknown_error': 'خطأ غير معروف',
       'no_data_received': 'لم يتم استلام بيانات',
-      'yesterday': 'أمس',
       'day_ago': 'يوم مضى',
       'days_ago': 'أيام مضت',
       'last_24h': 'آخر 24 ساعة',
-      'daily_profit_distribution': 'توزيع الأرباح اليومية',
       'investment_matured_principal_returned': 'استحقاق الاستثمار - استعادة رأس المال',
       'referral_commission_from_investment': 'عمولة إحالة من استثمار @name',
       'referral_commission_simple': 'عمولة إحالة 💰',
@@ -4553,9 +4552,6 @@ class KasbyTranslations extends Translations {
       'admin_investment_pending_title': '📈 استثمار جديد بانتظار المراجعة',
       'user_invested_amount': '@name استثمر @amount USD',
       'user_investment_matured_msg': 'استثمار @name بقيمة @amount اكتمل.',
-      'gold_sector': 'ذهب (@percent%)',
-      'silver_sector': 'فضة (@percent%)',
-      'real_estate_sector': 'عقارات (@percent%)',
       'other_sector': 'أخرى (@percent%)',
     },
   };

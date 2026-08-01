@@ -94,7 +94,11 @@ class HomeQuickActions extends StatelessWidget {
         {
           'icon': Icons.pie_chart_rounded,
           'label': 'my_investments'.tr,
-          'onTap': () => Get.toNamed(Routes.myInvestments),
+          'onTap': () {
+            if (Get.currentRoute != Routes.myInvestments) {
+              Get.toNamed(Routes.myInvestments);
+            }
+          },
         },
         {
           'icon': Icons.handshake_rounded,

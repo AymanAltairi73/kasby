@@ -375,6 +375,12 @@ class NotificationNavigationService {
       }
     }
 
+    if (route == Routes.myInvestments || entityType == 'investment' || data['type'] == 'daily_profit') {
+      if (entityId.isNotEmpty) {
+        return {'investment_id': entityId, 'from_notification': true};
+      }
+    }
+
     return null;
   }
 

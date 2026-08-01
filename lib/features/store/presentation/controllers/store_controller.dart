@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
@@ -35,11 +37,24 @@ class StoreController extends GetxController {
   final RxString searchQuery = ''.obs;
   final RxDouble usdBalance = 0.0.obs;
   final RxDouble kspBalance = 0.0.obs;
+  final List<StreamSubscription<dynamic>> _subscriptions = [];
+  Timer? _reloadDebounce;
 
   @override
   void onInit() {
     super.onInit();
     refreshAll();
+    _subscribeToMarketplaceChanges();
+  }
+
+  @override
+  void onClose() {
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
+    _subscriptions.clear();
+    _reloadDebounce?.cancel();
+    super.onClose();
   }
 
   Future<void> refreshAll() async {
@@ -133,6 +148,31 @@ class StoreController extends GetxController {
 
   Future<void> fetchOrders() async {
     orders.value = await _service.fetchOrders();
+  }
+
+  void _subscribeToMarketplaceChanges() {
+    const tables = <String>[
+      'marketplace_categories',
+      'marketplace_products',
+      'marketplace_digital_codes',
+      'marketplace_banners',
+      'marketplace_orders',
+    ];
+
+    for (final table in tables) {
+      _subscriptions.add(
+        SupabaseService.client
+            .from(table)
+            .stream(primaryKey: ['id'])
+            .listen((_) {
+          _reloadDebounce?.cancel();
+          _reloadDebounce =
+              Timer(const Duration(milliseconds: 500), refreshAll);
+        }, onError: (error) {
+          debugPrint('[STORE_CONTROLLER] Realtime error on $table: $error');
+        }),
+      );
+    }
   }
 
   void selectCategory(StoreCategoryModel category) {

@@ -27,7 +27,7 @@ Access to certain features—including deposits, withdrawals, investments, and h
 Your Kasby wallet displays balances in supported currencies. Wallet balances reflect confirmed transactions only. Kasby is not a licensed bank; wallet funds are held and processed according to Platform rules and partner arrangements. You must not use wallets for unlawful transfers, money laundering, or unauthorized third-party access.
 
 4. INVESTMENTS
-Investment products offered on Kasby involve financial risk, including possible loss of principal. Projected returns, APY figures, and performance indicators are estimates—not guarantees. Each plan has specific terms, lock-in periods, minimum amounts, and eligibility requirements disclosed before confirmation. By investing, you accept the plan-specific terms and applicable risk disclosures.
+Investment products offered on Kasby feature market-linked growth. Projected returns, APY figures, and performance indicators are estimated platform targets—not guarantees. Each plan has specific terms, lock-in periods, minimum amounts, and eligibility requirements disclosed before confirmation. By investing, you accept the plan-specific terms and applicable disclosures.
 
 5. KSP CURRENCY
 Kasby Points (KSP) are platform reward units, not legal tender or securities. KSP may be earned through referrals, check-ins, promotions, investment activity, or other campaigns. Redemption value, transferability, expiry, and conversion rules are defined by Kasby and may change with notice where required. KSP has no guaranteed cash value outside Platform-approved uses.
@@ -72,7 +72,7 @@ You may request account closure subject to settlement of outstanding obligations
 Personal data is processed according to our Privacy Policy, incorporated by reference. By using Kasby, you consent to data practices described therein.
 
 19. DATA PROTECTION
-We implement administrative, technical, and organizational measures to protect personal and financial data. No system is completely secure; you share information at your own risk beyond our reasonable controls.
+We implement administrative, technical, and organizational measures to protect personal and financial data. No system is completely secure; you share information under standard user responsibilities beyond our reasonable controls.
 
 20. SECURITY
 Enable strong passwords, protect your device, and use available security features such as biometrics and step-up OTP for sensitive actions. Kasby will never ask for your password by phone or unofficial channels.
@@ -133,7 +133,7 @@ By using Kasby, you acknowledge that you have read, understood, and agree to the
 تعرض محفظة كاسبي الأرصدة بالعملات المدعومة. تعكس الأرصدة المعاملات المؤكدة فقط. كاسبي ليست بنكاً مرخصاً؛ تُدار الأموال وفق قواعد المنصة وترتيبات الشركاء. يُحظر استخدام المحفظة للتحويلات غير المشروعة أو غسل الأموال.
 
 4. الاستثمارات
-تنطوي منتجات الاستثمار على مخاطر مالية، بما في ذلك احتمال خسارة رأس المال. العوائد المتوقعة ونسب APY مؤشرات تقديرية وليست ضمانات. لكل خطة شروط وفترة إغلاق وحد أدنى ومتطلبات أهلية. بالاستثمار، توافق على شروط الخطة وإ disclosures المخاطر.
+تتميز منتجات الاستثمار بعوائد مرتبطة بحركة السوق والنمو المالي. العوائد المتوقعة ونسب APY مؤشرات تقديرية وليست ضمانات ثابتة. لكل خطة شروط وفترة إغلاق وحد أدنى ومتطلبات أهلية. بالاستثمار، توافق على شروط الخطة وإفصاحات الخدمة.
 
 5. عملة KSP
 نقاط كاسبي (KSP) وحدات مكافآت داخل المنصة وليست عملة قانونية أو أوراقاً مالية. تُكتسب KSP عبر الإحالات والتسجيل اليومي والعروض والاستثمار وغيرها. قواعد الاستبدال والتحويل والانتهاء تحددها كاسبي وقد تتغير مع إشعار مناسب.
@@ -233,7 +233,7 @@ Kasby ("we", "us") respects your privacy. This Privacy Policy explains how we co
 We collect information you provide and data generated through your use of the Platform, including account details, transaction records, device signals, and support communications.
 
 2. PHONE NUMBERS
-Phone numbers are used for account registration, authentication, SMS OTP verification, withdrawal security, agent coordination, and fraud prevention. We may compare your number against carrier and risk databases where permitted.
+Phone numbers are used for account registration, authentication, SMS OTP verification, withdrawal security, agent coordination, and fraud prevention. We may compare your number against carrier and verification databases where permitted.
 
 3. EMAIL ADDRESSES
 Email addresses are used for account creation, verification, password recovery, transaction notifications, marketing (where opted in), and legal notices.

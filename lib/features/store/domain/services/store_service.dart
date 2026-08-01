@@ -4,6 +4,7 @@ import 'package:kasby/features/store/domain/models/store_banner_model.dart';
 import 'package:kasby/features/store/domain/models/store_category_model.dart';
 import 'package:kasby/features/store/domain/models/store_order_model.dart';
 import 'package:kasby/features/store/domain/models/store_product_model.dart';
+import 'package:uuid/uuid.dart';
 
 class StoreService {
   final _client = SupabaseService.client;
@@ -129,11 +130,13 @@ class StoreService {
     required String paymentMethod,
   }) async {
     try {
+      final idempotencyKey = const Uuid().v4();
       final response = await _client.rpc(
         'fn_marketplace_buy_product',
         params: {
           'p_product_id': productId,
           'p_payment_method': paymentMethod,
+          'p_idempotency_key': idempotencyKey,
         },
       );
       return Map<String, dynamic>.from(response as Map);

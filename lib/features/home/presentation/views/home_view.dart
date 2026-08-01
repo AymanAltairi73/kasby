@@ -14,6 +14,8 @@ import 'package:kasby/features/home/presentation/widgets/home_recent_transaction
 import 'package:kasby/core/tour/tour_controller.dart';
 import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/features/home/presentation/widgets/home_slider.dart';
+// import 'package:kasby/core/widgets/investment_plan_card.dart';
+// import 'package:kasby/core/utils/number_formatter.dart';
 import 'package:kasby/routes/app_routes.dart';
 
 class HomeView extends StatefulWidget {
@@ -122,6 +124,85 @@ class _HomeViewState extends State<HomeView> {
                       child: const HomePortfolioInsights(),
                     ),
                     const SizedBox(height: 24),
+                    // // ── Active Investment Card ──
+                    // Obx(() {
+                    //   final activeInvs = homeController.myInvestments
+                    //       .where((inv) => inv.status == 'active')
+                    //       .toList();
+                    //   if (activeInvs.isEmpty) return const SizedBox.shrink();
+
+                    //   final latestActive = activeInvs.first;
+                    //   final isAr = Get.locale?.languageCode == 'ar';
+                    //   final plan = latestActive.investment;
+                    //   final nameAr = plan?.nameAr;
+                    //   final nameEn = plan?.nameEn;
+                    //   final String planName;
+                    //   if (isAr == true) {
+                    //     if (nameAr != null && nameAr.isNotEmpty) {
+                    //       planName = nameAr;
+                    //     } else if (nameEn != null && nameEn.isNotEmpty) {
+                    //       planName = nameEn;
+                    //     } else {
+                    //       planName = 'خطة استثمارية';
+                    //     }
+                    //   } else {
+                    //     if (nameEn != null && nameEn.isNotEmpty) {
+                    //       planName = nameEn;
+                    //     } else if (nameAr != null && nameAr.isNotEmpty) {
+                    //       planName = nameAr;
+                    //     } else {
+                    //       planName = 'Investment Plan';
+                    //     }
+                    //   }
+
+                    //   final planImageName = (nameEn ?? nameAr ?? '').toLowerCase();
+                    //   String imagePath;
+                    //   if (planImageName.contains('gold') || planImageName.contains('ذهب')) {
+                    //     imagePath = 'assets/images/gold.png';
+                    //   } else if (planImageName.contains('silver') || planImageName.contains('sliver') || planImageName.contains('فض')) {
+                    //     imagePath = 'assets/images/sliver.png';
+                    //   } else if (planImageName.contains('real') || planImageName.contains('estate') || planImageName.contains('عقار')) {
+                    //     imagePath = 'assets/images/real_estate.png';
+                    //   } else {
+                    //     imagePath = 'assets/images/gold.png';
+                    //   }
+
+                    //   return Column(
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: [
+                    //       HomeSectionHeader(
+                    //         title: 'active_investment'.tr,
+                    //         onSeeAll: () {
+                    //           if (Get.currentRoute != Routes.myInvestments) {
+                    //             Get.toNamed(Routes.myInvestments);
+                    //           }
+                    //         },
+                    //       ),
+                    //       const SizedBox(height: 12),
+                    //       InvestmentPlanCard(
+                    //         id: plan?.id ?? latestActive.id,
+                    //         title: planName,
+                    //         profit: 'up_to_profit'.trParams({
+                    //           'profit': KasbyNumberFormatter.formatProfitPercentage(
+                    //             latestActive.profitPercentage,
+                    //           ),
+                    //         }),
+                    //         minAmount: '\$${latestActive.amount.toStringAsFixed(0)}',
+                    //         imagePath: imagePath,
+                    //         color: AppColors.darkGold,
+                    //       ),
+                    //       const SizedBox(height: 24),
+                    //     ],
+                    //   )
+                    //       .animate(autoPlay: motion)
+                    //       .fadeIn(
+                    //         delay: KasbyMotion.duration(
+                    //           context,
+                    //           const Duration(milliseconds: 700),
+                    //         ),
+                    //       )
+                    //       .slideY(begin: 0.1, end: 0);
+                    // }),
                     HomeQuickActions(
                       tourKey: TourTargetKeys.quickActions,
                       marketplaceKey: TourTargetKeys.marketplace,
