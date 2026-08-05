@@ -24,7 +24,8 @@ class StoreController extends GetxController {
   final RxList<StoreBannerModel> banners = <StoreBannerModel>[].obs;
   final RxList<StoreCategoryModel> categories = <StoreCategoryModel>[].obs;
   final RxList<StoreProductModel> allProducts = <StoreProductModel>[].obs;
-  final RxList<StoreProductModel> topSellingProducts = <StoreProductModel>[].obs;
+  final RxList<StoreProductModel> topSellingProducts =
+      <StoreProductModel>[].obs;
   final RxList<StoreProductModel> latestProducts = <StoreProductModel>[].obs;
   final RxList<StoreProductModel> offerProducts = <StoreProductModel>[].obs;
   final RxList<StoreProductModel> suggestedProducts = <StoreProductModel>[].obs;
@@ -126,8 +127,7 @@ class StoreController extends GetxController {
 
     topSellingProducts.value = products.where((p) => p.isTopSelling).toList();
     latestProducts.value = products.where((p) => p.isNew).toList();
-    offerProducts.value =
-        products.where((p) => p.discountPercent > 0).toList();
+    offerProducts.value = products.where((p) => p.discountPercent > 0).toList();
     suggestedProducts.value = products.where((p) => p.isFeatured).toList();
 
     // Fallbacks if active flags are empty
@@ -143,7 +143,9 @@ class StoreController extends GetxController {
   }
 
   Future<void> fetchCategoryProducts(String categoryId) async {
-    categoryProducts.value = await _service.fetchProducts(categoryId: categoryId);
+    categoryProducts.value = await _service.fetchProducts(
+      categoryId: categoryId,
+    );
   }
 
   Future<void> fetchOrders() async {
@@ -164,13 +166,20 @@ class StoreController extends GetxController {
         SupabaseService.client
             .from(table)
             .stream(primaryKey: ['id'])
-            .listen((_) {
-          _reloadDebounce?.cancel();
-          _reloadDebounce =
-              Timer(const Duration(milliseconds: 500), refreshAll);
-        }, onError: (error) {
-          debugPrint('[STORE_CONTROLLER] Realtime error on $table: $error');
-        }),
+            .listen(
+              (_) {
+                _reloadDebounce?.cancel();
+                _reloadDebounce = Timer(
+                  const Duration(milliseconds: 500),
+                  refreshAll,
+                );
+              },
+              onError: (error) {
+                debugPrint(
+                  '[STORE_CONTROLLER] Realtime error on $table: $error',
+                );
+              },
+            ),
       );
     }
   }

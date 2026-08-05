@@ -168,11 +168,16 @@ class TourManager {
       WidgetsBinding.instance.addPostFrameCallback((_) => completer.complete());
       await completer.future;
 
-      await TourTargetReadiness.waitFor(steps[safeStart].targetKey, maxFrames: 12);
+      await TourTargetReadiness.waitFor(
+        steps[safeStart].targetKey,
+        maxFrames: 12,
+      );
       try {
         coachMark.goTo(safeStart);
       } catch (e, stack) {
-        debugPrint('[TourManager] Error navigating to step $safeStart: $e\n$stack');
+        debugPrint(
+          '[TourManager] Error navigating to step $safeStart: $e\n$stack',
+        );
       }
     }
 

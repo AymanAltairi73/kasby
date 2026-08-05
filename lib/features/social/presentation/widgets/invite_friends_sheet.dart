@@ -18,7 +18,8 @@ class InviteFriendsSheet extends StatelessWidget {
     );
   }
 
-  String get _referralCode => HomeController.to.profile.value?.referralCode ?? '';
+  String get _referralCode =>
+      HomeController.to.profile.value?.referralCode ?? '';
   String get _referralLink => 'https://kasby.app/join?ref=$_referralCode';
   String get _shareMessage =>
       '${'invite_share_text'.tr} $_referralCode\n$_referralLink';
@@ -100,7 +101,8 @@ class InviteFriendsSheet extends StatelessWidget {
           actionTile(
             icon: Icons.share_rounded,
             label: 'share_referral_link'.tr,
-            onTap: () => SharePlus.instance.share(ShareParams(text: _shareMessage)),
+            onTap: () =>
+                SharePlus.instance.share(ShareParams(text: _shareMessage)),
           ),
           actionTile(
             icon: Icons.code_rounded,

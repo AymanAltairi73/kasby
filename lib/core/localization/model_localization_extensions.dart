@@ -26,4 +26,3 @@ extension TimelineItemLocalization on TimelineItem {
   String get localizedDescription =>
       ContentLocalizationService.resolve(description, context: 'timeline_item');
 }
-

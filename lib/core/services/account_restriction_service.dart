@@ -53,16 +53,15 @@ class AccountRestrictionService extends GetxService {
   }
 
   String get walletFrozenMessage => 'wallet_frozen_message'.trParams({
-        'reason': walletFrozenReason?.trim().isNotEmpty == true
-            ? walletFrozenReason!.trim()
-            : 'account_restriction_reason_unspecified'.tr,
-      });
+    'reason': walletFrozenReason?.trim().isNotEmpty == true
+        ? walletFrozenReason!.trim()
+        : 'account_restriction_reason_unspecified'.tr,
+  });
 
   String get restrictionTitle => 'account_restricted_title'.tr;
 
-  String get restrictionMessage => 'account_restricted_message'.trParams({
-        'reason': restrictionReason,
-      });
+  String get restrictionMessage =>
+      'account_restricted_message'.trParams({'reason': restrictionReason});
 
   void openSupportChat() {
     if (Get.currentRoute != Routes.supportChat) {
@@ -176,10 +175,7 @@ class AccountRestrictionService extends GetxService {
           style: TextStyle(color: Colors.white.withValues(alpha: 0.85)),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('ok'.tr),
-          ),
+          TextButton(onPressed: () => Get.back(), child: Text('ok'.tr)),
           TextButton.icon(
             onPressed: () {
               Get.back();
@@ -220,10 +216,7 @@ class AccountRestrictionService extends GetxService {
           style: TextStyle(color: Colors.white.withValues(alpha: 0.85)),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('ok'.tr),
-          ),
+          TextButton(onPressed: () => Get.back(), child: Text('ok'.tr)),
           TextButton.icon(
             onPressed: () {
               Get.back();
@@ -257,7 +250,10 @@ class AccountRestrictionService extends GetxService {
           backgroundColor: AppColors.surface,
           title: Text(
             'account_deleted_by_admin_title'.tr,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: Text(
             'account_deleted_by_admin_message'.tr,

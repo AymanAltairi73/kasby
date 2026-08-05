@@ -17,10 +17,7 @@ class TourTargetReadiness {
   }
 
   /// Waits up to [maxFrames] rendered frames for [key] to become ready.
-  static Future<bool> waitFor(
-    GlobalKey key, {
-    int maxFrames = 120,
-  }) async {
+  static Future<bool> waitFor(GlobalKey key, {int maxFrames = 120}) async {
     if (isReady(key)) return true;
 
     for (var frame = 0; frame < maxFrames; frame++) {

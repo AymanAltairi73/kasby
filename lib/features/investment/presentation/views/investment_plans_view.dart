@@ -32,9 +32,17 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
     final list = plans.toList();
     switch (filterBy.value) {
       case 'short':
-        return list.where((p) => (p.durationDays ?? 0) > 0 && (p.durationDays ?? 0) < 30).toList();
+        return list
+            .where(
+              (p) => (p.durationDays ?? 0) > 0 && (p.durationDays ?? 0) < 30,
+            )
+            .toList();
       case 'medium':
-        return list.where((p) => (p.durationDays ?? 0) >= 30 && (p.durationDays ?? 0) <= 90).toList();
+        return list
+            .where(
+              (p) => (p.durationDays ?? 0) >= 30 && (p.durationDays ?? 0) <= 90,
+            )
+            .toList();
       case 'long':
         return list.where((p) => (p.durationDays ?? 0) > 90).toList();
       case 'all':
@@ -50,7 +58,9 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
         list.sort((a, b) => a.minAmount.compareTo(b.minAmount));
         break;
       case 'duration':
-        list.sort((a, b) => (a.durationDays ?? 0).compareTo(b.durationDays ?? 0));
+        list.sort(
+          (a, b) => (a.durationDays ?? 0).compareTo(b.durationDays ?? 0),
+        );
         break;
       case 'roi':
       default:
@@ -169,9 +179,7 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('investment_plans'.tr),
-      ),
+      appBar: AppBar(title: Text('investment_plans'.tr)),
       body: RefreshIndicator(
         color: AppColors.darkGold,
         onRefresh: _fetchPlans,
@@ -181,7 +189,8 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
               padding: const EdgeInsets.all(20),
               itemCount: 3,
               separatorBuilder: (_, __) => const SizedBox(height: 20),
-              itemBuilder: (_, __) => KasbyShimmer.investmentPlanCard(isDark: isDark),
+              itemBuilder: (_, __) =>
+                  KasbyShimmer.investmentPlanCard(isDark: isDark),
             );
           }
 
@@ -213,61 +222,70 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
           return KeyedSubtree(
             key: TourTargetKeys.investPlansList,
             child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              KeyedSubtree(
-                key: TourTargetKeys.investActiveTab,
-                child: _buildFilterChips(isDark),
-              ),
-              const SizedBox(height: KasbySpacing.md),
-              _buildSortBar(isDark),
-              const SizedBox(height: KasbySpacing.lg),
-              ...sorted.asMap().entries.map((entry) {
-                final index = entry.key;
-                final plan = entry.value;
-                final amounts = plan.availableAmounts
-                        ?.map((e) => '\$${(e as num).toInt()}')
-                        .toList() ??
-                    [];
+              padding: const EdgeInsets.all(20),
+              children: [
+                KeyedSubtree(
+                  key: TourTargetKeys.investActiveTab,
+                  child: _buildFilterChips(isDark),
+                ),
+                const SizedBox(height: KasbySpacing.md),
+                _buildSortBar(isDark),
+                const SizedBox(height: KasbySpacing.lg),
+                ...sorted.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final plan = entry.value;
+                  final amounts =
+                      plan.availableAmounts
+                          ?.map((e) => '\$${(e as num).toInt()}')
+                          .toList() ??
+                      [];
 
-                final planTitle = Get.locale?.languageCode == 'ar'
-                    ? plan.nameAr
-                    : (plan.nameEn ?? plan.nameAr);
-                final planWidget = Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Semantics(
-                    button: true,
-                    label: planTitle,
-                    child: InvestmentPlanCard(
-                        id: plan.id,
-                        title: planTitle,
-                        profit: _formatProfit(plan.profitPercentage),
-                        rawProfitPercentage: plan.profitPercentage.toDouble(),
-                        minAmount: '\$${plan.minAmount.toInt()}',
-                        imagePath: _getPlanImage(plan.nameEn ?? plan.nameAr),
-                        color: _planColor(plan.riskLevel),
-                        riskLevel: plan.riskLevel,
-                        amounts: amounts,
-                        duration: _formatDuration(plan.durationDays),
-                      ),
-                  ).animate(autoPlay: KasbyMotion.enabled(context))
-                      .fadeIn(
-                        delay: KasbyMotion.duration(context, Duration(milliseconds: index * 120)),
-                        duration: KasbyMotion.duration(context, 500.ms),
-                      )
-                      .slideY(begin: 0.2, end: 0),
-                );
-                if (index == 0) {
-                  return KeyedSubtree(
-                    key: TourTargetKeys.investClaimRewards,
-                    child: planWidget,
+                  final planTitle = Get.locale?.languageCode == 'ar'
+                      ? plan.nameAr
+                      : (plan.nameEn ?? plan.nameAr);
+                  final planWidget = Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child:
+                        Semantics(
+                              button: true,
+                              label: planTitle,
+                              child: InvestmentPlanCard(
+                                id: plan.id,
+                                title: planTitle,
+                                profit: _formatProfit(plan.profitPercentage),
+                                rawProfitPercentage: plan.profitPercentage
+                                    .toDouble(),
+                                minAmount: '\$${plan.minAmount.toInt()}',
+                                imagePath: _getPlanImage(
+                                  plan.nameEn ?? plan.nameAr,
+                                ),
+                                color: _planColor(plan.riskLevel),
+                                riskLevel: plan.riskLevel,
+                                amounts: amounts,
+                                duration: _formatDuration(plan.durationDays),
+                              ),
+                            )
+                            .animate(autoPlay: KasbyMotion.enabled(context))
+                            .fadeIn(
+                              delay: KasbyMotion.duration(
+                                context,
+                                Duration(milliseconds: index * 120),
+                              ),
+                              duration: KasbyMotion.duration(context, 500.ms),
+                            )
+                            .slideY(begin: 0.2, end: 0),
                   );
-                }
-                return planWidget;
-              }),
-             // _buildRiskDisclosure(isDark),
-            ],
-          ),
+                  if (index == 0) {
+                    return KeyedSubtree(
+                      key: TourTargetKeys.investClaimRewards,
+                      child: planWidget,
+                    );
+                  }
+                  return planWidget;
+                }),
+                // _buildRiskDisclosure(isDark),
+              ],
+            ),
           );
         }),
       ),
@@ -308,8 +326,7 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
                     selectedColor: AppColors.darkGold.withValues(alpha: 0.2),
                     labelStyle: TextStyle(
                       fontSize: 12,
-                      fontWeight:
-                          selected ? FontWeight.bold : FontWeight.w500,
+                      fontWeight: selected ? FontWeight.bold : FontWeight.w500,
                       color: selected
                           ? AppColors.darkGold
                           : AppColors.textSecondary,

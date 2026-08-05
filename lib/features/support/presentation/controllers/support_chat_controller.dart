@@ -17,7 +17,7 @@ class SupportChatController extends GetxController {
   /// When set, opens a P2P chat with a friend (uses `start_social_chat` RPC).
   final String? friendId;
   final String? friendName;
-  
+
   // Agent Chat Variables
   final String? agentUserId;
   final String? agentName;
@@ -26,7 +26,7 @@ class SupportChatController extends GetxController {
   final Map<String, dynamic>? initialConversation;
 
   SupportChatController({
-    this.friendId, 
+    this.friendId,
     this.friendName,
     this.agentUserId,
     this.agentName,
@@ -48,7 +48,7 @@ class SupportChatController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isTyping = false.obs;
   final RxBool isUploading = false.obs;
-  
+
   // Presence & Pagination
   final RxBool isRecipientOnline = false.obs;
   final RxnString recipientAvatarUrl = RxnString();
@@ -86,13 +86,17 @@ class SupportChatController extends GetxController {
       currentSearchIndex.value = 0;
       return;
     }
-    
-    final matches = messages.where((m) => 
-      m.messageType == 'text' && 
-      !m.isDeleted && 
-      m.content.toLowerCase().contains(query.toLowerCase())
-    ).map((m) => m.id).toList();
-    
+
+    final matches = messages
+        .where(
+          (m) =>
+              m.messageType == 'text' &&
+              !m.isDeleted &&
+              m.content.toLowerCase().contains(query.toLowerCase()),
+        )
+        .map((m) => m.id)
+        .toList();
+
     searchResultIds.value = matches;
     currentSearchIndex.value = matches.isNotEmpty ? 0 : -1;
   }
@@ -114,6 +118,7 @@ class SupportChatController extends GetxController {
       currentSearchIndex.value = searchResultIds.length - 1; // Wrap around
     }
   }
+
   final ImagePicker _picker = ImagePicker();
 
   RealtimeChannel? _messageChannel;
@@ -337,11 +342,11 @@ class SupportChatController extends GetxController {
     if (targetId != null) {
       final presenceService = Get.find<PresenceService>();
       final String nonNullTargetId = targetId;
-      
+
       // Update initially
       isRecipientOnline.value = presenceService.isUserOnline(nonNullTargetId);
       _fetchRecipientProfile(nonNullTargetId);
-      
+
       // Listen to changes
       _presenceWorker = ever(presenceService.onlineUsers, (_) {
         final isOnline = presenceService.isUserOnline(nonNullTargetId);
@@ -360,7 +365,7 @@ class SupportChatController extends GetxController {
           .select('avatar_url, last_seen_at')
           .eq('id', targetId)
           .maybeSingle();
-      
+
       if (response != null) {
         recipientAvatarUrl.value = response['avatar_url'] as String?;
         if (response['last_seen_at'] != null) {
@@ -368,7 +373,14 @@ class SupportChatController extends GetxController {
         }
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: '_fetchRecipientProfile', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: '_fetchRecipientProfile',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -396,7 +408,9 @@ class SupportChatController extends GetxController {
           .range(_currentPage * _pageSize, (_currentPage + 1) * _pageSize - 1);
 
       final List<dynamic> data = response;
-      final newMessages = data.map((json) => ChatMessageModel.fromJson(json)).toList();
+      final newMessages = data
+          .map((json) => ChatMessageModel.fromJson(json))
+          .toList();
 
       if (newMessages.length < _pageSize) {
         hasMore.value = false;
@@ -415,7 +429,14 @@ class SupportChatController extends GetxController {
       _markAllRead();
       _markMessagesDelivered();
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: '_loadMessages', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: '_loadMessages',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingMore.value = false;
     }
@@ -433,7 +454,7 @@ class SupportChatController extends GetxController {
           .select('pinned_message_id')
           .eq('id', _conversationId!)
           .maybeSingle();
-      
+
       if (conversation != null && conversation['pinned_message_id'] != null) {
         final pinnedMsgId = conversation['pinned_message_id'] as String;
         final pinnedMsg = await SupabaseService.client
@@ -441,7 +462,7 @@ class SupportChatController extends GetxController {
             .select('*')
             .eq('id', pinnedMsgId)
             .maybeSingle();
-        
+
         if (pinnedMsg != null) {
           pinnedMessage.value = ChatMessageModel.fromJson(pinnedMsg);
         }
@@ -449,7 +470,14 @@ class SupportChatController extends GetxController {
         pinnedMessage.value = null;
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: '_loadPinnedMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: '_loadPinnedMessage',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -483,8 +511,11 @@ class SupportChatController extends GetxController {
               if (isSocialChat) {
                 fromOther = newMsg.senderId != SupabaseService.userId;
               } else if (isAgentChat) {
-                final isCurrentAgent = SupabaseService.userId != _conversationUserId;
-                fromOther = isCurrentAgent ? (newMsg.senderType == 'user') : (newMsg.senderType == 'agent');
+                final isCurrentAgent =
+                    SupabaseService.userId != _conversationUserId;
+                fromOther = isCurrentAgent
+                    ? (newMsg.senderType == 'user')
+                    : (newMsg.senderType == 'agent');
               } else {
                 fromOther = newMsg.senderType != 'user';
               }
@@ -528,20 +559,30 @@ class SupportChatController extends GetxController {
         .from('chat_conversations')
         .stream(primaryKey: ['id'])
         .eq('id', _conversationId!)
-        .listen((data) {
-          if (data.isNotEmpty) {
-            isTyping.value = false;
-            // Check if pinned message changed
-            final conv = data.first;
-            if (conv['pinned_message_id'] != null) {
-              _loadPinnedMessage();
-            } else {
-              pinnedMessage.value = null;
+        .listen(
+          (data) {
+            if (data.isNotEmpty) {
+              isTyping.value = false;
+              // Check if pinned message changed
+              final conv = data.first;
+              if (conv['pinned_message_id'] != null) {
+                _loadPinnedMessage();
+              } else {
+                pinnedMessage.value = null;
+              }
             }
-          }
-        }, onError: (error, stack) {
-          SafeGetx.debugTrace(className: 'SupportChatController', method: '_listenToConversation', feature: 'Support', status: 'ERROR', error: error, stackTrace: stack);
-        });
+          },
+          onError: (error, stack) {
+            SafeGetx.debugTrace(
+              className: 'SupportChatController',
+              method: '_listenToConversation',
+              feature: 'Support',
+              status: 'ERROR',
+              error: error,
+              stackTrace: stack,
+            );
+          },
+        );
   }
 
   void reconnectStreams() {
@@ -554,21 +595,23 @@ class SupportChatController extends GetxController {
   void _setupTypingBroadcast() {
     _typingChannel = SupabaseService.client.channel('chat_typing');
 
-    _typingChannel!.onBroadcast(
-      event: 'typing',
-      callback: (payload) {
-        final userId = payload['user_id'] as String?;
-        final conversationId = payload['conversation_id'] as String?;
-        final currentUserId = SupabaseService.userId;
+    _typingChannel!
+        .onBroadcast(
+          event: 'typing',
+          callback: (payload) {
+            final userId = payload['user_id'] as String?;
+            final conversationId = payload['conversation_id'] as String?;
+            final currentUserId = SupabaseService.userId;
 
-        if (userId != null &&
-            conversationId != null &&
-            conversationId == _conversationId &&
-            userId != currentUserId) {
-          _handleIncomingTyping();
-        }
-      },
-    ).subscribe();
+            if (userId != null &&
+                conversationId != null &&
+                conversationId == _conversationId &&
+                userId != currentUserId) {
+              _handleIncomingTyping();
+            }
+          },
+        )
+        .subscribe();
   }
 
   void _handleIncomingTyping() {
@@ -591,10 +634,7 @@ class SupportChatController extends GetxController {
 
     _typingChannel?.sendBroadcastMessage(
       event: 'typing',
-      payload: {
-        'user_id': currentUserId,
-        'conversation_id': _conversationId,
-      },
+      payload: {'user_id': currentUserId, 'conversation_id': _conversationId},
     );
 
     // Throttle broadcast to once every 2 seconds
@@ -616,7 +656,9 @@ class SupportChatController extends GetxController {
 
     final String senderType;
     if (isAgentChat) {
-      senderType = (SupabaseService.userId == _conversationUserId) ? 'user' : 'agent';
+      senderType = (SupabaseService.userId == _conversationUserId)
+          ? 'user'
+          : 'agent';
     } else {
       senderType = 'user';
     }
@@ -636,7 +678,7 @@ class SupportChatController extends GetxController {
     // 1. Optimistic Update
     messages.add(optimisticMessage);
     NotificationService().playMessageSentSound();
-    
+
     // Clear reply state immediately
     clearReply();
 
@@ -654,7 +696,8 @@ class SupportChatController extends GetxController {
         );
       } else {
         // Customer or Social Chat sends message by direct insert
-        final String idempotencyKey = 'msg-${DateTime.now().microsecondsSinceEpoch}-${SupabaseService.userId!.substring(0, 5)}';
+        final String idempotencyKey =
+            'msg-${DateTime.now().microsecondsSinceEpoch}-${SupabaseService.userId!.substring(0, 5)}';
 
         await SupabaseService.client.from('chat_messages').insert({
           'conversation_id': _conversationId,
@@ -667,7 +710,14 @@ class SupportChatController extends GetxController {
         });
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: 'sendMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: 'sendMessage',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       // 3. Rollback Optimistic Update
       messages.removeWhere((m) => m.id == optimisticMessage.id);
       Get.snackbar('error'.tr, 'chat_send_error'.tr);
@@ -687,14 +737,21 @@ class SupportChatController extends GetxController {
 
       isUploading.value = true;
       final File file = File(image.path);
-      
+
       final String? imageUrl = await _uploadImage(file);
-      
+
       if (imageUrl != null && !isClosed) {
         await sendMessage(imageUrl, type: 'image');
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: 'pickAndSendImage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: 'pickAndSendImage',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       Get.snackbar('error'.tr, 'chat_capture_error'.tr);
     } finally {
       isUploading.value = false;
@@ -716,7 +773,7 @@ class SupportChatController extends GetxController {
         message: 'Uploading chat attachment',
         params: {'path': path},
       );
-      
+
       await SupabaseService.client.storage
           .from('chat_attachments')
           .upload(path, file);
@@ -724,10 +781,17 @@ class SupportChatController extends GetxController {
       // Store relative path; UI resolves signed URL at display time.
       return path;
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: '_uploadImage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
-      
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: '_uploadImage',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+
       Get.snackbar(
-        'error'.tr, 
+        'error'.tr,
         'chat_upload_error'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
@@ -762,7 +826,14 @@ class SupportChatController extends GetxController {
           .update(_myUnreadClearPayload())
           .eq('id', _conversationId!);
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: '_markAllRead', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: '_markAllRead',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -774,7 +845,14 @@ class SupportChatController extends GetxController {
         params: {'p_conversation_id': _conversationId},
       );
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: '_markMessagesDelivered', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: '_markMessagesDelivered',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -808,7 +886,14 @@ class SupportChatController extends GetxController {
           })
           .eq('id', messageId);
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: 'updateMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: 'updateMessage',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       await refreshMessages();
       Get.snackbar('error'.tr, 'chat_edit_error'.tr);
     } finally {
@@ -824,7 +909,14 @@ class SupportChatController extends GetxController {
           .eq('id', messageId);
       // Realtime listener will handle local update
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: 'deleteMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: 'deleteMessage',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       Get.snackbar('error'.tr, 'chat_delete_error'.tr);
     }
   }
@@ -845,7 +937,14 @@ class SupportChatController extends GetxController {
           .update({'reactions': newReactions})
           .eq('id', messageId);
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: 'addReaction', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: 'addReaction',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -861,7 +960,14 @@ class SupportChatController extends GetxController {
       );
       return result as bool? ?? false;
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: 'pinMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: 'pinMessage',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       return false;
     }
   }
@@ -875,7 +981,14 @@ class SupportChatController extends GetxController {
       );
       return result as bool? ?? false;
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SupportChatController', method: 'unpinMessage', feature: 'Support', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SupportChatController',
+        method: 'unpinMessage',
+        feature: 'Support',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       return false;
     }
   }

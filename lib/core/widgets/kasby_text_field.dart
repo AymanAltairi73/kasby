@@ -138,10 +138,7 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: AppColors.darkGold,
-                    width: 1,
-                  ),
+                  borderSide: BorderSide(color: AppColors.darkGold, width: 1),
                 ),
               ),
             ),

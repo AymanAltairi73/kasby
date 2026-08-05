@@ -57,13 +57,17 @@ class _FeeBreakdownCardState extends State<FeeBreakdownCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final rateLabel = FeeService.feeRateLabel(widget.category);
-    final lines = FeeService.feeDescriptionLines(widget.category, widget.amount);
+    final lines = FeeService.feeDescriptionLines(
+      widget.category,
+      widget.amount,
+    );
 
     return Container(
       padding: EdgeInsets.all(widget.compact ? 12 : 14),
       decoration: BoxDecoration(
-        color: (isDark ? AppColors.surface : AppColors.surfaceLight)
-            .withValues(alpha: 0.5),
+        color: (isDark ? AppColors.surface : AppColors.surfaceLight).withValues(
+          alpha: 0.5,
+        ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark
@@ -119,10 +123,7 @@ class _FeeBreakdownCardState extends State<FeeBreakdownCard> {
             const SizedBox(height: 4),
             Text(
               'no_fee_applied'.tr,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
             ),
           ],
           if (!widget.compact && lines.isNotEmpty && widget.amount > 0) ...[
@@ -142,10 +143,7 @@ class _FeeBreakdownCardState extends State<FeeBreakdownCard> {
           ],
           if (widget.amount > 0 && _fee > 0) ...[
             const SizedBox(height: 8),
-            Divider(
-              height: 1,
-              color: isDark ? Colors.white10 : Colors.black12,
-            ),
+            Divider(height: 1, color: isDark ? Colors.white10 : Colors.black12),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

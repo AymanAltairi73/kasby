@@ -243,16 +243,18 @@ class TourService {
   static Future<bool> isPermanentlySkipped() async {
     final prefs = await SharedPreferences.getInstance();
     final uid = _userId;
-    final scopedKey =
-        uid != null ? '${_permanentSkipKey}_$uid' : _permanentSkipKey;
+    final scopedKey = uid != null
+        ? '${_permanentSkipKey}_$uid'
+        : _permanentSkipKey;
     return prefs.getBool(scopedKey) ?? false;
   }
 
   static Future<void> setPermanentlySkipped(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     final uid = _userId;
-    final scopedKey =
-        uid != null ? '${_permanentSkipKey}_$uid' : _permanentSkipKey;
+    final scopedKey = uid != null
+        ? '${_permanentSkipKey}_$uid'
+        : _permanentSkipKey;
     await prefs.setBool(scopedKey, value);
     if (value) {
       await prefs.setBool(_autoEligibleKey(), false);

@@ -37,8 +37,9 @@ class CrashReportingService {
     _initialized = true;
 
     await _loadAppMetadata();
-    await FirebaseCrashlytics.instance
-        .setCrashlyticsCollectionEnabled(isCollectionEnabled);
+    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(
+      isCollectionEnabled,
+    );
 
     if (isCollectionEnabled) {
       await setCustomKey(CrashCustomKey.appVersion, _appVersion);
@@ -58,12 +59,14 @@ class CrashReportingService {
         unawaited(appRunner());
       },
       (error, stack) {
-        unawaited(recordFatal(
-          error,
-          stack,
-          reason: 'Zone.runGuarded',
-          category: CrashErrorCategory.unknown,
-        ));
+        unawaited(
+          recordFatal(
+            error,
+            stack,
+            reason: 'Zone.runGuarded',
+            category: CrashErrorCategory.unknown,
+          ),
+        );
       },
     );
   }
@@ -88,8 +91,9 @@ class CrashReportingService {
       }
       if (isCollectionEnabled &&
           _shouldReport(details.exception, details.stack, source: 'flutter')) {
-        unawaited(FirebaseCrashlytics.instance
-            .recordFlutterFatalError(details));
+        unawaited(
+          FirebaseCrashlytics.instance.recordFlutterFatalError(details),
+        );
       }
     };
 
@@ -104,13 +108,16 @@ class CrashReportingService {
           stackTrace: stack,
         );
       }
-      if (isCollectionEnabled && _shouldReport(error, stack, source: 'platform')) {
-        unawaited(FirebaseCrashlytics.instance.recordError(
-          error,
-          stack,
-          fatal: true,
-          reason: 'PlatformDispatcher.onError',
-        ));
+      if (isCollectionEnabled &&
+          _shouldReport(error, stack, source: 'platform')) {
+        unawaited(
+          FirebaseCrashlytics.instance.recordError(
+            error,
+            stack,
+            fatal: true,
+            reason: 'PlatformDispatcher.onError',
+          ),
+        );
       }
       return true;
     };
@@ -176,15 +183,14 @@ class CrashReportingService {
     String? reason,
     CrashErrorCategory category = CrashErrorCategory.unknown,
     Map<String, Object?>? context,
-  }) =>
-      recordError(
-        error,
-        stack,
-        reason: reason,
-        fatal: true,
-        category: category,
-        context: context,
-      );
+  }) => recordError(
+    error,
+    stack,
+    reason: reason,
+    fatal: true,
+    category: category,
+    context: context,
+  );
 
   static Future<void> recordException(
     Object exception,
@@ -192,15 +198,14 @@ class CrashReportingService {
     String? reason,
     CrashErrorCategory category = CrashErrorCategory.unknown,
     Map<String, Object?>? context,
-  }) =>
-      recordError(
-        exception,
-        stack,
-        reason: reason,
-        fatal: false,
-        category: category,
-        context: context,
-      );
+  }) => recordError(
+    exception,
+    stack,
+    reason: reason,
+    fatal: false,
+    category: category,
+    context: context,
+  );
 
   // ─────────── Typed error reporters ───────────
 
@@ -209,17 +214,16 @@ class CrashReportingService {
     StackTrace? stack, {
     String? operation,
     bool isTimeout = false,
-  }) =>
-      recordError(
-        error,
-        stack,
-        reason: operation ?? 'Network failure',
-        category: CrashErrorCategory.network,
-        context: {
-          if (operation != null) 'operation': operation,
-          'is_timeout': isTimeout,
-        },
-      );
+  }) => recordError(
+    error,
+    stack,
+    reason: operation ?? 'Network failure',
+    category: CrashErrorCategory.network,
+    context: {
+      if (operation != null) 'operation': operation,
+      'is_timeout': isTimeout,
+    },
+  );
 
   static Future<void> recordSupabaseError(
     Object error, {
@@ -282,14 +286,13 @@ class CrashReportingService {
     required CrashErrorCategory category,
     String? operation,
     Map<String, Object?>? context,
-  }) =>
-      recordError(
-        error,
-        stack ?? StackTrace.current,
-        reason: operation ?? 'Business logic failure',
-        category: category,
-        context: context,
-      );
+  }) => recordError(
+    error,
+    stack ?? StackTrace.current,
+    reason: operation ?? 'Business logic failure',
+    category: category,
+    context: context,
+  );
 
   // ─────────── Breadcrumbs & keys ───────────
 
@@ -395,7 +398,10 @@ class CrashReportingService {
     );
   }
 
-  static Future<void> updateRouteContext(String? route, {String? screenName}) async {
+  static Future<void> updateRouteContext(
+    String? route, {
+    String? screenName,
+  }) async {
     if (route != null && route.isNotEmpty) {
       await setCustomKey(CrashCustomKey.currentRoute, route);
     }

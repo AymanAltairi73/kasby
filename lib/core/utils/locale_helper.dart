@@ -15,7 +15,8 @@ class LocaleHelper {
       params: {'storage': 'SharedPreferences'},
       operation: () async {
         final prefs = await SharedPreferences.getInstance();
-        final code = prefs.getString(localeKey) ?? KasbyL10n.defaultLanguageCode;
+        final code =
+            prefs.getString(localeKey) ?? KasbyL10n.defaultLanguageCode;
         if (!KasbyL10n.supportedLanguageCodes.contains(code)) {
           LocalizationLogger.unsupportedLocale(code);
           return KasbyL10n.defaultLanguageCode;

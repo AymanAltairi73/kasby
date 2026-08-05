@@ -25,7 +25,8 @@ class TeamMemberProfileSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final id = member['id']?.toString() ?? '';
-    final isOnline = Get.isRegistered<PresenceService>() &&
+    final isOnline =
+        Get.isRegistered<PresenceService>() &&
         Get.find<PresenceService>().isUserOnline(id);
     final bottom = MediaQuery.paddingOf(context).bottom;
 
@@ -207,8 +208,10 @@ class TeamMemberProfileSheet extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          Text(
+            label,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
           Flexible(
             child: Text(
               value,

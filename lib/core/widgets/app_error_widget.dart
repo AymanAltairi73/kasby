@@ -75,9 +75,7 @@ class _AppErrorWidgetState extends State<AppErrorWidget> {
                     method: 'retry',
                     feature: 'Core',
                     status: 'INFO',
-                    params: {
-                      'canPop': Get.key.currentState?.canPop() == true,
-                    },
+                    params: {'canPop': Get.key.currentState?.canPop() == true},
                   );
                   if (Get.key.currentState?.canPop() == true) {
                     Get.back();

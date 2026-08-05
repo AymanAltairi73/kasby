@@ -125,8 +125,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
           borderRadius: 16,
         );
       }
-    }
-     on AuthException catch (e) {
+    } on AuthException catch (e) {
       SafeGetx.debugTrace(
         className: 'ChangePasswordView',
         method: '_changePassword',
@@ -197,21 +196,21 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 10),
-              _buildHeader(context),
-              const SizedBox(height: 40),
-              _buildInputFields(context),
-              const SizedBox(height: 48),
-              _buildSubmitButton(),
-            ],
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 10),
+                _buildHeader(context),
+                const SizedBox(height: 40),
+                _buildInputFields(context),
+                const SizedBox(height: 48),
+                _buildSubmitButton(),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -367,9 +366,7 @@ class _ChangePasswordViewState extends State<ChangePasswordView> {
 
   Widget _buildSubmitButton() {
     return _isLoading
-        ? Center(
-            child: CircularProgressIndicator(color: AppColors.darkGold),
-          )
+        ? Center(child: CircularProgressIndicator(color: AppColors.darkGold))
         : KasbyButton(
             text: 'save_changes'.tr,
             onPressed: _changePassword,

@@ -81,7 +81,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
 
   Future<void> _loadServerDetails(String transactionId) async {
     setState(() => _isLoadingDetails = true);
-    final details = await FinancialRepository.fetchTransactionDetails(transactionId);
+    final details = await FinancialRepository.fetchTransactionDetails(
+      transactionId,
+    );
     if (mounted) {
       setState(() {
         _serverDetails = details;
@@ -97,9 +99,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
         .stream(primaryKey: ['id'])
         .eq('id', transactionId)
         .listen((rows) async {
-      if (rows.isEmpty) return;
-      await _loadServerDetails(transactionId);
-    });
+          if (rows.isEmpty) return;
+          await _loadServerDetails(transactionId);
+        });
   }
 
   @override
@@ -206,7 +208,10 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                   if (_serverDetails?['proof_url'] != null &&
                       (_serverDetails!['proof_url'] as String).isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    _buildProofCard(_serverDetails!['proof_url'] as String, isDark),
+                    _buildProofCard(
+                      _serverDetails!['proof_url'] as String,
+                      isDark,
+                    ),
                   ],
                   if (tx.description != null && tx.description!.isNotEmpty) ...[
                     const SizedBox(height: 16),
@@ -306,7 +311,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
             const SizedBox(height: 8),
             // Amount
             Text(
-                  tx.currency == 'KSP' 
+                  tx.currency == 'KSP'
                       ? '${isOut ? '-' : '+'}${CurrencyConversionService.formatKsp(tx.amount)} KSP'
                       : '${isOut ? '-' : '+'}${currencyController.formatToUSD(tx.amount)}',
                   style: TextStyle(
@@ -532,7 +537,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
           _buildDivider(isDark),
           _buildDetailRow(
             'transaction_amount'.tr,
-            tx.currency == 'KSP' 
+            tx.currency == 'KSP'
                 ? '${CurrencyConversionService.formatKsp(tx.amount)} KSP'
                 : currencyController.formatToUSD(tx.amount),
             isDark,
@@ -555,7 +560,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
             _buildDivider(isDark),
             _buildDetailRow(
               'transaction_fee'.tr,
-              tx.currency == 'KSP' 
+              tx.currency == 'KSP'
                   ? '${CurrencyConversionService.formatKsp(tx.fee)} KSP'
                   : currencyController.formatToUSD(tx.fee),
               isDark,
@@ -565,7 +570,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
             _buildDivider(isDark),
             _buildDetailRow(
               'net_amount'.tr,
-              tx.currency == 'KSP' 
+              tx.currency == 'KSP'
                   ? '${CurrencyConversionService.formatKsp(tx.netAmount!)} KSP'
                   : currencyController.formatToUSD(tx.netAmount!),
               isDark,
@@ -1006,7 +1011,8 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
   }) {
     final name = party['full_name']?.toString() ?? '—';
     final id = party['id']?.toString() ?? party['user_id']?.toString() ?? '';
-    final isVerified = party['is_verified'] == true ||
+    final isVerified =
+        party['is_verified'] == true ||
         party['kyc_status']?.toString() == 'verified';
     final avatarUrl = party['avatar_url']?.toString();
     final country = party['country']?.toString();
@@ -1038,10 +1044,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundImage:
-                    avatarUrl != null && avatarUrl.isNotEmpty
-                        ? NetworkImage(avatarUrl)
-                        : null,
+                backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                    ? NetworkImage(avatarUrl)
+                    : null,
                 child: avatarUrl == null || avatarUrl.isEmpty
                     ? Text(name.isNotEmpty ? name[0] : '?')
                     : null,
@@ -1087,7 +1092,10 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                       Text(country, style: const TextStyle(fontSize: 12)),
                     if (isAgent || role == 'agent')
                       Chip(
-                        label: Text('agent'.tr, style: const TextStyle(fontSize: 11)),
+                        label: Text(
+                          'agent'.tr,
+                          style: const TextStyle(fontSize: 11),
+                        ),
                         visualDensity: VisualDensity.compact,
                       ),
                   ],

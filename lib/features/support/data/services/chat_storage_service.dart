@@ -44,7 +44,9 @@ class ChatStorageService {
       if (jsonString == null) return [];
 
       final List<dynamic> jsonList = jsonDecode(jsonString);
-      final messages = jsonList.map((json) => ChatMessageModel.fromJson(json)).toList();
+      final messages = jsonList
+          .map((json) => ChatMessageModel.fromJson(json))
+          .toList();
       SafeGetx.debugTrace(
         className: 'ChatStorageService',
         method: 'loadMessages',

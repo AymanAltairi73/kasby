@@ -196,8 +196,7 @@ class AuthOtpInputState extends State<AuthOtpInput> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        BorderSide(color: AppColors.darkGold, width: 2),
+                    borderSide: BorderSide(color: AppColors.darkGold, width: 2),
                   ),
                   enabledBorder: _controllers[index].text.isNotEmpty
                       ? OutlineInputBorder(
@@ -216,8 +215,11 @@ class AuthOtpInputState extends State<AuthOtpInput> {
           const SizedBox(height: 12),
           TextButton.icon(
             onPressed: _pasteFromClipboard,
-            icon: Icon(Icons.content_paste_rounded,
-                size: 18, color: AppColors.darkGold),
+            icon: Icon(
+              Icons.content_paste_rounded,
+              size: 18,
+              color: AppColors.darkGold,
+            ),
             label: Text(
               'paste_code'.tr,
               style: TextStyle(

@@ -46,9 +46,11 @@ class DateHelper {
     if (value == null) return '--';
     final now = DateTime.now();
     final local = value.toLocal();
-    final diff = DateTime(now.year, now.month, now.day)
-        .difference(DateTime(local.year, local.month, local.day))
-        .inDays;
+    final diff = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).difference(DateTime(local.year, local.month, local.day)).inDays;
     if (diff == 0) return 'today'.tr;
     if (diff == 1) return 'yesterday'.tr;
     return date(local);

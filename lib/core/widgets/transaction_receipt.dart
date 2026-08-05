@@ -16,10 +16,7 @@ import 'package:intl/intl.dart' as intl;
 class TransactionReceipt extends StatefulWidget {
   final KasbyReceiptData data;
 
-  const TransactionReceipt({
-    super.key,
-    required this.data,
-  });
+  const TransactionReceipt({super.key, required this.data});
 
   /// Legacy constructor for existing call sites.
   TransactionReceipt.legacy({
@@ -30,12 +27,12 @@ class TransactionReceipt extends StatefulWidget {
     required String type,
     required DateTime date,
   }) : data = KasbyReceiptData.legacy(
-          transactionId: transactionId,
-          recipientName: recipientName,
-          amount: amount,
-          type: type,
-          date: date,
-        );
+         transactionId: transactionId,
+         recipientName: recipientName,
+         amount: amount,
+         type: type,
+         date: date,
+       );
 
   @override
   State<TransactionReceipt> createState() => _TransactionReceiptState();
@@ -76,8 +73,9 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
       final image = await _screenshotController.capture();
       if (image != null) {
         final directory = await getTemporaryDirectory();
-        final imagePath =
-            File('${directory.path}/receipt_${widget.data.transactionId}.png');
+        final imagePath = File(
+          '${directory.path}/receipt_${widget.data.transactionId}.png',
+        );
         await imagePath.writeAsBytes(image);
 
         await SharePlus.instance.share(
@@ -203,14 +201,20 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               color: AppColors.darkGold.withValues(alpha: 0.05),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
             ),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset('assets/images/logo.png', width: 40, height: 40),
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 40,
+                      height: 40,
+                    ),
                     const SizedBox(width: 12),
                     const Text(
                       'KASBY',
@@ -245,8 +249,9 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  intl.DateFormat('MMM dd, yyyy • hh:mm a')
-                      .format(widget.data.date),
+                  intl.DateFormat(
+                    'MMM dd, yyyy • hh:mm a',
+                  ).format(widget.data.date),
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
@@ -271,7 +276,11 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                 const SizedBox(height: 12),
                 if (widget.data.recipientName != null &&
                     widget.data.recipientName!.isNotEmpty)
-                  _receiptRow('recipient'.tr, widget.data.recipientName!, isDark),
+                  _receiptRow(
+                    'recipient'.tr,
+                    widget.data.recipientName!,
+                    isDark,
+                  ),
                 if (widget.data.recipientName != null &&
                     widget.data.recipientName!.isNotEmpty)
                   const SizedBox(height: 12),
@@ -296,12 +305,12 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                     isDark,
                   ),
                 ],
-                
+
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Divider(height: 1),
                 ),
-                
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -325,12 +334,15 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 48),
-                
+
                 // Trust Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.softGreen.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(16),
@@ -341,7 +353,11 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.security_rounded, color: AppColors.softGreen, size: 16),
+                      Icon(
+                        Icons.security_rounded,
+                        color: AppColors.softGreen,
+                        size: 16,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'securely_processed_by_kasby'.tr,
@@ -354,7 +370,7 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
                 Text(
                   'thank_you_note'.tr,
@@ -373,7 +389,12 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
     );
   }
 
-  Widget _receiptRow(String label, String value, bool isDark, {bool canCopy = false}) {
+  Widget _receiptRow(
+    String label,
+    String value,
+    bool isDark, {
+    bool canCopy = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -404,7 +425,11 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
               IconButton(
                 constraints: const BoxConstraints(),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                icon: Icon(Icons.copy_rounded, size: 16, color: AppColors.darkGold),
+                icon: Icon(
+                  Icons.copy_rounded,
+                  size: 16,
+                  color: AppColors.darkGold,
+                ),
                 onPressed: () {
                   SafeGetx.debugTrace(
                     className: 'TransactionReceipt',

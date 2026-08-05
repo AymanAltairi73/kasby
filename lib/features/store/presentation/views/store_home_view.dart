@@ -33,15 +33,16 @@ class StoreHomeView extends StatelessWidget {
                 color: AppColors.primaryGold.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.storefront_rounded, color: AppColors.primaryGold, size: 22),
+              child: const Icon(
+                Icons.storefront_rounded,
+                color: AppColors.primaryGold,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 10),
             const Text(
               'متجر كاسبي الرقمي',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ],
         ),
@@ -54,7 +55,11 @@ class StoreHomeView extends StatelessWidget {
             ),
             child: IconButton(
               onPressed: () => Get.toNamed('/store-orders'),
-              icon: const Icon(Icons.receipt_long_rounded, color: AppColors.primaryGold, size: 22),
+              icon: const Icon(
+                Icons.receipt_long_rounded,
+                color: AppColors.primaryGold,
+                size: 22,
+              ),
               tooltip: 'طلباتي والأكواد',
             ),
           ),
@@ -77,13 +82,15 @@ class StoreHomeView extends StatelessWidget {
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                        ),
                     itemCount: 6,
-                    itemBuilder: (_, __) => const StoreShimmer(height: 80, borderRadius: 16),
+                    itemBuilder: (_, __) =>
+                        const StoreShimmer(height: 80, borderRadius: 16),
                   ),
                 ],
               ),
@@ -98,17 +105,20 @@ class StoreHomeView extends StatelessWidget {
               children: [
                 // ── 1. Glassmorphic Wallet & Balance Summary Card ──
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF2B2416),
-                        Color(0xFF16151B),
-                      ],
+                      colors: [Color(0xFF2B2416), Color(0xFF16151B)],
                     ),
                     border: Border.all(
                       color: AppColors.primaryGold.withValues(alpha: 0.3),
@@ -130,12 +140,18 @@ class StoreHomeView extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.account_balance_wallet_rounded,
-                                    color: AppColors.primaryGold, size: 16),
+                                const Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  color: AppColors.primaryGold,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 6),
                                 Text(
                                   'رصيد المحفظة',
-                                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ],
                             ),
@@ -153,7 +169,11 @@ class StoreHomeView extends StatelessWidget {
                       ),
 
                       // Divider
-                      Container(height: 36, width: 1, color: Colors.white.withValues(alpha: 0.1)),
+                      Container(
+                        height: 36,
+                        width: 1,
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
 
                       // KSP Points Wallet
                       Expanded(
@@ -162,11 +182,18 @@ class StoreHomeView extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.stars_rounded, color: Colors.amber, size: 16),
+                                const Icon(
+                                  Icons.stars_rounded,
+                                  color: Colors.amber,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 6),
                                 Text(
                                   'رصيد KSP',
-                                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ],
                             ),
@@ -188,23 +215,41 @@ class StoreHomeView extends StatelessWidget {
 
                 // ── 2. Search Input Bar ──
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   child: TextField(
                     onChanged: (val) => controller.searchQuery.value = val,
                     style: TextStyle(color: textColor),
                     decoration: InputDecoration(
                       hintText: 'ابحث عن بطاقة، لعبة، أو اشتراك...',
-                      hintStyle: TextStyle(color: Colors.grey[500], fontSize: 13),
-                      prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primaryGold),
+                      hintStyle: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 13,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: AppColors.primaryGold,
+                      ),
                       suffixIcon: controller.searchQuery.value.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear_rounded, color: Colors.grey),
-                              onPressed: () => controller.searchQuery.value = '',
+                              icon: const Icon(
+                                Icons.clear_rounded,
+                                color: Colors.grey,
+                              ),
+                              onPressed: () =>
+                                  controller.searchQuery.value = '',
                             )
                           : null,
                       filled: true,
-                      fillColor: isDark ? const Color(0xFF181820) : Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      fillColor: isDark
+                          ? const Color(0xFF181820)
+                          : Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide(
@@ -233,10 +278,17 @@ class StoreHomeView extends StatelessWidget {
                 // ── 3. Search Results Mode ──
                 if (controller.searchQuery.value.trim().isNotEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Text(
                       'نتائج البحث (${controller.filteredProducts.length})',
-                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                   _buildProductGrid(controller.filteredProducts),
@@ -279,9 +331,16 @@ class StoreHomeView extends StatelessWidget {
                             children: [
                               Text(
                                 'عرض الكل',
-                                style: TextStyle(color: AppColors.primaryGold, fontSize: 13),
+                                style: TextStyle(
+                                  color: AppColors.primaryGold,
+                                  fontSize: 13,
+                                ),
                               ),
-                              Icon(Icons.chevron_left_rounded, color: AppColors.primaryGold, size: 18),
+                              Icon(
+                                Icons.chevron_left_rounded,
+                                color: AppColors.primaryGold,
+                                size: 18,
+                              ),
                             ],
                           ),
                         ),
@@ -398,7 +457,10 @@ class StoreHomeView extends StatelessWidget {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(30),
-          child: Text('لا توجد منتجات مطابقة حالياً', style: TextStyle(color: Colors.grey)),
+          child: Text(
+            'لا توجد منتجات مطابقة حالياً',
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
       );
     }

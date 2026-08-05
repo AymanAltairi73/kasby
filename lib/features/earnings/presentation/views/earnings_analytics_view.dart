@@ -13,10 +13,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('earnings_analytics'.tr),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text('earnings_analytics'.tr), elevation: 0),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -91,7 +88,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
       child: Obx(() {
         return DropdownButtonHideUnderline(
@@ -115,7 +114,10 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
     );
   }
 
-  Widget _buildStatisticsCards(BuildContext context, EarningsAnalyticsModel analytics) {
+  Widget _buildStatisticsCards(
+    BuildContext context,
+    EarningsAnalyticsModel analytics,
+  ) {
     final stats = analytics.statistics!;
     final totalUsd = controller.getTotalEarningsUsd();
     final todayUsd = controller.getTodayEarningsUsd();
@@ -126,9 +128,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       children: [
         Text(
           'statistics'.tr,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         GridView.count(
@@ -163,14 +165,18 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
             _buildStatCard(
               context,
               'highest_daily'.tr,
-              CurrencyConversionService.formatUsd(stats.highestDailyEarningsUsd),
+              CurrencyConversionService.formatUsd(
+                stats.highestDailyEarningsUsd,
+              ),
               Icons.trending_up,
               Colors.purple,
             ),
             _buildStatCard(
               context,
               'average_daily'.tr,
-              CurrencyConversionService.formatUsd(stats.averageDailyEarningsUsd),
+              CurrencyConversionService.formatUsd(
+                stats.averageDailyEarningsUsd,
+              ),
               Icons.bar_chart,
               Colors.teal,
             ),
@@ -198,7 +204,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -212,7 +220,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                 child: Text(
                   title,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -231,7 +241,10 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
     );
   }
 
-  Widget _buildSourceBreakdown(BuildContext context, EarningsAnalyticsModel analytics) {
+  Widget _buildSourceBreakdown(
+    BuildContext context,
+    EarningsAnalyticsModel analytics,
+  ) {
     final breakdown = controller.getBreakdownWithConversion();
     final totalUsd = controller.getTotalEarningsUsd();
 
@@ -244,17 +257,23 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       children: [
         Text(
           'source_breakdown'.tr,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        ...breakdown.map((item) => _buildBreakdownItem(context, item, totalUsd)),
+        ...breakdown.map(
+          (item) => _buildBreakdownItem(context, item, totalUsd),
+        ),
       ],
     );
   }
 
-  Widget _buildBreakdownItem(BuildContext context, BreakdownItem item, double totalUsd) {
+  Widget _buildBreakdownItem(
+    BuildContext context,
+    BreakdownItem item,
+    double totalUsd,
+  ) {
     final icon = _getSourceIcon(item.source);
     final percentage = item.percentage;
     final totalUsdEquivalent = item.getTotalUsdEquivalent();
@@ -264,7 +283,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -272,14 +293,18 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                icon,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   item.getLocalizedSource(),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
               ),
               Column(
@@ -295,7 +320,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                     Text(
                       '(${CurrencyConversionService.formatKsp(item.amountKsp!.toDouble())} KSP)',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                 ],
@@ -310,7 +337,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: percentage / 100,
-                    backgroundColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.2),
                     valueColor: AlwaysStoppedAnimation<Color>(
                       Theme.of(context).colorScheme.primary,
                     ),
@@ -321,9 +350,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
               const SizedBox(width: 12),
               Text(
                 '${percentage.toStringAsFixed(1)}%',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -351,9 +380,12 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
     }
   }
 
-  Widget _buildTrendChart(BuildContext context, EarningsAnalyticsModel analytics) {
+  Widget _buildTrendChart(
+    BuildContext context,
+    EarningsAnalyticsModel analytics,
+  ) {
     final chartData = analytics.chartData?.trendChart ?? [];
-    
+
     if (chartData.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -363,9 +395,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       children: [
         Text(
           'earnings_trend'.tr,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         Container(
@@ -373,7 +405,11 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withValues(alpha: 0.3),
+            ),
           ),
           padding: const EdgeInsets.all(16),
           child: CustomPaint(
@@ -387,7 +423,10 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
     );
   }
 
-  Widget _buildTimeline(BuildContext context, EarningsAnalyticsModel analytics) {
+  Widget _buildTimeline(
+    BuildContext context,
+    EarningsAnalyticsModel analytics,
+  ) {
     final timeline = analytics.timeline;
 
     if (timeline.isEmpty) {
@@ -399,9 +438,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       children: [
         Text(
           'earnings_timeline'.tr,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         ...timeline.map((item) => _buildTimelineItem(context, item)),
@@ -418,7 +457,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -426,10 +467,16 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+            child: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -438,15 +485,17 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
               children: [
                 Text(
                   item.getLocalizedSource(),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   item.localizedDescription,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -468,14 +517,18 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                 Text(
                   '(${CurrencyConversionService.formatKsp(item.amountKsp!.toDouble())} KSP)',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               const SizedBox(height: 4),
               Text(
                 _formatDate(item.createdAt),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -516,7 +569,9 @@ class _TrendChartPainter extends CustomPainter {
     final chartHeight = size.height - padding * 2;
 
     // Find max value for scaling
-    final maxValue = data.map((e) => e.amountUsd).reduce((a, b) => a > b ? a : b);
+    final maxValue = data
+        .map((e) => e.amountUsd)
+        .reduce((a, b) => a > b ? a : b);
     final scale = maxValue > 0 ? chartHeight / maxValue : 1.0;
 
     // Draw grid lines

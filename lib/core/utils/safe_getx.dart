@@ -148,31 +148,33 @@ class SafeGetx {
         if (e is PostgrestException ||
             e is AuthException ||
             e is FunctionException) {
-          unawaited(CrashReportingService.recordSupabaseError(
-            e,
-            stack: st,
-            operation: '$className.$method',
-            category: category,
-          ));
+          unawaited(
+            CrashReportingService.recordSupabaseError(
+              e,
+              stack: st,
+              operation: '$className.$method',
+              category: category,
+            ),
+          );
         } else if (e is SocketException || e is TimeoutException) {
-          unawaited(CrashReportingService.recordNetworkError(
-            e,
-            st,
-            operation: '$className.$method',
-            isTimeout: e is TimeoutException,
-          ));
+          unawaited(
+            CrashReportingService.recordNetworkError(
+              e,
+              st,
+              operation: '$className.$method',
+              isTimeout: e is TimeoutException,
+            ),
+          );
         } else {
-          unawaited(CrashReportingService.recordException(
-            e,
-            st,
-            reason: '$className.$method',
-            category: category,
-            context: {
-              'className': className,
-              'method': method,
-              ...?params,
-            },
-          ));
+          unawaited(
+            CrashReportingService.recordException(
+              e,
+              st,
+              reason: '$className.$method',
+              category: category,
+              context: {'className': className, 'method': method, ...?params},
+            ),
+          );
         }
       }
       rethrow;
@@ -186,7 +188,9 @@ class SafeGetx {
     bool showDialog = true,
   }) async {
     if (Get.isRegistered<AccountRestrictionService>() &&
-        !AccountRestrictionService.to.checkWriteAccess(showDialog: showDialog)) {
+        !AccountRestrictionService.to.checkWriteAccess(
+          showDialog: showDialog,
+        )) {
       return null;
     }
     try {
@@ -337,18 +341,19 @@ class _TrackedScreenState extends State<TrackedScreen> {
       feature: widget.screenName,
       status: 'INFO',
       message: 'Screen opened',
-      params: {
-        'route': Get.currentRoute,
-        'hasArgs': Get.arguments != null,
-      },
+      params: {'route': Get.currentRoute, 'hasArgs': Get.arguments != null},
     );
-    unawaited(CrashReportingService.updateRouteContext(
-      Get.currentRoute,
-      screenName: widget.screenName,
-    ));
-    unawaited(CrashReportingService.log(
-      '${CrashBreadcrumb.screenOpened}: ${widget.screenName}',
-    ));
+    unawaited(
+      CrashReportingService.updateRouteContext(
+        Get.currentRoute,
+        screenName: widget.screenName,
+      ),
+    );
+    unawaited(
+      CrashReportingService.log(
+        '${CrashBreadcrumb.screenOpened}: ${widget.screenName}',
+      ),
+    );
   }
 
   @override

@@ -22,7 +22,10 @@ class StoreCategoriesView extends StatelessWidget {
       body: Obx(() {
         if (controller.categories.isEmpty) {
           return const Center(
-            child: Text('لا توجد أقسام متوفرة حالياً', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'لا توجد أقسام متوفرة حالياً',
+              style: TextStyle(color: Colors.grey),
+            ),
           );
         }
 

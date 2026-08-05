@@ -68,8 +68,8 @@ class ProfileModel {
         kycStatus: json['kyc_status'] as String? ?? 'unverified',
         role: json['role'] as String? ?? 'user',
         referralCode: json['referral_code'] as String?,
-        referredBy: json['referred_by_id'] as String? ??
-            json['referred_by'] as String?,
+        referredBy:
+            json['referred_by_id'] as String? ?? json['referred_by'] as String?,
         countryCode: json['country_code'] as String?,
         province: json['province'] as String?,
         city: json['city'] as String?,

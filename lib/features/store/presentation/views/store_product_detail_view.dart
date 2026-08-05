@@ -32,7 +32,10 @@ class StoreProductDetailView extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.primaryGold),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: AppColors.primaryGold,
+          ),
           onPressed: () => Get.back(),
         ),
         title: Text(
@@ -63,26 +66,36 @@ class StoreProductDetailView extends StatelessWidget {
                           color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
-                        )
+                        ),
                       ],
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
-                      child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                      child:
+                          product.imageUrl != null &&
+                              product.imageUrl!.isNotEmpty
                           ? CachedNetworkImage(
                               imageUrl: product.imageUrl!,
                               fit: BoxFit.contain,
                               placeholder: (_, __) => const Center(
-                                child: CircularProgressIndicator(color: AppColors.primaryGold),
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primaryGold,
+                                ),
                               ),
                               errorWidget: (_, __, ___) => const Center(
-                                child: Icon(Icons.card_giftcard_rounded,
-                                    color: AppColors.primaryGold, size: 70),
+                                child: Icon(
+                                  Icons.card_giftcard_rounded,
+                                  color: AppColors.primaryGold,
+                                  size: 70,
+                                ),
                               ),
                             )
                           : const Center(
-                              child: Icon(Icons.card_giftcard_rounded,
-                                  color: AppColors.primaryGold, size: 70),
+                              child: Icon(
+                                Icons.card_giftcard_rounded,
+                                color: AppColors.primaryGold,
+                                size: 70,
+                              ),
                             ),
                     ),
                   ),
@@ -93,7 +106,10 @@ class StoreProductDetailView extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
                           color: product.inStock
                               ? Colors.green.withValues(alpha: 0.15)
@@ -106,15 +122,23 @@ class StoreProductDetailView extends StatelessWidget {
                         child: Row(
                           children: [
                             Icon(
-                              product.inStock ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                              color: product.inStock ? Colors.green : Colors.red,
+                              product.inStock
+                                  ? Icons.check_circle_rounded
+                                  : Icons.cancel_rounded,
+                              color: product.inStock
+                                  ? Colors.green
+                                  : Colors.red,
                               size: 16,
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              product.inStock ? 'متوفر للتسليم الفوري' : 'نفد المخزون حالياً',
+                              product.inStock
+                                  ? 'متوفر للتسليم الفوري'
+                                  : 'نفد المخزون حالياً',
                               style: TextStyle(
-                                color: product.inStock ? Colors.green : Colors.red,
+                                color: product.inStock
+                                    ? Colors.green
+                                    : Colors.red,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
@@ -125,7 +149,10 @@ class StoreProductDetailView extends StatelessWidget {
                       if (product.discountPercent > 0) ...[
                         const SizedBox(width: 10),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.red,
                             borderRadius: BorderRadius.circular(12),
@@ -169,7 +196,9 @@ class StoreProductDetailView extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF1B1B22) : Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.primaryGold.withValues(alpha: 0.3),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.08),
@@ -186,7 +215,10 @@ class StoreProductDetailView extends StatelessWidget {
                           children: [
                             Text(
                               'السعر بالدولار (USD)',
-                              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 12,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Row(
@@ -200,7 +232,8 @@ class StoreProductDetailView extends StatelessWidget {
                                   ),
                                 ),
                                 if (product.originalPrice != null &&
-                                    product.originalPrice! > product.walletPrice) ...[
+                                    product.originalPrice! >
+                                        product.walletPrice) ...[
                                   const SizedBox(width: 8),
                                   Text(
                                     '\$${product.originalPrice!.toStringAsFixed(2)}',
@@ -215,19 +248,31 @@ class StoreProductDetailView extends StatelessWidget {
                             ),
                           ],
                         ),
-                        if (product.kspPrice != null && product.kspPrice! > 0) ...[
-                          Container(height: 40, width: 1, color: Colors.white12),
+                        if (product.kspPrice != null &&
+                            product.kspPrice! > 0) ...[
+                          Container(
+                            height: 40,
+                            width: 1,
+                            color: Colors.white12,
+                          ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
                                 'السعر بعملة KSP',
-                                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.grey[500],
+                                  fontSize: 12,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  const Icon(Icons.stars_rounded, color: Colors.amber, size: 18),
+                                  const Icon(
+                                    Icons.stars_rounded,
+                                    color: Colors.amber,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${product.kspPrice!.toStringAsFixed(0)} KSP',
@@ -275,9 +320,13 @@ class StoreProductDetailView extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF16161D) : Colors.grey[100],
+                      color: isDark
+                          ? const Color(0xFF16161D)
+                          : Colors.grey[100],
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
                     ),
                     child: Text(
                       product.descriptionAr.isNotEmpty
@@ -299,14 +348,22 @@ class StoreProductDetailView extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF1B1B22) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildFeatureChip(Icons.flash_on_rounded, 'تسليم فوري'),
-                        _buildFeatureChip(Icons.verified_user_rounded, 'كود مضمون 100%'),
-                        _buildFeatureChip(Icons.support_agent_rounded, 'دعم 24/7'),
+                        _buildFeatureChip(
+                          Icons.verified_user_rounded,
+                          'كود مضمون 100%',
+                        ),
+                        _buildFeatureChip(
+                          Icons.support_agent_rounded,
+                          'دعم 24/7',
+                        ),
                       ],
                     ),
                   ),
@@ -320,15 +377,21 @@ class StoreProductDetailView extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF16161D) : Colors.white,
-              border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
+              border: Border(
+                top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+              ),
             ),
             child: SizedBox(
               width: double.infinity,
               height: 54,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: product.inStock ? AppColors.primaryGold : Colors.grey[700],
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  backgroundColor: product.inStock
+                      ? AppColors.primaryGold
+                      : Colors.grey[700],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: product.inStock ? 4 : 0,
                 ),
                 onPressed: product.inStock
@@ -339,9 +402,14 @@ class StoreProductDetailView extends StatelessWidget {
                         );
                       }
                     : null,
-                icon: const Icon(Icons.shopping_bag_rounded, color: Colors.black),
+                icon: const Icon(
+                  Icons.shopping_bag_rounded,
+                  color: Colors.black,
+                ),
                 label: Text(
-                  product.inStock ? 'شراء المنتج الآن' : 'غير متوفر بالمخزون حالياً',
+                  product.inStock
+                      ? 'شراء المنتج الآن'
+                      : 'غير متوفر بالمخزون حالياً',
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 16,
@@ -363,7 +431,11 @@ class StoreProductDetailView extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );

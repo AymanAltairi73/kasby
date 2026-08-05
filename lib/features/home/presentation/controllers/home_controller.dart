@@ -47,7 +47,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   final RxInt unreadNotificationCount = 0.obs;
   final RxList<NotificationModel> notifications = <NotificationModel>[].obs;
   final RxList<UserInvestmentModel> myInvestments = <UserInvestmentModel>[].obs;
-  final RxList<InvestmentPlanModel> allInvestmentPlans = <InvestmentPlanModel>[].obs;
+  final RxList<InvestmentPlanModel> allInvestmentPlans =
+      <InvestmentPlanModel>[].obs;
   final RxBool isLoadingNotifications = false.obs;
   final RxBool isLoadingMoreNotifications = false.obs;
   final RxInt notificationTotalCount = 0.obs;
@@ -506,7 +507,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             // Hydrate current myInvestments with updated plans if they are already loaded
             if (myInvestments.isNotEmpty) {
               myInvestments.value = myInvestments.map((inv) {
-                final plan = allInvestmentPlans.firstWhereOrNull((p) => p.id == inv.planId);
+                final plan = allInvestmentPlans.firstWhereOrNull(
+                  (p) => p.id == inv.planId,
+                );
                 return inv.copyWith(investment: plan);
               }).toList();
             }
@@ -540,13 +543,13 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         .order('created_at', ascending: false)
         .listen(
           (data) {
-            myInvestments.value = data
-                .map((json) {
-                  final model = UserInvestmentModel.fromJson(json);
-                  final plan = allInvestmentPlans.firstWhereOrNull((p) => p.id == model.planId);
-                  return model.copyWith(investment: plan);
-                })
-                .toList();
+            myInvestments.value = data.map((json) {
+              final model = UserInvestmentModel.fromJson(json);
+              final plan = allInvestmentPlans.firstWhereOrNull(
+                (p) => p.id == model.planId,
+              );
+              return model.copyWith(investment: plan);
+            }).toList();
 
             // Update countdowns whenever investments refresh
             _updateRewardDistributionInfo();
@@ -625,7 +628,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     if (!Get.isRegistered<EarningsEventService>()) {
       Get.put(EarningsEventService());
     }
-    
+
     // Register callback to refresh dashboard when earnings are updated
     EarningsEventService.to.onEarningsUpdated(() {
       fetchDashboard();
@@ -1602,7 +1605,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           }
           isProcessingUI.value = false;
           canClaimRewards.value = pendingRewards.isNotEmpty;
-          rewardCountdownText.value = _formatDuration(nextTarget.difference(now));
+          rewardCountdownText.value = _formatDuration(
+            nextTarget.difference(now),
+          );
         } else {
           isProcessingUI.value = false;
           canClaimRewards.value = pendingRewards.isNotEmpty;
@@ -1623,7 +1628,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             while (!nextTarget.isAfter(now)) {
               nextTarget = nextTarget.add(const Duration(hours: 24));
             }
-            investmentCountdowns[inv.id] = _formatDuration(nextTarget.difference(now));
+            investmentCountdowns[inv.id] = _formatDuration(
+              nextTarget.difference(now),
+            );
           } else {
             investmentCountdowns[inv.id] = _formatDuration(diff);
           }
@@ -1653,7 +1660,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         // Refresh all data
         await fetchAll();
         HapticFeedback.heavyImpact();
-        
+
         // Trigger earnings update event for automatic refresh
         if (Get.isRegistered<EarningsEventService>()) {
           EarningsEventService.to.triggerEarningsUpdate(source: 'investments');
@@ -1712,7 +1719,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         AppSnack.success('success'.tr, 'cycle_started_success'.tr);
         await fetchMyInvestments();
         await fetchDashboard();
-        
+
         // Trigger earnings update event for automatic refresh
         triggerEarningsUpdate(source: 'investment_returns');
       } else {

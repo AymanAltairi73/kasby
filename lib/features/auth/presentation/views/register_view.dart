@@ -20,11 +20,13 @@ class RegisterView extends StatefulWidget {
 class _RegisterViewState extends State<RegisterView> {
   void _generateSecurePassword() {
     final controller = AuthController.to;
-    final generatedPassword = PasswordGenerator.generateSecurePassword(length: 16);
-    
+    final generatedPassword = PasswordGenerator.generateSecurePassword(
+      length: 16,
+    );
+
     controller.passwordController.text = generatedPassword;
     controller.confirmPasswordController.text = generatedPassword;
-    
+
     // Show success feedback
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -142,12 +144,16 @@ class _RegisterViewState extends State<RegisterView> {
                     tooltip: 'generate_password'.tr,
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'fill_all_data'.tr;
+                    if (value == null || value.isEmpty) {
+                      return 'fill_all_data'.tr;
+                    }
                     if (value.length < 8) return 'weak_password'.tr;
                     return null;
                   },
                 ),
-                PasswordStrengthMeter(controller: controller.passwordController),
+                PasswordStrengthMeter(
+                  controller: controller.passwordController,
+                ),
                 const SizedBox(height: 20),
                 KasbyTextField(
                   label: 'confirm_password'.tr,
@@ -159,7 +165,9 @@ class _RegisterViewState extends State<RegisterView> {
                     color: AppColors.darkGold,
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'fill_all_data'.tr;
+                    if (value == null || value.isEmpty) {
+                      return 'fill_all_data'.tr;
+                    }
                     if (value != controller.passwordController.text) {
                       return 'passwords_dont_match'.tr;
                     }
@@ -218,7 +226,8 @@ class _RegisterViewState extends State<RegisterView> {
                                   decoration: TextDecoration.underline,
                                 ),
                                 recognizer: TapGestureRecognizer()
-                                  ..onTap = () => controller.goToLegal(initialTab: 0),
+                                  ..onTap = () =>
+                                      controller.goToLegal(initialTab: 0),
                               ),
                               TextSpan(text: ' ${'and'.tr} '),
                               TextSpan(
@@ -229,7 +238,8 @@ class _RegisterViewState extends State<RegisterView> {
                                   decoration: TextDecoration.underline,
                                 ),
                                 recognizer: TapGestureRecognizer()
-                                  ..onTap = () => controller.goToLegal(initialTab: 1),
+                                  ..onTap = () =>
+                                      controller.goToLegal(initialTab: 1),
                               ),
                             ],
                           ),

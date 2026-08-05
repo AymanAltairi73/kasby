@@ -108,174 +108,191 @@ class _HomeSliderState extends State<HomeSlider> {
                       ),
                     );
                   },
-                  child: GestureDetector(
-                    onTap: () {
-                      if (ad.actionUrl != null && ad.actionUrl!.isNotEmpty) {
-                        HapticFeedback.lightImpact();
-                        Get.toNamed(ad.actionUrl!);
-                      }
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.darkGold.withValues(alpha: 0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            CachedNetworkImage(
-                              imageUrl: ad.imageUrl,
-                              fit: BoxFit.cover,
-                              memCacheWidth: 800,
-                              maxHeightDiskCache: 600,
-                              placeholder: (context, url) =>
-                                  const KasbyShimmer.card(),
-                              errorWidget: (context, url, error) => Image.asset(
-                                _getFallbackAsset(ad.imageUrl),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned.fill(
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.25),
-                                      Colors.black.withValues(alpha: 0.75),
-                                    ],
-                                    stops: const [0.3, 0.6, 1.0],
+                  child:
+                      GestureDetector(
+                            onTap: () {
+                              if (ad.actionUrl != null &&
+                                  ad.actionUrl!.isNotEmpty) {
+                                HapticFeedback.lightImpact();
+                                Get.toNamed(ad.actionUrl!);
+                              }
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 5),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.darkGold.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
                                   ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    CachedNetworkImage(
+                                      imageUrl: ad.imageUrl,
+                                      fit: BoxFit.cover,
+                                      memCacheWidth: 800,
+                                      maxHeightDiskCache: 600,
+                                      placeholder: (context, url) =>
+                                          const KasbyShimmer.card(),
+                                      errorWidget: (context, url, error) =>
+                                          Image.asset(
+                                            _getFallbackAsset(ad.imageUrl),
+                                            fit: BoxFit.cover,
+                                          ),
+                                    ),
+                                    Positioned.fill(
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.black.withValues(
+                                                alpha: 0.25,
+                                              ),
+                                              Colors.black.withValues(
+                                                alpha: 0.75,
+                                              ),
+                                            ],
+                                            stops: const [0.3, 0.6, 1.0],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 14,
+                                      left: 16,
+                                      right: 16,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                                Get.locale?.languageCode == 'en'
+                                                    ? (ad.titleEn ?? ad.titleAr)
+                                                    : ad.titleAr,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 16,
+                                                  shadows: [
+                                                    Shadow(
+                                                      blurRadius: 8,
+                                                      color: Colors.black54,
+                                                    ),
+                                                  ],
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              )
+                                              .animate(
+                                                autoPlay: KasbyMotion.enabled(
+                                                  context,
+                                                ),
+                                                key: ValueKey(
+                                                  'title_${ad.id}_$_currentPage',
+                                                ),
+                                              )
+                                              .fadeIn(
+                                                duration: KasbyMotion.duration(
+                                                  context,
+                                                  600.ms,
+                                                ),
+                                                curve: Curves.easeOut,
+                                              ),
+                                          if ((Get.locale?.languageCode == 'en'
+                                                      ? ad.descriptionEn
+                                                      : ad.descriptionAr) !=
+                                                  null &&
+                                              (Get.locale?.languageCode == 'en'
+                                                      ? ad.descriptionEn
+                                                      : ad.descriptionAr)!
+                                                  .isNotEmpty) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                                  Get.locale?.languageCode ==
+                                                          'en'
+                                                      ? ad.descriptionEn!
+                                                      : ad.descriptionAr!,
+                                                  style: TextStyle(
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.9),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                    shadows: const [
+                                                      Shadow(
+                                                        blurRadius: 6,
+                                                        color: Colors.black45,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                )
+                                                .animate(
+                                                  autoPlay: KasbyMotion.enabled(
+                                                    context,
+                                                  ),
+                                                  key: ValueKey(
+                                                    'desc_${ad.id}_$_currentPage',
+                                                  ),
+                                                )
+                                                .fadeIn(
+                                                  delay: KasbyMotion.duration(
+                                                    context,
+                                                    300.ms,
+                                                  ),
+                                                  duration:
+                                                      KasbyMotion.duration(
+                                                        context,
+                                                        500.ms,
+                                                      ),
+                                                  curve: Curves.easeOut,
+                                                )
+                                                .slideX(
+                                                  begin: -0.15,
+                                                  end: 0,
+                                                  delay: KasbyMotion.duration(
+                                                    context,
+                                                    300.ms,
+                                                  ),
+                                                  duration:
+                                                      KasbyMotion.duration(
+                                                        context,
+                                                        700.ms,
+                                                      ),
+                                                  curve: Curves.easeOutCubic,
+                                                ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                            Positioned(
-                              bottom: 14,
-                              left: 16,
-                              right: 16,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    Get.locale?.languageCode == 'en'
-                                        ? (ad.titleEn ?? ad.titleAr)
-                                        : ad.titleAr,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 16,
-                                      shadows: [
-                                        Shadow(
-                                          blurRadius: 8,
-                                          color: Colors.black54,
-                                        ),
-                                      ],
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  )
-                                      .animate(
-                                        autoPlay: KasbyMotion.enabled(context),
-                                        key: ValueKey(
-                                          'title_${ad.id}_$_currentPage',
-                                        ),
-                                      )
-                                      .fadeIn(
-                                        duration: KasbyMotion.duration(
-                                          context,
-                                          600.ms,
-                                        ),
-                                        curve: Curves.easeOut,
-                                      ),
-                                  if ((Get.locale?.languageCode == 'en'
-                                              ? ad.descriptionEn
-                                              : ad.descriptionAr) !=
-                                          null &&
-                                      (Get.locale?.languageCode == 'en'
-                                              ? ad.descriptionEn
-                                              : ad.descriptionAr)!
-                                          .isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      Get.locale?.languageCode == 'en'
-                                          ? ad.descriptionEn!
-                                          : ad.descriptionAr!,
-                                      style: TextStyle(
-                                        color:
-                                            Colors.white.withValues(alpha: 0.9),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        shadows: const [
-                                          Shadow(
-                                            blurRadius: 6,
-                                            color: Colors.black45,
-                                          ),
-                                        ],
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    )
-                                        .animate(
-                                          autoPlay:
-                                              KasbyMotion.enabled(context),
-                                          key: ValueKey(
-                                            'desc_${ad.id}_$_currentPage',
-                                          ),
-                                        )
-                                        .fadeIn(
-                                          delay: KasbyMotion.duration(
-                                            context,
-                                            300.ms,
-                                          ),
-                                          duration: KasbyMotion.duration(
-                                            context,
-                                            500.ms,
-                                          ),
-                                          curve: Curves.easeOut,
-                                        )
-                                        .slideX(
-                                          begin: -0.15,
-                                          end: 0,
-                                          delay: KasbyMotion.duration(
-                                            context,
-                                            300.ms,
-                                          ),
-                                          duration: KasbyMotion.duration(
-                                            context,
-                                            700.ms,
-                                          ),
-                                          curve: Curves.easeOutCubic,
-                                        ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                      .animate(
-                        autoPlay: KasbyMotion.enabled(context),
-                        onPlay: (c) => c.repeat(),
-                      )
-                      .shimmer(
-                        duration: KasbyMotion.duration(context, 3000.ms),
-                        color: (isDark ? Colors.white : Colors.black)
-                            .withValues(alpha: 0.1),
-                      ),
+                          )
+                          .animate(
+                            autoPlay: KasbyMotion.enabled(context),
+                            onPlay: (c) => c.repeat(),
+                          )
+                          .shimmer(
+                            duration: KasbyMotion.duration(context, 3000.ms),
+                            color: (isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.1),
+                          ),
                 );
               },
             ),

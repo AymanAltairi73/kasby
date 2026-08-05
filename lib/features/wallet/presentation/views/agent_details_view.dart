@@ -31,10 +31,7 @@ class _AgentDetailsViewState extends State<AgentDetailsView> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         Get.back();
-        AppSnack.error(
-          'something_went_wrong'.tr,
-          'couldnt_load_data'.tr,
-        );
+        AppSnack.error('something_went_wrong'.tr, 'couldnt_load_data'.tr);
       });
     }
   }
@@ -57,19 +54,21 @@ class _AgentDetailsViewState extends State<AgentDetailsView> {
     // Guard: redirect handled in initState; render a neutral loader meanwhile.
     if (Get.arguments is! Map) {
       return Scaffold(
-        backgroundColor:
-            isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        backgroundColor: isDark
+            ? AppColors.backgroundDark
+            : AppColors.backgroundLight,
         body: Center(
           child: CircularProgressIndicator(color: AppColors.darkGold),
         ),
       );
     }
 
-    final Map<String, dynamic> agent =
-        Get.arguments as Map<String, dynamic>;
+    final Map<String, dynamic> agent = Get.arguments as Map<String, dynamic>;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       appBar: AppBar(
         title: Text('authorized_agents'.tr),
         backgroundColor: Colors.transparent,
@@ -106,7 +105,9 @@ class _AgentDetailsViewState extends State<AgentDetailsView> {
           ),
           child: CircleAvatar(
             radius: 50,
-            backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            backgroundColor: isDark
+                ? AppColors.surfaceDark
+                : AppColors.surfaceLight,
             child: Icon(
               Icons.person_rounded,
               size: 60,
@@ -137,7 +138,9 @@ class _AgentDetailsViewState extends State<AgentDetailsView> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: _getStatusColor(agent['availability_status']).withValues(alpha: 0.1),
+            color: _getStatusColor(
+              agent['availability_status'],
+            ).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -168,17 +171,16 @@ class _AgentDetailsViewState extends State<AgentDetailsView> {
             ),
           ),
           const SizedBox(width: 12),
-          Icon(
-            Icons.verified_rounded,
-            color: Colors.blueAccent,
-            size: 24,
-          ),
+          Icon(Icons.verified_rounded, color: Colors.blueAccent, size: 24),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildContactSection(Map<String, dynamic> agent, BuildContext context) {
+  Widget _buildContactSection(
+    Map<String, dynamic> agent,
+    BuildContext context,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,6 +305,7 @@ class _AgentDetailsViewState extends State<AgentDetailsView> {
       ],
     ).animate().fadeIn(delay: 400.ms);
   }
+
   Color _getStatusColor(String? status) {
     switch (status) {
       case 'available':

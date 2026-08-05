@@ -28,6 +28,5 @@ class MaskUtils {
   static String maskIdentifier({
     required String value,
     required bool isPhone,
-  }) =>
-      isPhone ? maskPhone(value) : maskEmail(value);
+  }) => isPhone ? maskPhone(value) : maskEmail(value);
 }

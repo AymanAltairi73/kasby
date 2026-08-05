@@ -42,7 +42,10 @@ class SocialNetworkController extends GetxController {
     refreshAll();
     _listenRealtime();
     if (Get.isRegistered<PresenceService>()) {
-      ever(Get.find<PresenceService>().onlineUsers, (_) => _updateOnlineCount());
+      ever(
+        Get.find<PresenceService>().onlineUsers,
+        (_) => _updateOnlineCount(),
+      );
     }
   }
 

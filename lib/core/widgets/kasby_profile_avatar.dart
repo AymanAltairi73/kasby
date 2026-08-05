@@ -64,9 +64,7 @@ class KasbyProfileAvatar extends StatelessWidget {
               AppColors.darkGold.withValues(alpha: 0.06),
             ],
           ),
-          border: Border.all(
-            color: AppColors.darkGold.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.3)),
         ),
         child: Center(child: _placeholderContent()),
       );
@@ -77,9 +75,7 @@ class KasbyProfileAvatar extends StatelessWidget {
       height: diameter,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: AppColors.darkGold.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.3)),
       ),
       clipBehavior: Clip.antiAlias,
       child: CachedNetworkImage(
@@ -122,7 +118,9 @@ class KasbyProfileAvatar extends StatelessWidget {
               width: 14,
               height: 14,
               decoration: BoxDecoration(
-                color: isOnline! ? AppColors.softGreen : AppColors.textSecondary,
+                color: isOnline!
+                    ? AppColors.softGreen
+                    : AppColors.textSecondary,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: Theme.of(context).scaffoldBackgroundColor,

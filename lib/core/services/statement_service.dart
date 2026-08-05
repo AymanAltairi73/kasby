@@ -32,14 +32,17 @@ class StatementService {
         final df = DateFormat('yyyy-MM-dd');
         final dfFull = DateFormat('yyyy-MM-dd HH:mm');
 
-        final filtered = transactions.where((t) {
-          final d = t.createdAt;
-          if (d == null) return false;
-          return !d.isBefore(from) &&
-              !d.isAfter(to.add(const Duration(days: 1)));
-        }).toList()
-          ..sort((a, b) =>
-              (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+        final filtered =
+            transactions.where((t) {
+              final d = t.createdAt;
+              if (d == null) return false;
+              return !d.isBefore(from) &&
+                  !d.isAfter(to.add(const Duration(days: 1)));
+            }).toList()..sort(
+              (a, b) => (b.createdAt ?? DateTime(0)).compareTo(
+                a.createdAt ?? DateTime(0),
+              ),
+            );
 
         double inflow = 0;
         double outflow = 0;
@@ -55,18 +58,24 @@ class StatementService {
           pw.MultiPage(
             pageFormat: PdfPageFormat.a4,
             build: (context) => [
-              _header(accountName, accountEmail, df.format(from),
-                  df.format(to)),
+              _header(
+                accountName,
+                accountEmail,
+                df.format(from),
+                df.format(to),
+              ),
               pw.SizedBox(height: 16),
-              _summary(formatAmount(inflow), formatAmount(outflow),
-                  formatAmount(inflow - outflow)),
+              _summary(
+                formatAmount(inflow),
+                formatAmount(outflow),
+                formatAmount(inflow - outflow),
+              ),
               pw.SizedBox(height: 16),
               _table(filtered, dfFull, formatAmount),
               pw.SizedBox(height: 24),
               pw.Text(
                 'Kasby — Investment Platform · This statement is generated for informational purposes.',
-                style: pw.TextStyle(
-                    fontSize: 8, color: PdfColors.grey600),
+                style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
               ),
             ],
           ),
@@ -88,22 +97,25 @@ class StatementService {
     );
   }
 
-  static pw.Widget _header(
-      String name, String email, String from, String to) {
+  static pw.Widget _header(String name, String email, String from, String to) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('KASBY',
-                style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromInt(0xFFC9A24D))),
-            pw.Text('Account Statement',
-                style: pw.TextStyle(
-                    fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'KASBY',
+              style: pw.TextStyle(
+                fontSize: 24,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColor.fromInt(0xFFC9A24D),
+              ),
+            ),
+            pw.Text(
+              'Account Statement',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
           ],
         ),
         pw.Divider(color: PdfColor.fromInt(0xFFC9A24D)),
@@ -112,8 +124,10 @@ class StatementService {
         if (email.isNotEmpty)
           pw.Text(email, style: const pw.TextStyle(fontSize: 10)),
         pw.SizedBox(height: 4),
-        pw.Text('Period: $from to $to',
-            style: const pw.TextStyle(fontSize: 10)),
+        pw.Text(
+          'Period: $from to $to',
+          style: const pw.TextStyle(fontSize: 10),
+        ),
       ],
     );
   }
@@ -133,11 +147,14 @@ class StatementService {
             children: [
               pw.Text(label, style: const pw.TextStyle(fontSize: 9)),
               pw.SizedBox(height: 4),
-              pw.Text(value,
-                  style: pw.TextStyle(
-                      fontSize: 13,
-                      fontWeight: pw.FontWeight.bold,
-                      color: color)),
+              pw.Text(
+                value,
+                style: pw.TextStyle(
+                  fontSize: 13,
+                  fontWeight: pw.FontWeight.bold,
+                  color: color,
+                ),
+              ),
             ],
           ),
         ),
@@ -154,9 +171,10 @@ class StatementService {
   }
 
   static pw.Widget _table(
-      List<TransactionModel> txns,
-      DateFormat df,
-      String Function(double) money) {
+    List<TransactionModel> txns,
+    DateFormat df,
+    String Function(double) money,
+  ) {
     final headers = ['Date', 'Type', 'Status', 'Amount'];
     final rows = txns.map((t) {
       final sign = t.isDebit ? '-' : '+';
@@ -172,9 +190,13 @@ class StatementService {
       headers: headers,
       data: rows,
       headerStyle: pw.TextStyle(
-          fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.white),
-      headerDecoration:
-          const pw.BoxDecoration(color: PdfColor.fromInt(0xFF1A1A1F)),
+        fontWeight: pw.FontWeight.bold,
+        fontSize: 10,
+        color: PdfColors.white,
+      ),
+      headerDecoration: const pw.BoxDecoration(
+        color: PdfColor.fromInt(0xFF1A1A1F),
+      ),
       cellStyle: const pw.TextStyle(fontSize: 9),
       cellAlignments: {
         0: pw.Alignment.centerLeft,
@@ -182,8 +204,7 @@ class StatementService {
         2: pw.Alignment.centerLeft,
         3: pw.Alignment.centerRight,
       },
-      oddRowDecoration:
-          const pw.BoxDecoration(color: PdfColors.grey100),
+      oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
     );
   }
 

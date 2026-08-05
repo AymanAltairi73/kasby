@@ -22,7 +22,12 @@ class DeepLinkService extends GetxService {
 
   Future<DeepLinkService> init() async {
     final stopwatch = Stopwatch()..start();
-    SafeGetx.debugTrace(className: 'DeepLinkService', method: 'init', feature: 'Core', status: 'INFO');
+    SafeGetx.debugTrace(
+      className: 'DeepLinkService',
+      method: 'init',
+      feature: 'Core',
+      status: 'INFO',
+    );
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
@@ -190,7 +195,12 @@ class DeepLinkService extends GetxService {
 
   @override
   void onClose() {
-    SafeGetx.debugTrace(className: 'DeepLinkService', method: 'onClose', feature: 'Core', status: 'INFO');
+    SafeGetx.debugTrace(
+      className: 'DeepLinkService',
+      method: 'onClose',
+      feature: 'Core',
+      status: 'INFO',
+    );
     _linkSubscription?.cancel();
     super.onClose();
   }

@@ -80,13 +80,13 @@ class _HomeViewState extends State<HomeView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     KeyedSubtree(
-                      key: TourTargetKeys.welcome,
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 216,
-                        child: HomeSlider(),
-                      ),
-                    )
+                          key: TourTargetKeys.welcome,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 216,
+                            child: HomeSlider(),
+                          ),
+                        )
                         .animate(autoPlay: motion)
                         .fadeIn(
                           duration: KasbyMotion.duration(
@@ -107,9 +107,9 @@ class _HomeViewState extends State<HomeView> {
                       return const SizedBox.shrink();
                     }),
                     HomeBalanceCard(
-                      kspSectionKey: TourTargetKeys.kspRewards,
-                      tourKey: TourTargetKeys.wallet,
-                    )
+                          kspSectionKey: TourTargetKeys.kspRewards,
+                          tourKey: TourTargetKeys.wallet,
+                        )
                         .animate(autoPlay: motion)
                         .fadeIn(
                           delay: KasbyMotion.duration(
@@ -204,9 +204,9 @@ class _HomeViewState extends State<HomeView> {
                     //       .slideY(begin: 0.1, end: 0);
                     // }),
                     HomeQuickActions(
-                      tourKey: TourTargetKeys.quickActions,
-                      marketplaceKey: TourTargetKeys.marketplace,
-                    )
+                          tourKey: TourTargetKeys.quickActions,
+                          marketplaceKey: TourTargetKeys.marketplace,
+                        )
                         .animate(autoPlay: motion)
                         .fadeIn(
                           delay: KasbyMotion.duration(
@@ -216,9 +216,9 @@ class _HomeViewState extends State<HomeView> {
                         ),
                     const SizedBox(height: 32),
                     HomeSectionHeader(
-                      title: 'recent_transactions'.tr,
-                      onSeeAll: () => Get.toNamed(Routes.allTransactions),
-                    )
+                          title: 'recent_transactions'.tr,
+                          onSeeAll: () => Get.toNamed(Routes.allTransactions),
+                        )
                         .animate(autoPlay: motion)
                         .fadeIn(
                           delay: KasbyMotion.duration(

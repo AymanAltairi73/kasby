@@ -22,10 +22,7 @@ void main() {
     });
 
     test('toE164 adds plus prefix', () {
-      expect(
-        LoginIdentifierUtils.toE164('966501234567'),
-        '+966501234567',
-      );
+      expect(LoginIdentifierUtils.toE164('966501234567'), '+966501234567');
     });
   });
 }

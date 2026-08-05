@@ -46,9 +46,10 @@ class _TourCoachContentState extends State<TourCoachContent>
       duration: const Duration(milliseconds: 280),
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scale = Tween<double>(begin: 0.94, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _scale = Tween<double>(
+      begin: 0.94,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
     _controller.forward();
   }
 
@@ -123,8 +124,8 @@ class _TourCoachContentState extends State<TourCoachContent>
                     Text(
                       widget.titleKey.tr,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -161,7 +162,9 @@ class _TourCoachContentState extends State<TourCoachContent>
                               widget.isLastStep
                                   ? 'tour_finish'.tr
                                   : 'tour_next'.tr,
-                              style: const TextStyle(fontWeight: FontWeight.w800),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),

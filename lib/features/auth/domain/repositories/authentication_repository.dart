@@ -104,7 +104,8 @@ class AuthenticationRepository extends GetxService {
           );
         } on AuthException catch (e) {
           final message = e.message.toLowerCase();
-          final retriable = message.contains('invalid login credentials') ||
+          final retriable =
+              message.contains('invalid login credentials') ||
               message.contains('invalid credentials') ||
               message.contains('user not found') ||
               message.contains('phone not confirmed');
@@ -140,7 +141,11 @@ class AuthenticationRepository extends GetxService {
     final sw = AuthenticationLogger.logStart('logout', method: 'signOut');
     try {
       await _auth.signOut();
-      AuthenticationLogger.logSuccess('logout', stopwatch: sw, method: 'signOut');
+      AuthenticationLogger.logSuccess(
+        'logout',
+        stopwatch: sw,
+        method: 'signOut',
+      );
     } catch (e, stack) {
       AuthenticationLogger.logFailure(
         'logout',
@@ -175,18 +180,16 @@ class AuthenticationRepository extends GetxService {
     required String email,
     required String code,
   }) async {
-    await _emailOtp.verify(
-      email: email,
-      token: code,
-      type: OtpType.signup,
-    );
+    await _emailOtp.verify(email: email, token: code, type: OtpType.signup);
     await _syncAfterOtp();
     await ensureUserProfile();
     if (Get.isRegistered<SecurityNotificationService>()) {
       await SecurityNotificationService.to.notifyEmailVerified();
     }
     if (Get.isRegistered<SecurityActivityService>()) {
-      await SecurityActivityService.to.logEvent(SecurityEventType.emailVerified);
+      await SecurityActivityService.to.logEvent(
+        SecurityEventType.emailVerified,
+      );
     }
   }
 
@@ -221,7 +224,9 @@ class AuthenticationRepository extends GetxService {
       method: 'ensureUserProfile',
     );
     try {
-      final response = await SupabaseService.client.rpc('fn_ensure_user_profile');
+      final response = await SupabaseService.client.rpc(
+        'fn_ensure_user_profile',
+      );
       final success = response is Map && response['success'] == true;
       AuthenticationLogger.logSuccess(
         'profile_provision',
@@ -270,15 +275,16 @@ class AuthenticationRepository extends GetxService {
     await _syncAfterOtp();
     if (type == OtpType.sms || type == OtpType.signup) {
       await SecurityNotificationService.to.notifyPhoneVerified();
-      await SecurityActivityService.to.logEvent(SecurityEventType.phoneVerified);
+      await SecurityActivityService.to.logEvent(
+        SecurityEventType.phoneVerified,
+      );
     }
   }
 
   Future<void> resendPhoneOtp({
     required String phone,
     OtpType type = OtpType.sms,
-  }) =>
-      _phoneOtp.resend(phone: phone, type: type);
+  }) => _phoneOtp.resend(phone: phone, type: type);
 
   // ─── PASSWORD RESET ───────────────────────────────────────
 
@@ -292,22 +298,14 @@ class AuthenticationRepository extends GetxService {
     required String email,
     required String code,
   }) async {
-    await _emailOtp.verify(
-      email: email,
-      token: code,
-      type: OtpType.recovery,
-    );
+    await _emailOtp.verify(email: email, token: code, type: OtpType.recovery);
   }
 
   Future<void> verifyPasswordResetPhoneOtp({
     required String phone,
     required String code,
   }) async {
-    await _phoneOtp.verify(
-      phone: phone,
-      token: code,
-      type: OtpType.recovery,
-    );
+    await _phoneOtp.verify(phone: phone, token: code, type: OtpType.recovery);
   }
 
   Future<void> completePasswordReset(String newPassword) async {
@@ -331,7 +329,9 @@ class AuthenticationRepository extends GetxService {
         method: 'updatePassword',
       );
       await SecurityNotificationService.to.notifyPasswordChanged();
-      await SecurityActivityService.to.logEvent(SecurityEventType.passwordChange);
+      await SecurityActivityService.to.logEvent(
+        SecurityEventType.passwordChange,
+      );
     } catch (e, stack) {
       AuthenticationLogger.logFailure(
         'password_change',
@@ -400,13 +400,9 @@ class AuthenticationRepository extends GetxService {
 
   // ─── STEP-UP (account security, not financial) ────────────
 
-  Future<void> sendStepUpOtp(String phone) =>
-      _phoneOtp.sendStepUpOtp(phone);
+  Future<void> sendStepUpOtp(String phone) => _phoneOtp.sendStepUpOtp(phone);
 
-  Future<void> verifyStepUpOtp({
-    required String phone,
-    required String code,
-  }) =>
+  Future<void> verifyStepUpOtp({required String phone, required String code}) =>
       _phoneOtp.verifyStepUpOtp(phone: phone, token: code);
 
   // ─── REAUTH ───────────────────────────────────────────────
@@ -423,10 +419,7 @@ class AuthenticationRepository extends GetxService {
       email: email,
     );
     try {
-      await _auth.signInWithPassword(
-        email: email,
-        password: password.trim(),
-      );
+      await _auth.signInWithPassword(email: email, password: password.trim());
       AuthenticationLogger.logSuccess(
         'password_verification',
         stopwatch: sw,
@@ -567,10 +560,7 @@ class AuthenticationRepository extends GetxService {
     return null;
   }
 
-  Future<void> resendEmailOtp({
-    required String email,
-    required OtpType type,
-  }) =>
+  Future<void> resendEmailOtp({required String email, required OtpType type}) =>
       _emailOtp.resend(email: email, type: type);
 
   int get phoneOtpLength => AuthOtpConfig.lengthForOtpType(OtpType.sms);

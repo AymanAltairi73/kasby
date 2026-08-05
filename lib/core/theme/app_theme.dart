@@ -169,10 +169,7 @@ class AppTheme {
           color: AppColors.onSurfaceLight,
         ),
       ),
-      iconTheme: IconThemeData(
-        color: AppColors.iconLight,
-        size: 24,
-      ),
+      iconTheme: IconThemeData(color: AppColors.iconLight, size: 24),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceLight,

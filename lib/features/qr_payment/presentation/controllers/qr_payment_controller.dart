@@ -40,7 +40,14 @@ class QrPaymentController extends GetxController {
     super.onClose();
   }
 
-  void _log(String msg, {required String method, bool isError = false, Object? error, StackTrace? stack, Map<String, Object?>? params}) {
+  void _log(
+    String msg, {
+    required String method,
+    bool isError = false,
+    Object? error,
+    StackTrace? stack,
+    Map<String, Object?>? params,
+  }) {
     SafeGetx.debugTrace(
       className: 'QrPaymentController',
       method: method,
@@ -76,7 +83,12 @@ class QrPaymentController extends GetxController {
       HapticFeedback.heavyImpact();
       await _audioPlayer.play(AssetSource('sounds/scan_success.mp3'));
     } catch (e) {
-      _log('Error playing feedback', method: 'playScanFeedback', isError: true, error: e);
+      _log(
+        'Error playing feedback',
+        method: 'playScanFeedback',
+        isError: true,
+        error: e,
+      );
     }
   }
 
@@ -87,7 +99,7 @@ class QrPaymentController extends GetxController {
   Map<String, dynamic>? parseQrData(String rawData) {
     try {
       final Map<String, dynamic> data = jsonDecode(rawData);
-      
+
       if (!data.containsKey('user_id') || !data.containsKey('type')) {
         _log('Invalid QR structure', method: 'parseQrData', isError: true);
         return null;
@@ -97,7 +109,12 @@ class QrPaymentController extends GetxController {
       if (timestamp != null) {
         final age = DateTime.now().millisecondsSinceEpoch - timestamp;
         if (age > _qrMaxAgeMs) {
-          _log('QR code expired', method: 'parseQrData', isError: true, params: {'ageMs': age});
+          _log(
+            'QR code expired',
+            method: 'parseQrData',
+            isError: true,
+            params: {'ageMs': age},
+          );
           AppSnack.error('expired_qr'.tr, 'expired_qr_desc'.tr);
           return null;
         }
@@ -105,18 +122,20 @@ class QrPaymentController extends GetxController {
 
       return data;
     } catch (e) {
-      _log('Error parsing QR data', method: 'parseQrData', isError: true, error: e);
+      _log(
+        'Error parsing QR data',
+        method: 'parseQrData',
+        isError: true,
+        error: e,
+      );
       return null;
     }
   }
 
   /// Shows a confirmation sheet with the scanned recipient before transferring.
-  Future<bool?> _confirmRecipient(
-    String name,
-    dynamic amount,
-    String code,
-  ) {
-    final hasAmount = amount != null && (double.tryParse(amount.toString()) ?? 0) > 0;
+  Future<bool?> _confirmRecipient(String name, dynamic amount, String code) {
+    final hasAmount =
+        amount != null && (double.tryParse(amount.toString()) ?? 0) > 0;
     return Get.dialog<bool>(
       AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -128,14 +147,21 @@ class QrPaymentController extends GetxController {
                 color: AppColors.darkGold.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.qr_code_scanner_rounded,
-                  color: AppColors.darkGold, size: 24),
+              child: Icon(
+                Icons.qr_code_scanner_rounded,
+                color: AppColors.darkGold,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('confirm_payment'.tr,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 18)),
+              child: Text(
+                'confirm_payment'.tr,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
             ),
           ],
         ),
@@ -143,18 +169,25 @@ class QrPaymentController extends GetxController {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('scan_verify_desc'.tr,
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            Text(
+              'scan_verify_desc'.tr,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
             const SizedBox(height: 16),
             if (name.isNotEmpty)
               Row(
                 children: [
-                  Icon(Icons.person_rounded,
-                      size: 18, color: AppColors.darkGold),
+                  Icon(
+                    Icons.person_rounded,
+                    size: 18,
+                    color: AppColors.darkGold,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(name,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
@@ -162,11 +195,16 @@ class QrPaymentController extends GetxController {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.payments_rounded,
-                      size: 18, color: AppColors.darkGold),
+                  Icon(
+                    Icons.payments_rounded,
+                    size: 18,
+                    color: AppColors.darkGold,
+                  ),
                   const SizedBox(width: 8),
-                  Text('\$$amount',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    '\$$amount',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
             ],
@@ -175,8 +213,10 @@ class QrPaymentController extends GetxController {
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: Text('cancel'.tr,
-                style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              'cancel'.tr,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           KasbyButton(
             width: 130,
@@ -224,7 +264,11 @@ class QrPaymentController extends GetxController {
       final recipientName = data['name']?.toString() ?? '';
 
       // C17: explicit confirmation step before proceeding to transfer.
-      final confirmed = await _confirmRecipient(recipientName, amount, referralCode);
+      final confirmed = await _confirmRecipient(
+        recipientName,
+        amount,
+        referralCode,
+      );
       if (confirmed != true) return false;
 
       await Get.offNamed(
@@ -238,7 +282,13 @@ class QrPaymentController extends GetxController {
       );
       return true;
     } catch (e, stack) {
-      _log('Error handling scan result', method: 'handleScanResult', isError: true, error: e, stack: stack);
+      _log(
+        'Error handling scan result',
+        method: 'handleScanResult',
+        isError: true,
+        error: e,
+        stack: stack,
+      );
       AppSnack.error('error'.tr, 'invalid_qr_desc'.tr);
       return false;
     } finally {

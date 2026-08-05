@@ -37,14 +37,8 @@ class TourWelcomeDialog {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: isDark
-                          ? [
-                              const Color(0xFF1A1F2B),
-                              const Color(0xFF12151C),
-                            ]
-                          : [
-                              Colors.white,
-                              AppColors.surfaceLight,
-                            ],
+                          ? [const Color(0xFF1A1F2B), const Color(0xFF12151C)]
+                          : [Colors.white, AppColors.surfaceLight],
                     ),
                     border: Border.all(
                       color: AppColors.darkGold.withValues(alpha: 0.45),
@@ -78,13 +72,11 @@ class TourWelcomeDialog {
                           color: AppColors.darkGold,
                           size: 40,
                         ),
-                      )
-                          .animate()
-                          .scale(
-                            begin: const Offset(0.6, 0.6),
-                            duration: 500.ms,
-                            curve: Curves.elasticOut,
-                          ),
+                      ).animate().scale(
+                        begin: const Offset(0.6, 0.6),
+                        duration: 500.ms,
+                        curve: Curves.elasticOut,
+                      ),
                       const SizedBox(height: 20),
                       Text(
                         'tour_welcome_title'.tr,
@@ -113,7 +105,9 @@ class TourWelcomeDialog {
                         child: FilledButton(
                           onPressed: () {
                             Navigator.of(ctx).pop();
-                            ShellController.to.setIndex(ShellController.tabInvest);
+                            ShellController.to.setIndex(
+                              ShellController.tabInvest,
+                            );
                             Get.toNamed(Routes.investmentPlans);
                           },
                           style: FilledButton.styleFrom(

@@ -45,7 +45,10 @@ class TourSettingsSheet extends StatelessWidget {
           const SizedBox(height: 16),
           ...TourId.values.map(
             (id) => ListTile(
-              leading: Icon(Icons.play_lesson_outlined, color: AppColors.darkGold),
+              leading: Icon(
+                Icons.play_lesson_outlined,
+                color: AppColors.darkGold,
+              ),
               title: Text(id.labelKey.tr),
               trailing: const Icon(Icons.replay_rounded, size: 20),
               onTap: () {

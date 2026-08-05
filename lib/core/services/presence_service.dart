@@ -17,11 +17,11 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
     if (id.length <= 8) return id;
     return '${id.substring(0, 8)}...';
   }
-  
+
   // Getters for UI
   int get onlineCount => onlineUsers.length;
   bool isUserOnline(String userId) => onlineUsers.containsKey(userId);
-  
+
   DateTime? getLastSeen(String userId) {
     final userData = onlineUsers[userId];
     if (userData != null && userData['last_seen_at'] != null) {
@@ -36,10 +36,10 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
     }
     final lastSeen = getLastSeen(userId);
     if (lastSeen == null) return 'offline';
-    
+
     final now = DateTime.now();
     final diff = now.difference(lastSeen);
-    
+
     if (diff.inMinutes < 1) {
       return 'active_now';
     } else if (diff.inMinutes < 5) {
@@ -58,7 +58,7 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
   String getPresenceStatusText(String userId) {
     final status = getPresenceStatus(userId);
     final lastSeen = getLastSeen(userId);
-    
+
     switch (status) {
       case 'online':
         return 'online'.tr;
@@ -87,9 +87,14 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
   StreamSubscription? _authSubscription;
 
   Future<PresenceService> init() async {
-    SafeGetx.debugTrace(className: 'PresenceService', method: 'init', feature: 'Core', status: 'INFO');
+    SafeGetx.debugTrace(
+      className: 'PresenceService',
+      method: 'init',
+      feature: 'Core',
+      status: 'INFO',
+    );
     WidgetsBinding.instance.addObserver(this);
-    
+
     // Listen to login status to start/stop presence
     _authSubscription = SupabaseService.auth.onAuthStateChange.listen((event) {
       if (event.session != null) {
@@ -104,13 +109,18 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
       _updateLastSeen();
     }
 
-    SafeGetx.debugTrace(className: 'PresenceService', method: 'init', feature: 'Core', status: 'SUCCESS');
+    SafeGetx.debugTrace(
+      className: 'PresenceService',
+      method: 'init',
+      feature: 'Core',
+      status: 'SUCCESS',
+    );
     return this;
   }
 
   void _setupPresence() {
     _cleanupPresence();
-    
+
     final client = SupabaseService.client;
     final user = client.auth.currentUser;
     if (user == null) return;
@@ -123,55 +133,72 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
       params: {'userId': _truncateId(user.id)},
     );
 
-    _presenceChannel = client.channel('global-presence', opts: const RealtimeChannelConfig(self: true));
+    _presenceChannel = client.channel(
+      'global-presence',
+      opts: const RealtimeChannelConfig(self: true),
+    );
 
     _presenceChannel!
-      .onPresenceSync((payload) {
-        final newState = _presenceChannel!.presenceState();
-        final users = <String, Map<String, dynamic>>{};
-        
-        for (final state in newState) {
-          final presenceList = state.presences;
-          if (presenceList.isNotEmpty) {
-            for (final presence in presenceList) {
-              final payloadData = presence.payload;
-              final userId = payloadData['user_id']?.toString();
-              if (userId != null) {
-                users[userId] = {
-                  ...payloadData,
-                  'last_seen_at': payloadData['online_at'] ?? DateTime.now().toIso8601String(),
-                };
+        .onPresenceSync((payload) {
+          final newState = _presenceChannel!.presenceState();
+          final users = <String, Map<String, dynamic>>{};
+
+          for (final state in newState) {
+            final presenceList = state.presences;
+            if (presenceList.isNotEmpty) {
+              for (final presence in presenceList) {
+                final payloadData = presence.payload;
+                final userId = payloadData['user_id']?.toString();
+                if (userId != null) {
+                  users[userId] = {
+                    ...payloadData,
+                    'last_seen_at':
+                        payloadData['online_at'] ??
+                        DateTime.now().toIso8601String(),
+                  };
+                }
               }
             }
           }
-        }
-        
-        onlineUsers.assignAll(users);
-      })
-      .subscribe((status, [error]) async {
-        if (status == RealtimeSubscribeStatus.subscribed) {
-          SafeGetx.debugTrace(className: 'PresenceService', method: '_setupPresence', feature: 'Core', status: 'SUCCESS', message: 'Subscribed to presence channel');
-          await _presenceChannel!.track({
-            'user_id': user.id,
-            'online_at': DateTime.now().toIso8601String(),
-            'user_type': 'user',
-          });
-          _startHeartbeat();
-        } else if (error != null) {
-          SafeGetx.debugTrace(className: 'PresenceService', method: '_setupPresence', feature: 'Core', status: 'ERROR', error: error);
-        }
-      });
+
+          onlineUsers.assignAll(users);
+        })
+        .subscribe((status, [error]) async {
+          if (status == RealtimeSubscribeStatus.subscribed) {
+            SafeGetx.debugTrace(
+              className: 'PresenceService',
+              method: '_setupPresence',
+              feature: 'Core',
+              status: 'SUCCESS',
+              message: 'Subscribed to presence channel',
+            );
+            await _presenceChannel!.track({
+              'user_id': user.id,
+              'online_at': DateTime.now().toIso8601String(),
+              'user_type': 'user',
+            });
+            _startHeartbeat();
+          } else if (error != null) {
+            SafeGetx.debugTrace(
+              className: 'PresenceService',
+              method: '_setupPresence',
+              feature: 'Core',
+              status: 'ERROR',
+              error: error,
+            );
+          }
+        });
   }
 
   Timer? _heartbeatTimer;
-  
+
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _updateHeartbeat();
     });
   }
-  
+
   Future<void> _updateHeartbeat() async {
     if (_presenceChannel == null) return;
     try {
@@ -184,7 +211,13 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
         });
       }
     } catch (e) {
-      SafeGetx.debugTrace(className: 'PresenceService', method: '_updateHeartbeat', feature: 'Core', status: 'ERROR', error: e);
+      SafeGetx.debugTrace(
+        className: 'PresenceService',
+        method: '_updateHeartbeat',
+        feature: 'Core',
+        status: 'ERROR',
+        error: e,
+      );
     }
   }
 
@@ -201,7 +234,14 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
     try {
       await SupabaseService.client.rpc('fn_update_last_seen');
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'PresenceService', method: '_updateLastSeen', feature: 'Core', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'PresenceService',
+        method: '_updateLastSeen',
+        feature: 'Core',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -228,7 +268,12 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
 
   @override
   void onClose() {
-    SafeGetx.debugTrace(className: 'PresenceService', method: 'onClose', feature: 'Core', status: 'INFO');
+    SafeGetx.debugTrace(
+      className: 'PresenceService',
+      method: 'onClose',
+      feature: 'Core',
+      status: 'INFO',
+    );
     _authSubscription?.cancel();
     _heartbeatTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);

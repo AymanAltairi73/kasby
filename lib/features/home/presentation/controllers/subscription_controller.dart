@@ -18,7 +18,7 @@ class SubscriptionController extends GetxController {
   final RxString countdownText = ''.obs;
   final RxDouble remainingPercentage = 0.0.obs;
   final Rx<Color> countdownColor = AppColors.softGreen.obs;
-  
+
   Timer? _timer;
   bool _notifiedExpiry = false;
 
@@ -65,17 +65,19 @@ class SubscriptionController extends GetxController {
     final String? endStr = activeSubscription['end_date'];
     if (endStr == null) return;
 
-    final DateTime startDate = startStr != null ? DateTime.parse(startStr).toLocal() : DateTime.now().subtract(const Duration(days: 1));
+    final DateTime startDate = startStr != null
+        ? DateTime.parse(startStr).toLocal()
+        : DateTime.now().subtract(const Duration(days: 1));
     final DateTime endDate = DateTime.parse(endStr).toLocal();
     final DateTime now = DateTime.now();
-    
+
     final Duration total = endDate.difference(startDate);
     final Duration remaining = endDate.difference(now);
 
     if (remaining.isNegative) {
       countdownText.value = '';
       remainingPercentage.value = 0.0;
-      
+
       if (!_notifiedExpiry && activeSubscription['status'] == 'active') {
         _notifiedExpiry = true;
         _showExpiryNotification();
@@ -86,9 +88,13 @@ class SubscriptionController extends GetxController {
       }
     } else {
       _notifiedExpiry = false;
-      
+
       // Calculate Percentage
-      final double percent = (remaining.inSeconds / total.inSeconds.clamp(1, 99999999)).clamp(0.0, 1.0);
+      final double percent =
+          (remaining.inSeconds / total.inSeconds.clamp(1, 99999999)).clamp(
+            0.0,
+            1.0,
+          );
       remainingPercentage.value = percent;
 
       // Determine Color
@@ -106,9 +112,11 @@ class SubscriptionController extends GetxController {
       final int minutes = remaining.inMinutes.remainder(60);
       final int seconds = remaining.inSeconds.remainder(60);
 
-      String timeStr = '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+      String timeStr =
+          '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
       if (days > 0) {
-        countdownText.value = '${'days_label'.trParams({'count': days.toString()})} $timeStr';
+        countdownText.value =
+            '${'days_label'.trParams({'count': days.toString()})} $timeStr';
       } else {
         countdownText.value = timeStr;
       }
@@ -189,7 +197,8 @@ class SubscriptionController extends GetxController {
         final amount = isYearly ? 89.0 : 9.0;
         ReferralService.processReferralCommission(
           investmentAmount: amount,
-          investmentId: 'sub_${DateTime.now().millisecondsSinceEpoch}', // Unique ID for idempotency
+          investmentId:
+              'sub_${DateTime.now().millisecondsSinceEpoch}', // Unique ID for idempotency
         );
 
         SafeGetx.debugTrace(
@@ -210,7 +219,10 @@ class SubscriptionController extends GetxController {
           message: response['error']?.toString(),
           durationMs: stopwatch.elapsedMilliseconds,
         );
-        AppSnack.error('error'.tr, response['error']?.toString() ?? 'unknown_error'.tr);
+        AppSnack.error(
+          'error'.tr,
+          response['error']?.toString() ?? 'unknown_error'.tr,
+        );
       }
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -233,8 +245,14 @@ class SubscriptionController extends GetxController {
       AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('subscription_active_title'.tr, style: TextStyle(color: AppColors.onSurface)),
-        content: Text('subscription_active_desc'.tr, style: TextStyle(color: AppColors.textSecondary)),
+        title: Text(
+          'subscription_active_title'.tr,
+          style: TextStyle(color: AppColors.onSurface),
+        ),
+        content: Text(
+          'subscription_active_desc'.tr,
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),

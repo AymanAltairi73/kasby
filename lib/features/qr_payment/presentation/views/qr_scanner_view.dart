@@ -104,8 +104,7 @@ class _QrScannerViewState extends State<QrScannerView>
       case AppLifecycleState.paused:
         return;
       case AppLifecycleState.resumed:
-        _barcodeSubscription ??=
-            _scannerController.barcodes.listen(_onBarcode);
+        _barcodeSubscription ??= _scannerController.barcodes.listen(_onBarcode);
         unawaited(_startScanner());
       case AppLifecycleState.inactive:
         unawaited(_barcodeSubscription?.cancel());
@@ -182,46 +181,48 @@ class _QrScannerViewState extends State<QrScannerView>
               child: KeyedSubtree(
                 key: TourTargetKeys.qrScanner,
                 child: SizedBox(
-                width: _scanWindowSize,
-                height: _scanWindowSize,
-                child: Stack(
-                  children: [
-                    _buildCorner(Alignment.topLeft),
-                    _buildCorner(Alignment.topRight),
-                    _buildCorner(Alignment.bottomLeft),
-                    _buildCorner(Alignment.bottomRight),
-                    AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return Positioned(
-                          top: _animationController.value * _scanWindowSize,
-                          left: 16,
-                          right: 16,
-                          child: Container(
-                            height: 2,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.darkGold.withValues(alpha: 0),
-                                  AppColors.darkGold,
-                                  AppColors.darkGold.withValues(alpha: 0),
+                  width: _scanWindowSize,
+                  height: _scanWindowSize,
+                  child: Stack(
+                    children: [
+                      _buildCorner(Alignment.topLeft),
+                      _buildCorner(Alignment.topRight),
+                      _buildCorner(Alignment.bottomLeft),
+                      _buildCorner(Alignment.bottomRight),
+                      AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return Positioned(
+                            top: _animationController.value * _scanWindowSize,
+                            left: 16,
+                            right: 16,
+                            child: Container(
+                              height: 2,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.darkGold.withValues(alpha: 0),
+                                    AppColors.darkGold,
+                                    AppColors.darkGold.withValues(alpha: 0),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.darkGold.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
                                 ],
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.darkGold.withValues(alpha: 0.5),
-                                  blurRadius: 8,
-                                  spreadRadius: 2,
-                                ),
-                              ],
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               ),
             ),
           ),
@@ -355,7 +356,10 @@ class _QrScannerViewState extends State<QrScannerView>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.darkGold,
                 foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 14,
+                ),
               ),
               child: Text('app_error_retry'.tr),
             ),
@@ -404,9 +408,7 @@ class _ScannerOverlayPainter extends CustomPainter {
     final overlayPaint = Paint()..color = overlayColor;
     final background = Path()..addRect(Offset.zero & size);
     final hole = Path()
-      ..addRRect(
-        RRect.fromRectAndRadius(scanRect, const Radius.circular(12)),
-      );
+      ..addRRect(RRect.fromRectAndRadius(scanRect, const Radius.circular(12)));
 
     canvas.drawPath(
       Path.combine(PathOperation.difference, background, hole),

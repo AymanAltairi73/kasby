@@ -90,7 +90,7 @@ class ContentLocalizationService {
 
   static String _resolveDynamicPatterns(String trimmed) {
     final lowercase = trimmed.toLowerCase();
-    
+
     // Exact matches
     if (trimmed == 'تم إنشاء الاستثمار 🚀') {
       return _resolveKey('investment_created_title');
@@ -107,7 +107,7 @@ class ContentLocalizationService {
     if (lowercase == 'daily profit distribution') {
       return _resolveKey('daily_profit_distribution');
     }
-    if (lowercase == 'investment matured — principal returned' || 
+    if (lowercase == 'investment matured — principal returned' ||
         lowercase == 'investment matured - principal returned') {
       return _resolveKey('investment_matured_principal_returned');
     }
@@ -116,32 +116,49 @@ class ContentLocalizationService {
     // 1. Referral commission: "عمولة إحالة من استثمار [Name]"
     if (trimmed.startsWith('عمولة إحالة من استثمار ')) {
       final name = trimmed.substring('عمولة إحالة من استثمار '.length).trim();
-      return _resolveKey('referral_commission_from_investment', params: {'name': name});
+      return _resolveKey(
+        'referral_commission_from_investment',
+        params: {'name': name},
+      );
     }
     if (trimmed.startsWith('Referral commission from investment of ')) {
-      final name = trimmed.substring('Referral commission from investment of '.length).trim();
-      return _resolveKey('referral_commission_from_investment', params: {'name': name});
+      final name = trimmed
+          .substring('Referral commission from investment of '.length)
+          .trim();
+      return _resolveKey(
+        'referral_commission_from_investment',
+        params: {'name': name},
+      );
     }
 
     // 2. Investment notification message: "[Name] استثمر [Amount] USD"
-    final investMatchAr = RegExp(r'^(.+?)\s+استثمر\s+([\d\.]+)\s+USD$').firstMatch(trimmed);
+    final investMatchAr = RegExp(
+      r'^(.+?)\s+استثمر\s+([\d\.]+)\s+USD$',
+    ).firstMatch(trimmed);
     if (investMatchAr != null) {
       final name = investMatchAr.group(1)?.trim();
       final amount = investMatchAr.group(2)?.trim();
-      return _resolveKey('user_invested_amount', params: {'name': name ?? '', 'amount': amount ?? ''});
+      return _resolveKey(
+        'user_invested_amount',
+        params: {'name': name ?? '', 'amount': amount ?? ''},
+      );
     }
 
     // 3. Investment matured notification message: "استثمار [Name] بقيمة [Amount] اكتمل."
-    final matureMatchAr = RegExp(r'^استثمار\s+(.+?)\s+بقيمة\s+([\d\.]+)\s+اكتمل\.$').firstMatch(trimmed);
+    final matureMatchAr = RegExp(
+      r'^استثمار\s+(.+?)\s+بقيمة\s+([\d\.]+)\s+اكتمل\.$',
+    ).firstMatch(trimmed);
     if (matureMatchAr != null) {
       final name = matureMatchAr.group(1)?.trim();
       final amount = matureMatchAr.group(2)?.trim();
-      return _resolveKey('user_investment_matured_msg', params: {'name': name ?? '', 'amount': amount ?? ''});
+      return _resolveKey(
+        'user_investment_matured_msg',
+        params: {'name': name ?? '', 'amount': amount ?? ''},
+      );
     }
 
     return trimmed;
   }
-
 
   static String resolveEnum(String prefix, String? enumValue) {
     if (enumValue == null || enumValue.isEmpty) return '';

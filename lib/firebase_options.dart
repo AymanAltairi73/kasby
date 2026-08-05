@@ -85,5 +85,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'kasby-investment-app.firebasestorage.app',
     measurementId: 'G-CVW33FBZJ9',
   );
-
 }

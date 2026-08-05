@@ -64,10 +64,7 @@ void main() {
       });
 
       test('handles missing optional fields with defaults', () {
-        final json = {
-          'id': 'user-minimal',
-          'full_name': null,
-        };
+        final json = {'id': 'user-minimal', 'full_name': null};
 
         final profile = ProfileModel.fromJson(json);
 

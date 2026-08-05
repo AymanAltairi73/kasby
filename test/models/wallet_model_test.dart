@@ -31,10 +31,7 @@ void main() {
       });
 
       test('handles null balance values with zero defaults', () {
-        final json = {
-          'id': 'wallet-empty',
-          'user_id': 'user-new',
-        };
+        final json = {'id': 'wallet-empty', 'user_id': 'user-new'};
 
         final wallet = WalletModel.fromJson(json);
 

@@ -22,9 +22,7 @@ class SlaFormatter {
   static String waitingLabel(DateTime createdAt) {
     final d = waitingDuration(createdAt);
     if (d.inMinutes < 1) {
-      return 'waiting_seconds'
-          .tr
-          .replaceAll('@n', '${d.inSeconds}');
+      return 'waiting_seconds'.tr.replaceAll('@n', '${d.inSeconds}');
     }
     if (d.inMinutes < 60) {
       return 'waiting_minutes'.tr.replaceAll('@n', '${d.inMinutes}');

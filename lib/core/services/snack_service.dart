@@ -124,7 +124,11 @@ class AppSnack {
               ),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(Icons.verified_user_rounded, color: accentColor, size: 22),
+            child: Icon(
+              Icons.verified_user_rounded,
+              color: accentColor,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(

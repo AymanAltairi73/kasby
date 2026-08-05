@@ -70,9 +70,11 @@ class SensitiveOperationGuard {
     bool force = false,
   }) async {
     if (!force && hasRecentStepUp) {
-      _log('requirePhoneOtp', 'Recent step-up still valid', params: {
-        'purpose': purpose,
-      });
+      _log(
+        'requirePhoneOtp',
+        'Recent step-up still valid',
+        params: {'purpose': purpose},
+      );
       return true;
     }
 
@@ -90,10 +92,11 @@ class SensitiveOperationGuard {
 
     try {
       await AuthSecurityService.requestStepUpOtp();
-      _log('requirePhoneOtp', 'Step-up OTP sent', params: {
-        'purpose': purpose,
-        'phone': phone,
-      });
+      _log(
+        'requirePhoneOtp',
+        'Step-up OTP sent',
+        params: {'purpose': purpose, 'phone': phone},
+      );
     } catch (e) {
       _log(
         'requirePhoneOtp',
@@ -102,10 +105,7 @@ class SensitiveOperationGuard {
         params: {'purpose': purpose},
         error: e,
       );
-      AppSnack.error(
-        'error'.tr,
-        AuthSecurityService.translateOtpError(e),
-      );
+      AppSnack.error('error'.tr, AuthSecurityService.translateOtpError(e));
       return false;
     }
 
@@ -126,15 +126,20 @@ class SensitiveOperationGuard {
 
     if (verified) {
       markStepUpVerified();
-      _log('requirePhoneOtp', 'Step-up OTP verified', params: {
-        'purpose': purpose,
-      });
+      _log(
+        'requirePhoneOtp',
+        'Step-up OTP verified',
+        params: {'purpose': purpose},
+      );
       return true;
     }
 
-    _log('requirePhoneOtp', 'Step-up OTP not completed', status: 'WARN', params: {
-      'purpose': purpose,
-    });
+    _log(
+      'requirePhoneOtp',
+      'Step-up OTP not completed',
+      status: 'WARN',
+      params: {'purpose': purpose},
+    );
     return false;
   }
 
@@ -146,9 +151,11 @@ class SensitiveOperationGuard {
     bool force = false,
   }) async {
     if (!force && hasRecentStepUp) {
-      _log('requireEmailOtp', 'Recent step-up still valid', params: {
-        'purpose': purpose,
-      });
+      _log(
+        'requireEmailOtp',
+        'Recent step-up still valid',
+        params: {'purpose': purpose},
+      );
       return true;
     }
 
@@ -165,15 +172,17 @@ class SensitiveOperationGuard {
     }
 
     try {
-      _log('requireEmailOtp', 'About to request email step-up OTP', params: {
-        'purpose': purpose,
-        'email': email,
-      });
+      _log(
+        'requireEmailOtp',
+        'About to request email step-up OTP',
+        params: {'purpose': purpose, 'email': email},
+      );
       await AuthSecurityService.requestEmailStepUpOtp();
-      _log('requireEmailOtp', 'Step-up OTP sent', params: {
-        'purpose': purpose,
-        'email': email,
-      });
+      _log(
+        'requireEmailOtp',
+        'Step-up OTP sent',
+        params: {'purpose': purpose, 'email': email},
+      );
     } catch (e) {
       _log(
         'requireEmailOtp',
@@ -182,10 +191,7 @@ class SensitiveOperationGuard {
         params: {'purpose': purpose},
         error: e,
       );
-      AppSnack.error(
-        'error'.tr,
-        AuthSecurityService.translateOtpError(e),
-      );
+      AppSnack.error('error'.tr, AuthSecurityService.translateOtpError(e));
       return false;
     }
 
@@ -206,15 +212,20 @@ class SensitiveOperationGuard {
 
     if (verified) {
       markStepUpVerified();
-      _log('requireEmailOtp', 'Step-up OTP verified', params: {
-        'purpose': purpose,
-      });
+      _log(
+        'requireEmailOtp',
+        'Step-up OTP verified',
+        params: {'purpose': purpose},
+      );
       return true;
     }
 
-    _log('requireEmailOtp', 'Step-up OTP not completed', status: 'WARN', params: {
-      'purpose': purpose,
-    });
+    _log(
+      'requireEmailOtp',
+      'Step-up OTP not completed',
+      status: 'WARN',
+      params: {'purpose': purpose},
+    );
     return false;
   }
 }

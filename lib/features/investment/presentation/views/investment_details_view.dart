@@ -45,14 +45,18 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
       return;
     }
     double amount = double.tryParse(val) ?? 0.0;
-    
+
     double rawProfit = 0.0;
     if (plan['profit_percentage'] != null) {
       rawProfit = (plan['profit_percentage'] as num).toDouble();
     } else if (plan['profit'] != null) {
-      rawProfit = double.tryParse(plan['profit'].toString().replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
+      rawProfit =
+          double.tryParse(
+            plan['profit'].toString().replaceAll(RegExp(r'[^\d.]'), ''),
+          ) ??
+          0.0;
     }
-    
+
     double percentage = rawProfit / 100;
     setState(() {
       estimatedProfit = amount * percentage;
@@ -304,10 +308,12 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
       StatefulBuilder(
         builder: (context, setLocalState) {
           return AlertDialog(
-            backgroundColor:
-                isDark ? AppColors.surface : AppColors.surfaceLight,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            backgroundColor: isDark
+                ? AppColors.surface
+                : AppColors.surfaceLight,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
             title: Text('confirm_investment'.tr),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -347,7 +353,9 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
             ),
             actions: [
               TextButton(
-                  onPressed: () => SafeGetx.dismissOverlayIfOpen(), child: Text('cancel'.tr)),
+                onPressed: () => SafeGetx.dismissOverlayIfOpen(),
+                child: Text('cancel'.tr),
+              ),
               KasbyButton(
                 width: 120,
                 text: 'confirm'.tr,
@@ -405,17 +413,19 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           },
         ),
         onSuccessParams: (rpcResult) {
-          final rpcResponse = rpcResult is Map ? Map<String, dynamic>.from(rpcResult as Map) : <String, dynamic>{};
-          return {
-            'investmentId': rpcResponse['investment_id']?.toString(),
-          };
+          final rpcResponse = rpcResult is Map
+              ? Map<String, dynamic>.from(rpcResult)
+              : <String, dynamic>{};
+          return {'investmentId': rpcResponse['investment_id']?.toString()};
         },
       );
 
       if (result is! Map) {
-        throw Exception('Invalid RPC response format: expected Map, got ${result?.runtimeType}');
+        throw Exception(
+          'Invalid RPC response format: expected Map, got ${result?.runtimeType}',
+        );
       }
-      final response = Map<String, dynamic>.from(result as Map);
+      final response = Map<String, dynamic>.from(result);
 
       if (response['success'] == true) {
         HapticFeedback.heavyImpact();
@@ -441,15 +451,17 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           status: 'WARNING',
           message: response['error']?.toString(),
         );
-        unawaited(CrashReportingService.recordBusinessError(
-          Exception(response['error']?.toString() ?? 'Investment RPC failed'),
-          category: CrashErrorCategory.investments,
-          operation: 'create_investment',
-          context: {
-            CrashCustomKey.investmentPlan: planId,
-            'amount_range': CrashReportingService.balanceRange(amount),
-          },
-        ));
+        unawaited(
+          CrashReportingService.recordBusinessError(
+            Exception(response['error']?.toString() ?? 'Investment RPC failed'),
+            category: CrashErrorCategory.investments,
+            operation: 'create_investment',
+            context: {
+              CrashCustomKey.investmentPlan: planId,
+              'amount_range': CrashReportingService.balanceRange(amount),
+            },
+          ),
+        );
         AppSnack.error('error'.tr, response['error'] ?? 'unexpected_error'.tr);
       }
     } catch (e, st) {

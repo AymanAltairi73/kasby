@@ -8,119 +8,115 @@ import 'package:kasby/routes/app_routes.dart';
 
 /// Secondary actions surfaced in the "More" bottom sheet.
 List<Map<String, dynamic>> homeSecondaryActions() => [
-      {
-        'icon': Icons.calendar_today_rounded,
-        'label': 'check_in'.tr,
-        'onTap': () => Get.toNamed(Routes.dailyCheckIn),
-      },
-      {
-        'icon': Icons.storefront_rounded,
-        'label': 'marketplace'.tr,
-        'onTap': () => Get.toNamed(Routes.store),
-      },
-      {
-        'icon': Icons.analytics_rounded,
-        'label': 'portfolio_analytics'.tr,
-        'onTap': () => Get.toNamed(Routes.portfolioAnalytics),
-      },
-      // {
-      //   'icon': Icons.leaderboard_rounded,
-      //   'label': 'referral_analytics'.tr,
-      //   'onTap': () => Get.toNamed(Routes.referralAnalytics),
-      // },
-      // {
-      //   'icon': Icons.trending_up_rounded,
-      //   'label': 'investment_plans'.tr,
-      //   'onTap': () => Get.toNamed(Routes.investmentPlans),
-      // },
-      // {
-      //   'icon': Icons.add_circle_outline_rounded,
-      //   'label': 'deposit'.tr,
-      //   'onTap': () => Get.toNamed(Routes.deposit),
-      // },
-      // {
-      //   'icon': Icons.remove_circle_outline_rounded,
-      //   'label': 'withdraw'.tr,
-      //   'onTap': () => Get.toNamed(Routes.withdraw),
-      // },
-      // {
-      //   'icon': Icons.verified_user_outlined,
-      //   'label': 'kyc_verification'.tr,
-      //   'onTap': () => Get.toNamed(Routes.kyc),
-      // },
-      // {
-      //   'icon': Icons.qr_code_scanner_rounded,
-      //   'label': 'scan_qr'.tr,
-      //   'onTap': () => Get.toNamed(Routes.qrScanner),
-      // },
-      {
-        'icon': Icons.description_outlined,
-        'label': 'statements'.tr,
-        'onTap': () => Get.toNamed(Routes.statements),
-      },
-      {
-        'icon': Icons.person_add_alt_1_rounded,
-        'label': 'invite_friends'.tr,
-        'onTap': InviteFriendsSheet.show,
-      },
-    ];
+  {
+    'icon': Icons.calendar_today_rounded,
+    'label': 'check_in'.tr,
+    'onTap': () => Get.toNamed(Routes.dailyCheckIn),
+  },
+  {
+    'icon': Icons.storefront_rounded,
+    'label': 'marketplace'.tr,
+    'onTap': () => Get.toNamed(Routes.store),
+  },
+  {
+    'icon': Icons.analytics_rounded,
+    'label': 'portfolio_analytics'.tr,
+    'onTap': () => Get.toNamed(Routes.portfolioAnalytics),
+  },
+  // {
+  //   'icon': Icons.leaderboard_rounded,
+  //   'label': 'referral_analytics'.tr,
+  //   'onTap': () => Get.toNamed(Routes.referralAnalytics),
+  // },
+  // {
+  //   'icon': Icons.trending_up_rounded,
+  //   'label': 'investment_plans'.tr,
+  //   'onTap': () => Get.toNamed(Routes.investmentPlans),
+  // },
+  // {
+  //   'icon': Icons.add_circle_outline_rounded,
+  //   'label': 'deposit'.tr,
+  //   'onTap': () => Get.toNamed(Routes.deposit),
+  // },
+  // {
+  //   'icon': Icons.remove_circle_outline_rounded,
+  //   'label': 'withdraw'.tr,
+  //   'onTap': () => Get.toNamed(Routes.withdraw),
+  // },
+  // {
+  //   'icon': Icons.verified_user_outlined,
+  //   'label': 'kyc_verification'.tr,
+  //   'onTap': () => Get.toNamed(Routes.kyc),
+  // },
+  // {
+  //   'icon': Icons.qr_code_scanner_rounded,
+  //   'label': 'scan_qr'.tr,
+  //   'onTap': () => Get.toNamed(Routes.qrScanner),
+  // },
+  {
+    'icon': Icons.description_outlined,
+    'label': 'statements'.tr,
+    'onTap': () => Get.toNamed(Routes.statements),
+  },
+  {
+    'icon': Icons.person_add_alt_1_rounded,
+    'label': 'invite_friends'.tr,
+    'onTap': InviteFriendsSheet.show,
+  },
+];
 
 class HomeQuickActions extends StatelessWidget {
-  const HomeQuickActions({
-    super.key,
-    this.tourKey,
-    this.marketplaceKey,
-  });
+  const HomeQuickActions({super.key, this.tourKey, this.marketplaceKey});
 
   final Key? tourKey;
   final Key? marketplaceKey;
 
   List<Map<String, dynamic>> _primaryActions(BuildContext context) => [
-        {
-          'icon': Icons.swap_horizontal_circle_rounded,
-          'label': 'p2p_transfer'.tr,
-          'onTap': () => Get.toNamed(Routes.transfer),
-        },
-        {
-          'icon': Icons.groups_rounded,
-          'label': 'authorized_agents'.tr,
-          'onTap': () => Get.toNamed(Routes.agents),
-        },
-        {
-          'icon': Icons.diversity_3_rounded,
-          'label': 'social_network'.tr,
-          'onTap': () => Get.toNamed(Routes.friendRequests),
-        },
-        {
-          'icon': Icons.pie_chart_rounded,
-          'label': 'my_investments'.tr,
-          'onTap': () {
-            if (Get.currentRoute != Routes.myInvestments) {
-              Get.toNamed(Routes.myInvestments);
-            }
-          },
-        },
-        {
-          'icon': Icons.handshake_rounded,
-          'label': 'salefni_kasby'.tr,
-          'onTap': () => Get.toNamed(Routes.loan),
-        },
-        {
-          'icon': Icons.card_membership_rounded,
-          'label': 'subscriptions'.tr,
-          'onTap': () => Get.toNamed(Routes.subscription),
-        },
-        {
-          'icon': Icons.casino_rounded,
-          'label': 'spin_wheel'.tr,
-          'onTap': () => Get.toNamed(Routes.spinWheel),
-        },
-        {
-          'icon': Icons.grid_view_rounded,
-          'label': 'more'.tr,
-          'onTap': () => _showMoreActions(context),
-        },
-      ];
+    {
+      'icon': Icons.swap_horizontal_circle_rounded,
+      'label': 'p2p_transfer'.tr,
+      'onTap': () => Get.toNamed(Routes.transfer),
+    },
+    {
+      'icon': Icons.groups_rounded,
+      'label': 'authorized_agents'.tr,
+      'onTap': () => Get.toNamed(Routes.agents),
+    },
+    {
+      'icon': Icons.diversity_3_rounded,
+      'label': 'social_network'.tr,
+      'onTap': () => Get.toNamed(Routes.friendRequests),
+    },
+    {
+      'icon': Icons.pie_chart_rounded,
+      'label': 'my_investments'.tr,
+      'onTap': () {
+        if (Get.currentRoute != Routes.myInvestments) {
+          Get.toNamed(Routes.myInvestments);
+        }
+      },
+    },
+    {
+      'icon': Icons.handshake_rounded,
+      'label': 'salefni_kasby'.tr,
+      'onTap': () => Get.toNamed(Routes.loan),
+    },
+    {
+      'icon': Icons.card_membership_rounded,
+      'label': 'subscriptions'.tr,
+      'onTap': () => Get.toNamed(Routes.subscription),
+    },
+    {
+      'icon': Icons.casino_rounded,
+      'label': 'spin_wheel'.tr,
+      'onTap': () => Get.toNamed(Routes.spinWheel),
+    },
+    {
+      'icon': Icons.grid_view_rounded,
+      'label': 'more'.tr,
+      'onTap': () => _showMoreActions(context),
+    },
+  ];
 
   void _showMoreActions(BuildContext context) {
     HapticFeedback.lightImpact();
@@ -150,8 +146,8 @@ class HomeQuickActions extends StatelessWidget {
                   final crossAxisCount = width < 340 ? 3 : 4;
                   const crossAxisSpacing = 14.0;
                   const mainAxisSpacing = 18.0;
-                  final itemWidth = (width -
-                          crossAxisSpacing * (crossAxisCount - 1)) /
+                  final itemWidth =
+                      (width - crossAxisSpacing * (crossAxisCount - 1)) /
                       crossAxisCount;
                   final itemHeight = 112.0;
                   return GridView.count(
@@ -198,7 +194,8 @@ class HomeQuickActions extends StatelessWidget {
           const mainAxisSpacing = 16.0;
           const mainAxisExtent = 112.0;
           final itemWidth =
-              (width - crossAxisSpacing * (crossAxisCount - 1)) / crossAxisCount;
+              (width - crossAxisSpacing * (crossAxisCount - 1)) /
+              crossAxisCount;
 
           return GridView.builder(
             shrinkWrap: true,

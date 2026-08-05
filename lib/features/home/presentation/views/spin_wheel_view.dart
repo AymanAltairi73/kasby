@@ -153,10 +153,11 @@ class _SpinWheelViewState extends State<SpinWheelView>
           _lastFreeSpinAt = DateTime.parse(response['last_free_spin_at']);
         }
         _storedSpins = (response['stored_spins'] as num?)?.toInt() ?? 0;
-        
+
         // First free spin is now granted on registration via database trigger
         // No need to manually set to 25 hours ago
-        final firstFreeSpinGranted = response['first_free_spin_granted'] as bool? ?? false;
+        final firstFreeSpinGranted =
+            response['first_free_spin_granted'] as bool? ?? false;
         if (!firstFreeSpinGranted && _lastFreeSpinAt == null) {
           // Fallback for users who registered before the migration
           _lastFreeSpinAt = DateTime.now().subtract(const Duration(hours: 25));
@@ -231,7 +232,9 @@ class _SpinWheelViewState extends State<SpinWheelView>
       decoration: BoxDecoration(
         color: const Color(0xFFC9A24D).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFC9A24D).withValues(alpha: 0.35)),
+        border: Border.all(
+          color: const Color(0xFFC9A24D).withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -402,9 +405,11 @@ class _SpinWheelViewState extends State<SpinWheelView>
             (response['stored_spins'] as num?)?.toInt() ?? _storedSpins;
       });
 
-      unawaited(KspBalanceService.to.afterFinancialMutation(
-        response is Map ? Map<String, dynamic>.from(response) : null,
-      ));
+      unawaited(
+        KspBalanceService.to.afterFinancialMutation(
+          response is Map ? Map<String, dynamic>.from(response) : null,
+        ),
+      );
 
       _startWinHighlightPulse();
       if (_lastGrantedPoints > 0) {
@@ -413,7 +418,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
       _showVictoryOverlay();
 
       _fetchFreeSpinStatus();
-      
+
       // Trigger earnings update event for automatic refresh
       if (Get.isRegistered<EarningsEventService>()) {
         EarningsEventService.to.triggerEarningsUpdate(source: 'lucky_wheel');
@@ -421,7 +426,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
         Get.put(EarningsEventService());
         EarningsEventService.to.triggerEarningsUpdate(source: 'lucky_wheel');
       }
-      
+
       SafeGetx.debugTrace(
         className: 'SpinWheelView',
         method: '_spin',
@@ -727,7 +732,10 @@ class _SpinWheelViewState extends State<SpinWheelView>
         appBar: AppBar(
           title: Text(
             'spin_win'.tr,
-            style: const TextStyle(color: Color(0xFFC9A24D), fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Color(0xFFC9A24D),
+              fontWeight: FontWeight.bold,
+            ),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -740,205 +748,225 @@ class _SpinWheelViewState extends State<SpinWheelView>
         body: Stack(
           children: [
             SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
-            child: Column(
-              children: [
-                Text(
-                  'feeling_lucky'.tr,
-                  style: const TextStyle(
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFC9A24D),
-                  ),
-                ).animate().fadeIn().slideY(begin: -0.2, end: 0),
-              const SizedBox(height: 7),
-              Text(
-                'spin_desc'.tr,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.65),
-                  fontSize: 16,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 10,
                 ),
-              ).animate().fadeIn(delay: 200.ms),
-              const SizedBox(height: 6),
-              Obx(
-                () => KeyedSubtree(
-                  key: TourTargetKeys.spinHistory,
-                  child: _buildKspBalanceChip(HomeController.to.userPoints.value),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              Builder(
-                builder: (context) {
-                  final wheelSize = kasbySpinWheelDiameter(context);
-                  final innerSize = wheelSize * 0.882;
-                  final hubSize = wheelSize * 0.229;
-                  return KeyedSubtree(
-                    key: TourTargetKeys.spinWheel,
-                    child: SizedBox(
-                    width: wheelSize,
-                    height: wheelSize + 20,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      clipBehavior: Clip.none,
-                      children: [
-                        KasbySpinWheelAmbientGlow(size: wheelSize),
-                        KasbySpinWheelOuterRing(size: wheelSize, ledCount: 24),
-                        RotationTransition(
-                          turns: _animation,
-                          child: SizedBox(
-                            width: innerSize,
-                            height: innerSize,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              alignment: Alignment.center,
-                              children: [
-                                CustomPaint(
-                                  size: Size(innerSize, innerSize),
-                                  painter: KasbySpinWheelPainter(
-                                    rewards: _dbRewards,
-                                    highlightIndex: _showWinHighlight
-                                        ? _selectedRewardIndex
-                                        : null,
-                                    highlightPulse: _highlightPulse,
-                                  ),
-                                ),
-                                KasbySpinWheelSegmentLabels(
-                                  rewards: _dbRewards,
-                                  diameter: innerSize,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        KasbySpinWheelCenterHub(size: hubSize),
-                        Positioned(
-                          top: wheelSize * 0.018,
-                          child: KasbySpinWheelPointer(isAnimating: _isSpinning)
-                              .animate(
-                                onPlay: (c) => _isSpinning
-                                    ? c.repeat(reverse: true)
-                                    : c.stop(),
-                              )
-                              .moveY(begin: 0, end: 4, duration: 180.ms),
-                        ),
-                      ],
-                    ),
-                  ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 20),
-              KeyedSubtree(
-                key: TourTargetKeys.spinFreeSpin,
-                child: _buildTriesIndicator(),
-              ),
-              const SizedBox(height: 20),
-
-              // WOW Primary Action Button
-              KeyedSubtree(
-                key: TourTargetKeys.spinBuy,
-                child: Container(
-                    width: double.infinity,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        if (!_isSpinning)
-                          BoxShadow(
-                            color: _isFreeSpinAvailable
-                                ? Colors.green.withValues(alpha: 0.4)
-                                : _storedSpins > 0
-                                ? AppColors.darkGold.withValues(alpha: 0.4)
-                                : Colors.blue.withValues(alpha: 0.3),
-                            blurRadius: 15,
-                            spreadRadius: 2,
-                          ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _isSpinning ? null : _handleSpinButtonPress,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _isFreeSpinAvailable
-                            ? Colors.green.shade600
-                            : _storedSpins > 0
-                            ? AppColors.darkGold
-                            : AppColors.darkGold.withValues(alpha: 0.8),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        elevation: 0,
+                child: Column(
+                  children: [
+                    Text(
+                      'feeling_lucky'.tr,
+                      style: const TextStyle(
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFC9A24D),
                       ),
-                      child: _isSpinning
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 3,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                    ).animate().fadeIn().slideY(begin: -0.2, end: 0),
+                    const SizedBox(height: 7),
+                    Text(
+                      'spin_desc'.tr,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 16,
+                      ),
+                    ).animate().fadeIn(delay: 200.ms),
+                    const SizedBox(height: 6),
+                    Obx(
+                      () => KeyedSubtree(
+                        key: TourTargetKeys.spinHistory,
+                        child: _buildKspBalanceChip(
+                          HomeController.to.userPoints.value,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    Builder(
+                      builder: (context) {
+                        final wheelSize = kasbySpinWheelDiameter(context);
+                        final innerSize = wheelSize * 0.882;
+                        final hubSize = wheelSize * 0.229;
+                        return KeyedSubtree(
+                          key: TourTargetKeys.spinWheel,
+                          child: SizedBox(
+                            width: wheelSize,
+                            height: wheelSize + 20,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              clipBehavior: Clip.none,
                               children: [
-                                Icon(
-                                  _isFreeSpinAvailable
-                                      ? Icons.card_giftcard_rounded
-                                      : _storedSpins > 0
-                                      ? Icons.auto_awesome_rounded
-                                      : Icons.shopping_cart_rounded,
-                                  size: 24,
+                                KasbySpinWheelAmbientGlow(size: wheelSize),
+                                KasbySpinWheelOuterRing(
+                                  size: wheelSize,
+                                  ledCount: 24,
                                 ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  _isFreeSpinAvailable
-                                      ? 'free_spin_now'.tr
-                                      : _storedSpins > 0
-                                      ? 'spin_now'.tr
-                                      : 'buy_spins'.tr,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
+                                RotationTransition(
+                                  turns: _animation,
+                                  child: SizedBox(
+                                    width: innerSize,
+                                    height: innerSize,
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      alignment: Alignment.center,
+                                      children: [
+                                        CustomPaint(
+                                          size: Size(innerSize, innerSize),
+                                          painter: KasbySpinWheelPainter(
+                                            rewards: _dbRewards,
+                                            highlightIndex: _showWinHighlight
+                                                ? _selectedRewardIndex
+                                                : null,
+                                            highlightPulse: _highlightPulse,
+                                          ),
+                                        ),
+                                        KasbySpinWheelSegmentLabels(
+                                          rewards: _dbRewards,
+                                          diameter: innerSize,
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                ),
+                                KasbySpinWheelCenterHub(size: hubSize),
+                                Positioned(
+                                  top: wheelSize * 0.018,
+                                  child:
+                                      KasbySpinWheelPointer(
+                                            isAnimating: _isSpinning,
+                                          )
+                                          .animate(
+                                            onPlay: (c) => _isSpinning
+                                                ? c.repeat(reverse: true)
+                                                : c.stop(),
+                                          )
+                                          .moveY(
+                                            begin: 0,
+                                            end: 4,
+                                            duration: 180.ms,
+                                          ),
                                 ),
                               ],
                             ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-              )
-                  .animate(
-                    onPlay: (c) =>
-                        _isFreeSpinAvailable ||
-                            (_storedSpins > 0 && !_isSpinning)
-                        ? c.repeat(reverse: true)
-                        : c.stop(),
-                  )
-                  .scale(
-                    begin: const Offset(1, 1),
-                    end: const Offset(1.05, 1.05),
-                    duration: 800.ms,
-                    curve: Curves.easeInOut,
-                  ),
 
-             // const SizedBox(height: 30),
-              // Text(
-              //   'spin_disclaimer_text'.tr,
-              //   textAlign: TextAlign.center,
-              //   style: TextStyle(
-              //     color: Colors.white.withValues(alpha: 0.4),
-              //     fontSize: 12,
-              //     fontStyle: FontStyle.italic,
-              //   ),
-              //   ).animate().fadeIn(delay: 700.ms),
-              ],
+                    const SizedBox(height: 20),
+                    KeyedSubtree(
+                      key: TourTargetKeys.spinFreeSpin,
+                      child: _buildTriesIndicator(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // WOW Primary Action Button
+                    KeyedSubtree(
+                          key: TourTargetKeys.spinBuy,
+                          child: Container(
+                            width: double.infinity,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: [
+                                if (!_isSpinning)
+                                  BoxShadow(
+                                    color: _isFreeSpinAvailable
+                                        ? Colors.green.withValues(alpha: 0.4)
+                                        : _storedSpins > 0
+                                        ? AppColors.darkGold.withValues(
+                                            alpha: 0.4,
+                                          )
+                                        : Colors.blue.withValues(alpha: 0.3),
+                                    blurRadius: 15,
+                                    spreadRadius: 2,
+                                  ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _isSpinning
+                                  ? null
+                                  : _handleSpinButtonPress,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isFreeSpinAvailable
+                                    ? Colors.green.shade600
+                                    : _storedSpins > 0
+                                    ? AppColors.darkGold
+                                    : AppColors.darkGold.withValues(alpha: 0.8),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: _isSpinning
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 3,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _isFreeSpinAvailable
+                                              ? Icons.card_giftcard_rounded
+                                              : _storedSpins > 0
+                                              ? Icons.auto_awesome_rounded
+                                              : Icons.shopping_cart_rounded,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          _isFreeSpinAvailable
+                                              ? 'free_spin_now'.tr
+                                              : _storedSpins > 0
+                                              ? 'spin_now'.tr
+                                              : 'buy_spins'.tr,
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        )
+                        .animate(
+                          onPlay: (c) =>
+                              _isFreeSpinAvailable ||
+                                  (_storedSpins > 0 && !_isSpinning)
+                              ? c.repeat(reverse: true)
+                              : c.stop(),
+                        )
+                        .scale(
+                          begin: const Offset(1, 1),
+                          end: const Offset(1.05, 1.05),
+                          duration: 800.ms,
+                          curve: Curves.easeInOut,
+                        ),
+
+                    // const SizedBox(height: 30),
+                    // Text(
+                    //   'spin_disclaimer_text'.tr,
+                    //   textAlign: TextAlign.center,
+                    //   style: TextStyle(
+                    //     color: Colors.white.withValues(alpha: 0.4),
+                    //     fontSize: 12,
+                    //     fontStyle: FontStyle.italic,
+                    //   ),
+                    //   ).animate().fadeIn(delay: 700.ms),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
             Align(
               alignment: Alignment.topCenter,
               child: ConfettiWidget(

@@ -67,52 +67,54 @@ class _KycViewState extends State<KycView> {
         onRefresh: _refreshKycState,
         color: AppColors.darkGold,
         child: Obx(() {
-        final profile = HomeController.to.profile.value;
-        final status = profile?.kycStatus ?? 'none';
+          final profile = HomeController.to.profile.value;
+          final status = profile?.kycStatus ?? 'none';
 
-        if (status == 'verified') {
-          return ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [_buildVerifiedState(context)],
-          );
-        } else if (status == 'pending') {
-          return ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [_buildPendingState(context)],
-          );
-        } else if (status == 'rejected') {
-          return ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [_buildRejectedState(context, profile?.kycRejectionReason)],
-          );
-        }
+          if (status == 'verified') {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [_buildVerifiedState(context)],
+            );
+          } else if (status == 'pending') {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [_buildPendingState(context)],
+            );
+          } else if (status == 'rejected') {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                _buildRejectedState(context, profile?.kycRejectionReason),
+              ],
+            );
+          }
 
-        return Column(
-          children: [
-            const SizedBox(height: 12),
-            _buildStepper(context, controller),
-            Expanded(
-              child: Obx(() {
-                switch (controller.currentStep.value) {
-                  case 0:
-                    return _buildIdTypeStep(context, controller);
-                  case 1:
-                    return _buildPersonalInfoStep(context, controller);
-                  case 2:
-                    return _buildDocumentsStep(context, controller);
-                  case 3:
-                    return _buildSelfieStep(context, controller);
-                  case 4:
-                    return _buildReviewStep(context, controller);
-                  default:
-                    return const SizedBox();
-                }
-              }),
-            ),
-            _buildBottomBar(context, controller),
-          ],
-        );
-      }),
+          return Column(
+            children: [
+              const SizedBox(height: 12),
+              _buildStepper(context, controller),
+              Expanded(
+                child: Obx(() {
+                  switch (controller.currentStep.value) {
+                    case 0:
+                      return _buildIdTypeStep(context, controller);
+                    case 1:
+                      return _buildPersonalInfoStep(context, controller);
+                    case 2:
+                      return _buildDocumentsStep(context, controller);
+                    case 3:
+                      return _buildSelfieStep(context, controller);
+                    case 4:
+                      return _buildReviewStep(context, controller);
+                    default:
+                      return const SizedBox();
+                  }
+                }),
+              ),
+              _buildBottomBar(context, controller),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -148,10 +150,7 @@ class _KycViewState extends State<KycView> {
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 40),
-            KasbyButton(
-              text: 'go_back'.tr,
-              onPressed: () => Get.safeBack(),
-            ),
+            KasbyButton(text: 'go_back'.tr, onPressed: () => Get.safeBack()),
           ],
         ),
       ),
@@ -270,10 +269,7 @@ class _KycViewState extends State<KycView> {
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 40),
-            KasbyButton(
-              text: 'go_back'.tr,
-              onPressed: () => Get.safeBack(),
-            ),
+            KasbyButton(text: 'go_back'.tr, onPressed: () => Get.safeBack()),
           ],
         ),
       ),
@@ -584,7 +580,9 @@ class _KycViewState extends State<KycView> {
                   Text(
                     title,
                     style: TextStyle(
-                      color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? Colors.white70
+                          : AppColors.textSecondaryLight,
                     ),
                   ),
                 ],
@@ -619,11 +617,29 @@ class _KycViewState extends State<KycView> {
               children: [
                 Row(
                   children: [
-                    Expanded(child: _selfiePreview(controller.selfieFrontPath.value, 'kyc_selfie_step_front'.tr, isDark)),
+                    Expanded(
+                      child: _selfiePreview(
+                        controller.selfieFrontPath.value,
+                        'kyc_selfie_step_front'.tr,
+                        isDark,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _selfiePreview(controller.selfieRightPath.value, 'kyc_selfie_step_right'.tr, isDark)),
+                    Expanded(
+                      child: _selfiePreview(
+                        controller.selfieRightPath.value,
+                        'kyc_selfie_step_right'.tr,
+                        isDark,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _selfiePreview(controller.selfieLeftPath.value, 'kyc_selfie_step_left'.tr, isDark)),
+                    Expanded(
+                      child: _selfiePreview(
+                        controller.selfieLeftPath.value,
+                        'kyc_selfie_step_left'.tr,
+                        isDark,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -671,7 +687,9 @@ class _KycViewState extends State<KycView> {
           height: 90,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(45),
-            border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.4)),
+            border: Border.all(
+              color: AppColors.darkGold.withValues(alpha: 0.4),
+            ),
             image: path.isNotEmpty
                 ? DecorationImage(
                     image: FileImage(File(path)),
@@ -681,7 +699,10 @@ class _KycViewState extends State<KycView> {
           ),
         ),
         const SizedBox(height: 6),
-        Text(label, style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
       ],
     );
   }
@@ -731,15 +752,27 @@ class _KycViewState extends State<KycView> {
         Row(
           children: [
             Expanded(
-              child: _reviewThumb(controller.selfieFrontPath.value, isDark, round: true),
+              child: _reviewThumb(
+                controller.selfieFrontPath.value,
+                isDark,
+                round: true,
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _reviewThumb(controller.selfieRightPath.value, isDark, round: true),
+              child: _reviewThumb(
+                controller.selfieRightPath.value,
+                isDark,
+                round: true,
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _reviewThumb(controller.selfieLeftPath.value, isDark, round: true),
+              child: _reviewThumb(
+                controller.selfieLeftPath.value,
+                isDark,
+                round: true,
+              ),
             ),
           ],
         ),
@@ -755,7 +788,10 @@ class _KycViewState extends State<KycView> {
         children: [
           SizedBox(
             width: 110,
-            child: Text(label, style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              label,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           Expanded(
             child: Text(
@@ -776,14 +812,14 @@ class _KycViewState extends State<KycView> {
         borderRadius: BorderRadius.circular(round ? 45 : 12),
         border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.4)),
         image: path.isNotEmpty
-            ? DecorationImage(
-                image: FileImage(File(path)),
-                fit: BoxFit.cover,
-              )
+            ? DecorationImage(image: FileImage(File(path)), fit: BoxFit.cover)
             : null,
       ),
       child: path.isEmpty
-          ? Icon(Icons.image_not_supported_outlined, color: AppColors.textSecondary)
+          ? Icon(
+              Icons.image_not_supported_outlined,
+              color: AppColors.textSecondary,
+            )
           : null,
     );
   }
@@ -820,7 +856,9 @@ class _KycViewState extends State<KycView> {
             flex: 2,
             child: Obx(
               () => KasbyButton(
-                text: controller.currentStep.value == KycController.reviewStepIndex
+                text:
+                    controller.currentStep.value ==
+                        KycController.reviewStepIndex
                     ? 'submit_kyc'.tr
                     : 'next_step'.tr,
                 isLoading: controller.isLoading.value,

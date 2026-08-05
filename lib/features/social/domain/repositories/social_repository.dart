@@ -12,28 +12,31 @@ class SocialRepository {
   }
 
   Future<List<FriendRequestModel>> getIncomingRequests() async {
-    final result = _asMap(await SupabaseService.client.rpc('get_friend_requests'));
+    final result = _asMap(
+      await SupabaseService.client.rpc('get_friend_requests'),
+    );
     if (result['success'] != true) return [];
-    return List<Map<String, dynamic>>.from(result['requests'] ?? [])
-        .map((m) => FriendRequestModel.fromMap(m, outgoing: false))
-        .toList();
+    return List<Map<String, dynamic>>.from(
+      result['requests'] ?? [],
+    ).map((m) => FriendRequestModel.fromMap(m, outgoing: false)).toList();
   }
 
   Future<List<FriendRequestModel>> getOutgoingRequests() async {
-    final result =
-        _asMap(await SupabaseService.client.rpc('get_outgoing_friend_requests'));
+    final result = _asMap(
+      await SupabaseService.client.rpc('get_outgoing_friend_requests'),
+    );
     if (result['success'] != true) return [];
-    return List<Map<String, dynamic>>.from(result['requests'] ?? [])
-        .map((m) => FriendRequestModel.fromMap(m, outgoing: true))
-        .toList();
+    return List<Map<String, dynamic>>.from(
+      result['requests'] ?? [],
+    ).map((m) => FriendRequestModel.fromMap(m, outgoing: true)).toList();
   }
 
   Future<List<FriendModel>> getFriends() async {
     final result = _asMap(await SupabaseService.client.rpc('get_friends'));
     if (result['success'] != true) return [];
-    return List<Map<String, dynamic>>.from(result['friends'] ?? [])
-        .map(FriendModel.fromMap)
-        .toList();
+    return List<Map<String, dynamic>>.from(
+      result['friends'] ?? [],
+    ).map(FriendModel.fromMap).toList();
   }
 
   Future<List<SocialUserModel>> getSuggestions({int limit = 20}) async {
@@ -44,9 +47,9 @@ class SocialRepository {
       ),
     );
     if (result['success'] != true) return [];
-    return List<Map<String, dynamic>>.from(result['suggestions'] ?? [])
-        .map(SocialUserModel.fromMap)
-        .toList();
+    return List<Map<String, dynamic>>.from(
+      result['suggestions'] ?? [],
+    ).map(SocialUserModel.fromMap).toList();
   }
 
   Future<({List<SocialUserModel> users, int total})> searchUsers({
@@ -57,25 +60,22 @@ class SocialRepository {
     final result = _asMap(
       await SupabaseService.client.rpc(
         'search_social_users',
-        params: {
-          'p_query': query,
-          'p_limit': limit,
-          'p_offset': offset,
-        },
+        params: {'p_query': query, 'p_limit': limit, 'p_offset': offset},
       ),
     );
     if (result['success'] != true) {
       return (users: <SocialUserModel>[], total: 0);
     }
-    final users = List<Map<String, dynamic>>.from(result['users'] ?? [])
-        .map(SocialUserModel.fromMap)
-        .toList();
+    final users = List<Map<String, dynamic>>.from(
+      result['users'] ?? [],
+    ).map(SocialUserModel.fromMap).toList();
     return (users: users, total: result['total'] as int? ?? users.length);
   }
 
   Future<SocialDashboardStats> getDashboardStats() async {
-    final result =
-        _asMap(await SupabaseService.client.rpc('get_social_dashboard_stats'));
+    final result = _asMap(
+      await SupabaseService.client.rpc('get_social_dashboard_stats'),
+    );
     if (result['success'] != true) return const SocialDashboardStats();
     return SocialDashboardStats.fromMap(result);
   }

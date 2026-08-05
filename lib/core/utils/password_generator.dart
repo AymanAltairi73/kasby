@@ -1,7 +1,7 @@
 import 'dart:math';
 
 /// Utility for generating cryptographically secure random passwords.
-/// 
+///
 /// Requirements:
 /// - Minimum 12 characters
 /// - Uppercase letters
@@ -15,11 +15,11 @@ class PasswordGenerator {
   static const _uppercase = 'ABCDEFGHJKMNPQRSTUVWXYZ'; // Excludes I, O
   static const _numbers = '23456789'; // Excludes 0, 1
   static const _special = '!@#\$%^&*()_+-=[]{}|;:,.<>?';
-  
+
   static final _secureRandom = Random.secure();
 
   /// Generates a cryptographically secure random password.
-  /// 
+  ///
   /// [length] must be at least 12 characters.
   /// Returns a password containing uppercase, lowercase, numbers, and special characters.
   static String generateSecurePassword({int length = 16}) {

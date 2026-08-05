@@ -15,3 +15,36 @@ ios/Pods/
 # APK
 *.apk
 *.aab
+
+# Environment files (keep .env.example if exists)
+.env.local
+.env.*.local
+
+# Supabase Migrations (Local only)
+supabase/migrations/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+
+# AI/Generated reports
+*_REPORT.md
+*_AUDIT.md
+*_PLAN.md
+*_SUMMARY.md
+*_WALKTHROUGH.md
+*_ANALYSIS.md
+*_VERIFICATION.md
+*.resolved
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store

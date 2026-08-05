@@ -60,8 +60,11 @@ class ProfileUpdateController extends GetxController {
       final user = await _authRepo.fetchFreshUser();
       final email = user?.email?.trim();
       if (email == null || email.isEmpty) {
-        _log('Cannot verify password: no email on current user',
-            method: 'verifyPassword', isError: true);
+        _log(
+          'Cannot verify password: no email on current user',
+          method: 'verifyPassword',
+          isError: true,
+        );
         AppSnack.error('error'.tr, 'cannot_verify_identity'.tr);
         return false;
       }
@@ -86,8 +89,12 @@ class ProfileUpdateController extends GetxController {
         method: 'verifyPassword',
         authMethod: 'email_password',
       );
-      _log('Password verification failed',
-          method: 'verifyPassword', isError: true, error: e.message);
+      _log(
+        'Password verification failed',
+        method: 'verifyPassword',
+        isError: true,
+        error: e.message,
+      );
       AppSnack.error('error'.tr, 'incorrect_password'.tr);
       return false;
     } catch (e, stack) {
@@ -99,8 +106,12 @@ class ProfileUpdateController extends GetxController {
         authMethod: 'email_password',
         stackTrace: stack,
       );
-      _log('Password verification error',
-          method: 'verifyPassword', isError: true, error: e);
+      _log(
+        'Password verification error',
+        method: 'verifyPassword',
+        isError: true,
+        error: e,
+      );
       AppSnack.error('error'.tr, 'unexpected_error'.tr);
       return false;
     } finally {
@@ -140,8 +151,9 @@ class ProfileUpdateController extends GetxController {
     _lastType = type;
     _lastCurrentValue = currentValue;
 
-    final operation =
-        isEmailChange ? 'email_change_request' : 'phone_change_request';
+    final operation = isEmailChange
+        ? 'email_change_request'
+        : 'phone_change_request';
     final sw = AuthenticationLogger.logStart(
       operation,
       method: 'sendUpdateOtp',
@@ -152,8 +164,9 @@ class ProfileUpdateController extends GetxController {
 
     try {
       if (isEmailChange) {
-        final available =
-            await AuthSecurityService.isEmailAvailable(normalizedTarget);
+        final available = await AuthSecurityService.isEmailAvailable(
+          normalizedTarget,
+        );
         if (!available) {
           AppSnack.error('error'.tr, 'email_already_exists'.tr);
           return false;
@@ -172,8 +185,9 @@ class ProfileUpdateController extends GetxController {
         return true;
       }
 
-      final available =
-          await AuthSecurityService.isPhoneAvailable(normalizedTarget);
+      final available = await AuthSecurityService.isPhoneAvailable(
+        normalizedTarget,
+      );
       if (!available) {
         AppSnack.error('error'.tr, 'phone_already_used'.tr);
         return false;
@@ -217,8 +231,13 @@ class ProfileUpdateController extends GetxController {
         authMethod: isEmailChange ? 'email_otp' : 'phone_otp',
         stackTrace: stack,
       );
-      _log('Error sending update OTP',
-          method: 'sendUpdateOtp', isError: true, error: e, params: {'type': type});
+      _log(
+        'Error sending update OTP',
+        method: 'sendUpdateOtp',
+        isError: true,
+        error: e,
+        params: {'type': type},
+      );
       AppSnack.error('error'.tr, 'otp_resend_failed'.tr);
       return false;
     } finally {
@@ -236,7 +255,8 @@ class ProfileUpdateController extends GetxController {
 
     if (isEmailChange) {
       if (!InputValidators.isValidEmail(newValue)) return 'invalid_email'.tr;
-      final current = currentValue?.trim().toLowerCase() ??
+      final current =
+          currentValue?.trim().toLowerCase() ??
           SupabaseService.currentUser?.email?.trim().toLowerCase();
       if (current != null && current == newValue) {
         return 'email_same_as_current'.tr;
@@ -247,8 +267,8 @@ class ProfileUpdateController extends GetxController {
     if (!InputValidators.isValidE164Phone(newValue)) {
       return 'invalid_phone'.tr;
     }
-    final currentPhone = currentValue?.trim() ??
-        AuthSecurityService.getUserPhone()?.trim();
+    final currentPhone =
+        currentValue?.trim() ?? AuthSecurityService.getUserPhone()?.trim();
     if (currentPhone != null) {
       final normalizedCurrent = _phoneOtp.toE164(currentPhone);
       if (normalizedCurrent == newValue) {
@@ -265,16 +285,21 @@ class ProfileUpdateController extends GetxController {
   Future<bool> checkEmailChangeComplete(String targetEmail) async {
     isLoading.value = true;
     try {
-      final complete =
-          await _authRepo.isPendingEmailChangeComplete(targetEmail);
+      final complete = await _authRepo.isPendingEmailChangeComplete(
+        targetEmail,
+      );
       if (complete) {
         await _authRepo.refreshUserProfileState();
         AppSnack.success('success'.tr, 'email_changed_success'.tr);
       }
       return complete;
     } catch (e) {
-      _log('Email change status check failed',
-          method: 'checkEmailChangeComplete', isError: true, error: e);
+      _log(
+        'Email change status check failed',
+        method: 'checkEmailChangeComplete',
+        isError: true,
+        error: e,
+      );
       return false;
     } finally {
       isLoading.value = false;
@@ -297,8 +322,9 @@ class ProfileUpdateController extends GetxController {
     }
 
     isLoading.value = true;
-    final operation =
-        type == 'email_change' ? 'email_change_confirm' : 'phone_change_confirm';
+    final operation = type == 'email_change'
+        ? 'email_change_confirm'
+        : 'phone_change_confirm';
     final sw = AuthenticationLogger.logStart(
       operation,
       method: 'verifyAndUpdate',
@@ -324,8 +350,11 @@ class ProfileUpdateController extends GetxController {
         method: 'verifyAndUpdate',
         authMethod: type == 'email_change' ? 'email_otp' : 'phone_otp',
       );
-      _log('OTP verified successfully',
-          method: 'verifyAndUpdate', params: {'type': type});
+      _log(
+        'OTP verified successfully',
+        method: 'verifyAndUpdate',
+        params: {'type': type},
+      );
       SoundService.to.playSuccess();
       AppSnack.success('success'.tr, 'profile_updated_success'.tr);
       return true;
@@ -337,11 +366,13 @@ class ProfileUpdateController extends GetxController {
         method: 'verifyAndUpdate',
         authMethod: type == 'email_change' ? 'email_otp' : 'phone_otp',
       );
-      _log('OTP verification failed',
-          method: 'verifyAndUpdate',
-          isError: true,
-          error: e.message,
-          params: {'type': type, 'statusCode': e.statusCode});
+      _log(
+        'OTP verification failed',
+        method: 'verifyAndUpdate',
+        isError: true,
+        error: e.message,
+        params: {'type': type, 'statusCode': e.statusCode},
+      );
       AppSnack.error('error'.tr, AuthSecurityService.translateOtpError(e));
       return false;
     } catch (e, stack) {
@@ -353,8 +384,12 @@ class ProfileUpdateController extends GetxController {
         authMethod: type == 'email_change' ? 'email_otp' : 'phone_otp',
         stackTrace: stack,
       );
-      _log('Error in verifyAndUpdate',
-          method: 'verifyAndUpdate', isError: true, error: e);
+      _log(
+        'Error in verifyAndUpdate',
+        method: 'verifyAndUpdate',
+        isError: true,
+        error: e,
+      );
       AppSnack.error('error'.tr, 'unexpected_error'.tr);
       return false;
     } finally {
@@ -420,12 +455,14 @@ class ProfileUpdateController extends GetxController {
     return '$m:$s';
   }
 
-  void _log(String message,
-      {String method = 'event',
-      bool isError = false,
-      Object? error,
-      StackTrace? stack,
-      Map<String, Object?>? params}) {
+  void _log(
+    String message, {
+    String method = 'event',
+    bool isError = false,
+    Object? error,
+    StackTrace? stack,
+    Map<String, Object?>? params,
+  }) {
     SafeGetx.debugTrace(
       className: 'ProfileUpdateController',
       method: method,

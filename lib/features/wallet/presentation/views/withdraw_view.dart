@@ -10,11 +10,9 @@ import 'package:kasby/core/models/agent_model.dart';
 import 'package:kasby/core/services/account_restriction_service.dart';
 import 'package:kasby/core/services/agent_service.dart';
 import 'package:kasby/core/services/transaction_auth_service.dart';
-import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/widgets/glass_card.dart';
 import 'package:kasby/core/models/kasby_receipt_data.dart';
 import 'package:kasby/core/services/receipt_export_service.dart';
-import 'package:kasby/core/services/confetti_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/services/financial_repository.dart';
 import 'package:kasby/routes/app_routes.dart';
@@ -92,7 +90,7 @@ class _WithdrawViewState extends State<WithdrawView> {
     if (!await AccountRestrictionService.to.checkWriteAccessAsync()) return;
 
     final amountText = _amountController.text.trim();
-    
+
     // Check KYC Status
     if (HomeController.to.kycStatus != 'verified') {
       Get.snackbar(
@@ -105,7 +103,13 @@ class _WithdrawViewState extends State<WithdrawView> {
             Get.back(); // close snackbar
             Get.toNamed(Routes.kyc);
           },
-          child: Text('verify_now'.tr, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          child: Text(
+            'verify_now'.tr,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       );
       return;
@@ -379,7 +383,11 @@ class _WithdrawViewState extends State<WithdrawView> {
     }
   }
 
-  void _showSuccessOverlay(double amount, String agentName, String transactionId) {
+  void _showSuccessOverlay(
+    double amount,
+    String agentName,
+    String transactionId,
+  ) {
     final profile = Get.isRegistered<HomeController>()
         ? HomeController.to.profile.value
         : null;
@@ -412,107 +420,114 @@ class _WithdrawViewState extends State<WithdrawView> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            KasbyCard(
-              color: isDark ? AppColors.surface : AppColors.surfaceLight,
-              child: Column(
-                children: [
-                  Text(
-                    'withdrawable_balance'.tr,
-                    style: TextStyle(
-                      color: isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textSecondaryLight,
-                    ),
-                  ),
-                  Obx(
-                    () => Text(
-                      CurrencyController.to.formatToUSD(
-                        CurrencyController.to.totalBalance.value,
-                      ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              KasbyCard(
+                color: isDark ? AppColors.surface : AppColors.surfaceLight,
+                child: Column(
+                  children: [
+                    Text(
+                      'withdrawable_balance'.tr,
                       style: TextStyle(
-                        color: isDark ? Colors.white : AppColors.textBodyLight,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLight,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Divider(
-                    color: isDark
-                        ? Colors.white10
-                        : Colors.black.withValues(alpha: 0.1),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'minimum_withdrawal'.tr,
+                    Obx(
+                      () => Text(
+                        CurrencyController.to.formatToUSD(
+                          CurrencyController.to.totalBalance.value,
+                        ),
                         style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.textBodyLight,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const Text(
-                        '\$10.00',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(
+                      color: isDark
+                          ? Colors.white10
+                          : Colors.black.withValues(alpha: 0.1),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'minimum_withdrawal'.tr,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const Text(
+                          '\$10.00',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              KasbyTextField(
+                label: 'withdrawal_amount'.tr,
+                hint: 'enter_amount_usd'.tr,
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                prefixIcon: Icon(
+                  Icons.outbox_rounded,
+                  color: AppColors.darkGold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Obx(
+                () => FeeBreakdownCard(
+                  category: 'withdraw',
+                  amount: _amountPreview.value,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Optional notes field
+              KasbyTextField(
+                label: 'withdraw_notes'.tr,
+                hint: 'withdraw_notes_hint'.tr,
+                controller: _notesController,
+                prefixIcon: Icon(
+                  Icons.note_alt_outlined,
+                  color: AppColors.darkGold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'select_withdrawal_agent'.tr,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildAgentSelector(),
+              const SizedBox(height: 48),
+              _isSubmitting
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.darkGold,
                       ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            KasbyTextField(
-              label: 'withdrawal_amount'.tr,
-              hint: 'enter_amount_usd'.tr,
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              prefixIcon: Icon(
-                Icons.outbox_rounded,
-                color: AppColors.darkGold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Obx(
-              () => FeeBreakdownCard(
-                category: 'withdraw',
-                amount: _amountPreview.value,
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Optional notes field
-            KasbyTextField(
-              label: 'withdraw_notes'.tr,
-              hint: 'withdraw_notes_hint'.tr,
-              controller: _notesController,
-              prefixIcon: Icon(
-                Icons.note_alt_outlined,
-                color: AppColors.darkGold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'select_withdrawal_agent'.tr,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildAgentSelector(),
-            const SizedBox(height: 48),
-            _isSubmitting
-                ? Center(
-                    child: CircularProgressIndicator(color: AppColors.darkGold),
-                  )
-                : KasbyButton(
-                    text: 'request_withdrawal'.tr,
-                    onPressed: _handleWithdraw,
-                  ),
-          ],
-        ),
+                    )
+                  : KasbyButton(
+                      text: 'request_withdrawal'.tr,
+                      onPressed: _handleWithdraw,
+                    ),
+            ],
+          ),
         ),
       ),
     );
@@ -571,7 +586,10 @@ class _WithdrawViewState extends State<WithdrawView> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        AgentStatusBadge(isOnline: agent.isAvailableNow, compact: true),
+                        AgentStatusBadge(
+                          isOnline: agent.isAvailableNow,
+                          compact: true,
+                        ),
                         if (agent.successRate > 0) ...[
                           const SizedBox(width: 6),
                           Container(

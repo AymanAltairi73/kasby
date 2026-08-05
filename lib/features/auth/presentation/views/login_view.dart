@@ -50,7 +50,7 @@ class _LoginViewState extends State<LoginView> {
                     height: 1.5,
                   ),
                 ),
-               const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
                 Semantics(
                   textField: true,
@@ -106,7 +106,9 @@ class _LoginViewState extends State<LoginView> {
                       color: AppColors.darkGold,
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return 'fill_all_data'.tr;
+                      if (value == null || value.isEmpty) {
+                        return 'fill_all_data'.tr;
+                      }
                       if (value.length < 8) return 'weak_password'.tr;
                       return null;
                     },
@@ -203,7 +205,6 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       ),
                     ),
-
                   ],
                 ),
                 const SizedBox(height: 32),

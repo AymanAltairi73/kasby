@@ -18,7 +18,7 @@ class AgencyApplyView extends StatefulWidget {
 class _AgencyApplyViewState extends State<AgencyApplyView> {
   final controller = Get.put(AgencyApplyController());
   final _formKey = GlobalKey<FormState>();
-  
+
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _whatsappController = TextEditingController();
@@ -72,11 +72,13 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (controller.hasApplied.value && controller.applicationStatus.value == 'pending') {
+        if (controller.hasApplied.value &&
+            controller.applicationStatus.value == 'pending') {
           return _buildPendingUI();
         }
 
-        if (controller.hasApplied.value && controller.applicationStatus.value == 'approved') {
+        if (controller.hasApplied.value &&
+            controller.applicationStatus.value == 'approved') {
           return _buildApprovedUI();
         }
 
@@ -98,7 +100,11 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
                 color: AppColors.darkGold.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.pending_actions_rounded, size: 80, color: AppColors.darkGold),
+              child: Icon(
+                Icons.pending_actions_rounded,
+                size: 80,
+                color: AppColors.darkGold,
+              ),
             ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
             const SizedBox(height: 32),
             Text(
@@ -136,7 +142,11 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
                 color: AppColors.softGreen.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.verified_rounded, size: 80, color: AppColors.softGreen),
+              child: Icon(
+                Icons.verified_rounded,
+                size: 80,
+                color: AppColors.softGreen,
+              ),
             ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
             const SizedBox(height: 32),
             Text(
@@ -178,14 +188,20 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
                     controller: _nameController,
                     label: 'full_name'.tr,
                     hint: 'enter_full_name'.tr,
-                    prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.darkGold),
+                    prefixIcon: Icon(
+                      Icons.person_outline_rounded,
+                      color: AppColors.darkGold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   KasbyTextField(
                     controller: _phoneController,
                     label: 'phone_number'.tr,
                     hint: 'enter_phone_hint'.tr,
-                    prefixIcon: Icon(Icons.phone_outlined, color: AppColors.darkGold),
+                    prefixIcon: Icon(
+                      Icons.phone_outlined,
+                      color: AppColors.darkGold,
+                    ),
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 16),
@@ -193,7 +209,10 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
                     controller: _whatsappController,
                     label: 'whatsapp_number'.tr,
                     hint: 'enter_phone_hint'.tr,
-                    prefixIcon: Icon(Icons.chat_outlined, color: AppColors.darkGold),
+                    prefixIcon: Icon(
+                      Icons.chat_outlined,
+                      color: AppColors.darkGold,
+                    ),
                     keyboardType: TextInputType.phone,
                   ),
                 ],
@@ -211,14 +230,20 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
                     controller: _countryController,
                     label: 'country'.tr,
                     hint: 'select_country'.tr,
-                    prefixIcon: Icon(Icons.public_rounded, color: AppColors.darkGold),
+                    prefixIcon: Icon(
+                      Icons.public_rounded,
+                      color: AppColors.darkGold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   KasbyTextField(
                     controller: _cityController,
                     label: 'prov_city'.tr,
                     hint: 'enter_city'.tr,
-                    prefixIcon: Icon(Icons.location_city_rounded, color: AppColors.darkGold),
+                    prefixIcon: Icon(
+                      Icons.location_city_rounded,
+                      color: AppColors.darkGold,
+                    ),
                   ),
                 ],
               ),
@@ -243,23 +268,26 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
             ),
             const SizedBox(height: 32),
             SizedBox(
-              width: double.infinity,
-              child: KasbyButton(
-                text: 'submit_application'.tr,
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    controller.submitApplication(
-                      fullName: _nameController.text.trim(),
-                      phone: _phoneController.text.trim(),
-                      whatsapp: _whatsappController.text.trim(),
-                      city: _cityController.text.trim(),
-                      country: _countryController.text.trim(),
-                      hasOffice: _hasOffice,
-                    );
-                  }
-                },
-              ),
-            ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
+                  width: double.infinity,
+                  child: KasbyButton(
+                    text: 'submit_application'.tr,
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        controller.submitApplication(
+                          fullName: _nameController.text.trim(),
+                          phone: _phoneController.text.trim(),
+                          whatsapp: _whatsappController.text.trim(),
+                          city: _cityController.text.trim(),
+                          country: _countryController.text.trim(),
+                          hasOffice: _hasOffice,
+                        );
+                      }
+                    },
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 200.ms)
+                .scale(begin: const Offset(0.9, 0.9)),
             const SizedBox(height: 40),
           ],
         ),
@@ -392,15 +420,17 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
             color: isSelected
                 ? AppColors.darkGold
                 : (isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.1)),
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.1)),
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+              isSelected
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
               color: isSelected ? AppColors.darkGold : AppColors.textSecondary,
               size: 20,
             ),
@@ -408,7 +438,9 @@ class _AgencyApplyViewState extends State<AgencyApplyView> {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppColors.darkGold : AppColors.textSecondary,
+                color: isSelected
+                    ? AppColors.darkGold
+                    : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),

@@ -23,14 +23,24 @@ class SessionService extends GetxService with WidgetsBindingObserver {
 
   @override
   void onInit() {
-    SafeGetx.debugTrace(className: 'SessionService', method: 'onInit', feature: 'Core', status: 'INFO');
+    SafeGetx.debugTrace(
+      className: 'SessionService',
+      method: 'onInit',
+      feature: 'Core',
+      status: 'INFO',
+    );
     super.onInit();
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void onClose() {
-    SafeGetx.debugTrace(className: 'SessionService', method: 'onClose', feature: 'Core', status: 'INFO');
+    SafeGetx.debugTrace(
+      className: 'SessionService',
+      method: 'onClose',
+      feature: 'Core',
+      status: 'INFO',
+    );
     WidgetsBinding.instance.removeObserver(this);
     _logoutTimer?.cancel();
     super.onClose();
@@ -41,11 +51,23 @@ class SessionService extends GetxService with WidgetsBindingObserver {
     if (!AuthController.to.isLoggedIn) return;
 
     if (state == AppLifecycleState.paused) {
-      SafeGetx.debugTrace(className: 'SessionService', method: 'didChangeAppLifecycleState', feature: 'Core', status: 'INFO', params: {'state': 'paused'});
+      SafeGetx.debugTrace(
+        className: 'SessionService',
+        method: 'didChangeAppLifecycleState',
+        feature: 'Core',
+        status: 'INFO',
+        params: {'state': 'paused'},
+      );
       _backgroundTime = DateTime.now();
       _startLogoutTimer();
     } else if (state == AppLifecycleState.resumed) {
-      SafeGetx.debugTrace(className: 'SessionService', method: 'didChangeAppLifecycleState', feature: 'Core', status: 'INFO', params: {'state': 'resumed'});
+      SafeGetx.debugTrace(
+        className: 'SessionService',
+        method: 'didChangeAppLifecycleState',
+        feature: 'Core',
+        status: 'INFO',
+        params: {'state': 'resumed'},
+      );
       _handleAppResume();
     }
   }
@@ -54,8 +76,18 @@ class SessionService extends GetxService with WidgetsBindingObserver {
     _logoutTimer?.cancel();
     _logoutTimer = Timer(const Duration(minutes: logoutTimeout), () {
       if (_backgroundTime != null) {
-        SafeGetx.debugTrace(className: 'SessionService', method: '_startLogoutTimer', feature: 'Core', status: 'WARN', message: 'Auto logout triggered');
-        unawaited(SecurityActivityService.to.logEvent(SecurityEventType.sessionExpiration));
+        SafeGetx.debugTrace(
+          className: 'SessionService',
+          method: '_startLogoutTimer',
+          feature: 'Core',
+          status: 'WARN',
+          message: 'Auto logout triggered',
+        );
+        unawaited(
+          SecurityActivityService.to.logEvent(
+            SecurityEventType.sessionExpiration,
+          ),
+        );
         AuthController.to.logout();
       }
     });
@@ -66,13 +98,29 @@ class SessionService extends GetxService with WidgetsBindingObserver {
     if (_backgroundTime == null) return;
 
     final duration = DateTime.now().difference(_backgroundTime!);
-    
+
     if (duration.inMinutes >= logoutTimeout) {
-      SafeGetx.debugTrace(className: 'SessionService', method: '_handleAppResume', feature: 'Core', status: 'WARN', message: 'Logout timeout exceeded');
-      unawaited(SecurityActivityService.to.logEvent(SecurityEventType.sessionExpiration));
+      SafeGetx.debugTrace(
+        className: 'SessionService',
+        method: '_handleAppResume',
+        feature: 'Core',
+        status: 'WARN',
+        message: 'Logout timeout exceeded',
+      );
+      unawaited(
+        SecurityActivityService.to.logEvent(
+          SecurityEventType.sessionExpiration,
+        ),
+      );
       AuthController.to.logout();
     } else if (duration.inMinutes >= lockTimeout) {
-      SafeGetx.debugTrace(className: 'SessionService', method: '_handleAppResume', feature: 'Core', status: 'INFO', message: 'Showing lock screen');
+      SafeGetx.debugTrace(
+        className: 'SessionService',
+        method: '_handleAppResume',
+        feature: 'Core',
+        status: 'INFO',
+        message: 'Showing lock screen',
+      );
       _showLockScreen();
     }
 
@@ -82,7 +130,7 @@ class SessionService extends GetxService with WidgetsBindingObserver {
   Future<void> _showLockScreen() async {
     if (_isLocked) return;
     _isLocked = true;
-    
+
     // We use Get.toNamed to show a lock screen that can't be dismissed easily
     Get.toNamed(Routes.lockScreen);
   }
@@ -108,7 +156,14 @@ class SessionService extends GetxService with WidgetsBindingObserver {
         ),
       );
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'SessionService', method: 'authenticate', feature: 'Core', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'SessionService',
+        method: 'authenticate',
+        feature: 'Core',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       return false;
     }
   }

@@ -65,11 +65,24 @@ class NotificationPreferencesService {
   static String categoryFromEntityType(String? entityType) {
     final e = (entityType ?? '').toLowerCase();
     const financial = {
-      'transaction', 'investment', 'loan', 'wallet', 'deposit',
-      'withdraw', 'transfer', 'ksp', 'subscription', 'marketplace',
+      'transaction',
+      'investment',
+      'loan',
+      'wallet',
+      'deposit',
+      'withdraw',
+      'transfer',
+      'ksp',
+      'subscription',
+      'marketplace',
     };
     const social = {
-      'friend', 'friend_request', 'chat', 'message', 'team', 'referral',
+      'friend',
+      'friend_request',
+      'chat',
+      'message',
+      'team',
+      'referral',
     };
     if (financial.contains(e)) return 'financial';
     if (social.contains(e)) return 'social';
@@ -89,7 +102,8 @@ class NotificationPreferencesService {
     if (!await isGlobalEnabled()) return false;
     if (await isInQuietHours()) return false;
 
-    final resolved = category ??
+    final resolved =
+        category ??
         (entityType != null && entityType.isNotEmpty
             ? categoryFromEntityType(entityType)
             : categoryFromNotificationType(notificationType ?? 'info'));

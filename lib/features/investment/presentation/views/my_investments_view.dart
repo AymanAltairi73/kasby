@@ -209,7 +209,9 @@ class _InvestmentPlansListState extends State<_InvestmentPlansList> {
                     child: InvestmentPlanCard(
                       id: plan.id,
                       title: plan.nameAr,
-                      profit: KasbyNumberFormatter.formatProfitPercentage(plan.profitPercentage),
+                      profit: KasbyNumberFormatter.formatProfitPercentage(
+                        plan.profitPercentage,
+                      ),
                       minAmount: '\$${plan.minAmount.toInt()}',
                       imagePath: _getPlanImage(plan.nameEn ?? plan.nameAr),
                       color: _planColor(plan.riskLevel),
@@ -394,7 +396,9 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.w900,
                                     fontSize: 18,
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -415,16 +419,18 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                               vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: (isActive
-                                      ? AppColors.softGreen
-                                      : AppColors.textSecondary)
-                                  .withValues(alpha: 0.12),
+                              color:
+                                  (isActive
+                                          ? AppColors.softGreen
+                                          : AppColors.textSecondary)
+                                      .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: (isActive
-                                        ? AppColors.softGreen
-                                        : AppColors.textSecondary)
-                                    .withValues(alpha: 0.3),
+                                color:
+                                    (isActive
+                                            ? AppColors.softGreen
+                                            : AppColors.textSecondary)
+                                        .withValues(alpha: 0.3),
                               ),
                             ),
                             child: Text(
@@ -567,7 +573,7 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                                     )
                                   : Switch.adaptive(
                                       value: inv.autoRestartEnabled,
-                                      activeColor: AppColors.darkGold,
+                                      activeTrackColor: AppColors.darkGold,
                                       onChanged: (val) async {
                                         await HomeController.to
                                             .toggleAutoRestart(inv.id, val);

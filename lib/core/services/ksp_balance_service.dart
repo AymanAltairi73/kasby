@@ -100,19 +100,25 @@ class KspBalanceService extends GetxService {
   void applyFromRpc(Map<String, dynamic>? payload) {
     if (payload == null) return;
     if (payload.containsKey('effective_ksp')) {
-      effectiveKsp.value = (payload['effective_ksp'] as num?)?.toInt() ?? effectiveKsp.value;
+      effectiveKsp.value =
+          (payload['effective_ksp'] as num?)?.toInt() ?? effectiveKsp.value;
     }
     if (payload.containsKey('reward_ksp')) {
-      rewardKsp.value = (payload['reward_ksp'] as num?)?.toInt() ?? rewardKsp.value;
+      rewardKsp.value =
+          (payload['reward_ksp'] as num?)?.toInt() ?? rewardKsp.value;
     }
     if (payload.containsKey('wallet_ksp')) {
-      walletKsp.value = (payload['wallet_ksp'] as num?)?.toInt() ?? walletKsp.value;
+      walletKsp.value =
+          (payload['wallet_ksp'] as num?)?.toInt() ?? walletKsp.value;
     }
     if (payload.containsKey('wallet_usd')) {
-      walletUsd.value = (payload['wallet_usd'] as num?)?.toDouble() ?? walletUsd.value;
+      walletUsd.value =
+          (payload['wallet_usd'] as num?)?.toDouble() ?? walletUsd.value;
     }
-    if (payload.containsKey('new_balance') && !payload.containsKey('effective_ksp')) {
-      effectiveKsp.value = (payload['new_balance'] as num?)?.toInt() ?? effectiveKsp.value;
+    if (payload.containsKey('new_balance') &&
+        !payload.containsKey('effective_ksp')) {
+      effectiveKsp.value =
+          (payload['new_balance'] as num?)?.toInt() ?? effectiveKsp.value;
     }
   }
 
@@ -134,12 +140,11 @@ class KspBalanceService extends GetxService {
     return response;
   }
 
-  Future<void> afterFinancialMutation([Map<String, dynamic>? rpcPayload]) async {
+  Future<void> afterFinancialMutation([
+    Map<String, dynamic>? rpcPayload,
+  ]) async {
     applyFromRpc(rpcPayload);
-    await Future.wait([
-      refresh(),
-      CurrencyController.to.fetchWalletBalances(),
-    ]);
+    await Future.wait([refresh(), CurrencyController.to.fetchWalletBalances()]);
   }
 
   void _reset() {

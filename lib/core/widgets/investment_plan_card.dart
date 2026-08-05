@@ -55,10 +55,7 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
           method: 'onTap',
           feature: 'Investment',
           status: 'INFO',
-          params: {
-            'planId': widget.id,
-            'title': widget.title,
-          },
+          params: {'planId': widget.id, 'title': widget.title},
         );
         Get.toNamed(
           Routes.investmentDetails,
@@ -110,7 +107,8 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                   width: 1.5,
                 ),
                 child: SingleChildScrollView(
-                  physics: const NeverScrollableScrollPhysics(), // Don't block parent scrolling
+                  physics:
+                      const NeverScrollableScrollPhysics(), // Don't block parent scrolling
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -125,65 +123,65 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                           fit: BoxFit.cover,
                         ),
                       ),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  widget.title.tr,
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    widget.title.tr,
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.05)
-                                      : Colors.black.withValues(alpha: 0.05),
-                                  shape: BoxShape.circle,
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.05)
+                                        : Colors.black.withValues(alpha: 0.05),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 14,
+                                    color: widget.color,
+                                  ),
                                 ),
-                                child: Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 14,
-                                  color: widget.color,
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                const Spacer(),
+                                Text(
+                                  'invest_now'.tr,
+                                  style: TextStyle(
+                                    color: widget.color,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              const Spacer(),
-                              Text(
-                                'invest_now'.tr,
-                                style: TextStyle(
-                                  color: widget.color,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            )
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .shimmer(
                 duration: const Duration(seconds: 4),

@@ -58,7 +58,8 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
         centerTitle: true,
         actions: [
           Obx(() {
-            final online = controller.agentProfile.value?.isAvailableNow ?? false;
+            final online =
+                controller.agentProfile.value?.isAvailableNow ?? false;
             return Padding(
               padding: const EdgeInsets.only(right: 4),
               child: Row(
@@ -82,7 +83,10 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
                 padding: const EdgeInsets.only(right: 4),
                 child: Badge(
                   label: Text('${controller.pendingCount.value}'),
-                  child: const Icon(Icons.notifications_active_outlined, size: 22),
+                  child: const Icon(
+                    Icons.notifications_active_outlined,
+                    size: 22,
+                  ),
                 ),
               );
             }
@@ -101,7 +105,10 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
           tabs: [
             Tab(text: 'tab_pending'.tr),
             Tab(text: 'tab_approved'.tr),
@@ -171,7 +178,9 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
                           Icon(
                             Icons.inbox_outlined,
                             size: 64,
-                            color: AppColors.textSecondary.withValues(alpha: 0.25),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.25,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -191,29 +200,26 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (index == controller.operations.length) {
-                          if (controller.operations.length <
-                              controller.totalCount.value) {
-                            controller.loadNextPage();
-                            return const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-                          return const SizedBox(height: 40);
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      if (index == controller.operations.length) {
+                        if (controller.operations.length <
+                            controller.totalCount.value) {
+                          controller.loadNextPage();
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
                         }
-                        final tx = controller.operations[index];
-                        return _buildOperationCard(
-                          context,
-                          tx,
-                          controller,
-                          isDark,
-                        );
-                      },
-                      childCount: controller.operations.length + 1,
-                    ),
+                        return const SizedBox(height: 40);
+                      }
+                      final tx = controller.operations[index];
+                      return _buildOperationCard(
+                        context,
+                        tx,
+                        controller,
+                        isDark,
+                      );
+                    }, childCount: controller.operations.length + 1),
                   ),
                 ),
             ],
@@ -259,7 +265,10 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
               onTap: () => _summaryExpanded.value = !expanded,
               borderRadius: BorderRadius.circular(12),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -488,8 +497,7 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
     bool isDark,
   ) {
     final isDeposit = tx.type == 'deposit';
-    final isPending =
-        tx.status == 'pending' || tx.status == 'processing';
+    final isPending = tx.status == 'pending' || tx.status == 'processing';
     final slaLevel = isPending && tx.createdAt != null
         ? SlaFormatter.levelFor(tx.createdAt!)
         : null;
@@ -539,11 +547,14 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
               if (isPending && tx.createdAt != null) ...[
                 const SizedBox(height: 10),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: SlaFormatter.colorFor(slaLevel!)
-                        .withValues(alpha: 0.12),
+                    color: SlaFormatter.colorFor(
+                      slaLevel!,
+                    ).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -553,8 +564,8 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
                         slaLevel == SlaLevel.overdue
                             ? Icons.error_outline
                             : slaLevel == SlaLevel.warning
-                                ? Icons.schedule
-                                : Icons.access_time,
+                            ? Icons.schedule
+                            : Icons.access_time,
                         size: 14,
                         color: SlaFormatter.colorFor(slaLevel),
                       ),
@@ -640,13 +651,13 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: AppColors.softGreen,
-              shape: BoxShape.circle,
-            ),
-          )
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: AppColors.softGreen,
+                  shape: BoxShape.circle,
+                ),
+              )
               .animate(onPlay: (c) => c.repeat())
               .scaleXY(begin: 0.8, end: 1.2, duration: 1000.ms)
               .then()
@@ -691,8 +702,8 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
               builder: (context, snapshot) {
                 final customer = snapshot.data;
                 final profile = customer?['profile'] as Map<String, dynamic>?;
-                final walletBalance =
-                    (customer?['wallet_balance'] as num?)?.toDouble();
+                final walletBalance = (customer?['wallet_balance'] as num?)
+                    ?.toDouble();
                 final isLoadingCustomer =
                     snapshot.connectionState == ConnectionState.waiting;
 
@@ -707,7 +718,9 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
                           width: 40,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: AppColors.textSecondary.withValues(alpha: 0.3),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.3,
+                            ),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -745,13 +758,16 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
                           if (tx.createdAt != null)
                             _detailTile(
                               'request_time'.tr,
-                              DateFormat('yyyy-MM-dd HH:mm').format(tx.createdAt!),
+                              DateFormat(
+                                'yyyy-MM-dd HH:mm',
+                              ).format(tx.createdAt!),
                             ),
                           if (tx.processedAt != null)
                             _detailTile(
                               'processed_at'.tr,
-                              DateFormat('yyyy-MM-dd HH:mm')
-                                  .format(tx.processedAt!),
+                              DateFormat(
+                                'yyyy-MM-dd HH:mm',
+                              ).format(tx.processedAt!),
                             ),
                           if (tx.rejectionReason != null)
                             _detailTile(
@@ -798,10 +814,9 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
               CircleAvatar(
                 radius: 30,
                 backgroundColor: AppColors.darkGold.withValues(alpha: 0.15),
-                backgroundImage:
-                    avatarUrl != null && avatarUrl.isNotEmpty
-                        ? NetworkImage(avatarUrl)
-                        : null,
+                backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                    ? NetworkImage(avatarUrl)
+                    : null,
                 child: avatarUrl == null || avatarUrl.isEmpty
                     ? Icon(Icons.person_rounded, color: AppColors.darkGold)
                     : null,
@@ -899,10 +914,7 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
             width: 130,
             child: Text(
               label,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
           ),
           Expanded(
@@ -954,7 +966,10 @@ class _AgentDashboardViewState extends State<AgentDashboardView>
                 controller.confirmWithdrawal(tx.id);
               }
             },
-            child: Text('confirm'.tr, style: const TextStyle(color: Colors.green)),
+            child: Text(
+              'confirm'.tr,
+              style: const TextStyle(color: Colors.green),
+            ),
           ),
         ],
       ),

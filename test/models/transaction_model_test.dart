@@ -78,80 +78,110 @@ void main() {
     group('isCredit / isDebit', () {
       test('deposit is credit', () {
         final txn = TransactionModel(
-          id: 't1', userId: 'u1', walletId: 'w1',
-          type: 'deposit', amount: 100,
+          id: 't1',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'deposit',
+          amount: 100,
         );
         expect(txn.isCredit, true);
       });
 
       test('withdrawal is debit', () {
         final txn = TransactionModel(
-          id: 't2', userId: 'u1', walletId: 'w1',
-          type: 'withdrawal', amount: 100,
+          id: 't2',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'withdrawal',
+          amount: 100,
         );
         expect(txn.isDebit, true);
       });
 
       test('transfer_in is credit', () {
         final txn = TransactionModel(
-          id: 't3', userId: 'u1', walletId: 'w1',
-          type: 'transfer_in', amount: 50,
+          id: 't3',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'transfer_in',
+          amount: 50,
         );
         expect(txn.isCredit, true);
       });
 
       test('transfer_out is debit', () {
         final txn = TransactionModel(
-          id: 't4', userId: 'u1', walletId: 'w1',
-          type: 'transfer_out', amount: 50,
+          id: 't4',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'transfer_out',
+          amount: 50,
         );
         expect(txn.isDebit, true);
       });
 
       test('profit is credit', () {
         final txn = TransactionModel(
-          id: 't5', userId: 'u1', walletId: 'w1',
-          type: 'profit', amount: 10,
+          id: 't5',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'profit',
+          amount: 10,
         );
         expect(txn.isCredit, true);
       });
 
       test('investment is debit', () {
         final txn = TransactionModel(
-          id: 't6', userId: 'u1', walletId: 'w1',
-          type: 'investment', amount: 1000,
+          id: 't6',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'investment',
+          amount: 1000,
         );
         expect(txn.isDebit, true);
       });
 
       test('investment_return is credit', () {
         final txn = TransactionModel(
-          id: 't7', userId: 'u1', walletId: 'w1',
-          type: 'investment_return', amount: 1000,
+          id: 't7',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'investment_return',
+          amount: 1000,
         );
         expect(txn.isCredit, true);
       });
 
       test('loan_disbursement is credit', () {
         final txn = TransactionModel(
-          id: 't8', userId: 'u1', walletId: 'w1',
-          type: 'loan_disbursement', amount: 500,
+          id: 't8',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'loan_disbursement',
+          amount: 500,
         );
         expect(txn.isCredit, true);
       });
 
       test('loan_repayment is debit', () {
         final txn = TransactionModel(
-          id: 't9', userId: 'u1', walletId: 'w1',
-          type: 'loan_repayment', amount: 100,
+          id: 't9',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'loan_repayment',
+          amount: 100,
         );
         expect(txn.isDebit, true);
       });
 
       test('reward is credit', () {
         final txn = TransactionModel(
-          id: 't10', userId: 'u1', walletId: 'w1',
-          type: 'reward', amount: 5,
+          id: 't10',
+          userId: 'u1',
+          walletId: 'w1',
+          type: 'reward',
+          amount: 5,
         );
         expect(txn.isCredit, true);
       });

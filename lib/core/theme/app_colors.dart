@@ -20,7 +20,9 @@ class AppColors {
   static const Color backgroundDark = Color(0xFF0E0E11);
   static const Color surfaceDark = Color(0xFF1A1A1F);
   static const Color onSurfaceDark = Colors.white;
-  static const Color primaryDark = Color(0xFFC9A24D); // Gold is primary in Dark Mode
+  static const Color primaryDark = Color(
+    0xFFC9A24D,
+  ); // Gold is primary in Dark Mode
   static const Color successDark = Color(0xFF4CAF50);
   static const Color errorDark = Color(0xFFCF6679);
   static const Color textBodyDark = Color(0xFFE0E0E0);
@@ -39,10 +41,10 @@ class AppColors {
   static const Color errorLight = Color(0xFF991B1B);
   static const Color goldLight = Color(0xFFC5A059);
   static const Color onSurfaceLight = Color(0xFF0F172A); // Almost black
-  static const Color textBodyLight = Color(0xFF1E293B);   // Slate 800
+  static const Color textBodyLight = Color(0xFF1E293B); // Slate 800
   static const Color textSecondaryLight = Color(0xFF475569); // Slate 600
-  static const Color borderLight = Color(0xFFCBD5E1);     // Slate 300
-  static const Color iconLight = Color(0xFF334155);       // Slate 700
+  static const Color borderLight = Color(0xFFCBD5E1); // Slate 300
+  static const Color iconLight = Color(0xFF334155); // Slate 700
 
   static const LinearGradient goldGradient = LinearGradient(
     colors: [Color(0xFFC9A24D), Color(0xFFE5C173)],

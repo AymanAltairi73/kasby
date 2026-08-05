@@ -9,7 +9,8 @@ class LoanModel {
   totalDue; // generated column: amount + (amount * interest_rate / 100)
   final double remainingAmount;
   final double paidAmount;
-  final String status; // pending, approved, active, partial_paid, paid, overdue, defaulted, rejected
+  final String
+  status; // pending, approved, active, partial_paid, paid, overdue, defaulted, rejected
   final DateTime? loanDate;
   final DateTime? repaymentDate;
   final String? approvedBy;
@@ -56,29 +57,31 @@ class LoanModel {
   factory LoanModel.fromJson(Map<String, dynamic> json) {
     try {
       return LoanModel(
-      id: json['id'] as String? ?? '',
-      userId: json['user_id'] as String? ?? '',
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
-      interestRate: (json['interest_rate'] as num?)?.toDouble() ?? 0.0,
-      totalDue: (json['total_due'] as num?)?.toDouble(),
-      remainingAmount: _parseRemainingAmount(json),
-      paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
-      status: json['status'] as String? ?? 'pending',
-      loanDate: json['loan_date'] != null
-          ? DateTime.tryParse(json['loan_date'].toString())
-          : null,
-      repaymentDate: json['repayment_date'] != null
-          ? DateTime.tryParse(json['repayment_date'].toString())
-          : null,
-      approvedBy: json['approved_by'] as String?,
-      approvedAt: json['approved_at'] != null
-          ? DateTime.tryParse(json['approved_at'].toString())
-          : null,
-      paidAt: json['paid_at'] != null ? DateTime.tryParse(json['paid_at'].toString()) : null,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString())
-          : null,
-      rejectionReason: json['rejection_reason'] as String?,
+        id: json['id'] as String? ?? '',
+        userId: json['user_id'] as String? ?? '',
+        amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+        interestRate: (json['interest_rate'] as num?)?.toDouble() ?? 0.0,
+        totalDue: (json['total_due'] as num?)?.toDouble(),
+        remainingAmount: _parseRemainingAmount(json),
+        paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
+        status: json['status'] as String? ?? 'pending',
+        loanDate: json['loan_date'] != null
+            ? DateTime.tryParse(json['loan_date'].toString())
+            : null,
+        repaymentDate: json['repayment_date'] != null
+            ? DateTime.tryParse(json['repayment_date'].toString())
+            : null,
+        approvedBy: json['approved_by'] as String?,
+        approvedAt: json['approved_at'] != null
+            ? DateTime.tryParse(json['approved_at'].toString())
+            : null,
+        paidAt: json['paid_at'] != null
+            ? DateTime.tryParse(json['paid_at'].toString())
+            : null,
+        createdAt: json['created_at'] != null
+            ? DateTime.tryParse(json['created_at'].toString())
+            : null,
+        rejectionReason: json['rejection_reason'] as String?,
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -97,7 +100,8 @@ class LoanModel {
   static double _parseRemainingAmount(Map<String, dynamic> json) {
     final stored = (json['remaining_amount'] as num?)?.toDouble();
     if (stored != null && stored > 0) return stored;
-    final total = (json['total_due'] as num?)?.toDouble() ??
+    final total =
+        (json['total_due'] as num?)?.toDouble() ??
         (json['amount'] as num?)?.toDouble() ??
         0.0;
     final paid = (json['paid_amount'] as num?)?.toDouble() ?? 0.0;

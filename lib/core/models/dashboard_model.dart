@@ -40,22 +40,24 @@ class DashboardModel {
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
     try {
       return DashboardModel(
-      userId: json['user_id'] as String,
-      fullName: json['full_name'] as String? ?? '',
-      accountTier: json['account_tier'] as String? ?? 'free',
-      kycStatus: json['kyc_status'] as String? ?? 'unverified',
-      availableBalance: (json['available_balance'] as num?)?.toDouble() ?? 0.0,
-      profitBalance: (json['profit_balance'] as num?)?.toDouble() ?? 0.0,
-      investedBalance: (json['invested_balance'] as num?)?.toDouble() ?? 0.0,
-      pendingBalance: (json['pending_balance'] as num?)?.toDouble() ?? 0.0,
-      isFrozen: json['is_frozen'] as bool? ?? false,
-      frozenReason: json['frozen_reason'] as String?,
-      currency: json['currency'] as String? ?? 'USD',
-      pointBalance: (json['point_balance'] as num?)?.toInt() ?? 0,
-      activeInvestments: (json['active_investments'] as num?)?.toInt() ?? 0,
-      activeLoans: (json['active_loans'] as num?)?.toInt() ?? 0,
-      dailyProfit: (json['daily_profit'] as num?)?.toDouble() ?? 0.0,
-      profitPercentage: (json['profit_percentage'] as num?)?.toDouble() ?? 0.0,
+        userId: json['user_id'] as String,
+        fullName: json['full_name'] as String? ?? '',
+        accountTier: json['account_tier'] as String? ?? 'free',
+        kycStatus: json['kyc_status'] as String? ?? 'unverified',
+        availableBalance:
+            (json['available_balance'] as num?)?.toDouble() ?? 0.0,
+        profitBalance: (json['profit_balance'] as num?)?.toDouble() ?? 0.0,
+        investedBalance: (json['invested_balance'] as num?)?.toDouble() ?? 0.0,
+        pendingBalance: (json['pending_balance'] as num?)?.toDouble() ?? 0.0,
+        isFrozen: json['is_frozen'] as bool? ?? false,
+        frozenReason: json['frozen_reason'] as String?,
+        currency: json['currency'] as String? ?? 'USD',
+        pointBalance: (json['point_balance'] as num?)?.toInt() ?? 0,
+        activeInvestments: (json['active_investments'] as num?)?.toInt() ?? 0,
+        activeLoans: (json['active_loans'] as num?)?.toInt() ?? 0,
+        dailyProfit: (json['daily_profit'] as num?)?.toDouble() ?? 0.0,
+        profitPercentage:
+            (json['profit_percentage'] as num?)?.toDouble() ?? 0.0,
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(

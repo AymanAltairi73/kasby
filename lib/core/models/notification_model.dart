@@ -51,8 +51,12 @@ class NotificationModel {
         scheduledAt: json['scheduled_at'] != null
             ? DateTime.parse(json['scheduled_at'])
             : null,
-        sentAt: json['sent_at'] != null ? DateTime.parse(json['sent_at']) : null,
-        readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
+        sentAt: json['sent_at'] != null
+            ? DateTime.parse(json['sent_at'])
+            : null,
+        readAt: json['read_at'] != null
+            ? DateTime.parse(json['read_at'])
+            : null,
         deepLink: json['deep_link'] as String?,
         entityType: json['entity_type'] as String?,
         entityId: json['entity_id'] as String?,

@@ -37,7 +37,10 @@ class StoreProductModel {
     this.availableStock = 0,
   });
 
-  factory StoreProductModel.fromJson(Map<String, dynamic> json, {int stock = 0}) {
+  factory StoreProductModel.fromJson(
+    Map<String, dynamic> json, {
+    int stock = 0,
+  }) {
     return StoreProductModel(
       id: json['id'] as String? ?? '',
       categoryId: json['category_id'] as String? ?? '',

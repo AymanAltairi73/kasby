@@ -78,14 +78,19 @@ class _StatementsViewState extends State<StatementsView> {
           KasbyCard(
             child: Row(
               children: [
-                Icon(Icons.description_rounded,
-                    color: AppColors.darkGold, size: 28),
+                Icon(
+                  Icons.description_rounded,
+                  color: AppColors.darkGold,
+                  size: 28,
+                ),
                 const SizedBox(width: KasbySpacing.md),
                 Expanded(
                   child: Text(
                     'statements_desc'.tr,
                     style: TextStyle(
-                        fontSize: 13, color: AppColors.textSecondary),
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -97,54 +102,55 @@ class _StatementsViewState extends State<StatementsView> {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: KasbySpacing.md),
-          ...periods.entries.map(
-            (e) {
-              final selected = _period == e.key;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: KasbySpacing.sm),
-                child: InkWell(
-                  borderRadius: KasbyRadius.inputR,
-                  onTap: () => setState(() => _period = e.key),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: KasbySpacing.lg, vertical: KasbySpacing.md),
-                    decoration: BoxDecoration(
-                      borderRadius: KasbyRadius.inputR,
-                      border: Border.all(
+          ...periods.entries.map((e) {
+            final selected = _period == e.key;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: KasbySpacing.sm),
+              child: InkWell(
+                borderRadius: KasbyRadius.inputR,
+                onTap: () => setState(() => _period = e.key),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: KasbySpacing.lg,
+                    vertical: KasbySpacing.md,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: KasbyRadius.inputR,
+                    border: Border.all(
+                      color: selected
+                          ? AppColors.darkGold
+                          : AppColors.textSecondary.withValues(alpha: 0.2),
+                    ),
+                    color: selected
+                        ? AppColors.darkGold.withValues(alpha: 0.08)
+                        : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        selected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
                         color: selected
                             ? AppColors.darkGold
-                            : AppColors.textSecondary.withValues(alpha: 0.2),
+                            : AppColors.textSecondary,
+                        size: 20,
                       ),
-                      color: selected
-                          ? AppColors.darkGold.withValues(alpha: 0.08)
-                          : null,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          selected
-                              ? Icons.radio_button_checked_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          color: selected
-                              ? AppColors.darkGold
-                              : AppColors.textSecondary,
-                          size: 20,
+                      const SizedBox(width: KasbySpacing.md),
+                      Text(
+                        e.value,
+                        style: TextStyle(
+                          fontWeight: selected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                         ),
-                        const SizedBox(width: KasbySpacing.md),
-                        Text(
-                          e.value,
-                          style: TextStyle(
-                            fontWeight:
-                                selected ? FontWeight.bold : FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          }),
           const SizedBox(height: KasbySpacing.xxl),
           KasbyButton(
             text: 'generate_statement'.tr,

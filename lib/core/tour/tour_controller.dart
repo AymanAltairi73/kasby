@@ -55,6 +55,7 @@ class TourController extends GetxController {
       );
       if (!ready || !context.mounted || isRunning.value) continue;
       if (!await TourService.canAutoStartTour(TourId.home)) return;
+      if (!context.mounted) return;
 
       await _startTour(
         context,
@@ -115,10 +116,7 @@ class TourController extends GetxController {
   }
 
   /// Context-aware tour for pushed routes (marketplace, social, QR, etc.).
-  Future<void> tryStartFeatureTour(
-    BuildContext context,
-    TourId tourId,
-  ) async {
+  Future<void> tryStartFeatureTour(BuildContext context, TourId tourId) async {
     if (isRunning.value) return;
     if (!await TourService.canAutoStartTour(tourId)) return;
 
@@ -172,20 +170,19 @@ class TourController extends GetxController {
     _resetRunningState();
   }
 
-  GlobalKey _firstTargetKey(TourId tourId) =>
-      _stepsFor(tourId).first.targetKey;
+  GlobalKey _firstTargetKey(TourId tourId) => _stepsFor(tourId).first.targetKey;
 
   List<TourStepDefinition> _stepsFor(TourId tourId) => switch (tourId) {
-        TourId.home => HomeTourConfig.steps,
-        TourId.investments => InvestmentsTourConfig.steps,
-        TourId.wallet => WalletTourConfig.steps,
-        TourId.marketplace => MarketplaceTourConfig.steps,
-        TourId.social => SocialTourConfig.steps,
-        TourId.qr => QrTourConfig.steps,
-        TourId.luckyWheel => LuckyWheelTourConfig.steps,
-        TourId.referral => ReferralTourConfig.steps,
-        TourId.profile => ProfileTourConfig.steps,
-      };
+    TourId.home => HomeTourConfig.steps,
+    TourId.investments => InvestmentsTourConfig.steps,
+    TourId.wallet => WalletTourConfig.steps,
+    TourId.marketplace => MarketplaceTourConfig.steps,
+    TourId.social => SocialTourConfig.steps,
+    TourId.qr => QrTourConfig.steps,
+    TourId.luckyWheel => LuckyWheelTourConfig.steps,
+    TourId.referral => ReferralTourConfig.steps,
+    TourId.profile => ProfileTourConfig.steps,
+  };
 
   Future<void> _startTour(
     BuildContext context, {

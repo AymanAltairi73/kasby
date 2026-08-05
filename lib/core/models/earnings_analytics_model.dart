@@ -27,21 +27,30 @@ class EarningsAnalyticsModel {
       return EarningsAnalyticsModel(
         success: json['success'] as bool? ?? false,
         error: json['error'] as String?,
-        summary: json['summary'] != null 
-            ? Summary.fromJson(json['summary'] as Map<String, dynamic>) 
+        summary: json['summary'] != null
+            ? Summary.fromJson(json['summary'] as Map<String, dynamic>)
             : null,
-        statistics: json['statistics'] != null 
-            ? Statistics.fromJson(json['statistics'] as Map<String, dynamic>) 
+        statistics: json['statistics'] != null
+            ? Statistics.fromJson(json['statistics'] as Map<String, dynamic>)
             : null,
-        breakdown: (json['breakdown'] as List?)
-                ?.map((item) => BreakdownItem.fromJson(item as Map<String, dynamic>))
-                .toList() ?? [],
-        chartData: json['chart_data'] != null 
-            ? ChartData.fromJson(json['chart_data'] as Map<String, dynamic>) 
+        breakdown:
+            (json['breakdown'] as List?)
+                ?.map(
+                  (item) =>
+                      BreakdownItem.fromJson(item as Map<String, dynamic>),
+                )
+                .toList() ??
+            [],
+        chartData: json['chart_data'] != null
+            ? ChartData.fromJson(json['chart_data'] as Map<String, dynamic>)
             : null,
-        timeline: (json['timeline'] as List?)
-                ?.map((item) => TimelineItem.fromJson(item as Map<String, dynamic>))
-                .toList() ?? [],
+        timeline:
+            (json['timeline'] as List?)
+                ?.map(
+                  (item) => TimelineItem.fromJson(item as Map<String, dynamic>),
+                )
+                .toList() ??
+            [],
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -137,13 +146,16 @@ class Statistics {
       totalEarningsKsp: (json['total_earnings_ksp'] as num?)?.toInt() ?? 0,
       todayEarningsUsd: (json['today_earnings_usd'] as num?)?.toDouble() ?? 0.0,
       todayEarningsKsp: (json['today_earnings_ksp'] as num?)?.toInt() ?? 0,
-      last24hEarningsUsd: (json['last_24h_earnings_usd'] as num?)?.toDouble() ?? 0.0,
+      last24hEarningsUsd:
+          (json['last_24h_earnings_usd'] as num?)?.toDouble() ?? 0.0,
       last24hEarningsKsp: (json['last_24h_earnings_ksp'] as num?)?.toInt() ?? 0,
-      highestDailyEarningsUsd: (json['highest_daily_earnings_usd'] as num?)?.toDouble() ?? 0.0,
+      highestDailyEarningsUsd:
+          (json['highest_daily_earnings_usd'] as num?)?.toDouble() ?? 0.0,
       highestEarningsDate: json['highest_earnings_date'] != null
           ? DateTime.parse(json['highest_earnings_date'] as String)
           : null,
-      averageDailyEarningsUsd: (json['average_daily_earnings_usd'] as num?)?.toDouble() ?? 0.0,
+      averageDailyEarningsUsd:
+          (json['average_daily_earnings_usd'] as num?)?.toDouble() ?? 0.0,
       daysInPeriod: (json['days_in_period'] as num?)?.toInt() ?? 0,
     );
   }
@@ -165,7 +177,8 @@ class Statistics {
 }
 
 class BreakdownItem {
-  final String source; // Stable key: investments, lucky_wheel, referral_rewards, etc.
+  final String
+  source; // Stable key: investments, lucky_wheel, referral_rewards, etc.
   final double amountUsd;
   final int? amountKsp;
   final double percentage;
@@ -228,22 +241,22 @@ class BreakdownItem {
 class ChartData {
   final List<TrendChartItem> trendChart;
 
-  const ChartData({
-    required this.trendChart,
-  });
+  const ChartData({required this.trendChart});
 
   factory ChartData.fromJson(Map<String, dynamic> json) {
     return ChartData(
-      trendChart: (json['trend_chart'] as List?)
-              ?.map((item) => TrendChartItem.fromJson(item as Map<String, dynamic>))
-              .toList() ?? [],
+      trendChart:
+          (json['trend_chart'] as List?)
+              ?.map(
+                (item) => TrendChartItem.fromJson(item as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'trend_chart': trendChart.map((item) => item.toJson()).toList(),
-    };
+    return {'trend_chart': trendChart.map((item) => item.toJson()).toList()};
   }
 }
 
@@ -251,10 +264,7 @@ class TrendChartItem {
   final DateTime date;
   final double amountUsd;
 
-  const TrendChartItem({
-    required this.date,
-    required this.amountUsd,
-  });
+  const TrendChartItem({required this.date, required this.amountUsd});
 
   factory TrendChartItem.fromJson(Map<String, dynamic> json) {
     return TrendChartItem(
@@ -264,10 +274,7 @@ class TrendChartItem {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'date': date.toIso8601String(),
-      'amount_usd': amountUsd,
-    };
+    return {'date': date.toIso8601String(), 'amount_usd': amountUsd};
   }
 }
 

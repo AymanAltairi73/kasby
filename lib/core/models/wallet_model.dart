@@ -40,7 +40,8 @@ class WalletModel {
       return WalletModel(
         id: json['id'] as String,
         userId: json['user_id'] as String,
-        availableBalance: (json['available_balance'] as num?)?.toDouble() ?? 0.0,
+        availableBalance:
+            (json['available_balance'] as num?)?.toDouble() ?? 0.0,
         profitBalance: (json['profit_balance'] as num?)?.toDouble() ?? 0.0,
         investedBalance: (json['invested_balance'] as num?)?.toDouble() ?? 0.0,
         pendingBalance: (json['pending_balance'] as num?)?.toDouble() ?? 0.0,

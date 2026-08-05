@@ -85,10 +85,10 @@ class FeeService {
           .eq('is_active', true);
       _fees = (feesRes as List).map((e) => FeeEntry.fromJson(e)).toList();
 
-      final limitsRes =
-          await SupabaseService.client.from('transaction_limits').select();
-      _limits =
-          (limitsRes as List).map((e) => LimitEntry.fromJson(e)).toList();
+      final limitsRes = await SupabaseService.client
+          .from('transaction_limits')
+          .select();
+      _limits = (limitsRes as List).map((e) => LimitEntry.fromJson(e)).toList();
 
       _lastFetch = now;
       SafeGetx.debugTrace(
@@ -170,7 +170,9 @@ class FeeService {
       if (value <= 0) continue;
       final parts = <String>[];
       if (fee.percentage > 0) {
-        parts.add('${fee.percentage.toStringAsFixed(fee.percentage % 1 == 0 ? 0 : 2)}%');
+        parts.add(
+          '${fee.percentage.toStringAsFixed(fee.percentage % 1 == 0 ? 0 : 2)}%',
+        );
       }
       if (fee.fixedAmount > 0) {
         parts.add('\$${fee.fixedAmount.toStringAsFixed(2)}');
@@ -188,7 +190,9 @@ class FeeService {
     final parts = <String>[];
     for (final fee in applicable) {
       if (fee.percentage > 0) {
-        parts.add('${fee.percentage.toStringAsFixed(fee.percentage % 1 == 0 ? 0 : 2)}%');
+        parts.add(
+          '${fee.percentage.toStringAsFixed(fee.percentage % 1 == 0 ? 0 : 2)}%',
+        );
       }
       if (fee.fixedAmount > 0) {
         parts.add('\$${fee.fixedAmount.toStringAsFixed(2)}');
@@ -198,19 +202,23 @@ class FeeService {
   }
 
   static double? minLimit(String category, {String tier = 'normal'}) {
-    final match = _limits.where((l) =>
-        l.category == category &&
-        l.tier == tier &&
-        l.label.contains('الأدنى'));
+    final match = _limits.where(
+      (l) =>
+          l.category == category &&
+          l.tier == tier &&
+          l.label.contains('الأدنى'),
+    );
     if (match.isEmpty) return null;
     return match.first.isUnlimited ? null : match.first.value;
   }
 
   static double? maxLimit(String category, {String tier = 'normal'}) {
-    final match = _limits.where((l) =>
-        l.category == category &&
-        l.tier == tier &&
-        l.label.contains('الأقصى'));
+    final match = _limits.where(
+      (l) =>
+          l.category == category &&
+          l.tier == tier &&
+          l.label.contains('الأقصى'),
+    );
     if (match.isEmpty) return null;
     return match.first.isUnlimited ? null : match.first.value;
   }

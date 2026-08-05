@@ -95,27 +95,18 @@ class _DepositViewState extends State<DepositView> {
 
     final amountText = _amountController.text.trim();
     if (amountText.isEmpty) {
-      AppSnack.warning(
-        'validation_error_title'.tr,
-        'validation_error_desc'.tr,
-      );
+      AppSnack.warning('validation_error_title'.tr, 'validation_error_desc'.tr);
       return;
     }
 
     final amount = double.tryParse(amountText);
     if (amount == null || amount < 10) {
-      AppSnack.error(
-        'deposit_min_title'.tr,
-        'deposit_min_desc'.tr,
-      );
+      AppSnack.error('deposit_min_title'.tr, 'deposit_min_desc'.tr);
       return;
     }
 
     if (agents.isEmpty) {
-      AppSnack.warning(
-        'no_agents_title'.tr,
-        'no_agents_desc'.tr,
-      );
+      AppSnack.warning('no_agents_title'.tr, 'no_agents_desc'.tr);
       return;
     }
 
@@ -323,10 +314,7 @@ class _DepositViewState extends State<DepositView> {
         response['transaction_id']?.toString() ?? '',
       );
     } catch (_) {
-      AppSnack.error(
-        'deposit_error_title'.tr,
-        'deposit_error_desc'.tr,
-      );
+      AppSnack.error('deposit_error_title'.tr, 'deposit_error_desc'.tr);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -412,14 +400,19 @@ class _DepositViewState extends State<DepositView> {
               const SizedBox(height: 32),
               Text(
                 'select_payment_agent'.tr,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               _buildAgentSelector(),
               const SizedBox(height: 32),
               _isSubmitting
                   ? Center(
-                      child: CircularProgressIndicator(color: AppColors.darkGold),
+                      child: CircularProgressIndicator(
+                        color: AppColors.darkGold,
+                      ),
                     )
                   : KasbyButton(
                       text: 'proceed_to_payment'.tr,
@@ -468,7 +461,10 @@ class _DepositViewState extends State<DepositView> {
                 Text(
                   'no_agents_desc'.tr,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),

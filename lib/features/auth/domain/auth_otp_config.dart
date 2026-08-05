@@ -66,8 +66,7 @@ class AuthOtpConfig {
   /// @deprecated Use [unifiedOtpLength]. Legacy alias.
   static int get fcmOtpLength => unifiedOtpLength;
 
-  static String normalize(String raw) =>
-      raw.replaceAll(RegExp(r'\D'), '');
+  static String normalize(String raw) => raw.replaceAll(RegExp(r'\D'), '');
 
   static bool isComplete(String code, int expectedLength) =>
       normalize(code).length == expectedLength;

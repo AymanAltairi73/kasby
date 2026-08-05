@@ -24,9 +24,7 @@ class StoreOrderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.primaryGold.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -53,11 +51,16 @@ class StoreOrderCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: const Text(
                   'تم التسليم',
@@ -131,7 +134,11 @@ class StoreOrderCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.vpn_key_outlined, color: AppColors.primaryGold, size: 20),
+                const Icon(
+                  Icons.vpn_key_outlined,
+                  color: AppColors.primaryGold,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -150,10 +157,14 @@ class StoreOrderCard extends StatelessWidget {
                           letterSpacing: 1,
                         ),
                       ),
-                      if (order.serialNumber != null && order.serialNumber!.isNotEmpty)
+                      if (order.serialNumber != null &&
+                          order.serialNumber!.isNotEmpty)
                         Text(
                           'S/N: ${order.serialNumber}',
-                          style: TextStyle(color: Colors.grey[500], fontSize: 10),
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 10,
+                          ),
                         ),
                     ],
                   ),
@@ -161,14 +172,15 @@ class StoreOrderCard extends StatelessWidget {
                 IconButton(
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: order.deliveryCode));
-                    AppSnack.success(
-                      'تم النسخ',
-                      'تم نسخ كود البطاقة بنجاح',
-                    );
+                    AppSnack.success('تم النسخ', 'تم نسخ كود البطاقة بنجاح');
                   },
-                  icon: const Icon(Icons.copy, color: AppColors.primaryGold, size: 20),
+                  icon: const Icon(
+                    Icons.copy,
+                    color: AppColors.primaryGold,
+                    size: 20,
+                  ),
                   tooltip: 'نسخ الكود',
-                )
+                ),
               ],
             ),
           ),

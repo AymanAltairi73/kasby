@@ -11,6 +11,7 @@ import 'package:kasby/features/wallet/presentation/controllers/loan_controller.d
 import 'package:kasby/core/models/loan_model.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/utils/date_helper.dart';
+
 class LoanView extends StatefulWidget {
   const LoanView({super.key});
 
@@ -36,7 +37,10 @@ class _LoanViewState extends State<LoanView>
       (loanController.activeInvestmentValue.value * 0.10);
   double get maxLoanAmount =>
       (loanController.activeInvestmentValue.value * 0.50);
-  double get totalInterest => currentLoanAmount * loanController.serverInterestRate.value * selectedDuration;
+  double get totalInterest =>
+      currentLoanAmount *
+      loanController.serverInterestRate.value *
+      selectedDuration;
   double get totalRepayment => currentLoanAmount + totalInterest;
 
   double get loanPercentage {
@@ -193,58 +197,65 @@ class _LoanViewState extends State<LoanView>
 
   Widget _buildHistoryTable() {
     return Container(
-      decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 30,
-            spreadRadius: -10,
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Table(
-        columnWidths: const {
-          0: FlexColumnWidth(1.5),
-          1: FlexColumnWidth(1.2),
-          2: FlexColumnWidth(1.2),
-        },
-        children: [
-          // Header
-          TableRow(
-            decoration: BoxDecoration(
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.white : Colors.black).withValues(
+              alpha: 0.03,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
               color: (isDark ? Colors.white : Colors.black).withValues(
                 alpha: 0.05,
               ),
             ),
-            children: [
-              _buildTableHeader('loan_date'.tr),
-              _buildTableHeader('loan_amount'.tr),
-              _buildTableHeader('loan_status'.tr),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                blurRadius: 30,
+                spreadRadius: -10,
+              ),
             ],
           ),
-          // Body
-          ...loanController.loanHistory.map((loan) {
-            return TableRow(
-              children: [
-                _buildTableCell(DateHelper.date(loan.createdAt)),
-                Obx(
-                  () => _buildTableCell(
-                    currencyController.formatAmount(loan.amount),
+          clipBehavior: Clip.antiAlias,
+          child: Table(
+            columnWidths: const {
+              0: FlexColumnWidth(1.5),
+              1: FlexColumnWidth(1.2),
+              2: FlexColumnWidth(1.2),
+            },
+            children: [
+              // Header
+              TableRow(
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.05,
                   ),
                 ),
-                _buildStatusCell(loan),
-              ],
-            );
-          }),
-        ],
-      ),
-    ).animate().fadeIn(delay: const Duration(milliseconds: 200)).scale(begin: const Offset(0.95, 0.95));
+                children: [
+                  _buildTableHeader('loan_date'.tr),
+                  _buildTableHeader('loan_amount'.tr),
+                  _buildTableHeader('loan_status'.tr),
+                ],
+              ),
+              // Body
+              ...loanController.loanHistory.map((loan) {
+                return TableRow(
+                  children: [
+                    _buildTableCell(DateHelper.date(loan.createdAt)),
+                    Obx(
+                      () => _buildTableCell(
+                        currencyController.formatAmount(loan.amount),
+                      ),
+                    ),
+                    _buildStatusCell(loan),
+                  ],
+                );
+              }),
+            ],
+          ),
+        )
+        .animate()
+        .fadeIn(delay: const Duration(milliseconds: 200))
+        .scale(begin: const Offset(0.95, 0.95));
   }
 
   Widget _buildTableHeader(String label) {
@@ -343,7 +354,10 @@ class _LoanViewState extends State<LoanView>
         actions: [
           TextButton(
             onPressed: () => Get.safeBack(),
-            child: Text('close'.tr, style: TextStyle(color: AppColors.darkGold)),
+            child: Text(
+              'close'.tr,
+              style: TextStyle(color: AppColors.darkGold),
+            ),
           ),
         ],
       ),
@@ -361,10 +375,7 @@ class _LoanViewState extends State<LoanView>
               color: AppColors.darkGold.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.summarize_rounded,
-              color: AppColors.darkGold,
-            ),
+            child: Icon(Icons.summarize_rounded, color: AppColors.darkGold),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -383,7 +394,10 @@ class _LoanViewState extends State<LoanView>
                 Obx(
                   () => Text(
                     currencyController.formatAmount(
-                      loanController.loanHistory.fold(0.0, (sum, item) => sum + item.amount),
+                      loanController.loanHistory.fold(
+                        0.0,
+                        (sum, item) => sum + item.amount,
+                      ),
                     ),
                     style: TextStyle(
                       fontSize: 22,
@@ -432,7 +446,9 @@ class _LoanViewState extends State<LoanView>
                     ),
                     Obx(
                       () => Text(
-                        currencyController.formatAmount(loanController.activeInvestmentValue.value),
+                        currencyController.formatAmount(
+                          loanController.activeInvestmentValue.value,
+                        ),
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -661,7 +677,8 @@ class _LoanViewState extends State<LoanView>
               'loan_interest'.tr,
               currencyController.formatAmount(totalInterest),
               valueColor: AppColors.error,
-              subtitle: '${(loanController.serverInterestRate.value * 100).toStringAsFixed(0)}% / ${'months'.trParams({'count': '1'})}',
+              subtitle:
+                  '${(loanController.serverInterestRate.value * 100).toStringAsFixed(0)}% / ${'months'.trParams({'count': '1'})}',
             ),
           ),
           Padding(
@@ -861,7 +878,8 @@ class _LoanViewState extends State<LoanView>
       return;
     }
 
-    if (currentLoanAmount < minLoanAmount || currentLoanAmount > maxLoanAmount) {
+    if (currentLoanAmount < minLoanAmount ||
+        currentLoanAmount > maxLoanAmount) {
       AppSnack.error(
         'error'.tr,
         'amount_must_be_between'.trParams({
@@ -877,7 +895,8 @@ class _LoanViewState extends State<LoanView>
 
   Widget _buildRepayLoanTab() {
     return Obx(() {
-      if (loanController.isLoadingActive.value || loanController.isLoadingRepayments.value) {
+      if (loanController.isLoadingActive.value ||
+          loanController.isLoadingRepayments.value) {
         return Center(
           child: CircularProgressIndicator(color: AppColors.darkGold),
         );
@@ -896,8 +915,10 @@ class _LoanViewState extends State<LoanView>
             if (loanController.activeLoans.isEmpty)
               _buildEmptyState('no_active_loans'.tr)
             else
-              ...loanController.activeLoans.map((loan) => _buildActiveLoanCard(loan)),
-            
+              ...loanController.activeLoans.map(
+                (loan) => _buildActiveLoanCard(loan),
+              ),
+
             const SizedBox(height: 40),
             Text(
               'repayment_history'.tr,
@@ -918,10 +939,7 @@ class _LoanViewState extends State<LoanView>
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
-        child: Text(
-          message,
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
+        child: Text(message, style: TextStyle(color: AppColors.textSecondary)),
       ),
     );
   }
@@ -939,11 +957,17 @@ class _LoanViewState extends State<LoanView>
                 children: [
                   Text(
                     'loan_balance'.tr,
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                   Text(
                     currencyController.formatAmount(loan.effectiveRemaining),
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -954,8 +978,14 @@ class _LoanViewState extends State<LoanView>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildCompactStat('total'.tr, currencyController.formatAmount(loan.totalDue ?? loan.amount)),
-              _buildCompactStat('paid'.tr, currencyController.formatAmount(loan.paidAmount)),
+              _buildCompactStat(
+                'total'.tr,
+                currencyController.formatAmount(loan.totalDue ?? loan.amount),
+              ),
+              _buildCompactStat(
+                'paid'.tr,
+                currencyController.formatAmount(loan.paidAmount),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -968,12 +998,20 @@ class _LoanViewState extends State<LoanView>
             ),
             child: Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppColors.error,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'urgent_payment_warning'.tr,
-                    style: TextStyle(color: AppColors.error, fontSize: 11, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -1008,8 +1046,14 @@ class _LoanViewState extends State<LoanView>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        Text(
+          label,
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+        ),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
       ],
     );
   }
@@ -1019,7 +1063,9 @@ class _LoanViewState extends State<LoanView>
       decoration: BoxDecoration(
         color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05)),
+        border: Border.all(
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Table(
@@ -1030,7 +1076,11 @@ class _LoanViewState extends State<LoanView>
         },
         children: [
           TableRow(
-            decoration: BoxDecoration(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05)),
+            decoration: BoxDecoration(
+              color: (isDark ? Colors.white : Colors.black).withValues(
+                alpha: 0.05,
+              ),
+            ),
             children: [
               _buildTableHeader('date'.tr),
               _buildTableHeader('amount'.tr),
@@ -1056,61 +1106,107 @@ class _LoanViewState extends State<LoanView>
       Get.dialog(
         AlertDialog(
           backgroundColor: AppColors.surface,
-          title: Text('confirm_full_repayment'.tr, style: const TextStyle(color: Colors.white)),
+          title: Text(
+            'confirm_full_repayment'.tr,
+            style: const TextStyle(color: Colors.white),
+          ),
           content: Text(
-            'full_repayment_desc'.trParams({'amount': currencyController.formatAmount(loan.effectiveRemaining)}),
+            'full_repayment_desc'.trParams({
+              'amount': currencyController.formatAmount(
+                loan.effectiveRemaining,
+              ),
+            }),
             style: const TextStyle(color: Colors.white70),
           ),
           actions: [
-            TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr, style: TextStyle(color: AppColors.textSecondary))),
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text(
+                'cancel'.tr,
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.darkGold),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.darkGold,
+              ),
               onPressed: loanController.isSubmitting.value
                   ? null
                   : () {
-                Get.back();
-                loanController.repayLoan(loan.id, loan.effectiveRemaining, 'full');
-              },
-              child: Text('confirm'.tr, style: const TextStyle(color: Colors.black)),
+                      Get.back();
+                      loanController.repayLoan(
+                        loan.id,
+                        loan.effectiveRemaining,
+                        'full',
+                      );
+                    },
+              child: Text(
+                'confirm'.tr,
+                style: const TextStyle(color: Colors.black),
+              ),
             ),
           ],
         ),
         barrierDismissible: false,
       );
     } else {
-      final TextEditingController partialAmountController = TextEditingController();
+      final TextEditingController partialAmountController =
+          TextEditingController();
       Get.dialog(
         AlertDialog(
           backgroundColor: AppColors.surface,
-          title: Text('partial_repayment'.tr, style: const TextStyle(color: Colors.white)),
+          title: Text(
+            'partial_repayment'.tr,
+            style: const TextStyle(color: Colors.white),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('enter_repayment_amount'.tr, style: const TextStyle(color: Colors.white70)),
+              Text(
+                'enter_repayment_amount'.tr,
+                style: const TextStyle(color: Colors.white70),
+              ),
               const SizedBox(height: 16),
               KasbyTextField(
                 controller: partialAmountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 hint: currencyController.formatAmount(0),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr, style: TextStyle(color: AppColors.textSecondary))),
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text(
+                'cancel'.tr,
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.darkGold),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.darkGold,
+              ),
               onPressed: loanController.isSubmitting.value
                   ? null
                   : () {
-                final amount = double.tryParse(partialAmountController.text.replaceAll(',', '')) ?? 0.0;
-                if (amount <= 0 || amount > loan.effectiveRemaining) {
-                  AppSnack.error('error'.tr, 'invalid_amount'.tr);
-                  return;
-                }
-                Get.back();
-                loanController.repayLoan(loan.id, amount, 'partial');
-              },
-              child: Text('confirm'.tr, style: const TextStyle(color: Colors.black)),
+                      final amount =
+                          double.tryParse(
+                            partialAmountController.text.replaceAll(',', ''),
+                          ) ??
+                          0.0;
+                      if (amount <= 0 || amount > loan.effectiveRemaining) {
+                        AppSnack.error('error'.tr, 'invalid_amount'.tr);
+                        return;
+                      }
+                      Get.back();
+                      loanController.repayLoan(loan.id, amount, 'partial');
+                    },
+              child: Text(
+                'confirm'.tr,
+                style: const TextStyle(color: Colors.black),
+              ),
             ),
           ],
         ),

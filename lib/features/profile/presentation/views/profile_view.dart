@@ -20,7 +20,6 @@ import 'package:kasby/core/tour/tour_target_keys.dart';
 import 'package:kasby/core/tour/widgets/tour_settings_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
 
@@ -102,13 +101,13 @@ class _ProfileViewState extends State<ProfileView> {
                     KeyedSubtree(
                       key: TourTargetKeys.profileSecurity,
                       child: _buildProfileItem(
-                      context,
-                      isDark,
-                      Icons.security_rounded,
-                      'security_center'.tr,
-                      Colors.redAccent,
-                      () => Get.toNamed(Routes.securityCenter),
-                    ),
+                        context,
+                        isDark,
+                        Icons.security_rounded,
+                        'security_center'.tr,
+                        Colors.redAccent,
+                        () => Get.toNamed(Routes.securityCenter),
+                      ),
                     ),
                     // C11: Statements entry
                     _buildProfileItem(
@@ -133,45 +132,46 @@ class _ProfileViewState extends State<ProfileView> {
                     KeyedSubtree(
                       key: TourTargetKeys.profileKyc,
                       child: _buildProfileItem(
-                      context,
-                      isDark,
-                      Icons.verified_user_outlined,
-                      'kyc_verification'.tr,
-                      AppColors.darkGold,
-                      () => Get.toNamed(Routes.kyc),
-                      trailing: Obx(() {
-                        final kycStatus = HomeController.to.kycStatus;
-                        final isVerified = kycStatus == 'verified';
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color:
-                                  (isVerified
-                                          ? AppColors.softGreen
-                                          : AppColors.darkGold)
-                                      .withValues(alpha: 0.3),
+                        context,
+                        isDark,
+                        Icons.verified_user_outlined,
+                        'kyc_verification'.tr,
+                        AppColors.darkGold,
+                        () => Get.toNamed(Routes.kyc),
+                        trailing: Obx(() {
+                          final kycStatus = HomeController.to.kycStatus;
+                          final isVerified = kycStatus == 'verified';
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
                             ),
-                          ),
-                          child: Text(
-                            isVerified ? 'verified'.tr : 'not_verified'.tr,
-                            style: TextStyle(
-                              color: isVerified
-                                  ? AppColors.softGreen
-                                  : AppColors.darkGold,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color:
+                                    (isVerified
+                                            ? AppColors.softGreen
+                                            : AppColors.darkGold)
+                                        .withValues(alpha: 0.3),
+                              ),
                             ),
-                          ),
-                        );
-                      }),
+                            child: Text(
+                              isVerified ? 'verified'.tr : 'not_verified'.tr,
+                              style: TextStyle(
+                                color: isVerified
+                                    ? AppColors.softGreen
+                                    : AppColors.darkGold,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
                     ),
-                    ),
-                    if (AuthController.to.userRole == 'agent' || AuthController.to.userRole == 'admin')
+                    if (AuthController.to.userRole == 'agent' ||
+                        AuthController.to.userRole == 'admin')
                       _buildProfileItem(
                         context,
                         isDark,
@@ -180,7 +180,10 @@ class _ProfileViewState extends State<ProfileView> {
                         AppColors.darkGold,
                         () => Get.toNamed(Routes.agentDashboard),
                         trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.darkGold.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
@@ -198,13 +201,13 @@ class _ProfileViewState extends State<ProfileView> {
                     KeyedSubtree(
                       key: TourTargetKeys.profileLanguage,
                       child: _buildProfileItem(
-                      context,
-                      isDark,
-                      Icons.language_rounded,
-                      'language'.tr,
-                      Colors.greenAccent,
-                      () => _showLanguageSelector(context, isDark),
-                    ),
+                        context,
+                        isDark,
+                        Icons.language_rounded,
+                        'language'.tr,
+                        Colors.greenAccent,
+                        () => _showLanguageSelector(context, isDark),
+                      ),
                     ),
 
                     _buildThemeToggle(context, isDark),
@@ -289,94 +292,107 @@ class _ProfileViewState extends State<ProfileView> {
             Positioned(
               top: 40,
               left: -30,
-              child:
-                  KasbyMotion.enabled(context)
-                      ? Container(
-                            width: 150,
-                            height: 150,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.blueAccent.withValues(
-                                alpha: isDark ? 0.1 : 0.06,
-                              ),
+              child: KasbyMotion.enabled(context)
+                  ? Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.blueAccent.withValues(
+                              alpha: isDark ? 0.1 : 0.06,
                             ),
-                          )
-                          .animate(onPlay: (c) => c.repeat(reverse: true))
-                          .scale(
-                            duration: const Duration(seconds: 4),
-                            begin: const Offset(1, 1),
-                            end: const Offset(1.3, 1.3),
-                          )
-                          .blurXY(begin: 30, end: 60)
-                      : const SizedBox.shrink(),
+                          ),
+                        )
+                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .scale(
+                          duration: const Duration(seconds: 4),
+                          begin: const Offset(1, 1),
+                          end: const Offset(1.3, 1.3),
+                        )
+                        .blurXY(begin: 30, end: 60)
+                  : const SizedBox.shrink(),
             ),
             // Profile Info Header
             Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Hero(
-                  tag: 'profile_pic',
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.darkGold, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.darkGold.withValues(alpha: 0.3),
-                          blurRadius: 30,
-                          spreadRadius: 5,
+                      tag: 'profile_pic',
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.darkGold,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.darkGold.withValues(alpha: 0.3),
+                              blurRadius: 30,
+                              spreadRadius: 5,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Obx(() {
-                      final profile = HomeController.to.profile.value;
-                      final networkUrl = profile?.avatarUrl;
+                        child: Obx(() {
+                          final profile = HomeController.to.profile.value;
+                          final networkUrl = profile?.avatarUrl;
 
-                      return CircleAvatar(
-                        radius: 55,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                        backgroundImage:
-                            networkUrl != null && networkUrl.isNotEmpty
-                            ? NetworkImage(networkUrl)
-                            : null,
-                        child: (networkUrl == null || networkUrl.isEmpty)
-                            ? Icon(
-                                Icons.person,
-                                color: AppColors.darkGold,
-                                size: 55,
-                              )
-                            : null,
-                      );
-                    }),
-                  ),
-                ).animate(autoPlay: KasbyMotion.enabled(context)).scale(delay: KasbyMotion.duration(context, 200.ms), curve: Curves.easeOutBack),
+                          return CircleAvatar(
+                            radius: 55,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surface,
+                            backgroundImage:
+                                networkUrl != null && networkUrl.isNotEmpty
+                                ? NetworkImage(networkUrl)
+                                : null,
+                            child: (networkUrl == null || networkUrl.isEmpty)
+                                ? Icon(
+                                    Icons.person,
+                                    color: AppColors.darkGold,
+                                    size: 55,
+                                  )
+                                : null,
+                          );
+                        }),
+                      ),
+                    )
+                    .animate(autoPlay: KasbyMotion.enabled(context))
+                    .scale(
+                      delay: KasbyMotion.duration(context, 200.ms),
+                      curve: Curves.easeOutBack,
+                    ),
                 const SizedBox(height: 20),
                 Obx(
-                  () => Text(
-                    HomeController.to.profileName.isNotEmpty
-                        ? HomeController.to.profileName
-                        : 'user_name_placeholder'.tr,
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(delay: KasbyMotion.duration(context, 400.ms)),
+                      () => Text(
+                        HomeController.to.profileName.isNotEmpty
+                            ? HomeController.to.profileName
+                            : 'user_name_placeholder'.tr,
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    )
+                    .animate(autoPlay: KasbyMotion.enabled(context))
+                    .fadeIn(delay: KasbyMotion.duration(context, 400.ms)),
                 Obx(
-                  () => Text(
-                    HomeController.to.profileEmail.isNotEmpty
-                        ? HomeController.to.profileEmail
-                        : 'user_email_placeholder'.tr,
-                    style: TextStyle(
-                      color: isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textSecondaryLight,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(delay: KasbyMotion.duration(context, 500.ms)),
+                      () => Text(
+                        HomeController.to.profileEmail.isNotEmpty
+                            ? HomeController.to.profileEmail
+                            : 'user_email_placeholder'.tr,
+                        style: TextStyle(
+                          color: isDark
+                              ? AppColors.textSecondary
+                              : AppColors.textSecondaryLight,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    )
+                    .animate(autoPlay: KasbyMotion.enabled(context))
+                    .fadeIn(delay: KasbyMotion.duration(context, 500.ms)),
                 const SizedBox(height: 40),
               ],
             ),
@@ -390,112 +406,127 @@ class _ProfileViewState extends State<ProfileView> {
                     Semantics(
                       button: true,
                       label: 'support_prompt'.tr,
-                      child: GestureDetector(
-                          onTap: () => Get.toNamed(Routes.supportChat),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.darkGold.withValues(
-                                  alpha: 0.5,
-                                ),
-                                width: 1,
-                              ),
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    AppColors.darkGold,
-                                    Color.lerp(
-                                      AppColors.darkGold,
-                                      Colors.white,
-                                      0.4,
-                                    )!,
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.darkGold.withValues(
-                                      alpha: 0.5,
+                      child:
+                          GestureDetector(
+                                onTap: () => Get.toNamed(Routes.supportChat),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.darkGold.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      width: 1,
                                     ),
-                                    blurRadius: 20,
-                                    spreadRadius: 2,
                                   ),
-                                ],
-                              ),
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  const Icon(
-                                    Icons.support_agent_rounded,
-                                    color: Colors.black,
-                                    size: 28,
-                                  ),
-                                  if (unreadCount > 0)
-                                    Positioned(
-                                      top: -10,
-                                      right: -10,
-                                      child:
-                                          Container(
-                                                padding: const EdgeInsets.all(
-                                                  6,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.error,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: Text(
-                                                  '$unreadCount',
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              )
-                                              .animate(
-                                                onPlay: (c) => c.repeat(),
-                                              )
-                                              .scale(
-                                                duration: 400.ms,
-                                                begin: const Offset(1, 1),
-                                                end: const Offset(1.2, 1.2),
-                                              )
-                                              .then()
-                                              .scale(
-                                                duration: 400.ms,
-                                                begin: const Offset(1.2, 1.2),
-                                                end: const Offset(1, 1),
-                                              ),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          AppColors.darkGold,
+                                          Color.lerp(
+                                            AppColors.darkGold,
+                                            Colors.white,
+                                            0.4,
+                                          )!,
+                                        ],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.darkGold.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                          blurRadius: 20,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
                                     ),
-                                ],
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        const Icon(
+                                          Icons.support_agent_rounded,
+                                          color: Colors.black,
+                                          size: 28,
+                                        ),
+                                        if (unreadCount > 0)
+                                          Positioned(
+                                            top: -10,
+                                            right: -10,
+                                            child:
+                                                Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            6,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: AppColors.error,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: Text(
+                                                        '$unreadCount',
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    )
+                                                    .animate(
+                                                      onPlay: (c) => c.repeat(),
+                                                    )
+                                                    .scale(
+                                                      duration: 400.ms,
+                                                      begin: const Offset(1, 1),
+                                                      end: const Offset(
+                                                        1.2,
+                                                        1.2,
+                                                      ),
+                                                    )
+                                                    .then()
+                                                    .scale(
+                                                      duration: 400.ms,
+                                                      begin: const Offset(
+                                                        1.2,
+                                                        1.2,
+                                                      ),
+                                                      end: const Offset(1, 1),
+                                                    ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .animate(
+                                autoPlay: KasbyMotion.enabled(context),
+                                onPlay: (c) => c.repeat(reverse: true),
+                              )
+                              .scale(
+                                duration: KasbyMotion.duration(
+                                  context,
+                                  2000.ms,
+                                ),
+                                begin: const Offset(1, 1),
+                                end: const Offset(1.1, 1.1),
+                              )
+                              .animate(
+                                autoPlay: KasbyMotion.enabled(context),
+                                onPlay: (c) => c.repeat(),
+                              )
+                              .shimmer(
+                                duration: KasbyMotion.duration(
+                                  context,
+                                  3000.ms,
+                                ),
+                                color: Colors.white.withValues(alpha: 0.3),
                               ),
-                            ),
-                          ),
-                        )
-                        .animate(
-                          autoPlay: KasbyMotion.enabled(context),
-                          onPlay: (c) => c.repeat(reverse: true),
-                        )
-                        .scale(
-                          duration: KasbyMotion.duration(context, 2000.ms),
-                          begin: const Offset(1, 1),
-                          end: const Offset(1.1, 1.1),
-                        )
-                        .animate(
-                          autoPlay: KasbyMotion.enabled(context),
-                          onPlay: (c) => c.repeat(),
-                        )
-                        .shimmer(
-                          duration: KasbyMotion.duration(context, 3000.ms),
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -511,7 +542,10 @@ class _ProfileViewState extends State<ProfileView> {
                           autoPlay: KasbyMotion.enabled(context),
                           onPlay: (c) => c.repeat(),
                         )
-                        .shimmer(duration: KasbyMotion.duration(context, 2000.ms), color: Colors.white)
+                        .shimmer(
+                          duration: KasbyMotion.duration(context, 2000.ms),
+                          color: Colors.white,
+                        )
                         .animate(
                           autoPlay: KasbyMotion.enabled(context),
                           onPlay: (c) => c.repeat(reverse: true),
@@ -544,31 +578,34 @@ class _ProfileViewState extends State<ProfileView> {
     List<Widget> children,
   ) {
     return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surface.withValues(alpha: 0.3)
-            : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.black.withValues(alpha: 0.06),
-        ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: Column(children: children),
-      ),
-    ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn().slideY(begin: 0.1);
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.surface.withValues(alpha: 0.3)
+                : AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.06),
+            ),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: Column(children: children),
+          ),
+        )
+        .animate(autoPlay: KasbyMotion.enabled(context))
+        .fadeIn()
+        .slideY(begin: 0.1);
   }
 
   Widget _buildProfileItem(
@@ -623,16 +660,18 @@ class _ProfileViewState extends State<ProfileView> {
 
   Widget _buildLogoutButton() {
     return KasbyButton(
-      text: 'logout'.tr,
-      color: AppColors.error.withValues(alpha: 0.2),
-      textColor: AppColors.error,
-      onPressed: () {
-        if (Get.isRegistered<HomeController>()) {
-          HomeController.to.clearData();
-        }
-        AuthController.to.logout();
-      },
-    ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(delay: KasbyMotion.duration(context, 600.ms));
+          text: 'logout'.tr,
+          color: AppColors.error.withValues(alpha: 0.2),
+          textColor: AppColors.error,
+          onPressed: () {
+            if (Get.isRegistered<HomeController>()) {
+              HomeController.to.clearData();
+            }
+            AuthController.to.logout();
+          },
+        )
+        .animate(autoPlay: KasbyMotion.enabled(context))
+        .fadeIn(delay: KasbyMotion.duration(context, 600.ms));
   }
 
   Widget _buildDeleteAccountButton(BuildContext context) {
@@ -697,10 +736,7 @@ class _ProfileViewState extends State<ProfileView> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('cancel'.tr),
-          ),
+          TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr)),
           TextButton(
             onPressed: () {
               Get.back();
@@ -728,8 +764,12 @@ class _ProfileViewState extends State<ProfileView> {
       StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: isDark
+                ? AppColors.surface
+                : AppColors.surfaceLight,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Text(
               'enter_current_password'.tr,
               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -790,7 +830,8 @@ class _ProfileViewState extends State<ProfileView> {
                           AppSnack.success('success'.tr, 'account_deleted'.tr);
                         } on AuthException catch (e) {
                           setState(() => isDeleting = false);
-                          final message = e.message.startsWith('DELETED_ACCOUNT:')
+                          final message =
+                              e.message.startsWith('DELETED_ACCOUNT:')
                               ? AuthSecurityService.translateAuthError(e)
                               : 'incorrect_password'.tr;
                           AppSnack.error('error'.tr, message);
@@ -908,42 +949,43 @@ class _ProfileViewState extends State<ProfileView> {
       label: title,
       selected: isSelected,
       child: InkWell(
-      onTap: () async {
-        Get.updateLocale(Locale(langCode, countryCode));
-        await LocaleHelper.saveLanguageCode(langCode);
-        Get.back();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.darkGold.withValues(alpha: 0.1)
-              : (isDark
-                    ? Colors.white10
-                    : Colors.black.withValues(alpha: 0.04)),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColors.darkGold : Colors.transparent,
+        onTap: () async {
+          Get.updateLocale(Locale(langCode, countryCode));
+          await LocaleHelper.saveLanguageCode(langCode);
+          Get.back();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.darkGold.withValues(alpha: 0.1)
+                : (isDark
+                      ? Colors.white10
+                      : Colors.black.withValues(alpha: 0.04)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? AppColors.darkGold : Colors.transparent,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? AppColors.darkGold
+                      : (isDark ? Colors.white70 : AppColors.textBodyLight),
+                ),
+              ),
+              if (isSelected)
+                Icon(Icons.check_circle, color: AppColors.darkGold),
+            ],
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected
-                    ? AppColors.darkGold
-                    : (isDark ? Colors.white70 : AppColors.textBodyLight),
-              ),
-            ),
-            if (isSelected) Icon(Icons.check_circle, color: AppColors.darkGold),
-          ],
-        ),
       ),
-    ),
     );
   }
 
@@ -980,7 +1022,4 @@ class _ProfileViewState extends State<ProfileView> {
       ),
     );
   }
-
-  }
-
-
+}

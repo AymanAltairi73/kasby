@@ -33,7 +33,11 @@ class StoreOrdersView extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.receipt_long_outlined, size: 70, color: Colors.grey[600]),
+                      Icon(
+                        Icons.receipt_long_outlined,
+                        size: 70,
+                        color: Colors.grey[600],
+                      ),
                       const SizedBox(height: 16),
                       const Text(
                         'لا توجد طلبات سابقة في المتجر',

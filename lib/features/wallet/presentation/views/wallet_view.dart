@@ -90,7 +90,10 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
         // ),
         actions: [
           IconButton(
-            icon: Icon(Icons.qr_code_scanner_rounded, color: AppColors.darkGold),
+            icon: Icon(
+              Icons.qr_code_scanner_rounded,
+              color: AppColors.darkGold,
+            ),
             onPressed: () {
               HapticFeedback.lightImpact();
               Get.toNamed(Routes.qrScanner);
@@ -280,7 +283,8 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                         icon: Obx(
                                           () => Icon(
                                             currencyController
-                                                    .isBalanceHidden.value
+                                                    .isBalanceHidden
+                                                    .value
                                                 ? Icons.visibility_off_rounded
                                                 : Icons.visibility_rounded,
                                             color: Colors.white.withValues(
@@ -296,9 +300,8 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                           minHeight: 32,
                                         ),
                                         visualDensity: VisualDensity.compact,
-                                        onPressed: () =>
-                                            currencyController
-                                                .toggleBalancePrivacy(),
+                                        onPressed: () => currencyController
+                                            .toggleBalancePrivacy(),
                                       ),
                                     ],
                                   ),
@@ -310,10 +313,10 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                         currencyController.isBalanceHidden.value
                                             ? '**********'
                                             : currencyController.formatToUSD(
-                                              currencyController
-                                                  .totalBalance
-                                                  .value,
-                                            ),
+                                                currencyController
+                                                    .totalBalance
+                                                    .value,
+                                              ),
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 35,
@@ -324,42 +327,42 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Obx(
-                                    () {
-                                      final pending =
-                                          currencyController.pendingBalance.value;
-                                      if (pending <= 0) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      return Row(
-                                        children: [
-                                          Text(
-                                            '${'pending_balance'.tr}: ',
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.5,
-                                              ),
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
+                                  Obx(() {
+                                    final pending =
+                                        currencyController.pendingBalance.value;
+                                    if (pending <= 0) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Row(
+                                      children: [
+                                        Text(
+                                          '${'pending_balance'.tr}: ',
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.5,
                                             ),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                          Text(
-                                            currencyController.isBalanceHidden.value
-                                                ? '****'
-                                                : currencyController.formatToUSD(
-                                                    pending,
-                                                  ),
-                                            style: TextStyle(
-                                              color: AppColors.darkGold
-                                                  .withValues(alpha: 0.95),
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                        ),
+                                        Text(
+                                          currencyController
+                                                  .isBalanceHidden
+                                                  .value
+                                              ? '****'
+                                              : currencyController.formatToUSD(
+                                                  pending,
+                                                ),
+                                          style: TextStyle(
+                                            color: AppColors.darkGold
+                                                .withValues(alpha: 0.95),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                        ],
-                                      );
-                                    },
-                                  ),
+                                        ),
+                                      ],
+                                    );
+                                  }),
                                 ],
                               ),
                               Container(
@@ -502,68 +505,68 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
   }
 
   Widget _buildKspRewardsCard() {
-    return Obx(
-      () {
-        final effective = homeController.userPoints.value;
-        final reward = homeController.rewardKsp.value;
-        final walletPart = homeController.walletKsp.value;
-        final hidden = currencyController.isBalanceHidden.value;
-        return GlassCard(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Image.asset('assets/images/ksp_coin.png', width: 36, height: 36),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+    return Obx(() {
+      final effective = homeController.userPoints.value;
+      final reward = homeController.rewardKsp.value;
+      final walletPart = homeController.walletKsp.value;
+      final hidden = currencyController.isBalanceHidden.value;
+      return GlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Image.asset('assets/images/ksp_coin.png', width: 36, height: 36),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ksp_balance'.tr,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      hidden ? '**********' : '$effective KSP',
+                      style: TextStyle(
+                        color: AppColors.darkGold,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (!hidden)
                       Text(
-                        'ksp_balance'.tr,
+                        CurrencyConversionService.getUsdEquivalentText(
+                          effective.toDouble(),
+                        ),
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        hidden ? '**********' : '$effective KSP',
-                        style: TextStyle(
-                          color: AppColors.darkGold,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                        ),
+                    Text(
+                      'ksp_effective_breakdown'.trParams({
+                        'wallet': walletPart.toString(),
+                        'reward': reward.toString(),
+                      }),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
                       ),
-                      if (!hidden)
-                        Text(
-                          CurrencyConversionService.getUsdEquivalentText(effective.toDouble()),
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      Text(
-                        'ksp_effective_breakdown'.trParams({
-                          'wallet': walletPart.toString(),
-                          'reward': reward.toString(),
-                        }),
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
 
   Widget _buildCardChip() {
@@ -713,7 +716,11 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
         Center(
           child: TextButton.icon(
             onPressed: () => Get.toNamed(Routes.myQr),
-            icon: Icon(Icons.qr_code_rounded, color: AppColors.darkGold, size: 18),
+            icon: Icon(
+              Icons.qr_code_rounded,
+              color: AppColors.darkGold,
+              size: 18,
+            ),
             label: Text(
               'my_qr'.tr,
               style: TextStyle(
@@ -744,40 +751,40 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
         },
         child: Container(
           height: 140,
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surface : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.05)
-                : Colors.black.withValues(alpha: 0.05),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surface : AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.05),
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildActionIcon(
+                icon: icon,
+                iconColor: iconColor,
+                isLocked: isLocked,
+                size: 32,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isLocked
+                      ? (isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLight)
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildActionIcon(
-              icon: icon,
-              iconColor: iconColor,
-              isLocked: isLocked,
-              size: 32,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              label,
-              style: TextStyle(
-                color: isLocked
-                    ? (isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textSecondaryLight)
-                    : Theme.of(context).colorScheme.onSurface,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
       ),
     );
   }
@@ -798,41 +805,41 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
           onTap();
         },
         child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surface : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(40),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.05)
-                : Colors.black.withValues(alpha: 0.05),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surface : AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.05),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildActionIcon(
+                icon: icon,
+                iconColor: iconColor,
+                isLocked: isLocked,
+                size: 28,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isLocked
+                      ? (isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLight)
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildActionIcon(
-              icon: icon,
-              iconColor: iconColor,
-              isLocked: isLocked,
-              size: 28,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: TextStyle(
-                color: isLocked
-                    ? (isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textSecondaryLight)
-                    : Theme.of(context).colorScheme.onSurface,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
       ),
     );
   }
@@ -944,22 +951,22 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
               child: GestureDetector(
                 onTap: () => Get.toNamed(Routes.allTransactions),
                 child: Row(
-                children: [
-                  Text(
-                    'see_all'.tr,
-                    style: TextStyle(
-                      color: AppColors.darkGold,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                  children: [
+                    Text(
+                      'see_all'.tr,
+                      style: TextStyle(
+                        color: AppColors.darkGold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: AppColors.darkGold,
-                    size: 12,
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: AppColors.darkGold,
+                      size: 12,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -979,7 +986,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
           final transactions = homeController.recentTransactions
               .take(10)
               .toList();
-          
+
           if (transactions.isEmpty) {
             return Center(
               child: Column(
@@ -1012,7 +1019,11 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 24, bottom: 12, left: 4),
+                    padding: const EdgeInsets.only(
+                      top: 24,
+                      bottom: 12,
+                      left: 4,
+                    ),
                     child: Text(
                       group.title,
                       style: TextStyle(
@@ -1042,7 +1053,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
     for (var tx in txs) {
       final date = tx.createdAt ?? DateTime.now();
       final txDate = DateTime(date.year, date.month, date.day);
-      
+
       String title;
       if (txDate == today) {
         title = 'today'.tr.toUpperCase();
@@ -1063,8 +1074,11 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
   }
 
   Widget _buildGlassTransactionItem(TransactionModel tx) {
-    final isNegative = tx.type == 'withdrawal' || tx.type == 'transfer_out' || tx.type == 'investment';
-    
+    final isNegative =
+        tx.type == 'withdrawal' ||
+        tx.type == 'transfer_out' ||
+        tx.type == 'investment';
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GlassCard(
@@ -1124,7 +1138,10 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: _getStatusColor(tx.status).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
@@ -1149,35 +1166,54 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
 
   Color _getTransactionColor(String type) {
     switch (type) {
-      case 'deposit': return AppColors.softGreen;
-      case 'withdraw': return AppColors.error;
-      case 'transfer_in': return Colors.blue;
-      case 'transfer_out': return AppColors.darkGold;
-      case 'investment': return AppColors.darkGold;
-      case 'reward': return Colors.purple;
-      default: return AppColors.darkGold;
+      case 'deposit':
+        return AppColors.softGreen;
+      case 'withdraw':
+        return AppColors.error;
+      case 'transfer_in':
+        return Colors.blue;
+      case 'transfer_out':
+        return AppColors.darkGold;
+      case 'investment':
+        return AppColors.darkGold;
+      case 'reward':
+        return Colors.purple;
+      default:
+        return AppColors.darkGold;
     }
   }
 
   IconData _getTransactionIcon(String type) {
     switch (type) {
-      case 'deposit': return Icons.add_circle_outline_rounded;
-      case 'withdraw': return Icons.remove_circle_outline_rounded;
-      case 'transfer_in': return Icons.arrow_downward_rounded;
-      case 'transfer_out': return Icons.arrow_upward_rounded;
-      case 'investment': return Icons.trending_up_rounded;
-      case 'reward': return Icons.stars_rounded;
-      default: return Icons.swap_horiz_rounded;
+      case 'deposit':
+        return Icons.add_circle_outline_rounded;
+      case 'withdraw':
+        return Icons.remove_circle_outline_rounded;
+      case 'transfer_in':
+        return Icons.arrow_downward_rounded;
+      case 'transfer_out':
+        return Icons.arrow_upward_rounded;
+      case 'investment':
+        return Icons.trending_up_rounded;
+      case 'reward':
+        return Icons.stars_rounded;
+      default:
+        return Icons.swap_horiz_rounded;
     }
   }
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'completed': return AppColors.softGreen;
-      case 'pending': return AppColors.darkGold;
-      case 'failed': return AppColors.error;
-      case 'cancelled': return AppColors.textSecondary;
-      default: return AppColors.darkGold;
+      case 'completed':
+        return AppColors.softGreen;
+      case 'pending':
+        return AppColors.darkGold;
+      case 'failed':
+        return AppColors.error;
+      case 'cancelled':
+        return AppColors.textSecondary;
+      default:
+        return AppColors.darkGold;
     }
   }
 }

@@ -39,7 +39,7 @@ class StoreProductCard extends StatelessWidget {
                 color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
-              )
+              ),
             ],
           ),
           child: Column(
@@ -49,12 +49,18 @@ class StoreProductCard extends StatelessWidget {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(18),
+                    ),
                     child: Container(
                       height: 115,
                       width: double.infinity,
-                      color: isDark ? const Color(0xFF25252E) : Colors.grey[100],
-                      child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                      color: isDark
+                          ? const Color(0xFF25252E)
+                          : Colors.grey[100],
+                      child:
+                          product.imageUrl != null &&
+                              product.imageUrl!.isNotEmpty
                           ? CachedNetworkImage(
                               imageUrl: product.imageUrl!,
                               fit: BoxFit.cover,
@@ -92,7 +98,10 @@ class StoreProductCard extends StatelessWidget {
                       top: 8,
                       right: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red,
                           borderRadius: BorderRadius.circular(8),
@@ -119,7 +128,10 @@ class StoreProductCard extends StatelessWidget {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: product.inStock
                             ? Colors.green.withValues(alpha: 0.9)
@@ -130,7 +142,9 @@ class StoreProductCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            product.inStock ? Icons.check_circle_rounded : Icons.error_rounded,
+                            product.inStock
+                                ? Icons.check_circle_rounded
+                                : Icons.error_rounded,
                             size: 10,
                             color: Colors.white,
                           ),
@@ -184,7 +198,8 @@ class StoreProductCard extends StatelessWidget {
                                 ),
                               ),
                               if (product.originalPrice != null &&
-                                  product.originalPrice! > product.walletPrice) ...[
+                                  product.originalPrice! >
+                                      product.walletPrice) ...[
                                 const SizedBox(width: 6),
                                 Text(
                                   '\$${product.originalPrice!.toStringAsFixed(2)}',
@@ -194,16 +209,21 @@ class StoreProductCard extends StatelessWidget {
                                     decoration: TextDecoration.lineThrough,
                                   ),
                                 ),
-                              ]
+                              ],
                             ],
                           ),
 
                           // KSP Price tag if present
-                          if (product.kspPrice != null && product.kspPrice! > 0) ...[
+                          if (product.kspPrice != null &&
+                              product.kspPrice! > 0) ...[
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                const Icon(Icons.stars_rounded, color: Colors.amber, size: 12),
+                                const Icon(
+                                  Icons.stars_rounded,
+                                  color: Colors.amber,
+                                  size: 12,
+                                ),
                                 const SizedBox(width: 3),
                                 Text(
                                   '${product.kspPrice!.toStringAsFixed(0)} KSP',

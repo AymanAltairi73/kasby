@@ -23,7 +23,9 @@ class ReferralCodeFormatter extends TextInputFormatter {
     }
 
     final text = buffer.toString();
-    final trimmed = text.length > maxLength ? text.substring(0, maxLength) : text;
+    final trimmed = text.length > maxLength
+        ? text.substring(0, maxLength)
+        : text;
 
     return TextEditingValue(
       text: trimmed,
@@ -46,8 +48,16 @@ class ReferralCodeFormatter extends TextInputFormatter {
       return const TextSelection.collapsed(offset: 0);
     }
 
-    final base = _mapOffset(newValue.text, formattedText, newValue.selection.baseOffset);
-    final extent = _mapOffset(newValue.text, formattedText, newValue.selection.extentOffset);
+    final base = _mapOffset(
+      newValue.text,
+      formattedText,
+      newValue.selection.baseOffset,
+    );
+    final extent = _mapOffset(
+      newValue.text,
+      formattedText,
+      newValue.selection.extentOffset,
+    );
 
     final clampedBase = base.clamp(0, length);
     final clampedExtent = extent.clamp(0, length);
@@ -73,7 +83,9 @@ class ReferralCodeFormatter extends TextInputFormatter {
     if (mapped > formattedText.length) {
       mapped = formattedText.length;
     }
-    if (mapped == 0 && formattedText.isNotEmpty && safeRawOffset >= rawText.length) {
+    if (mapped == 0 &&
+        formattedText.isNotEmpty &&
+        safeRawOffset >= rawText.length) {
       return formattedText.length;
     }
     return mapped;

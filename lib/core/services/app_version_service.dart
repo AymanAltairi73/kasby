@@ -15,7 +15,12 @@ class AppVersionService extends GetxService {
 
   Future<void> checkForUpdate() async {
     final stopwatch = Stopwatch()..start();
-    SafeGetx.debugTrace(className: 'AppVersionService', method: 'checkForUpdate', feature: 'Core', status: 'INFO');
+    SafeGetx.debugTrace(
+      className: 'AppVersionService',
+      method: 'checkForUpdate',
+      feature: 'Core',
+      status: 'INFO',
+    );
     try {
       final response = await SupabaseService.client
           .from('app_config')

@@ -70,63 +70,78 @@ class PortfolioAnalyticsView extends StatelessWidget {
 
               const SizedBox(height: KasbySpacing.lg),
 
-              _GrowthChart(
-                data: controller.growthData,
-                isDark: isDark,
-              ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.05, end: 0),
+              _GrowthChart(data: controller.growthData, isDark: isDark)
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 100.ms)
+                  .slideY(begin: 0.05, end: 0),
 
               const SizedBox(height: KasbySpacing.lg),
 
               _InvestmentFlowSection(
-                controller: controller,
-                currency: currency,
-                isDark: isDark,
-              ).animate().fadeIn(duration: 400.ms, delay: 120.ms).slideY(begin: 0.05, end: 0),
+                    controller: controller,
+                    currency: currency,
+                    isDark: isDark,
+                  )
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 120.ms)
+                  .slideY(begin: 0.05, end: 0),
 
               const SizedBox(height: KasbySpacing.lg),
 
               if (controller.benchmarks.isNotEmpty) ...[
                 _BenchmarkSection(
-                  benchmarks: controller.benchmarks,
-                  isDark: isDark,
-                ).animate().fadeIn(duration: 400.ms, delay: 140.ms).slideY(begin: 0.05, end: 0),
+                      benchmarks: controller.benchmarks,
+                      isDark: isDark,
+                    )
+                    .animate()
+                    .fadeIn(duration: 400.ms, delay: 140.ms)
+                    .slideY(begin: 0.05, end: 0),
                 const SizedBox(height: KasbySpacing.lg),
               ],
 
               _RoiCard(
-                roi: controller.roiPercentage.value,
-                totalReturns: controller.totalReturns.value,
-                currency: currency,
-                isDark: isDark,
-              ).animate().fadeIn(duration: 400.ms, delay: 150.ms).slideY(begin: 0.05, end: 0),
+                    roi: controller.roiPercentage.value,
+                    totalReturns: controller.totalReturns.value,
+                    currency: currency,
+                    isDark: isDark,
+                  )
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 150.ms)
+                  .slideY(begin: 0.05, end: 0),
 
               const SizedBox(height: KasbySpacing.lg),
 
               _ProfitLossCard(
-                daily: controller.dailyPerformance.value,
-                weekly: controller.weeklyPerformance.value,
-                monthly: controller.monthlyPerformance.value,
-                yearly: controller.yearlyPerformance.value,
-                currency: currency,
-                isDark: isDark,
-              ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.05, end: 0),
+                    daily: controller.dailyPerformance.value,
+                    weekly: controller.weeklyPerformance.value,
+                    monthly: controller.monthlyPerformance.value,
+                    yearly: controller.yearlyPerformance.value,
+                    currency: currency,
+                    isDark: isDark,
+                  )
+                  .animate()
+                  .fadeIn(duration: 400.ms, delay: 200.ms)
+                  .slideY(begin: 0.05, end: 0),
 
               const SizedBox(height: KasbySpacing.lg),
 
               if (controller.distribution.isNotEmpty) ...[
                 _AllocationSection(
-                  distribution: controller.distribution,
-                  currency: currency,
-                  isDark: isDark,
-                ).animate().fadeIn(duration: 400.ms, delay: 250.ms).slideY(begin: 0.05, end: 0),
+                      distribution: controller.distribution,
+                      currency: currency,
+                      isDark: isDark,
+                    )
+                    .animate()
+                    .fadeIn(duration: 400.ms, delay: 250.ms)
+                    .slideY(begin: 0.05, end: 0),
                 const SizedBox(height: KasbySpacing.lg),
               ],
 
               if (controller.insights.isNotEmpty) ...[
-                _InsightsSection(
-                  insights: controller.insights,
-                  isDark: isDark,
-                ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.05, end: 0),
+                _InsightsSection(insights: controller.insights, isDark: isDark)
+                    .animate()
+                    .fadeIn(duration: 400.ms, delay: 300.ms)
+                    .slideY(begin: 0.05, end: 0),
                 const SizedBox(height: KasbySpacing.lg),
               ],
 
@@ -145,7 +160,10 @@ class PortfolioAnalyticsView extends StatelessWidget {
         children: [
           const KasbyShimmer.card(height: 140),
           const SizedBox(height: KasbySpacing.lg),
-          const KasbyShimmer(height: 40, borderRadius: BorderRadius.all(Radius.circular(20))),
+          const KasbyShimmer(
+            height: 40,
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
           const SizedBox(height: KasbySpacing.lg),
           const KasbyShimmer.card(height: 180),
           const SizedBox(height: KasbySpacing.lg),
@@ -264,14 +282,10 @@ class _PeriodSelector extends StatelessWidget {
                 labelStyle: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: selected
-                      ? Colors.white
-                      : AppColors.textSecondary,
+                  color: selected ? Colors.white : AppColors.textSecondary,
                 ),
                 side: BorderSide.none,
-                shape: RoundedRectangleBorder(
-                  borderRadius: KasbyRadius.chipR,
-                ),
+                shape: RoundedRectangleBorder(borderRadius: KasbyRadius.chipR),
                 onSelected: (_) => controller.changePeriod(period),
               ),
             );
@@ -389,10 +403,7 @@ class _RoiCard extends StatelessWidget {
             children: [
               Text(
                 'portfolio_value'.tr,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               const SizedBox(height: KasbySpacing.xs),
               Text(
@@ -446,13 +457,33 @@ class _ProfitLossCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: KasbySpacing.lg),
-          _PerfRow(label: 'daily_performance'.tr, value: daily, currency: currency, isDark: isDark),
+          _PerfRow(
+            label: 'daily_performance'.tr,
+            value: daily,
+            currency: currency,
+            isDark: isDark,
+          ),
           const Divider(height: KasbySpacing.xxl),
-          _PerfRow(label: 'weekly_performance'.tr, value: weekly, currency: currency, isDark: isDark),
+          _PerfRow(
+            label: 'weekly_performance'.tr,
+            value: weekly,
+            currency: currency,
+            isDark: isDark,
+          ),
           const Divider(height: KasbySpacing.xxl),
-          _PerfRow(label: 'monthly_performance'.tr, value: monthly, currency: currency, isDark: isDark),
+          _PerfRow(
+            label: 'monthly_performance'.tr,
+            value: monthly,
+            currency: currency,
+            isDark: isDark,
+          ),
           const Divider(height: KasbySpacing.xxl),
-          _PerfRow(label: 'yearly_performance'.tr, value: yearly, currency: currency, isDark: isDark),
+          _PerfRow(
+            label: 'yearly_performance'.tr,
+            value: yearly,
+            currency: currency,
+            isDark: isDark,
+          ),
         ],
       ),
     );
@@ -484,10 +515,7 @@ class _PerfRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
         Text(
           '${isPositive && value > 0 ? "+" : ""}${currency.formatToUSD(value)}',
@@ -522,12 +550,15 @@ class _AllocationSection extends StatelessWidget {
 
     final segments = <AllocationSegment>[];
     for (int i = 0; i < entries.length; i++) {
-      segments.add(AllocationSegment(
-        label: entries[i].key,
-        value: entries[i].value,
-        color: PortfolioController.allocationColors[
-            i % PortfolioController.allocationColors.length],
-      ));
+      segments.add(
+        AllocationSegment(
+          label: entries[i].key,
+          value: entries[i].value,
+          color:
+              PortfolioController.allocationColors[i %
+                  PortfolioController.allocationColors.length],
+        ),
+      );
     }
 
     return KasbyCard(
@@ -550,8 +581,9 @@ class _AllocationSection extends StatelessWidget {
             final idx = e.key;
             final entry = e.value;
             final pct = total > 0 ? (entry.value / total * 100) : 0.0;
-            final color = PortfolioController.allocationColors[
-                idx % PortfolioController.allocationColors.length];
+            final color =
+                PortfolioController.allocationColors[idx %
+                    PortfolioController.allocationColors.length];
 
             return Padding(
               padding: const EdgeInsets.only(bottom: KasbySpacing.md),
@@ -624,8 +656,9 @@ class _InvestmentFlowSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final flow = controller.investmentFlow.value;
-      final periodLabel =
-          controller.periodLabel(controller.selectedPeriod.value);
+      final periodLabel = controller.periodLabel(
+        controller.selectedPeriod.value,
+      );
       final titleColor = isDark ? Colors.white : AppColors.onSurfaceLight;
       final subtitleColor = AppColors.textSecondary;
 
@@ -665,10 +698,7 @@ class _InvestmentFlowSection extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'investment_flow_desc'.tr,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: subtitleColor,
-                        ),
+                        style: TextStyle(fontSize: 13, color: subtitleColor),
                       ),
                     ],
                   ),
@@ -1028,9 +1058,7 @@ class _FlowMetricRow extends StatelessWidget {
                     height: 8,
                     child: Stack(
                       children: [
-                        Container(
-                          color: color.withValues(alpha: 0.12),
-                        ),
+                        Container(color: color.withValues(alpha: 0.12)),
                         FractionallySizedBox(
                           widthFactor: fraction,
                           alignment: AlignmentDirectional.centerStart,
@@ -1093,11 +1121,7 @@ class _FlowNetFooter extends StatelessWidget {
                   valueColor: valueColor,
                 ),
               ),
-              Icon(
-                Icons.compare_arrows_rounded,
-                size: 16,
-                color: labelColor,
-              ),
+              Icon(Icons.compare_arrows_rounded, size: 16, color: labelColor),
               Expanded(
                 child: _FlowNetItem(
                   label: 'flow_closing'.tr,
@@ -1164,13 +1188,7 @@ class _FlowNetItem extends StatelessWidget {
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: labelColor,
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 11, color: labelColor)),
         const SizedBox(height: 2),
         Text(
           value,
@@ -1226,10 +1244,7 @@ class _FlowEmptyState extends StatelessWidget {
           Text(
             'investment_flow_empty_desc'.tr,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -1414,30 +1429,32 @@ class _InsightsSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: KasbySpacing.lg),
-          ...insights.map((key) => Padding(
-                padding: const EdgeInsets.only(bottom: KasbySpacing.md),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 16,
-                      color: AppColors.darkGold,
-                    ),
-                    const SizedBox(width: KasbySpacing.md),
-                    Expanded(
-                      child: Text(
-                        key.tr,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.5,
-                          color: AppColors.textBody,
-                        ),
+          ...insights.map(
+            (key) => Padding(
+              padding: const EdgeInsets.only(bottom: KasbySpacing.md),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 16,
+                    color: AppColors.darkGold,
+                  ),
+                  const SizedBox(width: KasbySpacing.md),
+                  Expanded(
+                    child: Text(
+                      key.tr,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: AppColors.textBody,
                       ),
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

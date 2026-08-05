@@ -50,10 +50,7 @@ class _SubscriptionViewState extends State<SubscriptionView> {
       appBar: AppBar(
         title: Text(
           'subscriptions'.tr,
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -68,17 +65,18 @@ class _SubscriptionViewState extends State<SubscriptionView> {
           Positioned(
             top: -100,
             right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.darkGold.withValues(alpha: 0.12),
-              ),
-            )
-                .animate()
-                .fadeIn(duration: 1000.ms)
-                .scale(begin: const Offset(0.5, 0.5)),
+            child:
+                Container(
+                      width: 300,
+                      height: 300,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.darkGold.withValues(alpha: 0.12),
+                      ),
+                    )
+                    .animate()
+                    .fadeIn(duration: 1000.ms)
+                    .scale(begin: const Offset(0.5, 0.5)),
           ),
           Positioned(
             bottom: -80,
@@ -150,13 +148,13 @@ class _SubscriptionViewState extends State<SubscriptionView> {
           alignment: Alignment.center,
           children: [
             Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.goldGradient.withOpacity(0.2),
-              ),
-            )
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: AppColors.goldGradient.withOpacity(0.2),
+                  ),
+                )
                 .animate(onPlay: (c) => c.repeat())
                 .scale(
                   begin: const Offset(1, 1),
@@ -312,53 +310,53 @@ class _SubscriptionViewState extends State<SubscriptionView> {
     final accent = AppColors.darkGold;
 
     return KasbyCard(
-      padding: const EdgeInsets.all(16),
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.03)
-          : Colors.black.withValues(alpha: 0.02),
-      border: Border.all(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : Colors.black.withValues(alpha: 0.06),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.1),
-              borderRadius: KasbyRadius.cardR,
-            ),
-            child: Icon(icon, color: accent, size: 22),
+          padding: const EdgeInsets.all(16),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.03)
+              : Colors.black.withValues(alpha: 0.02),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.06),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.1),
+                  borderRadius: KasbyRadius.cardR,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  desc,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
+                child: Icon(icon, color: accent, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      desc,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    )
+        )
         .animate()
         .fadeIn(delay: (400 + (index * 100)).ms)
         .slideX(begin: 0.1, end: 0);
@@ -366,34 +364,27 @@ class _SubscriptionViewState extends State<SubscriptionView> {
 
   Widget _buildPricingCard() {
     return KasbyCard(
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.04)
-          : Colors.white,
+      color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
       hasShadow: true,
-      border: Border.all(
-        color: AppColors.darkGold.withValues(alpha: 0.2),
-      ),
+      border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.2)),
       child: Column(
         children: [
           Text(
-            isYearly ? 'price_year'.tr : 'price_month'.tr,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: isDark
-                  ? AppColors.onSurface
-                  : AppColors.onSurfaceLight,
-            ),
-          )
+                isYearly ? 'price_year'.tr : 'price_month'.tr,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: isDark
+                      ? AppColors.onSurface
+                      : AppColors.onSurfaceLight,
+                ),
+              )
               .animate(target: isYearly ? 1 : 0)
               .shimmer(duration: const Duration(milliseconds: 1000)),
           const SizedBox(height: 8),
           Text(
             'activation_fee'.tr,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 12),
           Container(
@@ -413,49 +404,57 @@ class _SubscriptionViewState extends State<SubscriptionView> {
             ),
           ),
           const SizedBox(height: 24),
-          Obx(
-            () {
-              final activeTier = controller.activeSubscription['tier'];
-              final isCurrentYearly = controller.activeSubscription['is_yearly'] == true;
-              final isSameFrequency = activeTier == 'vip' && isCurrentYearly == isYearly;
+          Obx(() {
+            final activeTier = controller.activeSubscription['tier'];
+            final isCurrentYearly =
+                controller.activeSubscription['is_yearly'] == true;
+            final isSameFrequency =
+                activeTier == 'vip' && isCurrentYearly == isYearly;
 
-              String buttonText = '';
-              VoidCallback? onPressed;
-              Color buttonColor = AppColors.primary;
+            String buttonText = '';
+            VoidCallback? onPressed;
+            Color buttonColor = AppColors.primary;
 
-              if (isSameFrequency) {
-                buttonText = '${'active_plan'.tr}: ${controller.countdownText.value}';
-                onPressed = null;
-                buttonColor = controller.countdownColor.value;
-              } else {
-                buttonText = 'activate_now'.tr;
-                onPressed = () => controller.buySubscription(isYearly: isYearly, tier: 'vip');
-              }
+            if (isSameFrequency) {
+              buttonText =
+                  '${'active_plan'.tr}: ${controller.countdownText.value}';
+              onPressed = null;
+              buttonColor = controller.countdownColor.value;
+            } else {
+              buttonText = 'activate_now'.tr;
+              onPressed = () =>
+                  controller.buySubscription(isYearly: isYearly, tier: 'vip');
+            }
 
-              return Column(
-                children: [
-                  KasbyButton(
-                    text: buttonText,
-                    isLoading: controller.isLoading.value,
-                    onPressed: onPressed,
-                    color: buttonColor,
-                  ),
-                  if (activeTier == 'vip' && controller.countdownText.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: controller.remainingPercentage.value,
-                        backgroundColor: controller.countdownColor.value.withValues(alpha: 0.1),
-                        valueColor: AlwaysStoppedAnimation<Color>(controller.countdownColor.value),
-                        minHeight: 6,
+            return Column(
+              children: [
+                KasbyButton(
+                  text: buttonText,
+                  isLoading: controller.isLoading.value,
+                  onPressed: onPressed,
+                  color: buttonColor,
+                ),
+                if (activeTier == 'vip' &&
+                    controller.countdownText.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: controller.remainingPercentage.value,
+                      backgroundColor: controller.countdownColor.value
+                          .withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        controller.countdownColor.value,
                       ),
-                    ).animate().fadeIn().shimmer(duration: const Duration(seconds: 3)),
-                  ],
+                      minHeight: 6,
+                    ),
+                  ).animate().fadeIn().shimmer(
+                    duration: const Duration(seconds: 3),
+                  ),
                 ],
-              );
-            },
-          ),
+              ],
+            );
+          }),
         ],
       ),
     ).animate().scale(

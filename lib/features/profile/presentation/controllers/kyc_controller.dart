@@ -126,10 +126,7 @@ class KycController extends GetxController {
           KycSelfieAngle.right => result.rightPath,
           KycSelfieAngle.left => result.leftPath,
         };
-        final analysis = await analyzer.analyzeFile(
-          path,
-          angle: angle,
-        );
+        final analysis = await analyzer.analyzeFile(path, angle: angle);
         if (!analysis.isReady) {
           Get.snackbar('error'.tr, analysis.guidanceKey.tr);
           return null;
@@ -139,8 +136,8 @@ class KycController extends GetxController {
         }
       }
 
-      final movementVerified = result.livenessMetadata['movement_verified'] ==
-              true ||
+      final movementVerified =
+          result.livenessMetadata['movement_verified'] == true ||
           kycManualCaptureMovementVerified(result.livenessMetadata) ||
           kycMovementVerifiedFromYaws(
             frontYaw: yaws[KycSelfieAngle.front],
@@ -283,28 +280,19 @@ class KycController extends GetxController {
         file: File(selfieFrontPath.value),
         userId: userId,
         documentType: 'selfie_front',
-        metadata: {
-          ...selfieLivenessMetadata,
-          'angle': 'front',
-        },
+        metadata: {...selfieLivenessMetadata, 'angle': 'front'},
       );
       final selfieRightUrl = await KycDocumentService.upload(
         file: File(selfieRightPath.value),
         userId: userId,
         documentType: 'selfie_right',
-        metadata: {
-          ...selfieLivenessMetadata,
-          'angle': 'right',
-        },
+        metadata: {...selfieLivenessMetadata, 'angle': 'right'},
       );
       final selfieLeftUrl = await KycDocumentService.upload(
         file: File(selfieLeftPath.value),
         userId: userId,
         documentType: 'selfie_left',
-        metadata: {
-          ...selfieLivenessMetadata,
-          'angle': 'left',
-        },
+        metadata: {...selfieLivenessMetadata, 'angle': 'left'},
       );
 
       await SupabaseService.client

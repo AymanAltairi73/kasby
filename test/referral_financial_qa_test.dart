@@ -8,12 +8,15 @@ void main() {
       expect(ReferralService.normalizeCode(' K12345 '), 'K12345');
     });
 
-    test('isValidFormat accepts production hyphenated codes after normalize', () {
-      expect(ReferralService.isValidFormat('K-561A-9672'), isTrue);
-      expect(ReferralService.isValidFormat('K561A9672'), isTrue);
-      expect(ReferralService.isValidFormat('K123'), isFalse);
-      expect(ReferralService.isValidFormat('ABC'), isFalse);
-    });
+    test(
+      'isValidFormat accepts production hyphenated codes after normalize',
+      () {
+        expect(ReferralService.isValidFormat('K-561A-9672'), isTrue);
+        expect(ReferralService.isValidFormat('K561A9672'), isTrue);
+        expect(ReferralService.isValidFormat('K123'), isFalse);
+        expect(ReferralService.isValidFormat('ABC'), isFalse);
+      },
+    );
 
     test('formatDisplayCode returns normalized display', () {
       expect(ReferralService.formatDisplayCode('K-561A-9672'), 'K561A9672');

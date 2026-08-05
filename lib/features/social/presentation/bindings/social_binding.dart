@@ -7,8 +7,11 @@ class SocialBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<SocialNetworkController>(() => SocialNetworkController());
-    if (Get.isRegistered<AuthController>() && AuthController.to.userRole == 'agent') {
-      Get.lazyPut<AgentConversationsController>(() => AgentConversationsController());
+    if (Get.isRegistered<AuthController>() &&
+        AuthController.to.userRole == 'agent') {
+      Get.lazyPut<AgentConversationsController>(
+        () => AgentConversationsController(),
+      );
     }
   }
 }

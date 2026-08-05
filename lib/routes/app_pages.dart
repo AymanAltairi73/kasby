@@ -294,11 +294,7 @@ class AppPages {
       'NotificationPreferencesView',
       () => const NotificationPreferencesView(),
     ),
-    _route(
-      Routes.store,
-      'StoreHomeView',
-      () => const StoreHomeView(),
-    ),
+    _route(Routes.store, 'StoreHomeView', () => const StoreHomeView()),
     _route(
       Routes.storeCategories,
       'StoreCategoriesView',

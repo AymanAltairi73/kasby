@@ -61,8 +61,9 @@ class ReceiptExportService {
     final titleStyle = pw.TextStyle(font: boldFont, fontSize: 20);
     final headerStyle = pw.TextStyle(font: boldFont, fontSize: 14);
 
-    final logoBytes =
-        (await rootBundle.load('assets/images/logo.png')).buffer.asUint8List();
+    final logoBytes = (await rootBundle.load(
+      'assets/images/logo.png',
+    )).buffer.asUint8List();
     final logo = pw.MemoryImage(logoBytes);
 
     final pdf = pw.Document(
@@ -86,10 +87,7 @@ class ReceiptExportService {
         MapEntry('invitation_code'.tr, data.invitationCode!),
       if (data.recipientName != null && data.recipientName!.isNotEmpty)
         MapEntry('recipient'.tr, data.recipientName!),
-      MapEntry(
-        'amount'.tr,
-        _formatAmount(data.amount, data.currency),
-      ),
+      MapEntry('amount'.tr, _formatAmount(data.amount, data.currency)),
       MapEntry('status'.tr, data.status.tr),
       if (data.walletBalanceAfter != null)
         MapEntry(
@@ -186,10 +184,7 @@ class ReceiptExportService {
       children: [
         pw.Expanded(
           flex: 2,
-          child: pw.Text(
-            label,
-            style: baseStyle.copyWith(font: boldFont),
-          ),
+          child: pw.Text(label, style: baseStyle.copyWith(font: boldFont)),
         ),
         pw.Expanded(
           flex: 3,

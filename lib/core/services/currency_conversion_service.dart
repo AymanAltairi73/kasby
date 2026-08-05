@@ -10,7 +10,8 @@ import 'package:intl/intl.dart';
 /// This service provides consistent conversion logic across the entire application.
 /// Never duplicate conversion formulas - always use this service.
 class CurrencyConversionService extends GetxService {
-  static CurrencyConversionService get to => Get.find<CurrencyConversionService>();
+  static CurrencyConversionService get to =>
+      Get.find<CurrencyConversionService>();
 
   /// Fixed exchange rate: 1 USD = 1000 KSP
   static const double kspPerUsd = 1000.0;
@@ -78,13 +79,13 @@ class CurrencyConversionService extends GetxService {
     String locale = 'en_US',
   }) {
     if (number == 0) return '0';
-    
+
     final formatter = NumberFormat.decimalPattern(locale);
     if (decimalPlaces > 0) {
       formatter.minimumFractionDigits = decimalPlaces;
       formatter.maximumFractionDigits = decimalPlaces;
     }
-    
+
     return formatter.format(number);
   }
 

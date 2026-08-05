@@ -99,7 +99,8 @@ class StoreCategoryCard extends StatelessWidget {
                   ),
                 ),
                 child: Center(
-                  child: category.imageUrl != null && category.imageUrl!.isNotEmpty
+                  child:
+                      category.imageUrl != null && category.imageUrl!.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: category.imageUrl!,
                           width: 24,

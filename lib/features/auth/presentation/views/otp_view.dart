@@ -41,7 +41,8 @@ class _OtpViewState extends State<OtpView> {
   OtpType get _otpType => _args['type'] ?? OtpType.sms;
   bool get _isPhone => _args['isPhone'] ?? true;
   bool get _isRecovery => _args['isRecovery'] == true;
-  bool get _isFreeOtp => _args['isFreeOtp'] == false ? false : (_args['isFreeOtp'] ?? false);
+  bool get _isFreeOtp =>
+      _args['isFreeOtp'] == false ? false : (_args['isFreeOtp'] ?? false);
   bool get _isStepUp => _args['isStepUp'] == true;
   String get _purpose => _args['purpose']?.toString() ?? 'login';
 
@@ -143,10 +144,7 @@ class _OtpViewState extends State<OtpView> {
           );
         }
       } else {
-        await AuthSecurityService.resendOtp(
-          email: _identifier,
-          type: _otpType,
-        );
+        await AuthSecurityService.resendOtp(email: _identifier, type: _otpType);
       }
 
       _startResendTimer();
@@ -197,11 +195,12 @@ class _OtpViewState extends State<OtpView> {
       }
 
       if (_purpose == 'phone_change') {
-        final success = await Get.find<ProfileUpdateController>().verifyAndUpdate(
-          type: _purpose,
-          newValue: _identifier,
-          otpCode: otp,
-        );
+        final success = await Get.find<ProfileUpdateController>()
+            .verifyAndUpdate(
+              type: _purpose,
+              newValue: _identifier,
+              otpCode: otp,
+            );
         if (success) {
           setState(() => _isVerified = true);
           AppSnack.success('success'.tr, 'phone_updated_success'.tr);
@@ -253,10 +252,7 @@ class _OtpViewState extends State<OtpView> {
 
       if (_otpType == OtpType.recovery) {
         AppSnack.success('success'.tr, 'otp_verified_success'.tr);
-        Get.offNamed(
-          Routes.changePassword,
-          arguments: {'isRecovery': true},
-        );
+        Get.offNamed(Routes.changePassword, arguments: {'isRecovery': true});
       } else if (_otpType == OtpType.signup) {
         AuthController.to.authStatus.value = AuthStatus.authenticated;
         await AuthSecurityService.refreshUserProfileState();
@@ -338,8 +334,9 @@ class _OtpViewState extends State<OtpView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.background : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.background
+          : AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -354,8 +351,8 @@ class _OtpViewState extends State<OtpView> {
           _isRecovery
               ? 'reset_password'.tr
               : _isStepUp
-                  ? 'security_verification'.tr
-                  : 'otp_verification'.tr,
+              ? 'security_verification'.tr
+              : 'otp_verification'.tr,
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 20,
@@ -381,7 +378,9 @@ class _OtpViewState extends State<OtpView> {
                                 key: const ValueKey('success'),
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
-                                  color: AppColors.softGreen.withValues(alpha: 0.15),
+                                  color: AppColors.softGreen.withValues(
+                                    alpha: 0.15,
+                                  ),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
@@ -394,10 +393,14 @@ class _OtpViewState extends State<OtpView> {
                                 key: const ValueKey('lock'),
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
-                                  color: AppColors.darkGold.withValues(alpha: 0.1),
+                                  color: AppColors.darkGold.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: AppColors.darkGold.withValues(alpha: 0.2),
+                                    color: AppColors.darkGold.withValues(
+                                      alpha: 0.2,
+                                    ),
                                     width: 2,
                                   ),
                                 ),
@@ -421,8 +424,8 @@ class _OtpViewState extends State<OtpView> {
                       ),
                       if (!_isVerified) ...[
                         const SizedBox(height: 12),
-                    Text(
-                      '${'code_sent_to'.tr}\n${MaskUtils.maskIdentifier(value: _identifier, isPhone: _isPhone)}',
+                        Text(
+                          '${'code_sent_to'.tr}\n${MaskUtils.maskIdentifier(value: _identifier, isPhone: _isPhone)}',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
@@ -433,7 +436,9 @@ class _OtpViewState extends State<OtpView> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'enter_verification_code'.trParams({'count': '$_otpLength'}),
+                          'enter_verification_code'.trParams({
+                            'count': '$_otpLength',
+                          }),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 13,
@@ -466,7 +471,9 @@ class _OtpViewState extends State<OtpView> {
                         ),
                         const SizedBox(height: 8),
                         TextButton(
-                          onPressed: _canResend && !_isLoading ? _resendOtp : null,
+                          onPressed: _canResend && !_isLoading
+                              ? _resendOtp
+                              : null,
                           child: Text(
                             _canResend
                                 ? 'resend_code'.tr
@@ -486,7 +493,9 @@ class _OtpViewState extends State<OtpView> {
                   const SizedBox(height: 48),
                   _isLoading
                       ? Center(
-                          child: CircularProgressIndicator(color: AppColors.darkGold),
+                          child: CircularProgressIndicator(
+                            color: AppColors.darkGold,
+                          ),
                         )
                       : KasbyButton(
                           text: 'verify'.tr,

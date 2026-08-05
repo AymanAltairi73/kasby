@@ -23,7 +23,8 @@ class AuthSecurityService {
   static PhoneOtpService get _phoneOtp => PhoneOtpService.to;
 
   static String get authRedirectUrl => AuthenticationRepository.authRedirectUrl;
-  static const String defaultRedirect = AuthenticationRepository.defaultRedirect;
+  static const String defaultRedirect =
+      AuthenticationRepository.defaultRedirect;
 
   static void _log(
     String method,
@@ -73,14 +74,19 @@ class AuthSecurityService {
         'hasCode': uri.queryParameters.containsKey('code'),
       },
     );
-    _log('handleAuthCallback', 'Processing auth callback', params: {
-      'host': uri.host,
-      'hasCode': uri.queryParameters.containsKey('code'),
-    });
+    _log(
+      'handleAuthCallback',
+      'Processing auth callback',
+      params: {
+        'host': uri.host,
+        'hasCode': uri.queryParameters.containsKey('code'),
+      },
+    );
 
     if (uri.queryParameters.containsKey('error') ||
         uri.queryParameters.containsKey('error_description')) {
-      final description = uri.queryParameters['error_description'] ??
+      final description =
+          uri.queryParameters['error_description'] ??
           uri.queryParameters['error'] ??
           'auth_link_invalid'.tr;
       final error = AuthException(description);
@@ -129,8 +135,7 @@ class AuthSecurityService {
   static Future<void> resendOtp({
     required String email,
     required OtpType type,
-  }) =>
-      _repo.resendEmailOtp(email: email, type: type);
+  }) => _repo.resendEmailOtp(email: email, type: type);
 
   static Future<void> verifyOtpCode({
     required String email,
@@ -161,7 +166,8 @@ class AuthSecurityService {
       try {
         final decoded = jsonDecode(trimmed);
         if (decoded is Map) {
-          final message = decoded['message'] ?? decoded['msg'] ?? decoded['error'];
+          final message =
+              decoded['message'] ?? decoded['msg'] ?? decoded['error'];
           if (message != null && message.toString().trim().isNotEmpty) {
             return message.toString();
           }
@@ -183,8 +189,7 @@ class AuthSecurityService {
         lower.contains('otp_expired')) {
       return 'otp_expired'.tr;
     }
-    if (lower.contains('otp_disabled') ||
-        lower.contains('otp is disabled')) {
+    if (lower.contains('otp_disabled') || lower.contains('otp is disabled')) {
       return 'otp_channel_error'.tr;
     }
     if (lower.contains('sms send') ||
@@ -338,7 +343,9 @@ class AuthSecurityService {
     try {
       await _repo.sendPasswordResetEmail(sanitized);
     } catch (e) {
-      throw AuthException(normalizeOtpDispatchError(extractAuthErrorMessage(e)));
+      throw AuthException(
+        normalizeOtpDispatchError(extractAuthErrorMessage(e)),
+      );
     }
   }
 
@@ -507,7 +514,11 @@ class AuthSecurityService {
           method: 'accountExistsByEmail',
           authMethod: 'email',
           email: sanitized,
-          params: {'exists': false, 'deleted': true, 'deletionType': deletionType},
+          params: {
+            'exists': false,
+            'deleted': true,
+            'deletionType': deletionType,
+          },
         );
         throw deletedAccountException(deletionType);
       }
@@ -566,7 +577,11 @@ class AuthSecurityService {
           method: 'accountExistsByPhone',
           authMethod: 'phone_otp',
           phone: sanitized,
-          params: {'exists': false, 'deleted': true, 'deletionType': deletionType},
+          params: {
+            'exists': false,
+            'deleted': true,
+            'deletionType': deletionType,
+          },
         );
         throw deletedAccountException(deletionType);
       }
@@ -669,7 +684,9 @@ class AuthSecurityService {
         error: e,
         stackTrace: stack,
       );
-      throw AuthException(normalizeOtpDispatchError(extractAuthErrorMessage(e)));
+      throw AuthException(
+        normalizeOtpDispatchError(extractAuthErrorMessage(e)),
+      );
     }
   }
 
@@ -687,8 +704,7 @@ class AuthSecurityService {
   static Future<void> signInAfterSignup({
     required String email,
     required String password,
-  }) =>
-      _repo.signInAfterSignup(email: email, password: password);
+  }) => _repo.signInAfterSignup(email: email, password: password);
 
   static Future<void> ensurePhoneVerificationSent({
     required String phone,
@@ -725,8 +741,7 @@ class AuthSecurityService {
     required String email,
     required String password,
     required Map<String, dynamic> data,
-  }) =>
-      _repo.register(email: email, password: password, metadata: data);
+  }) => _repo.register(email: email, password: password, metadata: data);
 
   static Future<bool> completeRegistrationSession({
     required String email,
@@ -868,7 +883,12 @@ class AuthSecurityService {
       await _emailOtp.sendEmailChange(email);
       _log('requestEmailStepUpOtp', 'sendEmailChange succeeded');
     } catch (e) {
-      _log('requestEmailStepUpOtp', 'sendEmailChange failed', status: 'ERROR', error: e);
+      _log(
+        'requestEmailStepUpOtp',
+        'sendEmailChange failed',
+        status: 'ERROR',
+        error: e,
+      );
       rethrow;
     }
     if (Get.isRegistered<SensitiveOperationGuardService>()) {
@@ -889,10 +909,19 @@ class AuthSecurityService {
     // Use emailChange type since updateUser triggers email change flow
     _log('verifyEmailStepUpOtp', 'Verifying OTP with emailChange type');
     try {
-      await _emailOtp.verify(email: targetEmail, token: token, type: OtpType.emailChange);
+      await _emailOtp.verify(
+        email: targetEmail,
+        token: token,
+        type: OtpType.emailChange,
+      );
       _log('verifyEmailStepUpOtp', 'OTP verification succeeded');
     } catch (e) {
-      _log('verifyEmailStepUpOtp', 'OTP verification failed', status: 'ERROR', error: e);
+      _log(
+        'verifyEmailStepUpOtp',
+        'OTP verification failed',
+        status: 'ERROR',
+        error: e,
+      );
       rethrow;
     }
     if (Get.isRegistered<SensitiveOperationGuardService>()) {

@@ -35,15 +35,21 @@ class FinancialRepository {
     return {'success': false, 'error': 'Invalid response format'};
   }
 
-  static String mapErrorMessage(Map<String, dynamic> response, String fallback) {
-    final error = response['error']?.toString() ??
+  static String mapErrorMessage(
+    Map<String, dynamic> response,
+    String fallback,
+  ) {
+    final error =
+        response['error']?.toString() ??
         response['message']?.toString() ??
         fallback;
     if (error.contains('PERMISSION_DENIED')) {
       return 'financial_permission_denied'.tr;
     }
     if (error.contains('SYSTEM_FROZEN')) return 'system_frozen'.tr;
-    if (error.contains('Insufficient balance')) return 'insufficient_balance'.tr;
+    if (error.contains('Insufficient balance')) {
+      return 'insufficient_balance'.tr;
+    }
     if (error.contains('Insufficient points')) return 'insufficient_points'.tr;
     if (error.contains('Receiver not found')) return 'receiver_not_found'.tr;
     if (error.contains('pending withdrawal')) {
@@ -56,8 +62,9 @@ class FinancialRepository {
     required double amount,
     required String agentId,
   }) async {
-    final idempotencyKey =
-        await _persistedIdempotencyKey('withdraw_${amount.toStringAsFixed(2)}_$agentId');
+    final idempotencyKey = await _persistedIdempotencyKey(
+      'withdraw_${amount.toStringAsFixed(2)}_$agentId',
+    );
 
     try {
       final result = await SupabaseService.client.rpc(
@@ -72,7 +79,9 @@ class FinancialRepository {
 
       final response = _coerceMap(result);
       if (response['success'] == true) {
-        await clearIdempotencyKey('withdraw_${amount.toStringAsFixed(2)}_$agentId');
+        await clearIdempotencyKey(
+          'withdraw_${amount.toStringAsFixed(2)}_$agentId',
+        );
       } else {
         await CrashReportingService.recordBusinessError(
           Exception(response['error']?.toString() ?? 'Withdraw failed'),
@@ -106,8 +115,9 @@ class FinancialRepository {
     required bool isKsp,
   }) async {
     final normalizedCode = receiverReferralCode.trim();
-    final operationKey =
-        isKsp ? 'ksp_transfer' : 'usd_transfer_${amount.toStringAsFixed(2)}_$normalizedCode';
+    final operationKey = isKsp
+        ? 'ksp_transfer'
+        : 'usd_transfer_${amount.toStringAsFixed(2)}_$normalizedCode';
     final idempotencyKey = await _persistedIdempotencyKey(operationKey);
 
     try {
@@ -177,10 +187,7 @@ class FinancialRepository {
         domain: 'deposit',
         operation: 'create_deposit_request',
         phase: 'START',
-        params: {
-          'amount': amount.toStringAsFixed(2),
-          'agentId': agentId,
-        },
+        params: {'amount': amount.toStringAsFixed(2), 'agentId': agentId},
       );
 
       final result = await SupabaseService.client.rpc(
@@ -195,7 +202,9 @@ class FinancialRepository {
 
       final response = _coerceMap(result);
       if (response['success'] == true) {
-        await clearIdempotencyKey('deposit_${amount.toStringAsFixed(2)}_$agentId');
+        await clearIdempotencyKey(
+          'deposit_${amount.toStringAsFixed(2)}_$agentId',
+        );
         EnterpriseOperationsLogger.log(
           domain: 'deposit',
           operation: 'create_deposit_request',

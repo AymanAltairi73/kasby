@@ -78,8 +78,9 @@ class NetworkService extends GetxService with WidgetsBindingObserver {
     // 1. Check initial adapter state
     try {
       final initialResults = await _connectivity.checkConnectivity();
-      _hasNetworkAdapter =
-          initialResults.any((r) => r != ConnectivityResult.none);
+      _hasNetworkAdapter = initialResults.any(
+        (r) => r != ConnectivityResult.none,
+      );
     } catch (_) {
       _hasNetworkAdapter = true;
     }
@@ -298,8 +299,9 @@ class NetworkService extends GetxService with WidgetsBindingObserver {
   void _updateStatus(bool online) {
     final wasOffline = !isConnected.value;
     isConnected.value = online;
-    connectionStatus.value =
-        online ? ConnectionStatus.connected : ConnectionStatus.disconnected;
+    connectionStatus.value = online
+        ? ConnectionStatus.connected
+        : ConnectionStatus.disconnected;
 
     if (online && wasOffline) {
       SafeGetx.debugTrace(
@@ -386,11 +388,13 @@ class NetworkService extends GetxService with WidgetsBindingObserver {
         error: e,
         stackTrace: stack,
       );
-      unawaited(CrashReportingService.recordNetworkError(
-        e,
-        stack,
-        operation: 'NetworkService.guardedRequest',
-      ));
+      unawaited(
+        CrashReportingService.recordNetworkError(
+          e,
+          stack,
+          operation: 'NetworkService.guardedRequest',
+        ),
+      );
       unawaited(_checkConnection());
       return null;
     } on TimeoutException catch (e, stack) {
@@ -404,12 +408,14 @@ class NetworkService extends GetxService with WidgetsBindingObserver {
         error: e,
         stackTrace: stack,
       );
-      unawaited(CrashReportingService.recordNetworkError(
-        e,
-        stack,
-        operation: 'NetworkService.guardedRequest',
-        isTimeout: true,
-      ));
+      unawaited(
+        CrashReportingService.recordNetworkError(
+          e,
+          stack,
+          operation: 'NetworkService.guardedRequest',
+          isTimeout: true,
+        ),
+      );
       return null;
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -421,12 +427,14 @@ class NetworkService extends GetxService with WidgetsBindingObserver {
         error: e,
         stackTrace: stack,
       );
-      unawaited(CrashReportingService.recordException(
-        e,
-        stack,
-        reason: 'NetworkService.guardedRequest',
-        category: CrashReportingService.categoryFromFeature('network'),
-      ));
+      unawaited(
+        CrashReportingService.recordException(
+          e,
+          stack,
+          reason: 'NetworkService.guardedRequest',
+          category: CrashReportingService.categoryFromFeature('network'),
+        ),
+      );
       rethrow;
     }
   }

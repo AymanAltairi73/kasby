@@ -21,10 +21,7 @@ class EmailOtpService extends GetxService {
       email: _sanitizeEmail(email),
     );
     try {
-      await _auth.resend(
-        type: OtpType.signup,
-        email: _sanitizeEmail(email),
-      );
+      await _auth.resend(type: OtpType.signup, email: _sanitizeEmail(email));
       AuthenticationLogger.logSuccess(
         'email_otp_signup',
         stopwatch: sw,
@@ -111,10 +108,7 @@ class EmailOtpService extends GetxService {
   }
 
   /// Resend email OTP for a given [OtpType].
-  Future<void> resend({
-    required String email,
-    required OtpType type,
-  }) async {
+  Future<void> resend({required String email, required OtpType type}) async {
     final sanitized = _sanitizeEmail(email);
     final sw = AuthenticationLogger.logStart(
       'email_otp_resend',
@@ -158,10 +152,7 @@ class EmailOtpService extends GetxService {
     final normalized = AuthOtpConfig.normalize(token);
     final expected = AuthOtpConfig.lengthForOtpType(type);
     if (normalized.length != expected) {
-      throw AuthException(
-        'otp_length_mismatch',
-        statusCode: '400',
-      );
+      throw AuthException('otp_length_mismatch', statusCode: '400');
     }
 
     final sw = AuthenticationLogger.logStart(

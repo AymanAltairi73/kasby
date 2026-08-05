@@ -32,31 +32,40 @@ void main() {
       );
     });
 
-    test('recordError does not throw when Crashlytics is not initialized', () async {
-      await expectLater(
-        CrashReportingService.recordError(
-          Exception('test'),
-          StackTrace.current,
-          reason: 'unit_test',
-          category: CrashErrorCategory.unknown,
-        ),
-        completes,
-      );
-    });
+    test(
+      'recordError does not throw when Crashlytics is not initialized',
+      () async {
+        await expectLater(
+          CrashReportingService.recordError(
+            Exception('test'),
+            StackTrace.current,
+            reason: 'unit_test',
+            category: CrashErrorCategory.unknown,
+          ),
+          completes,
+        );
+      },
+    );
 
-    test('recordSupabaseError does not throw for PostgrestException shape', () async {
-      await expectLater(
-        CrashReportingService.recordSupabaseError(
-          Exception('simulated postgrest failure'),
-          rpcName: 'create_investment',
-          tableName: 'investments',
-        ),
-        completes,
-      );
-    });
+    test(
+      'recordSupabaseError does not throw for PostgrestException shape',
+      () async {
+        await expectLater(
+          CrashReportingService.recordSupabaseError(
+            Exception('simulated postgrest failure'),
+            rpcName: 'create_investment',
+            tableName: 'investments',
+          ),
+          completes,
+        );
+      },
+    );
 
     test('log and setCustomKey complete safely in debug mode', () async {
-      await expectLater(CrashReportingService.log('Test breadcrumb'), completes);
+      await expectLater(
+        CrashReportingService.log('Test breadcrumb'),
+        completes,
+      );
       await expectLater(
         CrashReportingService.setCustomKey('screen_name', 'TestScreen'),
         completes,

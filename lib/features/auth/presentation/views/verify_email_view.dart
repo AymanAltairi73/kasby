@@ -326,8 +326,9 @@ class _VerifyEmailViewState extends State<VerifyEmailView>
 
     if (_showVerifiedSuccess) {
       return Scaffold(
-        backgroundColor:
-            isDark ? AppColors.background : AppColors.backgroundLight,
+        backgroundColor: isDark
+            ? AppColors.background
+            : AppColors.backgroundLight,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -336,9 +337,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView>
                 Icons.verified_rounded,
                 size: 88,
                 color: AppColors.softGreen,
-              )
-                  .animate()
-                  .scale(curve: Curves.elasticOut, duration: 700.ms),
+              ).animate().scale(curve: Curves.elasticOut, duration: 700.ms),
               const SizedBox(height: 24),
               Text(
                 'verification_completed'.tr,
@@ -357,8 +356,9 @@ class _VerifyEmailViewState extends State<VerifyEmailView>
     }
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.background : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.background
+          : AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -380,23 +380,25 @@ class _VerifyEmailViewState extends State<VerifyEmailView>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.darkGold.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.darkGold.withValues(alpha: 0.2),
-                      width: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.darkGold.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.darkGold.withValues(alpha: 0.2),
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.mark_email_unread_rounded,
+                        color: AppColors.darkGold,
+                        size: 44,
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    Icons.mark_email_unread_rounded,
-                    color: AppColors.darkGold,
-                    size: 44,
-                  ),
-                ),
-              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
+                  )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scale(
                     begin: const Offset(1, 1),
                     end: const Offset(1.04, 1.04),
                     duration: 1800.ms,
@@ -470,8 +472,11 @@ class _VerifyEmailViewState extends State<VerifyEmailView>
                 Center(
                   child: TextButton.icon(
                     onPressed: _openEmailApp,
-                    icon: Icon(Icons.open_in_new_rounded,
-                        color: AppColors.darkGold, size: 18),
+                    icon: Icon(
+                      Icons.open_in_new_rounded,
+                      color: AppColors.darkGold,
+                      size: 18,
+                    ),
                     label: Text(
                       'open_email_app'.tr,
                       style: TextStyle(
@@ -556,8 +561,10 @@ class _VerifyEmailViewState extends State<VerifyEmailView>
                 Center(
                   child: TextButton.icon(
                     onPressed: isBusy ? null : () => _refreshStatus(),
-                    icon:
-                        Icon(Icons.refresh_rounded, color: AppColors.darkGold),
+                    icon: Icon(
+                      Icons.refresh_rounded,
+                      color: AppColors.darkGold,
+                    ),
                     label: Text(
                       'check_verification_status'.tr,
                       style: TextStyle(

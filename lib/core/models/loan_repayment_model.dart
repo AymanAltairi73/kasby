@@ -24,16 +24,17 @@ class LoanRepaymentModel {
   factory LoanRepaymentModel.fromJson(Map<String, dynamic> json) {
     try {
       return LoanRepaymentModel(
-      id: json['id'] as String? ?? '',
-      loanId: json['loan_id'] as String? ?? '',
-      userId: json['user_id'] as String? ?? '',
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
-      type: json['type'] as String? ?? 'partial',
-      previousRemaining: (json['previous_remaining'] as num?)?.toDouble() ?? 0.0,
-      newRemaining: (json['new_remaining'] as num?)?.toDouble() ?? 0.0,
-      createdAt: json['created_at'] != null 
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
+        id: json['id'] as String? ?? '',
+        loanId: json['loan_id'] as String? ?? '',
+        userId: json['user_id'] as String? ?? '',
+        amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+        type: json['type'] as String? ?? 'partial',
+        previousRemaining:
+            (json['previous_remaining'] as num?)?.toDouble() ?? 0.0,
+        newRemaining: (json['new_remaining'] as num?)?.toDouble() ?? 0.0,
+        createdAt: json['created_at'] != null
+            ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
+            : DateTime.now(),
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(

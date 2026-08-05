@@ -73,8 +73,9 @@ class SecurityActivityService extends GetxService {
     return {
       'device_name':
           '${Platform.operatingSystem} ${Platform.operatingSystemVersion}',
-      'device_type':
-          Platform.isAndroid || Platform.isIOS ? 'mobile' : 'desktop',
+      'device_type': Platform.isAndroid || Platform.isIOS
+          ? 'mobile'
+          : 'desktop',
       'platform': Platform.operatingSystem,
       'browser': '',
     };
@@ -99,10 +100,7 @@ class SecurityActivityService extends GetxService {
       'platform': ctx['platform'],
       'browser': ctx['browser']?.isNotEmpty == true ? ctx['browser'] : null,
       'app_version': _packageInfo?.version,
-      'metadata': {
-        if (details != null) 'details': details,
-        ...?metadata,
-      },
+      'metadata': {if (details != null) 'details': details, ...?metadata},
       'created_at': DateTime.now().toUtc().toIso8601String(),
     };
 
@@ -147,9 +145,11 @@ class SecurityActivityService extends GetxService {
       events.assignAll(List<Map<String, dynamic>>.from(rows));
 
       failedLoginCount.value = events
-          .where((e) =>
-              e['event_type'] == SecurityEventType.failedLogin.value &&
-              e['status'] == 'failed')
+          .where(
+            (e) =>
+                e['event_type'] == SecurityEventType.failedLogin.value &&
+                e['status'] == 'failed',
+          )
           .length;
     } catch (e) {
       events.clear();

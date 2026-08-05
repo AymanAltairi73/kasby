@@ -54,10 +54,7 @@ class ErrorStateWidget extends StatelessWidget {
               Text(
                 message ?? 'couldnt_load_data'.tr,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: KasbySpacing.xxl),
               KasbyButton(

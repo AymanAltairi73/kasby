@@ -66,8 +66,8 @@ class _SparklinePainter extends CustomPainter {
     Offset pointAt(int i) {
       final x = dx * i;
       final norm = (data[i] - minV) / range;
-      final y = size.height - (norm * (size.height - strokeWidth)) -
-          strokeWidth / 2;
+      final y =
+          size.height - (norm * (size.height - strokeWidth)) - strokeWidth / 2;
       return Offset(x, y);
     }
 
@@ -85,10 +85,7 @@ class _SparklinePainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            color.withValues(alpha: 0.25),
-            color.withValues(alpha: 0.0),
-          ],
+          colors: [color.withValues(alpha: 0.25), color.withValues(alpha: 0.0)],
         ).createShader(Offset.zero & size);
       canvas.drawPath(fillPath, fillPaint);
     }
@@ -219,7 +216,12 @@ class _WaterfallPainter extends CustomPainter {
 
       final barPaint = Paint()..color = barColor;
       final rect = RRect.fromRectAndRadius(
-        Rect.fromLTRB(x, yTop.clamp(0, chartHeight), x + barWidth, yBottom.clamp(0, chartHeight)),
+        Rect.fromLTRB(
+          x,
+          yTop.clamp(0, chartHeight),
+          x + barWidth,
+          yBottom.clamp(0, chartHeight),
+        ),
         const Radius.circular(3),
       );
       canvas.drawRRect(rect, barPaint);
@@ -240,7 +242,10 @@ class _WaterfallPainter extends CustomPainter {
       )..layout(maxWidth: barWidth + barPadding * 2);
       valPainter.paint(
         canvas,
-        Offset(x + (barWidth - valPainter.width) / 2, yTop - valPainter.height - 2),
+        Offset(
+          x + (barWidth - valPainter.width) / 2,
+          yTop - valPainter.height - 2,
+        ),
       );
 
       // Bottom label

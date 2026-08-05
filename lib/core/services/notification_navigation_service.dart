@@ -94,22 +94,21 @@ class NotificationNavigationService {
 
   /// Navigate from an in-app notification list item.
   static Future<void> navigateFromModel(NotificationModel notification) async {
-    await navigateFromPayload(
-      {
-        'type': notification.type,
-        'id': notification.id,
-        'route': notification.deepLink ?? resolveRoute(
-          type: notification.type,
-          deepLink: notification.deepLink,
-          entityType: notification.entityType,
-        ),
-        'entity_type': notification.entityType ?? '',
-        'entity_id': notification.entityId ?? '',
-        'target_user_id': notification.targetUserId ?? '',
-        'deep_link': notification.deepLink ?? '',
-      },
-      fromUserTap: true,
-    );
+    await navigateFromPayload({
+      'type': notification.type,
+      'id': notification.id,
+      'route':
+          notification.deepLink ??
+          resolveRoute(
+            type: notification.type,
+            deepLink: notification.deepLink,
+            entityType: notification.entityType,
+          ),
+      'entity_type': notification.entityType ?? '',
+      'entity_id': notification.entityId ?? '',
+      'target_user_id': notification.targetUserId ?? '',
+      'deep_link': notification.deepLink ?? '',
+    }, fromUserTap: true);
   }
 
   /// Parse local-notification payload string (JSON-encoded FCM data).
@@ -262,10 +261,7 @@ class NotificationNavigationService {
         feature: 'Core',
         status: 'WARN',
         message: 'Unknown deep link route — resolving from notification type',
-        params: {
-          'requestedRoute': route,
-          'type': data['type'] ?? 'unknown',
-        },
+        params: {'requestedRoute': route, 'type': data['type'] ?? 'unknown'},
       );
     }
 
@@ -375,7 +371,9 @@ class NotificationNavigationService {
       }
     }
 
-    if (route == Routes.myInvestments || entityType == 'investment' || data['type'] == 'daily_profit') {
+    if (route == Routes.myInvestments ||
+        entityType == 'investment' ||
+        data['type'] == 'daily_profit') {
       if (entityId.isNotEmpty) {
         return {'investment_id': entityId, 'from_notification': true};
       }

@@ -121,8 +121,6 @@ class _EditProfileViewState extends State<EditProfileView> {
         'country': _countryController.text.trim(),
       };
 
-
-
       if (uploadedImageUrl != null) {
         updateData['avatar_url'] = uploadedImageUrl;
       }
@@ -380,7 +378,12 @@ class _EditProfileViewState extends State<EditProfileView> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInputField(context, 'full_name'.tr, _nameController, Icons.person_outline_rounded),
+          _buildInputField(
+            context,
+            'full_name'.tr,
+            _nameController,
+            Icons.person_outline_rounded,
+          ),
           const SizedBox(height: 24),
           _buildInfoRow(
             context,
@@ -406,26 +409,54 @@ class _EditProfileViewState extends State<EditProfileView> {
           const SizedBox(height: 24),
           _buildReferralRow(context),
           const SizedBox(height: 24),
-          _buildInputField(context, 'country'.tr, _countryController, Icons.public_rounded),
+          _buildInputField(
+            context,
+            'country'.tr,
+            _countryController,
+            Icons.public_rounded,
+          ),
           const SizedBox(height: 24),
-          _buildInputField(context, 'province'.tr, _provinceController, Icons.location_city_rounded),
+          _buildInputField(
+            context,
+            'province'.tr,
+            _provinceController,
+            Icons.location_city_rounded,
+          ),
           const SizedBox(height: 24),
-          _buildInputField(context, 'city'.tr, _cityController, Icons.location_on_rounded),
+          _buildInputField(
+            context,
+            'city'.tr,
+            _cityController,
+            Icons.location_on_rounded,
+          ),
           const SizedBox(height: 24),
-          _buildInputField(context, 'address'.tr, _addressController, Icons.home_rounded),
+          _buildInputField(
+            context,
+            'address'.tr,
+            _addressController,
+            Icons.home_rounded,
+          ),
         ],
       );
     }).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05);
   }
 
-  Widget _buildInfoRow(BuildContext context, String label, String value, IconData icon, {VoidCallback? onEdit}) {
+  Widget _buildInfoRow(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon, {
+    VoidCallback? onEdit,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: TextStyle(
-            color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondary
+                : AppColors.textSecondaryLight,
             fontWeight: FontWeight.bold,
             fontSize: 13,
           ),
@@ -438,7 +469,9 @@ class _EditProfileViewState extends State<EditProfileView> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surface.withValues(alpha: 0.5) : AppColors.surfaceLight,
+              color: isDark
+                  ? AppColors.surface.withValues(alpha: 0.5)
+                  : AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: onEdit != null
@@ -470,7 +503,11 @@ class _EditProfileViewState extends State<EditProfileView> {
                     ),
                   )
                 else
-                  Icon(Icons.lock_outline_rounded, size: 14, color: AppColors.darkGold.withValues(alpha: 0.3)),
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: 14,
+                    color: AppColors.darkGold.withValues(alpha: 0.3),
+                  ),
               ],
             ),
           ),
@@ -479,8 +516,6 @@ class _EditProfileViewState extends State<EditProfileView> {
     );
   }
 
-
-
   Widget _buildReferralRow(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,7 +523,9 @@ class _EditProfileViewState extends State<EditProfileView> {
         Text(
           'referral_code'.tr,
           style: TextStyle(
-            color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondary
+                : AppColors.textSecondaryLight,
             fontWeight: FontWeight.bold,
             fontSize: 13,
           ),
@@ -498,7 +535,9 @@ class _EditProfileViewState extends State<EditProfileView> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.surface.withValues(alpha: 0.5) : AppColors.surfaceLight,
+            color: isDark
+                ? AppColors.surface.withValues(alpha: 0.5)
+                : AppColors.surfaceLight,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: AppColors.darkGold.withValues(alpha: 0.1),
@@ -509,7 +548,11 @@ class _EditProfileViewState extends State<EditProfileView> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.qr_code_rounded, color: AppColors.darkGold, size: 22),
+                  Icon(
+                    Icons.qr_code_rounded,
+                    color: AppColors.darkGold,
+                    size: 22,
+                  ),
                   const SizedBox(width: 16),
                   Text(
                     _referralCode,
@@ -556,10 +599,7 @@ class _EditProfileViewState extends State<EditProfileView> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ProfileUpdateView(
-            embeddedArguments: {
-              'type': type,
-              'current_value': currentValue,
-            },
+            embeddedArguments: {'type': type, 'current_value': currentValue},
           ),
         ),
       ),
@@ -610,6 +650,4 @@ class _EditProfileViewState extends State<EditProfileView> {
       ],
     );
   }
-
-
 }

@@ -34,14 +34,17 @@ void main() {
       );
     });
 
-    test('maps link-style otp errors to otp messages not auth_link_invalid', () {
-      expect(
-        AuthSecurityService.translateOtpError(
-          'Email link is invalid or has expired',
-        ),
-        'Verification code expired.',
-      );
-    });
+    test(
+      'maps link-style otp errors to otp messages not auth_link_invalid',
+      () {
+        expect(
+          AuthSecurityService.translateOtpError(
+            'Email link is invalid or has expired',
+          ),
+          'Verification code expired.',
+        );
+      },
+    );
   });
 
   group('AuthSecurityService.translateAuthError', () {

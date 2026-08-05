@@ -53,30 +53,62 @@ class SocialDashboardHeader extends StatelessWidget {
 
     final rows = [
       [
-        statTile('total_friends'.tr, '${stats.totalFriends}',
-            Icons.people_rounded, AppColors.darkGold),
-        statTile('online_friends'.tr, '${stats.onlineFriends}',
-            Icons.circle, AppColors.softGreen),
+        statTile(
+          'total_friends'.tr,
+          '${stats.totalFriends}',
+          Icons.people_rounded,
+          AppColors.darkGold,
+        ),
+        statTile(
+          'online_friends'.tr,
+          '${stats.onlineFriends}',
+          Icons.circle,
+          AppColors.softGreen,
+        ),
         if (columns == 3)
-          statTile('pending_requests'.tr, '${stats.pendingIncoming}',
-              Icons.inbox_rounded, AppColors.error),
+          statTile(
+            'pending_requests'.tr,
+            '${stats.pendingIncoming}',
+            Icons.inbox_rounded,
+            AppColors.error,
+          ),
       ],
       if (columns == 2) ...[
         [
-          statTile('pending_requests'.tr, '${stats.pendingIncoming}',
-              Icons.inbox_rounded, AppColors.error),
-          statTile('sent_requests'.tr, '${stats.pendingOutgoing}',
-              Icons.outbox_rounded, Colors.orange),
+          statTile(
+            'pending_requests'.tr,
+            '${stats.pendingIncoming}',
+            Icons.inbox_rounded,
+            AppColors.error,
+          ),
+          statTile(
+            'sent_requests'.tr,
+            '${stats.pendingOutgoing}',
+            Icons.outbox_rounded,
+            Colors.orange,
+          ),
         ],
       ],
       [
-        statTile('new_friends_today'.tr, '${stats.newFriendsToday}',
-            Icons.person_add_alt_1_rounded, Colors.blue),
-        statTile('messages_today'.tr, '${stats.messagesToday}',
-            Icons.chat_rounded, Colors.purple),
+        statTile(
+          'new_friends_today'.tr,
+          '${stats.newFriendsToday}',
+          Icons.person_add_alt_1_rounded,
+          Colors.blue,
+        ),
+        statTile(
+          'messages_today'.tr,
+          '${stats.messagesToday}',
+          Icons.chat_rounded,
+          Colors.purple,
+        ),
         if (columns == 3)
-          statTile('sent_requests'.tr, '${stats.pendingOutgoing}',
-              Icons.outbox_rounded, Colors.orange),
+          statTile(
+            'sent_requests'.tr,
+            '${stats.pendingOutgoing}',
+            Icons.outbox_rounded,
+            Colors.orange,
+          ),
       ],
     ];
 

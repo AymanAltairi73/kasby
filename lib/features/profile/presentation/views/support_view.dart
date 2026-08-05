@@ -73,11 +73,15 @@ class _SupportViewState extends State<SupportView> {
             return {
               'question': _pickLocalizedField(row, 'question'),
               'answer': _pickLocalizedField(row, 'answer'),
-              'category': (row['category'] ?? 'general').toString().toLowerCase().trim(),
+              'category': (row['category'] ?? 'general')
+                  .toString()
+                  .toLowerCase()
+                  .trim(),
             };
           })
-          .where((faq) =>
-              faq['question']!.isNotEmpty && faq['answer']!.isNotEmpty)
+          .where(
+            (faq) => faq['question']!.isNotEmpty && faq['answer']!.isNotEmpty,
+          )
           .toList();
 
       if (mounted) {
@@ -117,7 +121,8 @@ class _SupportViewState extends State<SupportView> {
       final matchesSearch =
           faq['question']!.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           faq['answer']!.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory = _selectedCategory == 'general' ||
+      final matchesCategory =
+          _selectedCategory == 'general' ||
           _selectedCategory == 'all' ||
           faq['category'] == _selectedCategory;
       return matchesSearch && matchesCategory;
@@ -170,7 +175,9 @@ class _SupportViewState extends State<SupportView> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),
                       child: Center(
-                        child: CircularProgressIndicator(color: AppColors.darkGold),
+                        child: CircularProgressIndicator(
+                          color: AppColors.darkGold,
+                        ),
                       ),
                     ),
                   )
@@ -283,10 +290,7 @@ class _SupportViewState extends State<SupportView> {
                 ? AppColors.textSecondary
                 : AppColors.textSecondaryLight,
           ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: AppColors.darkGold,
-          ),
+          prefixIcon: Icon(Icons.search_rounded, color: AppColors.darkGold),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(16),
         ),
@@ -408,5 +412,4 @@ class _SupportViewState extends State<SupportView> {
       ),
     );
   }
-
 }

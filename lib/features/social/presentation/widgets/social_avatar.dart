@@ -36,7 +36,9 @@ class OnlineStatusIndicator extends StatelessWidget {
       }
 
       return Text(
-        online ? 'online_now'.tr : '${'last_seen'.tr} ${DateHelper.lastSeenRelative(lastSeenAt)}',
+        online
+            ? 'online_now'.tr
+            : '${'last_seen'.tr} ${DateHelper.lastSeenRelative(lastSeenAt)}',
         style: TextStyle(
           fontSize: 12,
           color: online ? AppColors.softGreen : AppColors.textSecondary,
@@ -77,8 +79,9 @@ class SocialAvatar extends StatelessWidget {
         CircleAvatar(
           radius: radius,
           backgroundColor: AppColors.darkGold.withValues(alpha: 0.15),
-          backgroundImage:
-              avatarUrl != null && avatarUrl!.isNotEmpty ? NetworkImage(avatarUrl!) : null,
+          backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+              ? NetworkImage(avatarUrl!)
+              : null,
           child: avatarUrl == null || avatarUrl!.isEmpty
               ? Text(
                   _initials(name),

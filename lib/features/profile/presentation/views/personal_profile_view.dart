@@ -29,10 +29,7 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
       feature: 'Profile',
       status: 'INFO',
       message: 'Profile data bound',
-      params: {
-        'hasProfile': profile != null,
-        'kycStatus': profile?.kycStatus,
-      },
+      params: {'hasProfile': profile != null, 'kycStatus': profile?.kycStatus},
     );
   }
 
@@ -78,7 +75,9 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
         padding: const EdgeInsets.all(24),
         child: Obx(() {
           final profile = HomeController.to.profile.value;
-          if (profile == null) return const Center(child: CircularProgressIndicator());
+          if (profile == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           return Column(
             children: [
@@ -112,7 +111,9 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
           ),
           child: CircleAvatar(
             radius: 50,
-            backgroundColor: isDark ? AppColors.surface : AppColors.surfaceLight,
+            backgroundColor: isDark
+                ? AppColors.surface
+                : AppColors.surfaceLight,
             backgroundImage: networkUrl != null && networkUrl.isNotEmpty
                 ? NetworkImage(networkUrl)
                 : null,
@@ -124,7 +125,11 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
         const SizedBox(height: 16),
         Text(
           profile.fullName,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+          ),
         ).animate().fadeIn(delay: 200.ms),
         Text(
           profile.role.toUpperCase(),
@@ -144,34 +149,95 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surface.withValues(alpha: 0.3) : AppColors.surfaceLight,
+        color: isDark
+            ? AppColors.surface.withValues(alpha: 0.3)
+            : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.06),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.06),
         ),
       ),
       child: Column(
         children: [
-          _buildDetailRow(context, 'full_name'.tr, profile.fullName, Icons.person_rounded),
-          _buildDetailRow(context, 'email_address'.tr, profile.email ?? '---', Icons.email_rounded),
-          _buildDetailRow(context, 'phone_number'.tr, profile.phone ?? '---', Icons.phone_rounded),
+          _buildDetailRow(
+            context,
+            'full_name'.tr,
+            profile.fullName,
+            Icons.person_rounded,
+          ),
+          _buildDetailRow(
+            context,
+            'email_address'.tr,
+            profile.email ?? '---',
+            Icons.email_rounded,
+          ),
+          _buildDetailRow(
+            context,
+            'phone_number'.tr,
+            profile.phone ?? '---',
+            Icons.phone_rounded,
+          ),
           _buildReferralRow(
             context,
             ReferralService.formatDisplayCode(profile.referralCode),
           ),
-          _buildDetailRow(context, 'country'.tr, profile.country ?? '---', Icons.public_rounded),
-          _buildDetailRow(context, 'province'.tr, profile.province ?? '---', Icons.location_city_rounded),
-          _buildDetailRow(context, 'city'.tr, profile.city ?? '---', Icons.location_on_rounded),
-          _buildDetailRow(context, 'address'.tr, profile.address.isNotEmpty ? profile.address : '---', Icons.home_rounded),
-          _buildDetailRow(context, 'kyc_status_label'.tr, profile.kycStatus.tr, Icons.verified_user_rounded),
-          _buildDetailRow(context, 'account_tier_label'.tr, profile.accountTier.tr, Icons.star_rounded),
-          _buildDetailRow(context, 'account_status_label'.tr, profile.status.tr, Icons.speed_rounded, isLast: true),
+          _buildDetailRow(
+            context,
+            'country'.tr,
+            profile.country ?? '---',
+            Icons.public_rounded,
+          ),
+          _buildDetailRow(
+            context,
+            'province'.tr,
+            profile.province ?? '---',
+            Icons.location_city_rounded,
+          ),
+          _buildDetailRow(
+            context,
+            'city'.tr,
+            profile.city ?? '---',
+            Icons.location_on_rounded,
+          ),
+          _buildDetailRow(
+            context,
+            'address'.tr,
+            profile.address.isNotEmpty ? profile.address : '---',
+            Icons.home_rounded,
+          ),
+          _buildDetailRow(
+            context,
+            'kyc_status_label'.tr,
+            profile.kycStatus.tr,
+            Icons.verified_user_rounded,
+          ),
+          _buildDetailRow(
+            context,
+            'account_tier_label'.tr,
+            profile.accountTier.tr,
+            Icons.star_rounded,
+          ),
+          _buildDetailRow(
+            context,
+            'account_status_label'.tr,
+            profile.status.tr,
+            Icons.speed_rounded,
+            isLast: true,
+          ),
         ],
       ),
     ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05);
   }
 
-  Widget _buildDetailRow(BuildContext context, String label, String value, IconData icon, {bool isLast = false}) {
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon, {
+    bool isLast = false,
+  }) {
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 20),
       child: Row(
@@ -194,7 +260,9 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLight,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -225,7 +293,11 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
               color: AppColors.darkGold.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.qr_code_rounded, color: AppColors.darkGold, size: 20),
+            child: Icon(
+              Icons.qr_code_rounded,
+              color: AppColors.darkGold,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -236,7 +308,9 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
                   'referral_code'.tr,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLight,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -263,7 +337,11 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
                         Clipboard.setData(ClipboardData(text: code));
                         Get.snackbar('success'.tr, 'success_copy'.tr);
                       },
-                      child: Icon(Icons.copy_rounded, color: AppColors.darkGold, size: 18),
+                      child: Icon(
+                        Icons.copy_rounded,
+                        color: AppColors.darkGold,
+                        size: 18,
+                      ),
                     ),
                   ],
                 ),

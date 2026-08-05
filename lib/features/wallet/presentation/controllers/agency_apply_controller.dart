@@ -35,7 +35,7 @@ class AgencyApplyController extends GetxController {
 
   Future<void> checkApplicationStatus() async {
     if (!SupabaseService.isLoggedIn) return;
-    
+
     isLoading.value = true;
     try {
       final response = await SupabaseService.client
@@ -81,13 +81,14 @@ class AgencyApplyController extends GetxController {
         'city': city,
         'whatsapp': whatsapp,
         'country': country,
-        'office_available': hasOffice.toLowerCase() == 'yes' || hasOffice == 'true',
+        'office_available':
+            hasOffice.toLowerCase() == 'yes' || hasOffice == 'true',
         'status': 'pending',
       });
 
       hasApplied.value = true;
       applicationStatus.value = 'pending';
-      
+
       HapticFeedback.heavyImpact();
       Get.snackbar(
         'success'.tr,

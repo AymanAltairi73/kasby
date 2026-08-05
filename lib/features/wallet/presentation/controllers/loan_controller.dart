@@ -11,13 +11,14 @@ class LoanController extends GetxController {
 
   final RxList<LoanModel> loanHistory = <LoanModel>[].obs;
   final RxList<LoanModel> activeLoans = <LoanModel>[].obs;
-  final RxList<LoanRepaymentModel> repaymentHistory = <LoanRepaymentModel>[].obs;
-  
+  final RxList<LoanRepaymentModel> repaymentHistory =
+      <LoanRepaymentModel>[].obs;
+
   final RxBool isLoadingHistory = false.obs;
   final RxBool isLoadingActive = false.obs;
   final RxBool isLoadingRepayments = false.obs;
   final RxBool isSubmitting = false.obs;
-  
+
   final RxDouble activeInvestmentValue = 0.0.obs;
   final RxDouble serverInterestRate = 0.10.obs;
 
@@ -69,7 +70,14 @@ class LoanController extends GetxController {
         }
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'LoanController', method: 'fetchServerInterestRate', feature: 'Wallet', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'LoanController',
+        method: 'fetchServerInterestRate',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -83,10 +91,18 @@ class LoanController extends GetxController {
           .maybeSingle();
 
       if (response != null) {
-        activeInvestmentValue.value = (response['invested_balance'] as num?)?.toDouble() ?? 0.0;
+        activeInvestmentValue.value =
+            (response['invested_balance'] as num?)?.toDouble() ?? 0.0;
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'LoanController', method: 'fetchActiveInvestmentValue', feature: 'Wallet', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'LoanController',
+        method: 'fetchActiveInvestmentValue',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -103,7 +119,14 @@ class LoanController extends GetxController {
           .map((json) => LoanModel.fromJson(json))
           .toList();
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'LoanController', method: 'fetchLoanHistory', feature: 'Wallet', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'LoanController',
+        method: 'fetchLoanHistory',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingHistory.value = false;
     }
@@ -116,14 +139,27 @@ class LoanController extends GetxController {
           .from('loans')
           .select()
           .eq('user_id', SupabaseService.userId!)
-          .inFilter('status', ['active', 'partial_paid', 'overdue', 'current', 'delayed'])
+          .inFilter('status', [
+            'active',
+            'partial_paid',
+            'overdue',
+            'current',
+            'delayed',
+          ])
           .order('created_at', ascending: false);
 
       activeLoans.value = (response as List)
           .map((json) => LoanModel.fromJson(json))
           .toList();
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'LoanController', method: 'fetchActiveLoans', feature: 'Wallet', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'LoanController',
+        method: 'fetchActiveLoans',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingActive.value = false;
     }
@@ -142,7 +178,14 @@ class LoanController extends GetxController {
           .map((json) => LoanRepaymentModel.fromJson(json))
           .toList();
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'LoanController', method: 'fetchRepaymentHistory', feature: 'Wallet', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'LoanController',
+        method: 'fetchRepaymentHistory',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     } finally {
       isLoadingRepayments.value = false;
     }
@@ -153,27 +196,37 @@ class LoanController extends GetxController {
     try {
       final response = await SupabaseService.client.rpc(
         'create_loan',
-        params: {
-          'p_amount': amount,
-          'p_duration_months': duration,
-        },
+        params: {'p_amount': amount, 'p_duration_months': duration},
       );
 
       if (response['success'] == true) {
         Get.back();
         Get.snackbar(
-          'success'.tr, 
+          'success'.tr,
           'loan_applied_successfully'.tr,
           backgroundColor: AppColors.softGreen,
           colorText: Colors.white,
         );
         refreshData();
       } else {
-        Get.snackbar('error'.tr, response?['message'] ?? 'Unknown error occurred');
+        Get.snackbar(
+          'error'.tr,
+          response?['message'] ?? 'Unknown error occurred',
+        );
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'LoanController', method: 'applyForLoan', feature: 'Wallet', status: 'ERROR', error: e, stackTrace: stack);
-      Get.snackbar('error'.tr, 'An error occurred while submitting the loan request');
+      SafeGetx.debugTrace(
+        className: 'LoanController',
+        method: 'applyForLoan',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+      Get.snackbar(
+        'error'.tr,
+        'An error occurred while submitting the loan request',
+      );
     } finally {
       isSubmitting.value = false;
     }
@@ -209,14 +262,15 @@ class LoanController extends GetxController {
           params: {'remaining': response['remaining']},
         );
         Get.snackbar(
-          'success'.tr, 
+          'success'.tr,
           response['message']?.toString() ?? 'repayment_success'.tr,
           backgroundColor: AppColors.softGreen,
           colorText: Colors.white,
         );
         refreshData();
       } else {
-        final message = response?['message']?.toString() ?? 'Unknown error occurred';
+        final message =
+            response?['message']?.toString() ?? 'Unknown error occurred';
         SafeGetx.debugTrace(
           className: 'LoanController',
           method: 'repayLoan',
@@ -227,7 +281,14 @@ class LoanController extends GetxController {
         Get.snackbar('error'.tr, message);
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'LoanController', method: 'repayLoan', feature: 'Wallet', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'LoanController',
+        method: 'repayLoan',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
       Get.snackbar('error'.tr, 'An error occurred during repayment');
     } finally {
       isSubmitting.value = false;

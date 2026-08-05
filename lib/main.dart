@@ -71,7 +71,9 @@ Future<void> _bootstrap() async {
 
   // Initialize Firebase
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     await CrashReportingService.initialize(firebaseReady: true);
     SafeGetx.debugTrace(
       className: 'main',
@@ -108,7 +110,7 @@ Future<void> _bootstrap() async {
   try {
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL']!,
-      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+      publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
     );
     SafeGetx.debugTrace(
       className: 'main',

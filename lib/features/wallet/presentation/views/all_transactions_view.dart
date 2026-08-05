@@ -31,11 +31,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
   bool _isSearching = false;
 
   final List<Map<String, dynamic>> _filters = [
-    {
-      'key': 'all',
-      'label': 'filter_all'.tr,
-      'icon': Icons.apps_rounded,
-    },
+    {'key': 'all', 'label': 'filter_all'.tr, 'icon': Icons.apps_rounded},
     {
       'key': 'deposit',
       'label': 'filter_deposit'.tr,
@@ -66,11 +62,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
       'label': 'filter_reward'.tr,
       'icon': Icons.card_giftcard_rounded,
     },
-    {
-      'key': 'points',
-      'label': 'filter_points'.tr,
-      'icon': Icons.stars_rounded,
-    },
+    {'key': 'points', 'label': 'filter_points'.tr, 'icon': Icons.stars_rounded},
   ];
 
   @override
@@ -133,7 +125,8 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                   ),
                   border: InputBorder.none,
                 ),
-                onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+                onChanged: (value) =>
+                    setState(() => _searchQuery = value.toLowerCase()),
               )
             : Text(
                 'all_transactions'.tr,
@@ -179,14 +172,20 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
           // ── Transactions List ───────────────
           Expanded(
             child: Obx(() {
-              final transactions = _applySearchFilter(_applyDateFilter(homeController.allTransactions));
+              final transactions = _applySearchFilter(
+                _applyDateFilter(homeController.allTransactions),
+              );
               final isLoading = homeController.isLoadingAllTransactions.value;
 
               if (isLoading && transactions.isEmpty) {
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   itemCount: 6,
-                  itemBuilder: (_, __) => KasbyShimmer.transactionItem(isDark: isDark),
+                  itemBuilder: (_, __) =>
+                      KasbyShimmer.transactionItem(isDark: isDark),
                 );
               }
 
@@ -240,81 +239,91 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
 
   Widget _buildFilterBar(bool isDark) {
     return SizedBox(
-      height: 50,
-      child: Obx(() {
-        final activeFilter = homeController.selectedFilter.value;
-        return ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemCount: _filters.length,
-          itemBuilder: (context, index) {
-            final filter = _filters[index];
-            final isActive = activeFilter == filter['key'];
-            return Semantics(
-              button: true,
-              label: filter['label'] as String,
-              selected: isActive,
-              child: GestureDetector(
-              onTap: () => homeController.filterTransactions(filter['key']),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? AppColors.darkGold
-                      : (isDark ? AppColors.surface : AppColors.surfaceLight),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isActive ? AppColors.darkGold : Colors.transparent,
-                  ),
-                  boxShadow: isActive
-                      ? [
-                          BoxShadow(
-                            color: AppColors.darkGold.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      filter['icon'] as IconData,
-                      size: 16,
-                      color: isActive
-                          ? Colors.black
-                          : (isDark
-                                ? AppColors.textSecondary
-                                : AppColors.textSecondaryLight),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      filter['label'] as String,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+          height: 50,
+          child: Obx(() {
+            final activeFilter = homeController.selectedFilter.value;
+            return ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemCount: _filters.length,
+              itemBuilder: (context, index) {
+                final filter = _filters[index];
+                final isActive = activeFilter == filter['key'];
+                return Semantics(
+                  button: true,
+                  label: filter['label'] as String,
+                  selected: isActive,
+                  child: GestureDetector(
+                    onTap: () =>
+                        homeController.filterTransactions(filter['key']),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
                         color: isActive
-                            ? Colors.black
+                            ? AppColors.darkGold
                             : (isDark
-                                  ? Colors.white70
-                                  : AppColors.textSecondaryLight),
+                                  ? AppColors.surface
+                                  : AppColors.surfaceLight),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isActive
+                              ? AppColors.darkGold
+                              : Colors.transparent,
+                        ),
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.darkGold.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            filter['icon'] as IconData,
+                            size: 16,
+                            color: isActive
+                                ? Colors.black
+                                : (isDark
+                                      ? AppColors.textSecondary
+                                      : AppColors.textSecondaryLight),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            filter['label'] as String,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: isActive
+                                  ? Colors.black
+                                  : (isDark
+                                        ? Colors.white70
+                                        : AppColors.textSecondaryLight),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
+                );
+              },
             );
-          },
-        );
-      }),
-    ).animate(autoPlay: KasbyMotion.enabled(context)).fadeIn(duration: KasbyMotion.duration(context, 400.ms)).slideY(begin: -0.1, end: 0);
+          }),
+        )
+        .animate(autoPlay: KasbyMotion.enabled(context))
+        .fadeIn(duration: KasbyMotion.duration(context, 400.ms))
+        .slideY(begin: -0.1, end: 0);
   }
 
   Widget _buildDateRangeBar(bool isDark) {
@@ -326,54 +335,62 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
             button: true,
             label: 'filter_by_date'.tr,
             child: GestureDetector(
-            onTap: _pickDateRange,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: _selectedDateRange != null
-                    ? AppColors.darkGold.withValues(alpha: 0.12)
-                    : (isDark ? AppColors.surface : AppColors.surfaceLight),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _selectedDateRange != null
-                      ? AppColors.darkGold
-                      : Colors.transparent,
+              onTap: _pickDateRange,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.date_range_rounded,
-                    size: 16,
+                decoration: BoxDecoration(
+                  color: _selectedDateRange != null
+                      ? AppColors.darkGold.withValues(alpha: 0.12)
+                      : (isDark ? AppColors.surface : AppColors.surfaceLight),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
                     color: _selectedDateRange != null
                         ? AppColors.darkGold
-                        : AppColors.textSecondary,
+                        : Colors.transparent,
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _selectedDateRange != null
-                        ? '${DateHelper.date(_selectedDateRange!.start)} – ${DateHelper.date(_selectedDateRange!.end)}'
-                        : 'filter_by_date'.tr,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.date_range_rounded,
+                      size: 16,
                       color: _selectedDateRange != null
                           ? AppColors.darkGold
-                          : (isDark ? Colors.white70 : AppColors.textSecondaryLight),
+                          : AppColors.textSecondary,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Text(
+                      _selectedDateRange != null
+                          ? '${DateHelper.date(_selectedDateRange!.start)} – ${DateHelper.date(_selectedDateRange!.end)}'
+                          : 'filter_by_date'.tr,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _selectedDateRange != null
+                            ? AppColors.darkGold
+                            : (isDark
+                                  ? Colors.white70
+                                  : AppColors.textSecondaryLight),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           ),
           if (_selectedDateRange != null) ...[
             const SizedBox(width: 8),
             GestureDetector(
               onTap: () => setState(() => _selectedDateRange = null),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.surface : AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(12),
@@ -581,7 +598,9 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
                               fontSize: 15,
-                              color: isOut ? AppColors.error : AppColors.softGreen,
+                              color: isOut
+                                  ? AppColors.error
+                                  : AppColors.softGreen,
                             ),
                           ),
                         ),
@@ -607,7 +626,10 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
         )
         .animate(autoPlay: KasbyMotion.enabled(context))
         .fadeIn(
-          delay: KasbyMotion.duration(context, Duration(milliseconds: 60 * itemIndex)),
+          delay: KasbyMotion.duration(
+            context,
+            Duration(milliseconds: 60 * itemIndex),
+          ),
           duration: KasbyMotion.duration(context, 400.ms),
         )
         .slideX(begin: 0.05, end: 0);
@@ -625,9 +647,9 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppColors.darkGold,
-            ),
+            colorScheme: Theme.of(
+              context,
+            ).colorScheme.copyWith(primary: AppColors.darkGold),
           ),
           child: child!,
         );
@@ -638,7 +660,9 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
     }
   }
 
-  List<TransactionModel> _applySearchFilter(List<TransactionModel> transactions) {
+  List<TransactionModel> _applySearchFilter(
+    List<TransactionModel> transactions,
+  ) {
     if (_searchQuery.isEmpty) return transactions;
     return transactions.where((tx) {
       final desc = (tx.description ?? tx.type).toLowerCase();
@@ -673,11 +697,11 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
             date.day == now.day) {
           key = 'today'.tr;
         } else if (() {
-            final yesterday = DateTime(now.year, now.month, now.day - 1);
-            return date.year == yesterday.year &&
-                date.month == yesterday.month &&
-                date.day == yesterday.day;
-          }()) {
+          final yesterday = DateTime(now.year, now.month, now.day - 1);
+          return date.year == yesterday.year &&
+              date.month == yesterday.month &&
+              date.day == yesterday.day;
+        }()) {
           key = 'yesterday'.tr;
         } else {
           key = DateHelper.date(date);

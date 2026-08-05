@@ -39,10 +39,18 @@ class _NotificationPreferencesViewState
   }
 
   Future<void> _loadPreferences() async {
-    final financial = await NotificationPreferencesService.isCategoryEnabled('financial');
-    final security = await NotificationPreferencesService.isCategoryEnabled('security');
-    final social = await NotificationPreferencesService.isCategoryEnabled('social');
-    final system = await NotificationPreferencesService.isCategoryEnabled('system');
+    final financial = await NotificationPreferencesService.isCategoryEnabled(
+      'financial',
+    );
+    final security = await NotificationPreferencesService.isCategoryEnabled(
+      'security',
+    );
+    final social = await NotificationPreferencesService.isCategoryEnabled(
+      'social',
+    );
+    final system = await NotificationPreferencesService.isCategoryEnabled(
+      'system',
+    );
     final quiet = await NotificationPreferencesService.isQuietHoursEnabled();
     final quietStart = await NotificationPreferencesService.getQuietStart();
     final quietEnd = await NotificationPreferencesService.getQuietEnd();
@@ -118,9 +126,9 @@ class _NotificationPreferencesViewState
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppColors.darkGold,
-            ),
+            colorScheme: Theme.of(
+              context,
+            ).colorScheme.copyWith(primary: AppColors.darkGold),
           ),
           child: child!,
         );
@@ -154,8 +162,9 @@ class _NotificationPreferencesViewState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.background : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.background
+          : AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -179,31 +188,35 @@ class _NotificationPreferencesViewState
                 _buildSection(
                   title: 'notification_settings'.tr,
                   children: [
-                    Obx(() => _buildToggleItem(
-                          icon: Icons.notifications_active_rounded,
-                          color: AppColors.darkGold,
-                          title: 'notification_settings'.tr,
-                          value: FCMService.to.isNotificationsEnabled.value,
-                          onChanged: _onGlobalToggle,
-                        )),
+                    Obx(
+                      () => _buildToggleItem(
+                        icon: Icons.notifications_active_rounded,
+                        color: AppColors.darkGold,
+                        title: 'notification_settings'.tr,
+                        value: FCMService.to.isNotificationsEnabled.value,
+                        onChanged: _onGlobalToggle,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 _buildSection(
                   title: 'المؤثرات الصوتية',
                   children: [
-                    Obx(() => _buildToggleItem(
-                          icon: SoundService.to.isSoundEnabled.value
-                              ? Icons.volume_up_rounded
-                              : Icons.volume_off_rounded,
-                          color: Colors.amber,
-                          title: 'المؤثرات الصوتية',
-                          subtitle: SoundService.to.isSoundEnabled.value
-                              ? 'تشغيل أصوات العمليات والشراء'
-                              : 'كتم المؤثرات الصوتية',
-                          value: SoundService.to.isSoundEnabled.value,
-                          onChanged: (val) => SoundService.to.toggleSound(val),
-                        )),
+                    Obx(
+                      () => _buildToggleItem(
+                        icon: SoundService.to.isSoundEnabled.value
+                            ? Icons.volume_up_rounded
+                            : Icons.volume_off_rounded,
+                        color: Colors.amber,
+                        title: 'المؤثرات الصوتية',
+                        subtitle: SoundService.to.isSoundEnabled.value
+                            ? 'تشغيل أصوات العمليات والشراء'
+                            : 'كتم المؤثرات الصوتية',
+                        value: SoundService.to.isSoundEnabled.value,
+                        onChanged: (val) => SoundService.to.toggleSound(val),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -285,7 +298,9 @@ class _NotificationPreferencesViewState
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondary
+                : AppColors.textSecondaryLight,
             letterSpacing: 0.5,
           ),
         ),

@@ -69,136 +69,139 @@ class _OnboardingViewState extends State<OnboardingView> {
     return Scaffold(
       body: SafeArea(
         child: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            itemCount: onboardingPages.length,
-            itemBuilder: (context, index) {
-              final data = onboardingPages[index];
-              return Padding(
-                padding: const EdgeInsets.all(40.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(data.icon, size: 120, color: AppColors.darkGold),
-                    const SizedBox(height: 60),
-                    Text(
-                      data.title,
-                      style: Theme.of(context).textTheme.displaySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      data.description,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPage = index;
+                });
+              },
+              itemCount: onboardingPages.length,
+              itemBuilder: (context, index) {
+                final data = onboardingPages[index];
+                return Padding(
+                  padding: const EdgeInsets.all(40.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(data.icon, size: 120, color: AppColors.darkGold),
+                      const SizedBox(height: 60),
+                      Text(
+                        data.title,
+                        style: Theme.of(context).textTheme.displaySmall,
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          // Skip for returning installs (audit: add "Skip")
-          Positioned(
-            top: 50,
-            left: 20,
-            child: TextButton(
-              onPressed: _completeOnboarding,
-              child: Text(
-                'skip'.tr,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 50,
-            right: 20,
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: (Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.surface
-                          : AppColors.surfaceLight)
-                      .withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.darkGold.withValues(alpha: 0.2),
+                      const SizedBox(height: 20),
+                      Text(
+                        data.description,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                ),
-                child: Icon(
-                  Icons.language_rounded,
-                  color: AppColors.darkGold,
-                ),
-              ),
-              onPressed: () {
-                if (Get.locale?.languageCode == 'ar') {
-                  Get.updateLocale(const Locale('en', 'US'));
-                  LocaleHelper.saveLanguageCode('en');
-                } else {
-                  Get.updateLocale(const Locale('ar', 'SA'));
-                  LocaleHelper.saveLanguageCode('ar');
-                }
+                );
               },
             ),
-          ),
-          Positioned(
-            bottom: 60,
-            left: 20,
-            right: 20,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    onboardingPages.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.only(right: 8),
-                      height: 8,
-                      width: _currentPage == index ? 24 : 8,
-                      decoration: BoxDecoration(
-                        color: _currentPage == index
-                            ? AppColors.darkGold
-                            : (Theme.of(context).brightness == Brightness.dark
+            // Skip for returning installs (audit: add "Skip")
+            Positioned(
+              top: 50,
+              left: 20,
+              child: TextButton(
+                onPressed: _completeOnboarding,
+                child: Text(
+                  'skip'.tr,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 50,
+              right: 20,
+              child: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color:
+                        (Theme.of(context).brightness == Brightness.dark
                                 ? AppColors.surface
-                                : AppColors.textSecondary.withValues(alpha: 0.4)),
-                        borderRadius: BorderRadius.circular(4),
+                                : AppColors.surfaceLight)
+                            .withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.darkGold.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.language_rounded,
+                    color: AppColors.darkGold,
+                  ),
+                ),
+                onPressed: () {
+                  if (Get.locale?.languageCode == 'ar') {
+                    Get.updateLocale(const Locale('en', 'US'));
+                    LocaleHelper.saveLanguageCode('en');
+                  } else {
+                    Get.updateLocale(const Locale('ar', 'SA'));
+                    LocaleHelper.saveLanguageCode('ar');
+                  }
+                },
+              ),
+            ),
+            Positioned(
+              bottom: 60,
+              left: 20,
+              right: 20,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      onboardingPages.length,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.only(right: 8),
+                        height: 8,
+                        width: _currentPage == index ? 24 : 8,
+                        decoration: BoxDecoration(
+                          color: _currentPage == index
+                              ? AppColors.darkGold
+                              : (Theme.of(context).brightness == Brightness.dark
+                                    ? AppColors.surface
+                                    : AppColors.textSecondary.withValues(
+                                        alpha: 0.4,
+                                      )),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 48),
-                KasbyButton(
-                  text: _currentPage == onboardingPages.length - 1
-                      ? 'start_now'.tr
-                      : 'next'.tr,
-                  onPressed: () {
-                    if (_currentPage < onboardingPages.length - 1) {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeIn,
-                      );
-                    } else {
-                      _completeOnboarding();
-                    }
-                  },
-                ),
-              ],
+                  const SizedBox(height: 48),
+                  KasbyButton(
+                    text: _currentPage == onboardingPages.length - 1
+                        ? 'start_now'.tr
+                        : 'next'.tr,
+                    onPressed: () {
+                      if (_currentPage < onboardingPages.length - 1) {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeIn,
+                        );
+                      } else {
+                        _completeOnboarding();
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

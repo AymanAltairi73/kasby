@@ -29,9 +29,10 @@ class _SplashViewState extends State<SplashView>
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _controller.forward();
 
     _authWorker = ever(AuthController.to.authStatus, (status) {
@@ -69,32 +70,37 @@ class _SplashViewState extends State<SplashView>
     final elapsed = _controller.lastElapsedDuration ?? Duration.zero;
     final remaining = const Duration(seconds: 2) - elapsed;
 
-    Future.delayed(remaining > Duration.zero ? remaining : Duration.zero, () async {
-      if (!mounted) return;
-      
-      // Check if onboarding is completed
-      final prefs = await SharedPreferences.getInstance();
-      final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
-      
-      if (status == AuthStatus.authenticated) {
-        Get.offAllNamed(Routes.home);
-        NotificationNavigationService.processPendingNavigation();
-      } else if (!AuthOtpConfig.tempSkipEmailVerification &&
-          AuthController.to.pendingVerificationEmail.value?.isNotEmpty == true) {
-        Get.offAllNamed(
-          Routes.verifyEmail,
-          arguments: {
-            'email': AuthController.to.pendingVerificationEmail.value,
-          },
-        );
-      } else if (!onboardingCompleted) {
-        // First launch: show onboarding
-        Get.offAllNamed(Routes.onboarding);
-      } else {
-        // Returning user: go to login
-        Get.offAllNamed(Routes.login);
-      }
-    });
+    Future.delayed(
+      remaining > Duration.zero ? remaining : Duration.zero,
+      () async {
+        if (!mounted) return;
+
+        // Check if onboarding is completed
+        final prefs = await SharedPreferences.getInstance();
+        final onboardingCompleted =
+            prefs.getBool('onboarding_completed') ?? false;
+
+        if (status == AuthStatus.authenticated) {
+          Get.offAllNamed(Routes.home);
+          NotificationNavigationService.processPendingNavigation();
+        } else if (!AuthOtpConfig.tempSkipEmailVerification &&
+            AuthController.to.pendingVerificationEmail.value?.isNotEmpty ==
+                true) {
+          Get.offAllNamed(
+            Routes.verifyEmail,
+            arguments: {
+              'email': AuthController.to.pendingVerificationEmail.value,
+            },
+          );
+        } else if (!onboardingCompleted) {
+          // First launch: show onboarding
+          Get.offAllNamed(Routes.onboarding);
+        } else {
+          // Returning user: go to login
+          Get.offAllNamed(Routes.login);
+        }
+      },
+    );
   }
 
   @override
@@ -134,10 +140,10 @@ class _SplashViewState extends State<SplashView>
                   Text(
                     'app_name'.tr,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: accent,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: accent,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   SizedBox(

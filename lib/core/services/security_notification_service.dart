@@ -63,10 +63,7 @@ class SecurityNotificationService extends GetxService {
 
   Future<Map<String, String>> _deviceContext() async {
     if (kIsWeb) {
-      return {
-        'device': 'Web Browser',
-        'platform': 'web',
-      };
+      return {'device': 'Web Browser', 'platform': 'web'};
     }
     return {
       'device':
@@ -100,17 +97,20 @@ class SecurityNotificationService extends GetxService {
     });
 
     try {
-      await SupabaseService.client.rpc('fn_create_notification', params: {
-        'p_user_id': SupabaseService.userId,
-        'p_title': title,
-        'p_body': message,
-        'p_type': type.dbType,
-        'p_entity_type': 'security_event',
-        'p_entity_id': type.name,
-        'p_deep_link': '/security-center',
-        'p_role_target': 'user',
-        'p_priority': 'high',
-      });
+      await SupabaseService.client.rpc(
+        'fn_create_notification',
+        params: {
+          'p_user_id': SupabaseService.userId,
+          'p_title': title,
+          'p_body': message,
+          'p_type': type.dbType,
+          'p_entity_type': 'security_event',
+          'p_entity_id': type.name,
+          'p_deep_link': '/security-center',
+          'p_role_target': 'user',
+          'p_priority': 'high',
+        },
+      );
 
       if (Get.isRegistered<HomeController>()) {
         unawaited(HomeController.to.fetchNotifications());
@@ -142,9 +142,12 @@ class SecurityNotificationService extends GetxService {
 
   Future<void> notifyPhoneChanged() => _notify(SecurityAlertType.phoneChanged);
 
-  Future<void> notifyEmailVerified() => _notify(SecurityAlertType.emailVerified);
+  Future<void> notifyEmailVerified() =>
+      _notify(SecurityAlertType.emailVerified);
 
-  Future<void> notifyPhoneVerified() => _notify(SecurityAlertType.phoneVerified);
+  Future<void> notifyPhoneVerified() =>
+      _notify(SecurityAlertType.phoneVerified);
 
-  Future<void> notifyPasswordReset() => _notify(SecurityAlertType.passwordReset);
+  Future<void> notifyPasswordReset() =>
+      _notify(SecurityAlertType.passwordReset);
 }

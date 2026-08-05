@@ -206,71 +206,74 @@ class CurrencyController extends GetxController {
     final jitterMs = Random().nextInt(800);
     return Timer(delay + Duration(milliseconds: jitterMs), _listenToWallet);
   }
-  
+
   void _listenToWallet() {
     if (!SupabaseService.isLoggedIn) return;
-    
+
     _walletReconnectTimer?.cancel();
     _walletSubscription?.cancel();
     _walletSubscription = SupabaseService.client
-      .from('wallets')
-      .stream(primaryKey: ['id'])
-      .eq('user_id', SupabaseService.userId!)
-      .listen((data) {
-        _walletReconnectDelay = const Duration(seconds: 2);
-        final usdRows = data
-            .where((row) => (row['currency'] as String?) == 'USD')
-            .toList();
-        if (usdRows.isEmpty && data.isNotEmpty) {
-          // Fallback when currency column missing on older rows
-          usdRows.add(data.first);
-        }
-        if (usdRows.isNotEmpty) {
-          final wallet = WalletModel.fromJson(usdRows.first);
-          totalBalance.value = wallet.availableBalance;
-          profitBalance.value = wallet.profitBalance;
-          investedBalance.value = wallet.investedBalance;
-          pendingBalance.value = wallet.pendingBalance;
-          isWalletFrozen.value = wallet.isFrozen;
-          walletFrozenReason.value = wallet.frozenReason;
-          if (Get.isRegistered<HomeController>()) {
-            HomeController.to.syncDashboardFreezeState(
-              isFrozen: wallet.isFrozen,
-              frozenReason: wallet.frozenReason,
+        .from('wallets')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', SupabaseService.userId!)
+        .listen(
+          (data) {
+            _walletReconnectDelay = const Duration(seconds: 2);
+            final usdRows = data
+                .where((row) => (row['currency'] as String?) == 'USD')
+                .toList();
+            if (usdRows.isEmpty && data.isNotEmpty) {
+              // Fallback when currency column missing on older rows
+              usdRows.add(data.first);
+            }
+            if (usdRows.isNotEmpty) {
+              final wallet = WalletModel.fromJson(usdRows.first);
+              totalBalance.value = wallet.availableBalance;
+              profitBalance.value = wallet.profitBalance;
+              investedBalance.value = wallet.investedBalance;
+              pendingBalance.value = wallet.pendingBalance;
+              isWalletFrozen.value = wallet.isFrozen;
+              walletFrozenReason.value = wallet.frozenReason;
+              if (Get.isRegistered<HomeController>()) {
+                HomeController.to.syncDashboardFreezeState(
+                  isFrozen: wallet.isFrozen,
+                  frozenReason: wallet.frozenReason,
+                );
+              }
+              if (Get.isRegistered<KspBalanceService>() &&
+                  Get.isRegistered<HomeController>()) {
+                unawaited(
+                  KspBalanceService.to.refresh().then((_) {
+                    HomeController.to.syncKspFromService();
+                  }),
+                );
+              }
+              SafeGetx.debugTrace(
+                className: 'CurrencyController',
+                method: '_listenToWallet',
+                feature: 'Wallet',
+                status: 'INFO',
+                message: 'Wallet updated via stream',
+                params: {'isFrozen': wallet.isFrozen},
+              );
+            }
+          },
+          onError: (e, stack) {
+            SafeGetx.debugTrace(
+              className: 'CurrencyController',
+              method: '_listenToWallet',
+              feature: 'Wallet',
+              status: _isRealtimeTimeout(e) ? 'WARN' : 'ERROR',
+              message: _isRealtimeTimeout(e)
+                  ? 'Wallet stream timed out; retry scheduled'
+                  : null,
+              error: e,
+              stackTrace: stack,
             );
-          }
-          if (Get.isRegistered<KspBalanceService>() &&
-              Get.isRegistered<HomeController>()) {
-            unawaited(
-              KspBalanceService.to.refresh().then((_) {
-                HomeController.to.syncKspFromService();
-              }),
-            );
-          }
-          SafeGetx.debugTrace(
-            className: 'CurrencyController',
-            method: '_listenToWallet',
-            feature: 'Wallet',
-            status: 'INFO',
-            message: 'Wallet updated via stream',
-            params: {'isFrozen': wallet.isFrozen},
-          );
-        }
-      }, onError: (e, stack) {
-        SafeGetx.debugTrace(
-          className: 'CurrencyController',
-          method: '_listenToWallet',
-          feature: 'Wallet',
-          status: _isRealtimeTimeout(e) ? 'WARN' : 'ERROR',
-          message: _isRealtimeTimeout(e)
-              ? 'Wallet stream timed out; retry scheduled'
-              : null,
-          error: e,
-          stackTrace: stack,
+            _walletReconnectTimer?.cancel();
+            _walletReconnectTimer = _scheduleWalletReconnect();
+          },
         );
-        _walletReconnectTimer?.cancel();
-        _walletReconnectTimer = _scheduleWalletReconnect();
-      });
   }
 
   @override
@@ -323,14 +326,15 @@ class CurrencyController extends GetxController {
 
   double usdToKsp(double usdAmount) => usdAmount * kspPerUsd;
 
-  String formatKspFromUsd(double usdAmount) => formatKspAmount(usdToKsp(usdAmount));
+  String formatKspFromUsd(double usdAmount) =>
+      formatKspAmount(usdToKsp(usdAmount));
 
   String formatKspAmount(double kspAmount) {
     final rounded = kspAmount.round();
     final formatted = rounded.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
-        );
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
     return '$formatted KSP';
   }
 

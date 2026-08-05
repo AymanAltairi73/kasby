@@ -132,24 +132,33 @@ class _MyQrViewState extends State<MyQrView> {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            
+
             // 1. User Profile Info
             Column(
               children: [
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: AppColors.darkGold.withValues(alpha: 0.1),
-                  child: Icon(Icons.person_rounded, size: 40, color: AppColors.darkGold),
+                  child: Icon(
+                    Icons.person_rounded,
+                    size: 40,
+                    color: AppColors.darkGold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   profile?.fullName ?? '...',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   profile?.referralCode ?? '...',
                   style: TextStyle(
-                    color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLight,
                     letterSpacing: 1,
                   ),
                 ),
@@ -160,64 +169,76 @@ class _MyQrViewState extends State<MyQrView> {
 
             // 2. QR Card
             RepaintBoundary(
-            key: _qrKey,
-            child: KeyedSubtree(
-              key: TourTargetKeys.qrReceive,
-              child: GlassCard(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.darkGold.withValues(alpha: 0.2),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: QrImageView(
-                      data: QrPaymentController.to.generateUserQrData(amount: _customAmount),
-                      version: QrVersions.auto,
-                      size: 200.0,
-                      gapless: false,
-                      eyeStyle: const QrEyeStyle(
-                        eyeShape: QrEyeShape.square,
-                        color: Colors.black,
-                      ),
-                      dataModuleStyle: const QrDataModuleStyle(
-                        dataModuleShape: QrDataModuleShape.square,
-                        color: Colors.black,
+                  key: _qrKey,
+                  child: KeyedSubtree(
+                    key: TourTargetKeys.qrReceive,
+                    child: GlassCard(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.darkGold.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: QrImageView(
+                              data: QrPaymentController.to.generateUserQrData(
+                                amount: _customAmount,
+                              ),
+                              version: QrVersions.auto,
+                              size: 200.0,
+                              gapless: false,
+                              eyeStyle: const QrEyeStyle(
+                                eyeShape: QrEyeShape.square,
+                                color: Colors.black,
+                              ),
+                              dataModuleStyle: const QrDataModuleStyle(
+                                dataModuleShape: QrDataModuleShape.square,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          if (_customAmount != null) ...[
+                            const SizedBox(height: 20),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.darkGold.withValues(
+                                  alpha: 0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '\$${_customAmount!.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.darkGold,
+                                ),
+                              ),
+                            ).animate().scale(),
+                          ],
+                        ],
                       ),
                     ),
                   ),
-                  if (_customAmount != null) ...[
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.darkGold.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '\$${_customAmount!.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.darkGold,
-                        ),
-                      ),
-                    ).animate().scale(),
-                  ],
-                ],
-              ),
-            ),
-            ),
-            ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9)),
+                )
+                .animate()
+                .fadeIn(delay: 200.ms)
+                .scale(begin: const Offset(0.9, 0.9)),
 
             const SizedBox(height: 40),
 
@@ -226,8 +247,13 @@ class _MyQrViewState extends State<MyQrView> {
               label: 'generate_amount_qr'.tr,
               hint: 'enter_amount'.tr,
               controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              prefixIcon: Icon(Icons.attach_money_rounded, color: AppColors.darkGold),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              prefixIcon: Icon(
+                Icons.attach_money_rounded,
+                color: AppColors.darkGold,
+              ),
               onChanged: (val) {
                 setState(() {
                   _customAmount = double.tryParse(val);
@@ -252,10 +278,7 @@ class _MyQrViewState extends State<MyQrView> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: KasbyButton(
-                    text: 'save_qr'.tr,
-                    onPressed: _saveQr,
-                  ),
+                  child: KasbyButton(text: 'save_qr'.tr, onPressed: _saveQr),
                 ),
               ],
             ).animate().fadeIn(delay: 600.ms),
@@ -267,7 +290,8 @@ class _MyQrViewState extends State<MyQrView> {
 
   Future<File?> _captureQrImage() async {
     try {
-      final boundary = _qrKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          _qrKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return null;
 
       final image = await boundary.toImage(pixelRatio: 3.0);
@@ -275,7 +299,9 @@ class _MyQrViewState extends State<MyQrView> {
       if (byteData == null) return null;
 
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/kasby_qr_${DateTime.now().millisecondsSinceEpoch}.png');
+      final file = File(
+        '${dir.path}/kasby_qr_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
       await file.writeAsBytes(byteData.buffer.asUint8List());
       return file;
     } catch (e) {
@@ -299,10 +325,9 @@ class _MyQrViewState extends State<MyQrView> {
         AppSnack.error('error'.tr, 'qr_capture_error'.tr);
         return;
       }
-      await SharePlus.instance.share(ShareParams(
-        files: [XFile(file.path)],
-        text: 'qr_share_text'.tr,
-      ));
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path)], text: 'qr_share_text'.tr),
+      );
       SafeGetx.debugTrace(
         className: 'MyQrView',
         method: '_shareQr',
@@ -341,7 +366,9 @@ class _MyQrViewState extends State<MyQrView> {
       }
 
       final dir = await getApplicationDocumentsDirectory();
-      final savedFile = await file.copy('${dir.path}/kasby_qr_${DateTime.now().millisecondsSinceEpoch}.png');
+      final savedFile = await file.copy(
+        '${dir.path}/kasby_qr_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
       if (savedFile.existsSync()) {
         SafeGetx.debugTrace(
           className: 'MyQrView',

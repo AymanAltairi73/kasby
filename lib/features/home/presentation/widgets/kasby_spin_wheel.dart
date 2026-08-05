@@ -50,7 +50,11 @@ class KasbySpinWheelPainter extends CustomPainter {
                 radius: 1.0,
                 colors: isHighlighted
                     ? [
-                        Color.lerp(_goldLight, Colors.white, highlightPulse * 0.35)!,
+                        Color.lerp(
+                          _goldLight,
+                          Colors.white,
+                          highlightPulse * 0.35,
+                        )!,
                         _goldMid,
                         _goldDark,
                       ]
@@ -62,7 +66,11 @@ class KasbySpinWheelPainter extends CustomPainter {
                 radius: 1.0,
                 colors: isHighlighted
                     ? [
-                        Color.lerp(_blackMatte, _goldMid, highlightPulse * 0.25)!,
+                        Color.lerp(
+                          _blackMatte,
+                          _goldMid,
+                          highlightPulse * 0.25,
+                        )!,
                         _blackDeep,
                       ]
                     : [_blackMatte, _blackDeep],
@@ -230,11 +238,7 @@ class _SegmentLabel extends StatelessWidget {
         angle: angle + math.pi / 2,
         child: Center(
           child: reward.isGift
-              ? Icon(
-                  Icons.card_giftcard_rounded,
-                  color: textColor,
-                  size: 22,
-                )
+              ? Icon(Icons.card_giftcard_rounded, color: textColor, size: 22)
               : Text(
                   label,
                   textAlign: TextAlign.center,
@@ -310,7 +314,11 @@ class KasbySpinWheelOuterRing extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const RadialGradient(
-                colors: [Color(0xFFF5D77A), Color(0xFFC9A24D), Color(0xFF8B6914)],
+                colors: [
+                  Color(0xFFF5D77A),
+                  Color(0xFFC9A24D),
+                  Color(0xFF8B6914),
+                ],
                 stops: [0.52, 0.8, 1.0],
               ),
               boxShadow: [
@@ -358,20 +366,20 @@ class _LedBulb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 9,
-      height: 9,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFFFFF8E7),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFFF8E7).withValues(alpha: 0.95),
-            blurRadius: 10,
-            spreadRadius: 1.5,
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFFFFF8E7),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFF8E7).withValues(alpha: 0.95),
+                blurRadius: 10,
+                spreadRadius: 1.5,
+              ),
+            ],
           ),
-        ],
-      ),
-    )
+        )
         .animate(onPlay: (c) => c.repeat(reverse: true))
         .scale(
           begin: const Offset(0.55, 0.55),
@@ -379,7 +387,11 @@ class _LedBulb extends StatelessWidget {
           duration: const Duration(milliseconds: 900),
           delay: Duration(milliseconds: (index * 70) % 900),
         )
-        .fade(begin: 0.45, end: 1.0, duration: const Duration(milliseconds: 900));
+        .fade(
+          begin: 0.45,
+          end: 1.0,
+          duration: const Duration(milliseconds: 900),
+        );
   }
 }
 
@@ -391,10 +403,7 @@ class KasbySpinWheelPointer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(38, 48),
-      painter: _GoldPointerPainter(),
-    );
+    return CustomPaint(size: Size(38, 48), painter: _GoldPointerPainter());
   }
 }
 
@@ -465,10 +474,7 @@ class KasbySpinWheelCenterHub extends StatelessWidget {
           ),
         ],
       ),
-      child: CustomPaint(
-        painter: _KasbyKLogoPainter(),
-        size: Size(size, size),
-      ),
+      child: CustomPaint(painter: _KasbyKLogoPainter(), size: Size(size, size)),
     );
   }
 }

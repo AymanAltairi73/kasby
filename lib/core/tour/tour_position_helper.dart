@@ -71,10 +71,12 @@ class TourPositionHelper {
 
     // Override bad preferred align when it would clip.
     if (preferred != null && align != ContentAlign.custom) {
-      if (preferred == ContentAlign.top && spaceAbove < estimatedContentHeight * 0.4) {
+      if (preferred == ContentAlign.top &&
+          spaceAbove < estimatedContentHeight * 0.4) {
         align = needsBelow ? ContentAlign.bottom : ContentAlign.custom;
       }
-      if (preferred == ContentAlign.bottom && spaceBelow < estimatedContentHeight * 0.4) {
+      if (preferred == ContentAlign.bottom &&
+          spaceBelow < estimatedContentHeight * 0.4) {
         align = needsAbove ? ContentAlign.top : ContentAlign.custom;
       }
     }

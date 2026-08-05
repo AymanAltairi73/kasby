@@ -76,20 +76,22 @@ class _MainShellViewState extends State<MainShellView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 600;
-        return Obx(() => Scaffold(
-          body: Row(
-            children: [
-              if (isWide) _buildNavigationRail(isDark),
-              Expanded(
-                child: IndexedStack(
-                  index: shellController.currentIndex.value,
-                  children: _pages,
+        return Obx(
+          () => Scaffold(
+            body: Row(
+              children: [
+                if (isWide) _buildNavigationRail(isDark),
+                Expanded(
+                  child: IndexedStack(
+                    index: shellController.currentIndex.value,
+                    children: _pages,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            bottomNavigationBar: isWide ? null : _buildBottomNav(isDark),
           ),
-          bottomNavigationBar: isWide ? null : _buildBottomNav(isDark),
-        ));
+        );
       },
     );
   }
@@ -121,28 +123,58 @@ class _MainShellViewState extends State<MainShellView> {
         indicatorColor: AppColors.darkGold.withValues(alpha: 0.12),
         destinations: [
           NavigationRailDestination(
-            icon: Tooltip(message: 'nav_home'.tr, child: const Icon(Icons.home_outlined)),
-            selectedIcon: Tooltip(message: 'nav_home'.tr, child: const Icon(Icons.home_rounded)),
+            icon: Tooltip(
+              message: 'nav_home'.tr,
+              child: const Icon(Icons.home_outlined),
+            ),
+            selectedIcon: Tooltip(
+              message: 'nav_home'.tr,
+              child: const Icon(Icons.home_rounded),
+            ),
             label: Text('nav_home'.tr),
           ),
           NavigationRailDestination(
-            icon: Tooltip(message: 'nav_wallet'.tr, child: const Icon(Icons.account_balance_wallet_outlined)),
-            selectedIcon: Tooltip(message: 'nav_wallet'.tr, child: const Icon(Icons.account_balance_wallet_rounded)),
+            icon: Tooltip(
+              message: 'nav_wallet'.tr,
+              child: const Icon(Icons.account_balance_wallet_outlined),
+            ),
+            selectedIcon: Tooltip(
+              message: 'nav_wallet'.tr,
+              child: const Icon(Icons.account_balance_wallet_rounded),
+            ),
             label: Text('nav_wallet'.tr),
           ),
           NavigationRailDestination(
-            icon: Tooltip(message: 'nav_invest'.tr, child: const Icon(Icons.trending_up_outlined)),
-            selectedIcon: Tooltip(message: 'nav_invest'.tr, child: const Icon(Icons.trending_up_rounded)),
+            icon: Tooltip(
+              message: 'nav_invest'.tr,
+              child: const Icon(Icons.trending_up_outlined),
+            ),
+            selectedIcon: Tooltip(
+              message: 'nav_invest'.tr,
+              child: const Icon(Icons.trending_up_rounded),
+            ),
             label: Text('nav_invest'.tr),
           ),
           NavigationRailDestination(
-            icon: Tooltip(message: 'nav_transactions'.tr, child: const Icon(Icons.receipt_long_outlined)),
-            selectedIcon: Tooltip(message: 'nav_transactions'.tr, child: const Icon(Icons.receipt_long_rounded)),
+            icon: Tooltip(
+              message: 'nav_transactions'.tr,
+              child: const Icon(Icons.receipt_long_outlined),
+            ),
+            selectedIcon: Tooltip(
+              message: 'nav_transactions'.tr,
+              child: const Icon(Icons.receipt_long_rounded),
+            ),
             label: Text('nav_transactions'.tr),
           ),
           NavigationRailDestination(
-            icon: Tooltip(message: 'nav_profile'.tr, child: const Icon(Icons.person_outline_rounded)),
-            selectedIcon: Tooltip(message: 'nav_profile'.tr, child: const Icon(Icons.person_rounded)),
+            icon: Tooltip(
+              message: 'nav_profile'.tr,
+              child: const Icon(Icons.person_outline_rounded),
+            ),
+            selectedIcon: Tooltip(
+              message: 'nav_profile'.tr,
+              child: const Icon(Icons.person_rounded),
+            ),
             label: Text('nav_profile'.tr),
           ),
         ],
@@ -246,45 +278,45 @@ class _MainShellViewState extends State<MainShellView> {
         },
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.darkGold.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: Icon(
-                isActive ? activeIcon : inactiveIcon,
-                key: ValueKey(isActive),
-                size: 24,
-                color: isActive
-                    ? AppColors.darkGold
-                    : (isDark ? Colors.white38 : Colors.grey.shade400),
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive
+                ? AppColors.darkGold.withValues(alpha: 0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: Icon(
+                  isActive ? activeIcon : inactiveIcon,
+                  key: ValueKey(isActive),
+                  size: 24,
+                  color: isActive
+                      ? AppColors.darkGold
+                      : (isDark ? Colors.white38 : Colors.grey.shade400),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                color: isActive
-                    ? AppColors.darkGold
-                    : (isDark ? Colors.white38 : Colors.grey.shade400),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  color: isActive
+                      ? AppColors.darkGold
+                      : (isDark ? Colors.white38 : Colors.grey.shade400),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -307,56 +339,60 @@ class _MainShellViewState extends State<MainShellView> {
         child: KeyedSubtree(
           key: TourTargetKeys.investNav,
           child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isActive
-                ? [
-                    AppColors.darkGold,
-                    Color.lerp(AppColors.darkGold, Colors.white, 0.3)!,
-                  ]
-                : [
-                    AppColors.darkGold.withValues(alpha: isDark ? 0.2 : 0.1),
-                    AppColors.darkGold.withValues(alpha: isDark ? 0.1 : 0.05),
-                  ],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: AppColors.darkGold.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.trending_up_rounded,
-              size: 24,
-              color: isActive ? Colors.black : AppColors.darkGold,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'nav_invest'.tr,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-                color: isActive ? Colors.black : AppColors.darkGold,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isActive
+                    ? [
+                        AppColors.darkGold,
+                        Color.lerp(AppColors.darkGold, Colors.white, 0.3)!,
+                      ]
+                    : [
+                        AppColors.darkGold.withValues(
+                          alpha: isDark ? 0.2 : 0.1,
+                        ),
+                        AppColors.darkGold.withValues(
+                          alpha: isDark ? 0.1 : 0.05,
+                        ),
+                      ],
               ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: AppColors.darkGold.withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
             ),
-          ],
-        ),
-      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.trending_up_rounded,
+                  size: 24,
+                  color: isActive ? Colors.black : AppColors.darkGold,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'nav_invest'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: isActive ? Colors.black : AppColors.darkGold,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

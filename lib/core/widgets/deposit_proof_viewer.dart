@@ -14,13 +14,13 @@ class DepositProofViewer extends StatefulWidget {
   final String imageUrl;
   final String? title;
 
-  const DepositProofViewer({
-    super.key,
-    required this.imageUrl,
-    this.title,
-  });
+  const DepositProofViewer({super.key, required this.imageUrl, this.title});
 
-  static Future<void> show(BuildContext context, String imageUrl, {String? title}) {
+  static Future<void> show(
+    BuildContext context,
+    String imageUrl, {
+    String? title,
+  }) {
     return showDialog(
       context: context,
       barrierColor: Colors.black87,
@@ -96,7 +96,10 @@ class _DepositProofViewerState extends State<DepositProofViewer> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.download_rounded, color: Colors.white),
+                        : const Icon(
+                            Icons.download_rounded,
+                            color: Colors.white,
+                          ),
                   ),
                 ],
               ),
@@ -121,8 +124,11 @@ class _DepositProofViewerState extends State<DepositProofViewer> {
                     errorWidget: (_, __, ___) => Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.broken_image_outlined,
-                            color: Colors.white54, size: 64),
+                        const Icon(
+                          Icons.broken_image_outlined,
+                          color: Colors.white54,
+                          size: 64,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           'image_load_error'.tr,
@@ -200,8 +206,10 @@ class DepositProofThumbnail extends StatelessWidget {
               errorWidget: (_, __, ___) => Container(
                 height: 160,
                 color: Colors.grey[200],
-                child: Icon(Icons.broken_image_outlined,
-                    color: AppColors.textSecondary),
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
             Container(

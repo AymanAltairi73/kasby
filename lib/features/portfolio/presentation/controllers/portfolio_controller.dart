@@ -232,14 +232,20 @@ class PortfolioController extends GetxController {
     final now = DateTime.now();
     final cutoff = _periodCutoff(selectedPeriod.value, now);
 
-    final filtered = transactions
-        .where((t) =>
-            t.createdAt != null &&
-            t.createdAt!.isAfter(cutoff) &&
-            t.status == 'completed')
-        .toList()
-      ..sort((a, b) =>
-          (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0)));
+    final filtered =
+        transactions
+            .where(
+              (t) =>
+                  t.createdAt != null &&
+                  t.createdAt!.isAfter(cutoff) &&
+                  t.status == 'completed',
+            )
+            .toList()
+          ..sort(
+            (a, b) => (a.createdAt ?? DateTime(0)).compareTo(
+              b.createdAt ?? DateTime(0),
+            ),
+          );
 
     if (filtered.isEmpty) {
       growthData.value = [netWorth.value, netWorth.value];
@@ -279,7 +285,6 @@ class PortfolioController extends GetxController {
     } else {
       growthData.value = points;
     }
-
   }
 
   void _buildInvestmentFlow() {
@@ -291,10 +296,12 @@ class PortfolioController extends GetxController {
     final cutoff = _periodCutoff(selectedPeriod.value, now);
 
     final filtered = transactions
-        .where((t) =>
-            t.createdAt != null &&
-            t.createdAt!.isAfter(cutoff) &&
-            t.status == 'completed')
+        .where(
+          (t) =>
+              t.createdAt != null &&
+              t.createdAt!.isAfter(cutoff) &&
+              t.status == 'completed',
+        )
         .toList();
 
     double deposits = 0;

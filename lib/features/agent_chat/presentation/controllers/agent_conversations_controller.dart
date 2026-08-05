@@ -7,7 +7,8 @@ import 'package:kasby/core/utils/safe_getx.dart';
 class AgentConversationsController extends GetxController {
   static AgentConversationsController get to => Get.find();
 
-  final RxList<Map<String, dynamic>> conversations = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> conversations =
+      <Map<String, dynamic>>[].obs;
   final RxBool isLoading = false.obs;
   final RxnString agentId = RxnString();
   final RxString searchQuery = ''.obs;
@@ -106,42 +107,37 @@ class AgentConversationsController extends GetxController {
           .order('last_message_at', ascending: false);
 
       final List<dynamic> list = response as List<dynamic>;
-      
+
       SafeGetx.debugTrace(
         className: 'AgentConversationsController',
         method: 'fetchConversations',
         feature: 'AgentChat',
         status: 'DEBUG',
-        params: {
-          'agent_id': id,
-          'conversations_count': list.length,
-        },
+        params: {'agent_id': id, 'conversations_count': list.length},
       );
-      
+
       // Then fetch profiles for each conversation using RPC
       final conversationsWithProfiles = <Map<String, dynamic>>[];
-      
+
       for (final item in list) {
         final conv = Map<String, dynamic>.from(item as Map);
         final convId = conv['id'] as String?;
-        
+
         SafeGetx.debugTrace(
           className: 'AgentConversationsController',
           method: 'fetchConversations',
           feature: 'AgentChat',
           status: 'DEBUG',
-          params: {
-            'conversation_id': convId,
-          },
+          params: {'conversation_id': convId},
         );
-        
+
         if (convId != null) {
           try {
             final profileResult = await SupabaseService.client.rpc(
               'get_conversation_profile',
               params: {'p_conversation_id': convId},
             );
-            
+
             SafeGetx.debugTrace(
               className: 'AgentConversationsController',
               method: 'fetchConversations',
@@ -152,8 +148,10 @@ class AgentConversationsController extends GetxController {
                 'profile_result': profileResult,
               },
             );
-            
-            if (profileResult != null && profileResult is List && profileResult.isNotEmpty) {
+
+            if (profileResult != null &&
+                profileResult is List &&
+                profileResult.isNotEmpty) {
               final profileData = profileResult[0] as Map<String, dynamic>;
               conv['profiles'] = {
                 'full_name': profileData['full_name'],
@@ -175,10 +173,10 @@ class AgentConversationsController extends GetxController {
             );
           }
         }
-        
+
         conversationsWithProfiles.add(conv);
       }
-      
+
       conversations.value = conversationsWithProfiles;
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -201,41 +199,46 @@ class AgentConversationsController extends GetxController {
         .stream(primaryKey: ['id'])
         .eq('agent_id', id)
         .order('last_message_at', ascending: false)
-        .listen((data) {
-          // Filter for agent chats and update conversations list with realtime data
-          final List<Map<String, dynamic>> updatedConversations = [];
-          
-          for (final item in data) {
-            final conv = Map<String, dynamic>.from(item as Map);
-            
-            // Filter only agent chats
-            if (conv['is_agent_chat'] != true) continue;
-            
-            // Preserve profile data from existing conversations
-            final existingConv = conversations.firstWhereOrNull((c) => c['id'] == conv['id']);
-            if (existingConv != null && existingConv['profiles'] != null) {
-              conv['profiles'] = existingConv['profiles'];
+        .listen(
+          (data) {
+            // Filter for agent chats and update conversations list with realtime data
+            final List<Map<String, dynamic>> updatedConversations = [];
+
+            for (final item in data) {
+              final conv = Map<String, dynamic>.from(item as Map);
+
+              // Filter only agent chats
+              if (conv['is_agent_chat'] != true) continue;
+
+              // Preserve profile data from existing conversations
+              final existingConv = conversations.firstWhereOrNull(
+                (c) => c['id'] == conv['id'],
+              );
+              if (existingConv != null && existingConv['profiles'] != null) {
+                conv['profiles'] = existingConv['profiles'];
+              }
+
+              updatedConversations.add(conv);
             }
-            
-            updatedConversations.add(conv);
-          }
-          
-          conversations.value = updatedConversations;
-        }, onError: (error, stack) {
-          SafeGetx.debugTrace(
-            className: 'AgentConversationsController',
-            method: '_setupConversationsListener',
-            feature: 'AgentChat',
-            status: 'ERROR',
-            error: error,
-            stackTrace: stack,
-          );
-        });
+
+            conversations.value = updatedConversations;
+          },
+          onError: (error, stack) {
+            SafeGetx.debugTrace(
+              className: 'AgentConversationsController',
+              method: '_setupConversationsListener',
+              feature: 'AgentChat',
+              status: 'ERROR',
+              error: error,
+              stackTrace: stack,
+            );
+          },
+        );
   }
 
   void _setupPresenceListener() {
     if (!Get.isRegistered<PresenceService>()) return;
-    
+
     final presenceService = Get.find<PresenceService>();
     _presenceWorker = ever(presenceService.onlineUsers, (_) {
       // Trigger UI update when presence changes
@@ -253,14 +256,15 @@ class AgentConversationsController extends GetxController {
   List<Map<String, dynamic>> get filteredConversations {
     final query = searchQuery.value.toLowerCase().trim();
     if (query.isEmpty) return conversations.toList();
-    
+
     return conversations.where((conv) {
       final profile = conv['profiles'] as Map<String, dynamic>?;
       if (profile == null) return false;
-      
+
       final fullName = (profile['full_name'] as String? ?? '').toLowerCase();
-      final referralCode = (profile['referral_code'] as String? ?? '').toLowerCase();
-      
+      final referralCode = (profile['referral_code'] as String? ?? '')
+          .toLowerCase();
+
       return fullName.contains(query) || referralCode.contains(query);
     }).toList();
   }
@@ -312,7 +316,7 @@ class AgentConversationsController extends GetxController {
           .from('chat_conversations')
           .delete()
           .eq('id', conversationId);
-      
+
       conversations.removeWhere((c) => c['id'] == conversationId);
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -378,7 +382,7 @@ class AgentConversationsController extends GetxController {
           .from('chat_conversations')
           .update({'unread_admin_count': 0})
           .eq('id', conversationId);
-      
+
       // Refresh conversations to update UI
       await fetchConversations(showLoading: false);
     } catch (e, stack) {

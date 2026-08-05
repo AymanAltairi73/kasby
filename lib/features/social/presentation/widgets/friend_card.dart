@@ -21,89 +21,91 @@ class FriendCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
-      color: isDark ? AppColors.surface : Colors.white,
-      elevation: 0,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      borderRadius: KasbyRadius.cardR,
-      child: InkWell(
-        onTap: () => controller.openChat(friend),
-        borderRadius: KasbyRadius.cardR,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: KasbySpacing.md,
-            vertical: KasbySpacing.sm + 2,
-          ),
-          decoration: BoxDecoration(
+          color: isDark ? AppColors.surface : Colors.white,
+          elevation: 0,
+          shadowColor: Colors.black.withValues(alpha: 0.08),
+          borderRadius: KasbyRadius.cardR,
+          child: InkWell(
+            onTap: () => controller.openChat(friend),
             borderRadius: KasbyRadius.cardR,
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.black.withValues(alpha: 0.05),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: KasbySpacing.md,
+                vertical: KasbySpacing.sm + 2,
               ),
-            ],
-          ),
-          child: Row(
-            children: [
-              SocialAvatar(
-                name: friend.fullName,
-                avatarUrl: friend.avatarUrl,
-                userId: friend.id,
-                lastSeenAt: friend.lastSeenAt,
-                radius: 24,
-              ),
-              const SizedBox(width: KasbySpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      friend.fullName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: isDark ? Colors.white : AppColors.onSurfaceLight,
-                      ),
-                    ),
-                    if (friend.username != null)
-                      Text(
-                        '@${friend.username}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    const SizedBox(height: 2),
-                    OnlineStatusIndicator(
-                      userId: friend.id,
-                      lastSeenAt: friend.lastSeenAt,
-                    ),
-                    if (friend.friendsSince != null)
-                      Text(
-                        '${'friends_since'.tr}: ${DateHelper.date(friend.friendsSince)}',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                  ],
+              decoration: BoxDecoration(
+                borderRadius: KasbyRadius.cardR,
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.black.withValues(alpha: 0.05),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              _QuickActions(friend: friend, controller: controller),
-            ],
+              child: Row(
+                children: [
+                  SocialAvatar(
+                    name: friend.fullName,
+                    avatarUrl: friend.avatarUrl,
+                    userId: friend.id,
+                    lastSeenAt: friend.lastSeenAt,
+                    radius: 24,
+                  ),
+                  const SizedBox(width: KasbySpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          friend.fullName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.onSurfaceLight,
+                          ),
+                        ),
+                        if (friend.username != null)
+                          Text(
+                            '@${friend.username}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        const SizedBox(height: 2),
+                        OnlineStatusIndicator(
+                          userId: friend.id,
+                          lastSeenAt: friend.lastSeenAt,
+                        ),
+                        if (friend.friendsSince != null)
+                          Text(
+                            '${'friends_since'.tr}: ${DateHelper.date(friend.friendsSince)}',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 10,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  _QuickActions(friend: friend, controller: controller),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
-    )
+        )
         .animate()
         .fadeIn(
           delay: Duration(milliseconds: 35 * animationIndex),
@@ -155,7 +157,10 @@ class _QuickActions extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(Icons.person_remove_rounded, color: AppColors.error),
+              leading: Icon(
+                Icons.person_remove_rounded,
+                color: AppColors.error,
+              ),
               title: Text('remove_friend'.tr),
               onTap: () {
                 Navigator.pop(context);

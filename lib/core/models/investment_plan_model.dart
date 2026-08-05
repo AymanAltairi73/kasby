@@ -42,27 +42,27 @@ class InvestmentPlanModel {
   factory InvestmentPlanModel.fromJson(Map<String, dynamic> json) {
     try {
       return InvestmentPlanModel(
-      id: json['id'] as String,
-      nameAr: json['name_ar'] as String,
-      nameEn: json['name_en'] as String?,
-      descriptionAr: json['description_ar'] as String? ?? '',
-      descriptionEn: json['description_en'] as String?,
-      imageUrl: json['image_url'] as String?,
-      profitPercentage: (json['profit_percentage'] as num).toDouble(),
-      durationDays: json['duration_days'] as int?,
-      minAmount: (json['min_amount'] as num).toDouble(),
-      maxAmount: (json['max_amount'] as num?)?.toDouble(),
-      availableAmounts: json['available_amounts'] as List<dynamic>?,
-      riskLevel: json['risk_level'] as String? ?? 'medium',
-      isActive: json['is_active'] as bool? ?? true,
-      version: json['version'] as int? ?? 1,
-      createdBy: json['created_by'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+        id: json['id'] as String,
+        nameAr: json['name_ar'] as String,
+        nameEn: json['name_en'] as String?,
+        descriptionAr: json['description_ar'] as String? ?? '',
+        descriptionEn: json['description_en'] as String?,
+        imageUrl: json['image_url'] as String?,
+        profitPercentage: (json['profit_percentage'] as num).toDouble(),
+        durationDays: json['duration_days'] as int?,
+        minAmount: (json['min_amount'] as num).toDouble(),
+        maxAmount: (json['max_amount'] as num?)?.toDouble(),
+        availableAmounts: json['available_amounts'] as List<dynamic>?,
+        riskLevel: json['risk_level'] as String? ?? 'medium',
+        isActive: json['is_active'] as bool? ?? true,
+        version: json['version'] as int? ?? 1,
+        createdBy: json['created_by'] as String?,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'])
+            : null,
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'])
+            : null,
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -102,10 +102,14 @@ class InvestmentPlanModel {
     if (lowerName.contains('gold') || lowerName.contains('ذهب')) {
       return 'gold';
     }
-    if (lowerName.contains('silver') || lowerName.contains('sliver') || lowerName.contains('فض')) {
+    if (lowerName.contains('silver') ||
+        lowerName.contains('sliver') ||
+        lowerName.contains('فض')) {
       return 'silver';
     }
-    if (lowerName.contains('real') || lowerName.contains('estate') || lowerName.contains('عقار')) {
+    if (lowerName.contains('real') ||
+        lowerName.contains('estate') ||
+        lowerName.contains('عقار')) {
       return 'real_estate';
     }
     return 'other';

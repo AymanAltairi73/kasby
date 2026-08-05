@@ -10,7 +10,10 @@ class KasbyNumberFormatter {
   ///   12.36  -> "12.4%"
   ///   12.65  -> "12.7%"
   ///   15.8   -> "15.8%"
-  static String formatProfitPercentage(double value, {bool includeSign = false}) {
+  static String formatProfitPercentage(
+    double value, {
+    bool includeSign = false,
+  }) {
     final roundedStr = value.toStringAsFixed(1);
     final String formatted;
     if (roundedStr.endsWith('.0')) {

@@ -112,7 +112,10 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
                   padding: const EdgeInsets.symmetric(
                     horizontal: KasbySpacing.xs,
                   ),
-                  child: KasbyShimmer(height: 100, borderRadius: KasbyRadius.cardR),
+                  child: KasbyShimmer(
+                    height: 100,
+                    borderRadius: KasbyRadius.cardR,
+                  ),
                 ),
               ),
             ),
@@ -170,8 +173,9 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
             key: TourTargetKeys.referralRewards,
             child: _MetricCard(
               label: 'referral_earnings'.tr,
-              value: CurrencyController.to
-                  .formatToUSD(controller.referralEarnings.value),
+              value: CurrencyController.to.formatToUSD(
+                controller.referralEarnings.value,
+              ),
               icon: Icons.monetization_on_rounded,
               color: AppColors.darkGold,
               isDark: isDark,
@@ -204,16 +208,14 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.darkGold
-                    : (isDark
-                        ? AppColors.surface
-                        : AppColors.surfaceLight),
+                    : (isDark ? AppColors.surface : AppColors.surfaceLight),
                 borderRadius: KasbyRadius.chipR,
                 border: Border.all(
                   color: isSelected
                       ? AppColors.darkGold
                       : (isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.08)),
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.08)),
                 ),
               ),
               alignment: Alignment.center,
@@ -222,9 +224,7 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: isSelected
-                      ? Colors.white
-                      : AppColors.textSecondary,
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
                 ),
               ),
             ),
@@ -245,8 +245,11 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
         children: [
           Row(
             children: [
-              Icon(Icons.show_chart_rounded,
-                  size: 18, color: AppColors.primary),
+              Icon(
+                Icons.show_chart_rounded,
+                size: 18,
+                color: AppColors.primary,
+              ),
               const SizedBox(width: KasbySpacing.sm),
               Text(
                 'team_growth'.tr,
@@ -259,10 +262,7 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
               const Spacer(),
               Text(
                 '${controller.totalReferrals.value} ${'team_size'.tr}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -290,8 +290,11 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
         children: [
           Row(
             children: [
-              Icon(Icons.attach_money_rounded,
-                  size: 18, color: AppColors.softGreen),
+              Icon(
+                Icons.attach_money_rounded,
+                size: 18,
+                color: AppColors.softGreen,
+              ),
               const SizedBox(width: KasbySpacing.sm),
               Text(
                 'earnings_this_period'.tr,
@@ -303,8 +306,9 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
               ),
               const Spacer(),
               Text(
-                CurrencyController.to
-                    .formatToUSD(controller.referralEarnings.value),
+                CurrencyController.to.formatToUSD(
+                  controller.referralEarnings.value,
+                ),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -365,8 +369,7 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
             Expanded(
               child: _SmallMetricTile(
                 label: 'conversion_rate'.tr,
-                value:
-                    '${controller.conversionRate.value.toStringAsFixed(1)}%',
+                value: '${controller.conversionRate.value.toStringAsFixed(1)}%',
                 icon: Icons.pie_chart_rounded,
                 isDark: isDark,
               ),
@@ -446,79 +449,83 @@ class _ReferralAnalyticsViewState extends State<ReferralAnalyticsView> {
           final isActive = status == 'active';
 
           return KasbyCard(
-            margin: const EdgeInsets.only(bottom: KasbySpacing.sm),
-            padding: const EdgeInsets.symmetric(
-              horizontal: KasbySpacing.lg,
-              vertical: KasbySpacing.md,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.darkGold.withValues(alpha: 0.15),
-                    borderRadius: KasbyRadius.chipR,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${index + 1}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.darkGold,
-                    ),
-                  ),
+                margin: const EdgeInsets.only(bottom: KasbySpacing.sm),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: KasbySpacing.lg,
+                  vertical: KasbySpacing.md,
                 ),
-                const SizedBox(width: KasbySpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.darkGold.withValues(alpha: 0.15),
+                        borderRadius: KasbyRadius.chipR,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${index + 1}',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.darkGold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: KasbySpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${'member_since'.tr} ${DateHelper.date(joinDate)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: KasbySpacing.sm,
+                        vertical: KasbySpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            (isActive ? AppColors.softGreen : AppColors.error)
+                                .withValues(alpha: 0.12),
+                        borderRadius: KasbyRadius.chipR,
+                      ),
+                      child: Text(
+                        isActive ? 'active_members'.tr : 'inactive_members'.tr,
+                        style: TextStyle(
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${'member_since'.tr} ${DateHelper.date(joinDate)}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
+                          color: isActive
+                              ? AppColors.softGreen
+                              : AppColors.error,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: KasbySpacing.sm,
-                    vertical: KasbySpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: (isActive ? AppColors.softGreen : AppColors.error)
-                        .withValues(alpha: 0.12),
-                    borderRadius: KasbyRadius.chipR,
-                  ),
-                  child: Text(
-                    isActive
-                        ? 'active_members'.tr
-                        : 'inactive_members'.tr,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: isActive ? AppColors.softGreen : AppColors.error,
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ).animate(delay: (50 * index).ms).fadeIn().slideX(begin: 0.05, end: 0);
+              )
+              .animate(delay: (50 * index).ms)
+              .fadeIn()
+              .slideX(begin: 0.05, end: 0);
         }),
       ],
     ).animate().fadeIn(delay: 300.ms, duration: 400.ms);
@@ -618,10 +625,7 @@ class _SmallMetricTile extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 10,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),

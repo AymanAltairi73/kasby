@@ -30,22 +30,29 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class FCMService extends GetxService {
   static FCMService get to => Get.find();
-  
+
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
-  
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+
   final RxString fcmToken = ''.obs;
   final RxString lastOtpCode = ''.obs;
   final RxBool isNotificationsEnabled = true.obs;
 
   Future<FCMService> init() async {
     final stopwatch = Stopwatch()..start();
-    SafeGetx.debugTrace(className: 'FCMService', method: 'init', feature: 'Core', status: 'INFO');
+    SafeGetx.debugTrace(
+      className: 'FCMService',
+      method: 'init',
+      feature: 'Core',
+      status: 'INFO',
+    );
     await _setupLocalNotifications();
     // Only setup FCM if enabled
     final prefs = await SharedPreferences.getInstance();
-    isNotificationsEnabled.value = prefs.getBool('notifications_enabled') ?? true;
-    
+    isNotificationsEnabled.value =
+        prefs.getBool('notifications_enabled') ?? true;
+
     if (isNotificationsEnabled.value) {
       await _setupFCM();
       await _handleColdStartMessage();
@@ -82,24 +89,32 @@ class FCMService extends GetxService {
   Future<void> _setupLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: DarwinInitializationSettings(),
-    );
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: DarwinInitializationSettings(),
+        );
 
     await _localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        SafeGetx.debugTrace(className: 'FCMService', method: '_setupLocalNotifications', feature: 'Core', status: 'INFO', message: 'Local notification tapped');
+        SafeGetx.debugTrace(
+          className: 'FCMService',
+          method: '_setupLocalNotifications',
+          feature: 'Core',
+          status: 'INFO',
+          message: 'Local notification tapped',
+        );
         NotificationNavigationService.navigateFromLocalPayload(details.payload);
       },
     );
 
     // Create high importance channel
     final channelName = await LocaleHelper.translate('fcm_channel_name');
-    final channelDescription =
-        await LocaleHelper.translate('fcm_channel_description');
+    final channelDescription = await LocaleHelper.translate(
+      'fcm_channel_description',
+    );
 
     final AndroidNotificationChannel channel = AndroidNotificationChannel(
       'high_importance_channel',
@@ -111,7 +126,9 @@ class FCMService extends GetxService {
     );
 
     await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
   }
 
@@ -124,13 +141,25 @@ class FCMService extends GetxService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      SafeGetx.debugTrace(className: 'FCMService', method: '_setupFCM', feature: 'Core', status: 'SUCCESS', message: 'User granted permission');
-      
+      SafeGetx.debugTrace(
+        className: 'FCMService',
+        method: '_setupFCM',
+        feature: 'Core',
+        status: 'SUCCESS',
+        message: 'User granted permission',
+      );
+
       // Get token
       String? token = await _fcm.getToken();
       if (token != null) {
         fcmToken.value = token;
-        SafeGetx.debugTrace(className: 'FCMService', method: '_setupFCM', feature: 'Core', status: 'SUCCESS', params: {'tokenPresent': true});
+        SafeGetx.debugTrace(
+          className: 'FCMService',
+          method: '_setupFCM',
+          feature: 'Core',
+          status: 'SUCCESS',
+          params: {'tokenPresent': true},
+        );
         await syncTokenToServer(token);
       }
 
@@ -163,7 +192,13 @@ class FCMService extends GetxService {
         );
       });
     } else {
-      SafeGetx.debugTrace(className: 'FCMService', method: '_setupFCM', feature: 'Core', status: 'WARN', message: 'User declined notification permission');
+      SafeGetx.debugTrace(
+        className: 'FCMService',
+        method: '_setupFCM',
+        feature: 'Core',
+        status: 'WARN',
+        message: 'User declined notification permission',
+      );
     }
   }
 
@@ -173,10 +208,22 @@ class FCMService extends GetxService {
     await prefs.setBool('notifications_enabled', enabled);
 
     if (enabled) {
-      SafeGetx.debugTrace(className: 'FCMService', method: 'setNotificationsEnabled', feature: 'Core', status: 'INFO', params: {'enabled': enabled});
+      SafeGetx.debugTrace(
+        className: 'FCMService',
+        method: 'setNotificationsEnabled',
+        feature: 'Core',
+        status: 'INFO',
+        params: {'enabled': enabled},
+      );
       await _setupFCM();
     } else {
-      SafeGetx.debugTrace(className: 'FCMService', method: 'setNotificationsEnabled', feature: 'Core', status: 'INFO', message: 'Disabling notifications');
+      SafeGetx.debugTrace(
+        className: 'FCMService',
+        method: 'setNotificationsEnabled',
+        feature: 'Core',
+        status: 'INFO',
+        message: 'Disabling notifications',
+      );
       await _fcm.deleteToken();
       fcmToken.value = '';
       // Also clear on server
@@ -187,13 +234,26 @@ class FCMService extends GetxService {
   Future<void> _clearTokenOnServer() async {
     try {
       if (SupabaseService.client.auth.currentUser != null) {
-        await SupabaseService.client.from('profiles').update({
-          'fcm_token': null,
-        }).eq('id', SupabaseService.userId!);
-        SafeGetx.debugTrace(className: 'FCMService', method: '_clearTokenOnServer', feature: 'Core', status: 'SUCCESS');
+        await SupabaseService.client
+            .from('profiles')
+            .update({'fcm_token': null})
+            .eq('id', SupabaseService.userId!);
+        SafeGetx.debugTrace(
+          className: 'FCMService',
+          method: '_clearTokenOnServer',
+          feature: 'Core',
+          status: 'SUCCESS',
+        );
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'FCMService', method: '_clearTokenOnServer', feature: 'Core', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'FCMService',
+        method: '_clearTokenOnServer',
+        feature: 'Core',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -204,11 +264,12 @@ class FCMService extends GetxService {
       final category = message.data['category'] as String?;
       final entityType = message.data['entity_type'] as String?;
       final type = message.data['type'] as String?;
-      final allowed = await NotificationPreferencesService.shouldDeliverNotification(
-        category: category,
-        entityType: entityType,
-        notificationType: type,
-      );
+      final allowed =
+          await NotificationPreferencesService.shouldDeliverNotification(
+            category: category,
+            entityType: entityType,
+            notificationType: type,
+          );
       if (!allowed) return;
 
       final title = ContentLocalizationService.resolve(
@@ -225,8 +286,9 @@ class FCMService extends GetxService {
           : ContentLocalizationService.resolve(notification.body);
 
       final channelName = await LocaleHelper.translate('fcm_channel_name');
-      final channelDescription =
-          await LocaleHelper.translate('fcm_channel_description');
+      final channelDescription = await LocaleHelper.translate(
+        'fcm_channel_description',
+      );
 
       _localNotifications.show(
         notification.hashCode,
@@ -253,7 +315,13 @@ class FCMService extends GetxService {
       final otp = message.data['otp_code'];
       if (otp != null) {
         lastOtpCode.value = otp;
-        SafeGetx.debugTrace(className: 'FCMService', method: '_handleOtpFromMessage', feature: 'Core', status: 'INFO', message: 'OTP received (redacted)');
+        SafeGetx.debugTrace(
+          className: 'FCMService',
+          method: '_handleOtpFromMessage',
+          feature: 'Core',
+          status: 'INFO',
+          message: 'OTP received (redacted)',
+        );
       }
     }
   }
@@ -269,10 +337,22 @@ class FCMService extends GetxService {
             'p_app_type': 'user',
           },
         );
-        SafeGetx.debugTrace(className: 'FCMService', method: 'syncTokenToServer', feature: 'Core', status: 'SUCCESS');
+        SafeGetx.debugTrace(
+          className: 'FCMService',
+          method: 'syncTokenToServer',
+          feature: 'Core',
+          status: 'SUCCESS',
+        );
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(className: 'FCMService', method: 'syncTokenToServer', feature: 'Core', status: 'ERROR', error: e, stackTrace: stack);
+      SafeGetx.debugTrace(
+        className: 'FCMService',
+        method: 'syncTokenToServer',
+        feature: 'Core',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -282,8 +362,9 @@ class FCMService extends GetxService {
     String? payload,
   }) async {
     final channelName = await LocaleHelper.translate('fcm_channel_name');
-    final channelDescription =
-        await LocaleHelper.translate('fcm_channel_description');
+    final channelDescription = await LocaleHelper.translate(
+      'fcm_channel_description',
+    );
 
     await _localNotifications.show(
       DateTime.now().millisecond,
@@ -373,8 +454,9 @@ class FCMService extends GetxService {
     // that works without timezone dependencies
     Future.delayed(delay, () async {
       final channelName = await LocaleHelper.translate('fcm_channel_name');
-      final channelDescription =
-          await LocaleHelper.translate('fcm_channel_description');
+      final channelDescription = await LocaleHelper.translate(
+        'fcm_channel_description',
+      );
 
       await _localNotifications.show(
         id,

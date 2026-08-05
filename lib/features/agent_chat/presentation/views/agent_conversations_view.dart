@@ -19,7 +19,9 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
   Widget build(BuildContext context) {
     final isDark = _isDarkMode(context);
     return Scaffold(
-      backgroundColor: isDark ? AppColors.background : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.background
+          : AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -44,7 +46,8 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
           _buildSearchBar(context, isDark),
           Expanded(
             child: Obx(() {
-              if (controller.isLoading.value && controller.conversations.isEmpty) {
+              if (controller.isLoading.value &&
+                  controller.conversations.isEmpty) {
                 return _buildShimmerLoading(isDark);
               }
 
@@ -54,7 +57,8 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
               }
 
               return RefreshIndicator(
-                onRefresh: () => controller.fetchConversations(showLoading: true),
+                onRefresh: () =>
+                    controller.fetchConversations(showLoading: true),
                 color: AppColors.darkGold,
                 child: ListView.separated(
                   padding: const EdgeInsets.all(16),
@@ -90,23 +94,32 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
           decoration: InputDecoration(
             hintText: 'search_users'.tr,
             hintStyle: TextStyle(
-              color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLight,
             ),
             prefixIcon: Icon(
               Icons.search_rounded,
-              color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLight,
             ),
             suffixIcon: controller.searchQuery.value.isNotEmpty
                 ? IconButton(
                     icon: Icon(
                       Icons.clear_rounded,
-                      color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLight,
                     ),
                     onPressed: () => controller.searchQuery.value = '',
                   )
                 : null,
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
           ),
           style: TextStyle(
             color: isDark ? Colors.white : AppColors.textBodyLight,
@@ -168,7 +181,9 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
               Text(
                 'no_conversations_desc'.tr,
                 style: TextStyle(
-                  color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLight,
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
@@ -180,7 +195,11 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
     );
   }
 
-  Widget _buildConversationCard(BuildContext context, Map<String, dynamic> conv, bool isDark) {
+  Widget _buildConversationCard(
+    BuildContext context,
+    Map<String, dynamic> conv,
+    bool isDark,
+  ) {
     final profilesData = conv['profiles'];
     final profile = profilesData is Map<String, dynamic> ? profilesData : null;
     final fullName = profile?['full_name'] as String? ?? 'user'.tr;
@@ -209,7 +228,9 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
     // Presence status
     final isOnline = userId != null && controller.isUserOnline(userId);
     final presenceText = userId != null ? controller.getLastSeen(userId) : '';
-    final presenceStatus = userId != null ? controller.getPresenceStatus(userId) : 'offline';
+    final presenceStatus = userId != null
+        ? controller.getPresenceStatus(userId)
+        : 'offline';
 
     return KasbyCard(
       color: isDark ? AppColors.surface : AppColors.surfaceLight,
@@ -220,7 +241,7 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
           if (unreadCount > 0) {
             await controller.markConversationAsRead(conv['id']);
           }
-          
+
           Get.toNamed(
             Routes.socialChat,
             arguments: {
@@ -250,7 +271,9 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
                             Text(
                               fullName,
                               style: TextStyle(
-                                color: isDark ? Colors.white : AppColors.textBodyLight,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.textBodyLight,
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -276,7 +299,9 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
                             Text(
                               timeText,
                               style: TextStyle(
-                                color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppColors.textSecondaryLight,
                                 fontSize: 8,
                               ),
                             ),
@@ -284,7 +309,9 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
                           PopupMenuButton<String>(
                             icon: Icon(
                               Icons.more_vert_rounded,
-                              color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : AppColors.textSecondaryLight,
                               size: 17,
                             ),
                             onSelected: (value) async {
@@ -292,17 +319,22 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
                                 final confirmed = await Get.dialog<bool>(
                                   AlertDialog(
                                     title: Text('delete_conversation'.tr),
-                                    content: Text('delete_conversation_confirm'.tr),
+                                    content: Text(
+                                      'delete_conversation_confirm'.tr,
+                                    ),
                                     actions: [
                                       TextButton(
-                                        onPressed: () => Get.back(result: false),
+                                        onPressed: () =>
+                                            Get.back(result: false),
                                         child: Text('cancel'.tr),
                                       ),
                                       TextButton(
                                         onPressed: () => Get.back(result: true),
                                         child: Text(
                                           'delete'.tr,
-                                          style: const TextStyle(color: Colors.red),
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -310,7 +342,9 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
                                 );
                                 if (confirmed == true) {
                                   try {
-                                    await controller.deleteConversation(conv['id']);
+                                    await controller.deleteConversation(
+                                      conv['id'],
+                                    );
                                     Get.snackbar(
                                       'success'.tr,
                                       'conversation_deleted'.tr,
@@ -355,10 +389,16 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
                           lastMessage,
                           style: TextStyle(
                             color: unreadCount > 0
-                                ? (isDark ? Colors.white : AppColors.textBodyLight)
-                                : (isDark ? AppColors.textSecondary : AppColors.textSecondaryLight),
+                                ? (isDark
+                                      ? Colors.white
+                                      : AppColors.textBodyLight)
+                                : (isDark
+                                      ? AppColors.textSecondary
+                                      : AppColors.textSecondaryLight),
                             fontSize: 12,
-                            fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: unreadCount > 0
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -367,7 +407,10 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
                       if (unreadCount > 0) ...[
                         const SizedBox(width: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.darkGold,
                             borderRadius: BorderRadius.circular(10),
@@ -417,7 +460,12 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
     );
   }
 
-  Widget _buildAvatar(String fullName, String? avatarUrl, bool isOnline, bool isDark) {
+  Widget _buildAvatar(
+    String fullName,
+    String? avatarUrl,
+    bool isOnline,
+    bool isDark,
+  ) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -435,7 +483,8 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
                   color: AppColors.darkGold.withValues(alpha: 0.1),
                   child: const CircularProgressIndicator(strokeWidth: 2),
                 ),
-                errorWidget: (context, url, error) => _buildInitialsAvatar(fullName, isDark),
+                errorWidget: (context, url, error) =>
+                    _buildInitialsAvatar(fullName, isDark),
               ),
             ),
           )
@@ -463,7 +512,13 @@ class AgentConversationsView extends GetView<AgentConversationsController> {
   }
 
   Widget _buildInitialsAvatar(String name, bool isDark) {
-    final initials = name.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase();
+    final initials = name
+        .trim()
+        .split(' ')
+        .map((e) => e.isNotEmpty ? e[0] : '')
+        .take(2)
+        .join()
+        .toUpperCase();
     return CircleAvatar(
       radius: 28,
       backgroundColor: AppColors.darkGold.withValues(alpha: 0.15),

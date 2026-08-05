@@ -38,7 +38,8 @@ class AuthenticationLogger {
       SupabaseService.currentUser?.email?.trim().toLowerCase();
 
   static String? get _maskedPhone {
-    final phone = SupabaseService.currentUser?.phone ??
+    final phone =
+        SupabaseService.currentUser?.phone ??
         SupabaseService.currentUser?.userMetadata?['phone']?.toString();
     if (phone == null || phone.isEmpty) return null;
     return MaskUtils.maskIdentifier(value: phone, isPhone: true);
@@ -102,7 +103,9 @@ class AuthenticationLogger {
     StackTrace? stackTrace,
     Map<String, Object?>? params,
   }) {
-    final errorCode = error is AuthException ? error.statusCode?.toString() : null;
+    final errorCode = error is AuthException
+        ? error.statusCode?.toString()
+        : null;
     final errorMessage = error is AuthException
         ? error.message
         : error.toString();
@@ -123,11 +126,13 @@ class AuthenticationLogger {
       stackTrace: stackTrace,
     );
 
-    unawaited(CrashReportingService.recordAuthError(
-      error,
-      stack: stackTrace,
-      expectedFailure: error is AuthException,
-    ));
+    unawaited(
+      CrashReportingService.recordAuthError(
+        error,
+        stack: stackTrace,
+        expectedFailure: error is AuthException,
+      ),
+    );
   }
 
   static void _emit({
@@ -152,8 +157,7 @@ class AuthenticationLogger {
       'userId': _userId,
       if (email != null || _email != null)
         'email': MaskUtils.maskEmail(email ?? _email ?? ''),
-      if (phone != null || _maskedPhone != null)
-        'phone': phone ?? _maskedPhone,
+      if (phone != null || _maskedPhone != null) 'phone': phone ?? _maskedPhone,
       'platform': _platform,
       'device': _device,
       'appVersion': _packageInfo?.version,
@@ -177,11 +181,13 @@ class AuthenticationLogger {
     );
 
     if (phase == 'FAILURE') {
-      unawaited(SupabaseService.logActivity(
-        action: 'AUTH_${operation.toUpperCase()}_FAILURE',
-        details: errorMessage ?? operation,
-        severity: 'critical',
-      ));
+      unawaited(
+        SupabaseService.logActivity(
+          action: 'AUTH_${operation.toUpperCase()}_FAILURE',
+          details: errorMessage ?? operation,
+          severity: 'critical',
+        ),
+      );
     }
   }
 }

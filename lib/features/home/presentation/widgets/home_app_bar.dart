@@ -160,10 +160,9 @@ class HomeAppBar extends StatelessWidget {
         IconButton(
           icon: Icon(
             Icons.search_rounded,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.9),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.9),
           ),
           tooltip: 'global_search'.tr,
           onPressed: () => Get.toNamed(Routes.globalSearch),
@@ -171,51 +170,50 @@ class HomeAppBar extends StatelessWidget {
         KeyedSubtree(
           key: TourTargetKeys.notifications,
           child: Stack(
-          children: [
-            IconButton(
-              icon: Icon(
-                Icons.notifications_none_rounded,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.9),
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.notifications_none_rounded,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.9),
+                ),
+                tooltip: 'notifications'.tr,
+                onPressed: () => Get.toNamed(Routes.notifications),
               ),
-              tooltip: 'notifications'.tr,
-              onPressed: () => Get.toNamed(Routes.notifications),
-            ),
-            Obx(
-              () => homeController.unreadNotificationCount.value > 0
-                  ? Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppColors.error,
-                          shape: BoxShape.circle,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          homeController.unreadNotificationCount.value > 9
-                              ? '9+'
-                              : homeController.unreadNotificationCount.value
-                                  .toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+              Obx(
+                () => homeController.unreadNotificationCount.value > 0
+                    ? Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
                           ),
-                          textAlign: TextAlign.center,
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            homeController.unreadNotificationCount.value > 9
+                                ? '9+'
+                                : homeController.unreadNotificationCount.value
+                                      .toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
         ),
         const SizedBox(width: 8),
       ],

@@ -29,7 +29,8 @@ class _AgentsViewState extends State<AgentsView> {
   final TextEditingController _searchController = TextEditingController();
   final RxString _searchQuery = ''.obs;
   StreamSubscription<List<Map<String, dynamic>>>? _profilesSub;
-  final RxMap<String, int> unreadCounts = <String, int>{}.obs; // agentId -> unread count
+  final RxMap<String, int> unreadCounts =
+      <String, int>{}.obs; // agentId -> unread count
   StreamSubscription<List<Map<String, dynamic>>>? _conversationsSub;
 
   @override
@@ -126,10 +127,10 @@ class _AgentsViewState extends State<AgentsView> {
           for (final row in rows) {
             final rowUserId = row['user_id']?.toString();
             final isAgentChat = row['is_agent_chat'] as bool? ?? false;
-            
+
             // Filter for current user's agent conversations
             if (rowUserId != userId || !isAgentChat) continue;
-            
+
             final agentId = row['agent_id']?.toString();
             final unreadCount = row['unread_user_count'] as int? ?? 0;
             if (agentId != null && unreadCount > 0) {
@@ -165,9 +166,11 @@ class _AgentsViewState extends State<AgentsView> {
 
             final updated = agents[index].copyWith(
               name: row['full_name']?.toString() ?? agents[index].name,
-              username: row['referral_code']?.toString() ?? agents[index].username,
+              username:
+                  row['referral_code']?.toString() ?? agents[index].username,
               avatarUrl: row['avatar_url']?.toString(),
-              kycStatus: row['kyc_status']?.toString() ?? agents[index].kycStatus,
+              kycStatus:
+                  row['kyc_status']?.toString() ?? agents[index].kycStatus,
             );
 
             if (updated.avatarUrl != agents[index].avatarUrl ||
@@ -231,10 +234,7 @@ class _AgentsViewState extends State<AgentsView> {
         error: result.exception,
         stackTrace: result.stackTrace,
       );
-      AppSnack.error(
-        'error'.tr,
-        result.error ?? 'chat_connection_error'.tr,
-      );
+      AppSnack.error('error'.tr, result.error ?? 'chat_connection_error'.tr);
       return;
     }
 
@@ -304,7 +304,9 @@ class _AgentsViewState extends State<AgentsView> {
               if (filteredAgents.isEmpty) {
                 return Center(
                   child: Text(
-                    _searchQuery.isEmpty ? 'no_agents'.tr : 'no_results_found'.tr,
+                    _searchQuery.isEmpty
+                        ? 'no_agents'.tr
+                        : 'no_results_found'.tr,
                     style: TextStyle(
                       color: isDark ? Colors.white70 : Colors.black87,
                     ),
@@ -378,7 +380,9 @@ class _AgentsViewState extends State<AgentsView> {
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 18,
-                          color: isDark ? Colors.white : AppColors.textBodyLight,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.textBodyLight,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -428,15 +432,23 @@ class _AgentsViewState extends State<AgentsView> {
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
                 hintText: 'search_agent_hint'.tr,
-                hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-                prefixIcon: Icon(Icons.search_rounded, color: AppColors.darkGold),
-                suffixIcon: Obx(() => _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        tooltip: 'close'.tr,
-                        onPressed: _searchController.clear,
-                      )
-                    : const SizedBox.shrink()),
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: AppColors.darkGold,
+                ),
+                suffixIcon: Obx(
+                  () => _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          tooltip: 'close'.tr,
+                          onPressed: _searchController.clear,
+                        )
+                      : const SizedBox.shrink(),
+                ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 15),
               ),
@@ -447,7 +459,10 @@ class _AgentsViewState extends State<AgentsView> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => Get.toNamed(Routes.agencyApply),
-              icon: Icon(Icons.workspace_premium_rounded, color: AppColors.darkGold),
+              icon: Icon(
+                Icons.workspace_premium_rounded,
+                color: AppColors.darkGold,
+              ),
               label: Text(
                 'apply_agency'.tr,
                 style: TextStyle(
@@ -457,7 +472,9 @@ class _AgentsViewState extends State<AgentsView> {
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                side: BorderSide(color: AppColors.darkGold.withValues(alpha: 0.5)),
+                side: BorderSide(
+                  color: AppColors.darkGold.withValues(alpha: 0.5),
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -476,9 +493,7 @@ class _AgentsViewState extends State<AgentsView> {
         decoration: BoxDecoration(
           color: isDark ? AppColors.surface : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.darkGold.withValues(alpha: 0.15),
-          ),
+          border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
@@ -496,10 +511,7 @@ class _AgentsViewState extends State<AgentsView> {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                ),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
               ),
             ),
           ],

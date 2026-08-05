@@ -20,7 +20,8 @@ class AccountRestrictionBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final service = AccountRestrictionService.to;
-      final show = service.showRestrictionBanner.value && service.isAccountRestricted;
+      final show =
+          service.showRestrictionBanner.value && service.isAccountRestricted;
 
       return Stack(
         children: [

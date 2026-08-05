@@ -43,8 +43,7 @@ class KycFaceGuidePainter extends CustomPainter {
     final mask = Path.combine(PathOperation.difference, full, oval);
     canvas.drawPath(mask, overlay);
 
-    final borderColor =
-        showSuccess ? AppColors.softGreen : AppColors.darkGold;
+    final borderColor = showSuccess ? AppColors.softGreen : AppColors.darkGold;
     final stroke = showSuccess ? 5.0 : 3 + (pulse * 1.5);
     final border = Paint()
       ..style = PaintingStyle.stroke

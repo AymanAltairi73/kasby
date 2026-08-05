@@ -151,27 +151,26 @@ class SearchService {
 
   // ─── CATEGORY SEARCHES ─────────────────────────────────
 
-  static Future<List<SearchResultItem>> _searchInvestments(
-    String query,
-  ) async {
+  static Future<List<SearchResultItem>> _searchInvestments(String query) async {
     final items = <SearchResultItem>[];
     final home = _homeController;
     if (home == null) return items;
 
     for (final inv in home.myInvestments) {
       if (_matchesInvestment(inv, query)) {
-        items.add(SearchResultItem(
-          id: inv.id,
-          title:
-              '${_investmentPlanName(inv)} — ${_formatAmount(inv.amount)}',
-          subtitle:
-              '${'status'.tr}: ${inv.status.tr} · ${'profit'.tr}: ${KasbyNumberFormatter.formatProfitPercentage(inv.profitPercentage)}',
-          category: 'investment',
-          icon: Icons.trending_up_rounded,
-          color: const Color(0xFF4CAF50),
-          route: Routes.investmentDetails,
-          arguments: {'investment': inv},
-        ));
+        items.add(
+          SearchResultItem(
+            id: inv.id,
+            title: '${_investmentPlanName(inv)} — ${_formatAmount(inv.amount)}',
+            subtitle:
+                '${'status'.tr}: ${inv.status.tr} · ${'profit'.tr}: ${KasbyNumberFormatter.formatProfitPercentage(inv.profitPercentage)}',
+            category: 'investment',
+            icon: Icons.trending_up_rounded,
+            color: const Color(0xFF4CAF50),
+            route: Routes.investmentDetails,
+            arguments: {'investment': inv},
+          ),
+        );
       }
     }
 
@@ -188,18 +187,20 @@ class SearchService {
         for (final json in response as List) {
           final inv = UserInvestmentModel.fromJson(json);
           if (!items.any((i) => i.id == inv.id)) {
-            items.add(SearchResultItem(
-              id: inv.id,
-              title:
-                  '${_investmentPlanName(inv)} — ${_formatAmount(inv.amount)}',
-              subtitle:
-                  '${'status'.tr}: ${inv.status.tr} · ${'profit'.tr}: ${KasbyNumberFormatter.formatProfitPercentage(inv.profitPercentage)}',
-              category: 'investment',
-              icon: Icons.trending_up_rounded,
-              color: const Color(0xFF4CAF50),
-              route: Routes.investmentDetails,
-              arguments: {'investment': inv},
-            ));
+            items.add(
+              SearchResultItem(
+                id: inv.id,
+                title:
+                    '${_investmentPlanName(inv)} — ${_formatAmount(inv.amount)}',
+                subtitle:
+                    '${'status'.tr}: ${inv.status.tr} · ${'profit'.tr}: ${KasbyNumberFormatter.formatProfitPercentage(inv.profitPercentage)}',
+                category: 'investment',
+                icon: Icons.trending_up_rounded,
+                color: const Color(0xFF4CAF50),
+                route: Routes.investmentDetails,
+                arguments: {'investment': inv},
+              ),
+            );
           }
         }
       } catch (e, stack) {
@@ -236,7 +237,9 @@ class SearchService {
             .from('transactions')
             .select()
             .eq('user_id', SupabaseService.userId!)
-            .or('type.ilike.%$query%,status.ilike.%$query%,description.ilike.%$query%')
+            .or(
+              'type.ilike.%$query%,status.ilike.%$query%,description.ilike.%$query%',
+            )
             .order('created_at', ascending: false)
             .limit(5);
 
@@ -270,15 +273,17 @@ class SearchService {
 
     for (final n in home.notifications) {
       if (_matchesNotification(n, query)) {
-        items.add(SearchResultItem(
-          id: n.id,
-          title: n.title,
-          subtitle: n.message,
-          category: 'notification',
-          icon: Icons.notifications_rounded,
-          color: const Color(0xFFFF9800),
-          route: Routes.notifications,
-        ));
+        items.add(
+          SearchResultItem(
+            id: n.id,
+            title: n.title,
+            subtitle: n.message,
+            category: 'notification',
+            icon: Icons.notifications_rounded,
+            color: const Color(0xFFFF9800),
+            route: Routes.notifications,
+          ),
+        );
       }
     }
 
@@ -295,15 +300,17 @@ class SearchService {
         for (final json in response as List) {
           final n = NotificationModel.fromJson(json);
           if (!items.any((i) => i.id == n.id)) {
-            items.add(SearchResultItem(
-              id: n.id,
-              title: n.title,
-              subtitle: n.message,
-              category: 'notification',
-              icon: Icons.notifications_rounded,
-              color: const Color(0xFFFF9800),
-              route: Routes.notifications,
-            ));
+            items.add(
+              SearchResultItem(
+                id: n.id,
+                title: n.title,
+                subtitle: n.message,
+                category: 'notification',
+                icon: Icons.notifications_rounded,
+                color: const Color(0xFFFF9800),
+                route: Routes.notifications,
+              ),
+            );
           }
         }
       } catch (e, stack) {
@@ -347,50 +354,58 @@ class SearchService {
           ? cc.formatAmount(cc.totalBalance.value)
           : '';
 
-      items.add(SearchResultItem(
-        id: 'wallet_balance',
-        title: 'wallet'.tr,
-        subtitle: '${'total_balance'.tr}: $balanceText',
-        category: 'wallet',
-        icon: Icons.account_balance_wallet_rounded,
-        color: const Color(0xFF2196F3),
-        route: Routes.home,
-      ));
+      items.add(
+        SearchResultItem(
+          id: 'wallet_balance',
+          title: 'wallet'.tr,
+          subtitle: '${'total_balance'.tr}: $balanceText',
+          category: 'wallet',
+          icon: Icons.account_balance_wallet_rounded,
+          color: const Color(0xFF2196F3),
+          route: Routes.home,
+        ),
+      );
 
       if (query.contains('deposit') || query.contains('إيداع')) {
-        items.add(SearchResultItem(
-          id: 'wallet_deposit',
-          title: 'deposit'.tr,
-          subtitle: 'deposit_description'.tr,
-          category: 'wallet',
-          icon: Icons.add_circle_rounded,
-          color: const Color(0xFF4CAF50),
-          route: Routes.deposit,
-        ));
+        items.add(
+          SearchResultItem(
+            id: 'wallet_deposit',
+            title: 'deposit'.tr,
+            subtitle: 'deposit_description'.tr,
+            category: 'wallet',
+            icon: Icons.add_circle_rounded,
+            color: const Color(0xFF4CAF50),
+            route: Routes.deposit,
+          ),
+        );
       }
 
       if (query.contains('withdraw') || query.contains('سحب')) {
-        items.add(SearchResultItem(
-          id: 'wallet_withdraw',
-          title: 'withdraw'.tr,
-          subtitle: 'withdraw_description'.tr,
-          category: 'wallet',
-          icon: Icons.remove_circle_rounded,
-          color: const Color(0xFFF44336),
-          route: Routes.withdraw,
-        ));
+        items.add(
+          SearchResultItem(
+            id: 'wallet_withdraw',
+            title: 'withdraw'.tr,
+            subtitle: 'withdraw_description'.tr,
+            category: 'wallet',
+            icon: Icons.remove_circle_rounded,
+            color: const Color(0xFFF44336),
+            route: Routes.withdraw,
+          ),
+        );
       }
 
       if (query.contains('transfer') || query.contains('تحويل')) {
-        items.add(SearchResultItem(
-          id: 'wallet_transfer',
-          title: 'transfer'.tr,
-          subtitle: 'transfer_description'.tr,
-          category: 'wallet',
-          icon: Icons.swap_horiz_rounded,
-          color: const Color(0xFF9C27B0),
-          route: Routes.transfer,
-        ));
+        items.add(
+          SearchResultItem(
+            id: 'wallet_transfer',
+            title: 'transfer'.tr,
+            subtitle: 'transfer_description'.tr,
+            category: 'wallet',
+            icon: Icons.swap_horiz_rounded,
+            color: const Color(0xFF9C27B0),
+            route: Routes.transfer,
+          ),
+        );
       }
     }
 
@@ -419,15 +434,17 @@ class SearchService {
       final home = _homeController;
       final referralCode = home?.referralCode ?? '';
 
-      items.add(SearchResultItem(
-        id: 'team_referral',
-        title: 'my_team'.tr,
-        subtitle: '${'referral_code'.tr}: $referralCode',
-        category: 'team',
-        icon: Icons.group_rounded,
-        color: const Color(0xFF3F51B5),
-        route: Routes.myTeam,
-      ));
+      items.add(
+        SearchResultItem(
+          id: 'team_referral',
+          title: 'my_team'.tr,
+          subtitle: '${'referral_code'.tr}: $referralCode',
+          category: 'team',
+          icon: Icons.group_rounded,
+          color: const Color(0xFF3F51B5),
+          route: Routes.myTeam,
+        ),
+      );
     }
 
     if (items.isEmpty) {
@@ -440,15 +457,17 @@ class SearchService {
             .limit(5);
 
         for (final json in response as List) {
-          items.add(SearchResultItem(
-            id: json['id'] as String,
-            title: json['full_name'] as String? ?? 'team_member'.tr,
-            subtitle: json['referral_code'] as String? ?? '',
-            category: 'team',
-            icon: Icons.person_rounded,
-            color: const Color(0xFF3F51B5),
-            route: Routes.myTeam,
-          ));
+          items.add(
+            SearchResultItem(
+              id: json['id'] as String,
+              title: json['full_name'] as String? ?? 'team_member'.tr,
+              subtitle: json['referral_code'] as String? ?? '',
+              category: 'team',
+              icon: Icons.person_rounded,
+              color: const Color(0xFF3F51B5),
+              route: Routes.myTeam,
+            ),
+          );
         }
       } catch (e, stack) {
         SafeGetx.debugTrace(
@@ -475,15 +494,17 @@ class SearchService {
     );
 
     if (matched) {
-      items.add(SearchResultItem(
-        id: 'ksp_spin',
-        title: 'spin_wheel'.tr,
-        subtitle: 'spin_wheel_description'.tr,
-        category: 'ksp',
-        icon: Icons.casino_rounded,
-        color: const Color(0xFFE91E63),
-        route: Routes.spinWheel,
-      ));
+      items.add(
+        SearchResultItem(
+          id: 'ksp_spin',
+          title: 'spin_wheel'.tr,
+          subtitle: 'spin_wheel_description'.tr,
+          category: 'ksp',
+          icon: Icons.casino_rounded,
+          color: const Color(0xFFE91E63),
+          route: Routes.spinWheel,
+        ),
+      );
     }
 
     return items;
@@ -492,27 +513,24 @@ class SearchService {
   static Future<List<SearchResultItem>> _searchAgents(String query) async {
     final items = <SearchResultItem>[];
 
-    final agentTerms = [
-      'agent',
-      'وكيل',
-      'agency',
-      'وكالة',
-    ];
+    final agentTerms = ['agent', 'وكيل', 'agency', 'وكالة'];
 
     final matched = agentTerms.any(
       (term) => term.contains(query) || query.contains(term),
     );
 
     if (matched) {
-      items.add(SearchResultItem(
-        id: 'agents_list',
-        title: 'agents'.tr,
-        subtitle: 'find_agents'.tr,
-        category: 'agent',
-        icon: Icons.support_agent_rounded,
-        color: const Color(0xFF009688),
-        route: Routes.agents,
-      ));
+      items.add(
+        SearchResultItem(
+          id: 'agents_list',
+          title: 'agents'.tr,
+          subtitle: 'find_agents'.tr,
+          category: 'agent',
+          icon: Icons.support_agent_rounded,
+          color: const Color(0xFF009688),
+          route: Routes.agents,
+        ),
+      );
     }
 
     try {
@@ -526,16 +544,18 @@ class SearchService {
       for (final json in response as List) {
         final name = json['full_name'] as String? ?? 'agent'.tr;
         final city = json['city'] as String? ?? '';
-        items.add(SearchResultItem(
-          id: json['id']?.toString() ?? json['user_id'] as String,
-          title: name,
-          subtitle: city,
-          category: 'agent',
-          icon: Icons.support_agent_rounded,
-          color: const Color(0xFF009688),
-          route: Routes.agentDetails,
-          arguments: json,
-        ));
+        items.add(
+          SearchResultItem(
+            id: json['id']?.toString() ?? json['user_id'] as String,
+            title: name,
+            subtitle: city,
+            category: 'agent',
+            icon: Icons.support_agent_rounded,
+            color: const Color(0xFF009688),
+            route: Routes.agentDetails,
+            arguments: json,
+          ),
+        );
       }
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -606,11 +626,7 @@ class SearchService {
   }
 
   static bool _matchesNotification(NotificationModel n, String query) {
-    final searchable = [
-      n.title,
-      n.message,
-      n.type,
-    ].join(' ').toLowerCase();
+    final searchable = [n.title, n.message, n.type].join(' ').toLowerCase();
     return searchable.contains(query);
   }
 

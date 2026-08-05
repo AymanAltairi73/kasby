@@ -75,30 +75,35 @@ class ChatMessageModel {
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
     try {
       return ChatMessageModel(
-      id: json['id'] as String,
-      conversationId: json['conversation_id'] as String? ?? '',
-      senderId: json['sender_id'] as String? ?? '',
-      senderType: json['sender_type'] as String? ?? 'user',
-      content: (json['message_content'] ?? json['content']) as String? ?? '',
-      messageType: json['message_type'] as String? ?? 'text',
-      isEdited: json['is_edited'] as bool? ?? false,
-      isDeleted: json['is_deleted'] as bool? ?? false,
-      editedText: json['edited_text'] as String?,
-      editedAt: json['edited_at'] != null
-          ? DateTime.parse(json['edited_at'])
-          : null,
-      reactions:
-          (json['reactions'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
-      readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
-      deliveredAt: json['delivered_at'] != null ? DateTime.parse(json['delivered_at']) : null,
-      attachmentMetadata: json['attachment_metadata'] as Map<String, dynamic>?,
-      replyToId: json['reply_to_id'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
+        id: json['id'] as String,
+        conversationId: json['conversation_id'] as String? ?? '',
+        senderId: json['sender_id'] as String? ?? '',
+        senderType: json['sender_type'] as String? ?? 'user',
+        content: (json['message_content'] ?? json['content']) as String? ?? '',
+        messageType: json['message_type'] as String? ?? 'text',
+        isEdited: json['is_edited'] as bool? ?? false,
+        isDeleted: json['is_deleted'] as bool? ?? false,
+        editedText: json['edited_text'] as String?,
+        editedAt: json['edited_at'] != null
+            ? DateTime.parse(json['edited_at'])
+            : null,
+        reactions:
+            (json['reactions'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
+        readAt: json['read_at'] != null
+            ? DateTime.parse(json['read_at'])
+            : null,
+        deliveredAt: json['delivered_at'] != null
+            ? DateTime.parse(json['delivered_at'])
+            : null,
+        attachmentMetadata:
+            json['attachment_metadata'] as Map<String, dynamic>?,
+        replyToId: json['reply_to_id'] as String?,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'])
+            : DateTime.now(),
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(

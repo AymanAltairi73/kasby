@@ -95,10 +95,7 @@ class HomeRecentTransactions extends StatelessWidget {
                 HapticFeedback.lightImpact();
                 Get.toNamed(
                   Routes.transactionDetails,
-                  arguments: {
-                    'transaction': tx,
-                    'heroTag': 'home_tx_${tx.id}',
-                  },
+                  arguments: {'transaction': tx, 'heroTag': 'home_tx_${tx.id}'},
                 );
               },
               child: Container(
@@ -172,8 +169,9 @@ class HomeRecentTransactions extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 15,
-                            color:
-                                isOut ? AppColors.error : AppColors.softGreen,
+                            color: isOut
+                                ? AppColors.error
+                                : AppColors.softGreen,
                           ),
                         ),
                       ),

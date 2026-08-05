@@ -181,7 +181,6 @@ class KycFaceAnalyzer {
   bool _yawMatchesAngle(double yaw, KycSelfieAngle angle) {
     return (yaw - angle.targetYaw).abs() <= angle.yawTolerance;
   }
-
 }
 
 bool kycMovementVerifiedFromYaws({

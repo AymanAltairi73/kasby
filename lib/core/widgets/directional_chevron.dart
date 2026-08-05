@@ -15,7 +15,9 @@ class DirectionalChevron extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     return Icon(
-      isRtl ? Icons.arrow_back_ios_new_rounded : Icons.arrow_forward_ios_rounded,
+      isRtl
+          ? Icons.arrow_back_ios_new_rounded
+          : Icons.arrow_forward_ios_rounded,
       size: size,
       color: color ?? AppColors.textSecondary,
     );

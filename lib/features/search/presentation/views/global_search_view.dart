@@ -72,10 +72,7 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
         children: [
           IconButton(
             onPressed: () => Get.back(),
-            icon: Icon(
-              Icons.arrow_back_rounded,
-              color: AppColors.onSurface,
-            ),
+            icon: Icon(Icons.arrow_back_rounded, color: AppColors.onSurface),
             tooltip: 'back'.tr,
           ),
           Expanded(
@@ -95,10 +92,7 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
                 controller: _textController,
                 focusNode: _focusNode,
                 onChanged: _controller.onQueryChanged,
-                style: TextStyle(
-                  color: AppColors.onSurface,
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: AppColors.onSurface, fontSize: 16),
                 decoration: InputDecoration(
                   hintText: 'search_placeholder'.tr,
                   hintStyle: TextStyle(
@@ -147,17 +141,32 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
     final categories = <_CategoryChipData>[
       _CategoryChipData('all', 'search_all'.tr, Icons.apps_rounded),
       _CategoryChipData(
-          'investment', 'search_investments'.tr, Icons.trending_up_rounded),
+        'investment',
+        'search_investments'.tr,
+        Icons.trending_up_rounded,
+      ),
       _CategoryChipData(
-          'transaction', 'search_transactions'.tr, Icons.receipt_long_rounded),
-      _CategoryChipData('notification', 'search_notifications'.tr,
-          Icons.notifications_rounded),
-      _CategoryChipData('wallet', 'search_wallet'.tr,
-          Icons.account_balance_wallet_rounded),
+        'transaction',
+        'search_transactions'.tr,
+        Icons.receipt_long_rounded,
+      ),
+      _CategoryChipData(
+        'notification',
+        'search_notifications'.tr,
+        Icons.notifications_rounded,
+      ),
+      _CategoryChipData(
+        'wallet',
+        'search_wallet'.tr,
+        Icons.account_balance_wallet_rounded,
+      ),
       _CategoryChipData('team', 'search_team'.tr, Icons.group_rounded),
       _CategoryChipData('ksp', 'search_ksp'.tr, Icons.stars_rounded),
       _CategoryChipData(
-          'agent', 'search_agents'.tr, Icons.support_agent_rounded),
+        'agent',
+        'search_agents'.tr,
+        Icons.support_agent_rounded,
+      ),
     ];
 
     return Obx(() {
@@ -172,8 +181,7 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
           separatorBuilder: (_, __) => const SizedBox(width: KasbySpacing.sm),
           itemBuilder: (context, index) {
             final chip = categories[index];
-            final isSelected =
-                _controller.selectedCategory.value == chip.key;
+            final isSelected = _controller.selectedCategory.value == chip.key;
             final count =
                 _controller.results.value.categoryCounts[chip.key] ?? 0;
 
@@ -189,15 +197,15 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
                   color: isSelected
                       ? AppColors.primary.withValues(alpha: 0.15)
                       : isDark
-                          ? AppColors.surface.withValues(alpha: 0.5)
-                          : AppColors.surfaceLight,
+                      ? AppColors.surface.withValues(alpha: 0.5)
+                      : AppColors.surfaceLight,
                   borderRadius: KasbyRadius.chipR,
                   border: Border.all(
                     color: isSelected
                         ? AppColors.primary
                         : isDark
-                            ? AppColors.onSurface.withValues(alpha: 0.08)
-                            : AppColors.borderLight,
+                        ? AppColors.onSurface.withValues(alpha: 0.08)
+                        : AppColors.borderLight,
                     width: isSelected ? 1.5 : 1,
                   ),
                 ),
@@ -215,11 +223,12 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
                     Text(
                       chip.key == 'all'
                           ? chip.label
-                          : '${ chip.label}${count > 0 ? ' ($count)' : ''}',
+                          : '${chip.label}${count > 0 ? ' ($count)' : ''}',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         color: isSelected
                             ? AppColors.primary
                             : AppColors.textSecondary,
@@ -276,10 +285,7 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
               const SizedBox(height: KasbySpacing.lg),
               Text(
                 'search_hint'.tr,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -323,41 +329,40 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
                 itemBuilder: (context, index) {
                   final search = searches[index];
                   return ListTile(
-                    leading: Icon(
-                      Icons.history_rounded,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
-                    title: Text(
-                      search,
-                      style: TextStyle(
-                        color: AppColors.onSurface,
-                        fontSize: 15,
-                      ),
-                    ),
-                    trailing: IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: AppColors.textSecondary,
-                        size: 18,
-                      ),
-                      tooltip: 'close'.tr,
-                      onPressed: () => _controller.removeRecentSearch(search),
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                    onTap: () {
-                      _textController.text = search;
-                      _textController.selection = TextSelection.fromPosition(
-                        TextPosition(offset: search.length),
-                      );
-                      _controller.searchFromRecent(search);
-                    },
-                  )
-                      .animate()
-                      .fadeIn(
-                        duration: 300.ms,
-                        delay: (50 * index).ms,
+                        leading: Icon(
+                          Icons.history_rounded,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        title: Text(
+                          search,
+                          style: TextStyle(
+                            color: AppColors.onSurface,
+                            fontSize: 15,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: AppColors.textSecondary,
+                            size: 18,
+                          ),
+                          tooltip: 'close'.tr,
+                          onPressed: () =>
+                              _controller.removeRecentSearch(search),
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                        onTap: () {
+                          _textController.text = search;
+                          _textController.selection =
+                              TextSelection.fromPosition(
+                                TextPosition(offset: search.length),
+                              );
+                          _controller.searchFromRecent(search);
+                        },
                       )
+                      .animate()
+                      .fadeIn(duration: 300.ms, delay: (50 * index).ms)
                       .slideX(begin: -0.05, end: 0);
                 },
               ),
@@ -492,63 +497,63 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
 
   Widget _buildResultTile(SearchResultItem item, bool isDark, int index) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: KasbySpacing.sm),
-      child: KasbyCard(
-        padding: const EdgeInsets.all(KasbySpacing.md),
-        borderRadius: KasbyRadius.card,
-        child: InkWell(
-          borderRadius: KasbyRadius.cardR,
-          onTap: () => _onResultTap(item),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: 0.12),
-                  borderRadius: KasbyRadius.inputR,
-                ),
-                child: Icon(item.icon, color: item.color, size: 22),
-              ),
-              const SizedBox(width: KasbySpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+          padding: const EdgeInsets.only(bottom: KasbySpacing.sm),
+          child: KasbyCard(
+            padding: const EdgeInsets.all(KasbySpacing.md),
+            borderRadius: KasbyRadius.card,
+            child: InkWell(
+              borderRadius: KasbyRadius.cardR,
+              onTap: () => _onResultTap(item),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: item.color.withValues(alpha: 0.12),
+                      borderRadius: KasbyRadius.inputR,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    child: Icon(item.icon, color: item.color, size: 22),
+                  ),
+                  const SizedBox(width: KasbySpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.subtitle,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: KasbySpacing.sm),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textSecondary.withValues(alpha: 0.5),
+                    size: 20,
+                  ),
+                ],
               ),
-              const SizedBox(width: KasbySpacing.sm),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary.withValues(alpha: 0.5),
-                size: 20,
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
-    )
+        )
         .animate()
         .fadeIn(duration: 250.ms, delay: (40 * (index % 10)).ms)
         .slideX(begin: 0.03, end: 0);

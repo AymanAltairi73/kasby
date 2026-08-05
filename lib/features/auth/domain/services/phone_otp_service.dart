@@ -122,10 +122,7 @@ class PhoneOtpService extends GetxService {
   }
 
   /// Resend phone OTP for a given [OtpType].
-  Future<void> resend({
-    required String phone,
-    required OtpType type,
-  }) async {
+  Future<void> resend({required String phone, required OtpType type}) async {
     final e164 = toE164(phone);
     final sw = AuthenticationLogger.logStart(
       'phone_otp_resend',

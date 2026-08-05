@@ -116,9 +116,9 @@ class _LockScreenState extends State<LockScreen> {
                   fit: BoxFit.contain,
                 ),
               ).animate().scale(duration: 800.ms, curve: Curves.elasticOut),
-              
+
               const SizedBox(height: 48),
-              
+
               Text(
                 'app_locked'.tr,
                 style: const TextStyle(
@@ -127,9 +127,9 @@ class _LockScreenState extends State<LockScreen> {
                   letterSpacing: 1,
                 ),
               ).animate().fadeIn(delay: 200.ms),
-              
+
               const SizedBox(height: 12),
-              
+
               Text(
                 'lock_screen_desc'.tr,
                 textAlign: TextAlign.center,
@@ -138,9 +138,9 @@ class _LockScreenState extends State<LockScreen> {
                   fontSize: 14,
                 ),
               ).animate().fadeIn(delay: 300.ms),
-              
+
               const SizedBox(height: 80),
-              
+
               if (_isAuthenticating)
                 CircularProgressIndicator(color: AppColors.darkGold)
               else
@@ -149,9 +149,9 @@ class _LockScreenState extends State<LockScreen> {
                   onPressed: _handleAuth,
                   icon: Icons.fingerprint_rounded,
                 ).animate().scale(delay: 500.ms),
-              
+
               const SizedBox(height: 24),
-              
+
               TextButton(
                 onPressed: () {
                   HapticFeedback.mediumImpact();

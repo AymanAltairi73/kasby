@@ -81,7 +81,10 @@ class _TransferViewState extends State<TransferView> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.qr_code_scanner_rounded, color: AppColors.darkGold),
+            icon: Icon(
+              Icons.qr_code_scanner_rounded,
+              color: AppColors.darkGold,
+            ),
             onPressed: () {
               HapticFeedback.lightImpact();
               Get.toNamed(Routes.qrScanner);
@@ -105,9 +108,14 @@ class _TransferViewState extends State<TransferView> {
               const SizedBox(height: 40),
               _isSubmitting
                   ? Center(
-                      child: CircularProgressIndicator(color: AppColors.darkGold),
+                      child: CircularProgressIndicator(
+                        color: AppColors.darkGold,
+                      ),
                     )
-                  : KasbyButton(text: 'transfer'.tr, onPressed: _handleTransfer),
+                  : KasbyButton(
+                      text: 'transfer'.tr,
+                      onPressed: _handleTransfer,
+                    ),
             ],
           ),
         ),
@@ -279,10 +287,7 @@ class _TransferViewState extends State<TransferView> {
                     height: 20,
                   ),
                 )
-              : Icon(
-                  Icons.attach_money_rounded,
-                  color: AppColors.darkGold,
-                ),
+              : Icon(Icons.attach_money_rounded, color: AppColors.darkGold),
         ),
         const SizedBox(height: 16),
         if (!isPoints)
@@ -495,7 +500,7 @@ class _TransferViewState extends State<TransferView> {
 
     final receiverCode = _idController.text.trim();
     final myProfile = HomeController.to.profile.value;
-    
+
     // Self-transfer check
     if (myProfile != null &&
         (ReferralService.normalizeCode(myProfile.referralCode ?? '') ==
@@ -595,10 +600,7 @@ class _TransferViewState extends State<TransferView> {
               const SizedBox(height: 8),
               Text(
                 'no_fee_applied'.tr,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
             ],
           ],

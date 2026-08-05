@@ -26,7 +26,11 @@ class StoreProductsView extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[600]),
+                Icon(
+                  Icons.inventory_2_outlined,
+                  size: 64,
+                  color: Colors.grey[600],
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'لا توجد منتجات متوفرة في هذا القسم حالياً',
@@ -51,7 +55,10 @@ class StoreProductsView extends StatelessWidget {
             return StoreProductCard(
               product: prod,
               onTap: () {
-                Get.toNamed('/store-product-detail', arguments: {'product': prod});
+                Get.toNamed(
+                  '/store-product-detail',
+                  arguments: {'product': prod},
+                );
               },
             );
           },

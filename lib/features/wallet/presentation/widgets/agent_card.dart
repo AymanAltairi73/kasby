@@ -86,9 +86,10 @@ class AgentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location = [agent.city, agent.country]
-        .where((part) => part.trim().isNotEmpty)
-        .join(', ');
+    final location = [
+      agent.city,
+      agent.country,
+    ].where((part) => part.trim().isNotEmpty).join(', ');
 
     return Semantics(
       button: true,
@@ -236,11 +237,19 @@ class AgentCard extends StatelessWidget {
                           right: -2,
                           top: -2,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.darkGold,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: isDark ? AppColors.surface : AppColors.surfaceLight, width: 2),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.surface
+                                    : AppColors.surfaceLight,
+                                width: 2,
+                              ),
                             ),
                             constraints: const BoxConstraints(
                               minWidth: 18,
@@ -260,10 +269,7 @@ class AgentCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  DirectionalChevron(
-                    size: 18,
-                    color: AppColors.textSecondary,
-                  ),
+                  DirectionalChevron(size: 18, color: AppColors.textSecondary),
                 ],
               ),
             ],

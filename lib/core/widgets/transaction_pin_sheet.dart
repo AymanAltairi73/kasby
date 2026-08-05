@@ -24,16 +24,14 @@ class TransactionPinSheet {
 }
 
 class _TransactionPinSheetBody extends StatefulWidget {
-  const _TransactionPinSheetBody({
-    required this.title,
-    required this.subtitle,
-  });
+  const _TransactionPinSheetBody({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
 
   @override
-  State<_TransactionPinSheetBody> createState() => _TransactionPinSheetBodyState();
+  State<_TransactionPinSheetBody> createState() =>
+      _TransactionPinSheetBodyState();
 }
 
 class _TransactionPinSheetBodyState extends State<_TransactionPinSheetBody> {
@@ -62,14 +60,19 @@ class _TransactionPinSheetBodyState extends State<_TransactionPinSheetBody> {
               const SizedBox(height: 16),
               Text(
                 widget.title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 widget.subtitle,
                 style: TextStyle(
-                  color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLight,
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,

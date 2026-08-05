@@ -80,7 +80,11 @@ class _PasswordStrengthMeterState extends State<PasswordStrengthMeter> {
           const SizedBox(height: KasbySpacing.xs),
           Text(
             '${'password_strength'.tr}: $label',
-            style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

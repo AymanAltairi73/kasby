@@ -30,163 +30,171 @@ class TeamMemberCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final id = member['id']?.toString() ?? '';
-    final isOnline = Get.isRegistered<PresenceService>() &&
+    final isOnline =
+        Get.isRegistered<PresenceService>() &&
         Get.find<PresenceService>().isUserOnline(id);
     final isActive = member['status']?.toString() == 'active';
-    final isVerified = member['is_verified'] == true ||
+    final isVerified =
+        member['is_verified'] == true ||
         member['kyc_status']?.toString() == 'verified';
-    final invested =
-        (member['investment_amount'] as num?)?.toDouble() ?? 0;
+    final invested = (member['investment_amount'] as num?)?.toDouble() ?? 0;
 
     return KasbyCard(
-      padding: EdgeInsets.all(compact ? KasbySpacing.md : KasbySpacing.lg),
-      margin: const EdgeInsets.only(bottom: KasbySpacing.sm),
-      borderRadius: KasbyRadius.card,
-      hasShadow: true,
-      child: InkWell(
-        onTap: onTap ?? () => TeamMemberProfileSheet.show(member),
-        borderRadius: KasbyRadius.cardR,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Stack(
+          padding: EdgeInsets.all(compact ? KasbySpacing.md : KasbySpacing.lg),
+          margin: const EdgeInsets.only(bottom: KasbySpacing.sm),
+          borderRadius: KasbyRadius.card,
+          hasShadow: true,
+          child: InkWell(
+            onTap: onTap ?? () => TeamMemberProfileSheet.show(member),
+            borderRadius: KasbyRadius.cardR,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                CircleAvatar(
-                  radius: compact ? 22 : 24,
-                  backgroundImage: member['avatar_url'] != null
-                      ? NetworkImage(member['avatar_url'].toString())
-                      : null,
-                  child: member['avatar_url'] == null
-                      ? Text(
-                          (member['full_name']?.toString() ?? '?')[0],
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        )
-                      : null,
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 11,
-                    height: 11,
-                    decoration: BoxDecoration(
-                      color: isOnline ? AppColors.softGreen : Colors.grey,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? AppColors.surface : Colors.white,
-                        width: 2,
-                      ),
+                Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: compact ? 22 : 24,
+                      backgroundImage: member['avatar_url'] != null
+                          ? NetworkImage(member['avatar_url'].toString())
+                          : null,
+                      child: member['avatar_url'] == null
+                          ? Text(
+                              (member['full_name']?.toString() ?? '?')[0],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
                     ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: KasbySpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          member['full_name']?.toString() ?? '—',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: compact ? 14 : 15,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.onSurfaceLight,
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 11,
+                        height: 11,
+                        decoration: BoxDecoration(
+                          color: isOnline ? AppColors.softGreen : Colors.grey,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? AppColors.surface : Colors.white,
+                            width: 2,
                           ),
                         ),
                       ),
-                      if (showLevel)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: KasbySpacing.sm,
-                            vertical: 2,
+                    ),
+                  ],
+                ),
+                const SizedBox(width: KasbySpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              member['full_name']?.toString() ?? '—',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: compact ? 14 : 15,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.onSurfaceLight,
+                              ),
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: AppColors.darkGold.withValues(alpha: 0.12),
-                            borderRadius: KasbyRadius.chipR,
-                          ),
+                          if (showLevel)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: KasbySpacing.sm,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.darkGold.withValues(
+                                  alpha: 0.12,
+                                ),
+                                borderRadius: KasbyRadius.chipR,
+                              ),
+                              child: Text(
+                                'L${member['level'] ?? 1}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.darkGold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '@${member['referral_code'] ?? '—'}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      if (!compact) ...[
+                        const SizedBox(height: KasbySpacing.xs),
+                        Wrap(
+                          spacing: KasbySpacing.xs,
+                          runSpacing: KasbySpacing.xs,
+                          children: [
+                            _badge(
+                              isActive ? 'active'.tr : 'inactive'.tr,
+                              isActive ? AppColors.softGreen : Colors.grey,
+                            ),
+                            if (isVerified)
+                              _badge('verified'.tr, AppColors.softGreen),
+                            if (invested > 0)
+                              _badge('investor'.tr, AppColors.darkGold),
+                          ],
+                        ),
+                        const SizedBox(height: KasbySpacing.xs),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _miniMetric(
+                                'investment'.tr,
+                                '\$${invested.toStringAsFixed(0)}',
+                              ),
+                            ),
+                            Expanded(
+                              child: _miniMetric(
+                                'referral_earnings'.tr,
+                                '\$${(member['referral_earnings'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (member['created_at'] != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
                           child: Text(
-                            'L${member['level'] ?? 1}',
+                            DateHelper.date(
+                              DateTime.parse(member['created_at'].toString()),
+                            ),
                             style: TextStyle(
                               fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.darkGold,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '@${member['referral_code'] ?? '—'}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  if (!compact) ...[
-                    const SizedBox(height: KasbySpacing.xs),
-                    Wrap(
-                      spacing: KasbySpacing.xs,
-                      runSpacing: KasbySpacing.xs,
-                      children: [
-                        _badge(
-                          isActive ? 'active'.tr : 'inactive'.tr,
-                          isActive ? AppColors.softGreen : Colors.grey,
-                        ),
-                        if (isVerified)
-                          _badge('verified'.tr, AppColors.softGreen),
-                        if (invested > 0)
-                          _badge('investor'.tr, AppColors.darkGold),
-                      ],
-                    ),
-                    const SizedBox(height: KasbySpacing.xs),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _miniMetric(
-                            'investment'.tr,
-                            '\$${invested.toStringAsFixed(0)}',
-                          ),
-                        ),
-                        Expanded(
-                          child: _miniMetric(
-                            'referral_earnings'.tr,
-                            '\$${(member['referral_earnings'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  if (member['created_at'] != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        DateHelper.date(
-                          DateTime.parse(member['created_at'].toString()),
-                        ),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+              ],
             ),
-            Icon(Icons.chevron_right_rounded,
-                color: AppColors.textSecondary, size: 20),
-          ],
-        ),
-      ),
-    )
+          ),
+        )
         .animate()
         .fadeIn(
           delay: Duration(milliseconds: 30 * animationIndex),
@@ -217,10 +225,14 @@ class TeamMemberCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-        Text(value,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+        ),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        ),
       ],
     );
   }
@@ -343,11 +355,12 @@ class TeamTimelineTab extends StatelessWidget {
                           ),
                         if (item['created_at'] != null)
                           Padding(
-                            padding: const EdgeInsets.only(top: KasbySpacing.xs),
+                            padding: const EdgeInsets.only(
+                              top: KasbySpacing.xs,
+                            ),
                             child: Text(
                               DateHelper.dateTime(
-                                DateTime.parse(
-                                    item['created_at'].toString()),
+                                DateTime.parse(item['created_at'].toString()),
                               ),
                               style: TextStyle(
                                 fontSize: 10,
@@ -394,16 +407,26 @@ class TeamStatsTab extends StatelessWidget {
         ('non_investors', s['non_investors']),
         ('agents', s['agents']),
         ('premium_members', s['premium_members']),
-        ('total_team_investment',
-            '\$${(s['total_team_investment'] as num?)?.toStringAsFixed(0) ?? '0'}'),
-        ('total_referral_earnings',
-            '\$${(s['total_referral_earnings'] as num?)?.toStringAsFixed(2) ?? '0'}'),
-        ('today_referral_earnings',
-            '\$${(s['today_referral_earnings'] as num?)?.toStringAsFixed(2) ?? '0'}'),
-        ('monthly_referral_earnings',
-            '\$${(s['monthly_referral_earnings'] as num?)?.toStringAsFixed(2) ?? '0'}'),
-        ('average_investment',
-            '\$${(s['average_investment'] as num?)?.toStringAsFixed(0) ?? '0'}'),
+        (
+          'total_team_investment',
+          '\$${(s['total_team_investment'] as num?)?.toStringAsFixed(0) ?? '0'}',
+        ),
+        (
+          'total_referral_earnings',
+          '\$${(s['total_referral_earnings'] as num?)?.toStringAsFixed(2) ?? '0'}',
+        ),
+        (
+          'today_referral_earnings',
+          '\$${(s['today_referral_earnings'] as num?)?.toStringAsFixed(2) ?? '0'}',
+        ),
+        (
+          'monthly_referral_earnings',
+          '\$${(s['monthly_referral_earnings'] as num?)?.toStringAsFixed(2) ?? '0'}',
+        ),
+        (
+          'average_investment',
+          '\$${(s['average_investment'] as num?)?.toStringAsFixed(0) ?? '0'}',
+        ),
         ('highest_investor', s['highest_investor']),
         ('newest_member', s['newest_member']),
       ];
@@ -468,11 +491,10 @@ List<_TreeNode> _buildTreeRoots(
   List<Map<String, dynamic>> flat,
   String rootUserId,
 ) {
-  final nodes =
-      flat.map((n) => _TreeNode(Map<String, dynamic>.from(n))).toList();
-  final byId = {
-    for (final n in nodes) n.data['id']?.toString() ?? '': n,
-  };
+  final nodes = flat
+      .map((n) => _TreeNode(Map<String, dynamic>.from(n)))
+      .toList();
+  final byId = {for (final n in nodes) n.data['id']?.toString() ?? '': n};
   final childMap = <String, List<_TreeNode>>{};
 
   for (final node in nodes) {
@@ -487,10 +509,7 @@ List<_TreeNode> _buildTreeRoots(
   _TreeNode withChildren(_TreeNode n) {
     final id = n.data['id']?.toString() ?? '';
     final kids = childMap[id] ?? const [];
-    return _TreeNode(
-      n.data,
-      children: kids.map(withChildren).toList(),
-    );
+    return _TreeNode(n.data, children: kids.map(withChildren).toList());
   }
 
   return nodes
@@ -667,8 +686,11 @@ class _TreeNodeTile extends StatelessWidget {
                 icon: AnimatedRotation(
                   turns: expanded ? 0.25 : 0,
                   duration: KasbyMotion.fast,
-                  child: Icon(Icons.chevron_right_rounded,
-                      size: 20, color: AppColors.darkGold),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: AppColors.darkGold,
+                  ),
                 ),
                 onPressed: () => onToggle(id),
               )
@@ -697,8 +719,9 @@ class _TreeNodeTile extends StatelessWidget {
                 ),
             ],
           ),
-          crossFadeState:
-              expanded && hasChildren ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          crossFadeState: expanded && hasChildren
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
           duration: KasbyMotion.normal,
           sizeCurve: Curves.easeInOut,
         ),
@@ -714,8 +737,11 @@ Widget _emptyState(String message) {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.groups_outlined,
-              size: 48, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+          Icon(
+            Icons.groups_outlined,
+            size: 48,
+            color: AppColors.textSecondary.withValues(alpha: 0.4),
+          ),
           const SizedBox(height: KasbySpacing.md),
           Text(message, style: TextStyle(color: AppColors.textSecondary)),
         ],

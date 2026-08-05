@@ -54,9 +54,9 @@ class TeamController extends GetxController {
         .stream(primaryKey: ['id'])
         .eq('referred_by', userId)
         .listen((_) {
-      fetchTeam();
-      fetchStatistics();
-    });
+          fetchTeam();
+          fetchStatistics();
+        });
   }
 
   Future<void> refreshAll() async {
@@ -112,10 +112,10 @@ class TeamController extends GetxController {
 
   Future<void> fetchTimeline() async {
     if (!SupabaseService.isLoggedIn) return;
-    final result =
-        await SupabaseService.client.rpc('get_referral_timeline', params: {
-      'p_limit': 50,
-    });
+    final result = await SupabaseService.client.rpc(
+      'get_referral_timeline',
+      params: {'p_limit': 50},
+    );
     if (result is Map && result['success'] == true) {
       timelineItems.assignAll(
         List<Map<String, dynamic>>.from(result['items'] ?? []),
@@ -125,10 +125,10 @@ class TeamController extends GetxController {
 
   Future<void> fetchAnalytics({int days = 30}) async {
     if (!SupabaseService.isLoggedIn) return;
-    final result =
-        await SupabaseService.client.rpc('get_referral_analytics', params: {
-      'p_days': days,
-    });
+    final result = await SupabaseService.client.rpc(
+      'get_referral_analytics',
+      params: {'p_days': days},
+    );
     if (result is Map) {
       analyticsData.assignAll(Map<String, dynamic>.from(result));
     }

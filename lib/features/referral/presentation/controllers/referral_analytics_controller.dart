@@ -32,10 +32,7 @@ class ReferralAnalyticsController extends GetxController {
     isLoading.value = true;
     hasError.value = false;
     try {
-      await Future.wait([
-        fetchTeamMembers(),
-        fetchReferralEarnings(),
-      ]);
+      await Future.wait([fetchTeamMembers(), fetchReferralEarnings()]);
       computeMetrics();
     } catch (e) {
       hasError.value = true;
@@ -65,7 +62,9 @@ class ReferralAnalyticsController extends GetxController {
             final members = List<Map<String, dynamic>>.from(
               response['tree'] ?? response['members'] ?? [],
             );
-            teamMembers.assignAll(members.where((m) => (m['level'] as int? ?? 1) == 1));
+            teamMembers.assignAll(
+              members.where((m) => (m['level'] as int? ?? 1) == 1),
+            );
           }
         } catch (e) {
           SafeGetx.debugTrace(
@@ -97,8 +96,7 @@ class ReferralAnalyticsController extends GetxController {
           double cumulative = 0.0;
           final history = <double>[];
           for (final row in earnings) {
-            cumulative +=
-                (row['commission_amount'] as num?)?.toDouble() ?? 0.0;
+            cumulative += (row['commission_amount'] as num?)?.toDouble() ?? 0.0;
             history.add(cumulative);
           }
           earningsHistory.assignAll(history);
@@ -215,8 +213,7 @@ class ReferralAnalyticsController extends GetxController {
       for (final row in _rawEarnings) {
         final createdAt = DateTime.tryParse(row['created_at'] ?? '');
         if (createdAt != null && createdAt.isAfter(cutoff)) {
-          periodTotal +=
-              (row['commission_amount'] as num?)?.toDouble() ?? 0.0;
+          periodTotal += (row['commission_amount'] as num?)?.toDouble() ?? 0.0;
           history.add(periodTotal);
         }
       }

@@ -127,123 +127,126 @@ class _NotificationsViewState extends State<NotificationsView> {
           _buildFilterBar(),
           Expanded(
             child: RefreshIndicator(
-        onRefresh: () => homeController.fetchNotifications(),
-        color: AppColors.darkGold,
-        child: Obx(() {
-          if (homeController.isLoadingNotifications.value) {
-            return ListView.separated(
-              padding: const EdgeInsets.all(20),
-              itemCount: 6,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, __) => const KasbyShimmer.listItem(),
-            );
-          }
+              onRefresh: () => homeController.fetchNotifications(),
+              color: AppColors.darkGold,
+              child: Obx(() {
+                if (homeController.isLoadingNotifications.value) {
+                  return ListView.separated(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: 6,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (_, __) => const KasbyShimmer.listItem(),
+                  );
+                }
 
-          final notifications = _applyFilter(homeController.notifications);
-
-          if (notifications.isEmpty) {
-            return _buildEmptyState(homeController);
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(20),
-            itemCount: notifications.length +
-                (homeController.notifications.length <
-                        homeController.notificationTotalCount.value
-                    ? 1
-                    : 0),
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              if (index == notifications.length) {
-                homeController.loadMoreNotifications();
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
+                final notifications = _applyFilter(
+                  homeController.notifications,
                 );
-              }
-              final notification = notifications[index];
-              final isRead = notification.isRead;
 
-              return GestureDetector(
-                onTap: () {
-                  if (!isRead) {
-                    homeController.markNotificationRead(notification.id);
-                  }
-                  homeController.navigateFromNotification(notification);
-                },
-                child: KasbyCard(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color:
-                              (isRead
-                                      ? AppColors.textSecondary
-                                      : _getTypeColor(notification.type))
-                                  .withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _getTypeIcon(notification.type, isRead),
-                          color: isRead
-                              ? AppColors.textSecondary
-                              : _getTypeColor(notification.type),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
+                if (notifications.isEmpty) {
+                  return _buildEmptyState(homeController);
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.all(20),
+                  itemCount:
+                      notifications.length +
+                      (homeController.notifications.length <
+                              homeController.notificationTotalCount.value
+                          ? 1
+                          : 0),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    if (index == notifications.length) {
+                      homeController.loadMoreNotifications();
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final notification = notifications[index];
+                    final isRead = notification.isRead;
+
+                    return GestureDetector(
+                      onTap: () {
+                        if (!isRead) {
+                          homeController.markNotificationRead(notification.id);
+                        }
+                        homeController.navigateFromNotification(notification);
+                      },
+                      child: KasbyCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              notification.localizedTitle,
-                              style: TextStyle(
-                                fontWeight: isRead
-                                    ? FontWeight.normal
-                                    : FontWeight.bold,
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color:
+                                    (isRead
+                                            ? AppColors.textSecondary
+                                            : _getTypeColor(notification.type))
+                                        .withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _getTypeIcon(notification.type, isRead),
+                                color: isRead
+                                    ? AppColors.textSecondary
+                                    : _getTypeColor(notification.type),
+                                size: 20,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              notification.localizedMessage,
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    notification.localizedTitle,
+                                    style: TextStyle(
+                                      fontWeight: isRead
+                                          ? FontWeight.normal
+                                          : FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    notification.localizedMessage,
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  if (notification.sentAt != null) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      DateHelper.relative(notification.sentAt),
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
-                            if (notification.sentAt != null) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                DateHelper.relative(notification.sentAt),
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 11,
+                            if (!isRead)
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: AppColors.darkGold,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
-                            ],
                           ],
                         ),
                       ),
-                      if (!isRead)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: AppColors.darkGold,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        }),
+                    );
+                  },
+                );
+              }),
             ),
           ),
         ],

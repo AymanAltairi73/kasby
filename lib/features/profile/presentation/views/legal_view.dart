@@ -18,7 +18,9 @@ class _LegalViewState extends State<LegalView>
   void initState() {
     super.initState();
     final args = Get.arguments as Map<String, dynamic>? ?? {};
-    final initialTab = args['initialTab'] is int ? args['initialTab'] as int : 0;
+    final initialTab = args['initialTab'] is int
+        ? args['initialTab'] as int
+        : 0;
     _tabController = TabController(
       length: 2,
       vsync: this,

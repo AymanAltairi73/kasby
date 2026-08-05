@@ -96,8 +96,9 @@ class AgentController extends GetxController {
   Future<void> fetchPerformanceStats() async {
     if (!SupabaseService.isLoggedIn || _agentId == null) return;
     try {
-      final response =
-          await SupabaseService.client.rpc('fn_get_agent_performance_stats');
+      final response = await SupabaseService.client.rpc(
+        'fn_get_agent_performance_stats',
+      );
       if (response is Map && response['success'] == true) {
         performanceStats.value = Map<String, dynamic>.from(response);
       }
@@ -154,8 +155,9 @@ class AgentController extends GetxController {
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
         .listen((data) {
-          final agentNotifs =
-              data.where((n) => n['role_target'] == 'agent').toList();
+          final agentNotifs = data
+              .where((n) => n['role_target'] == 'agent')
+              .toList();
           unreadAgentNotifCount.value = agentNotifs
               .where((n) => n['read_at'] == null)
               .length;
@@ -197,8 +199,8 @@ class AgentController extends GetxController {
           .maybeSingle();
 
       if (response == null) {
-        final profile = HomeController.to.profile.value ??
-            await _loadProfileRole();
+        final profile =
+            HomeController.to.profile.value ?? await _loadProfileRole();
         if (profile?.role == 'agent') {
           final ensured = await _ensureAgentProfile();
           if (ensured) {
@@ -286,9 +288,11 @@ class AgentController extends GetxController {
 
       if (response is Map && response['success'] == true) {
         final rows = (response['data'] as List? ?? [])
-            .map((json) => TransactionModel.fromJson(
-                  Map<String, dynamic>.from(json as Map),
-                ))
+            .map(
+              (json) => TransactionModel.fromJson(
+                Map<String, dynamic>.from(json as Map),
+              ),
+            )
             .toList();
 
         if (append) {
@@ -415,10 +419,7 @@ class AgentController extends GetxController {
     try {
       final response = await SupabaseService.client.rpc(
         'fn_get_agent_customer_details',
-        params: {
-          'p_user_id': userId,
-          'p_transaction_id': transactionId,
-        },
+        params: {'p_user_id': userId, 'p_transaction_id': transactionId},
       );
       if (response is Map && response['success'] == true) {
         return Map<String, dynamic>.from(response);
@@ -448,12 +449,12 @@ class AgentController extends GetxController {
         status: 'INFO',
         params: {'transactionId': transactionId},
       );
-      
+
       final response = await SupabaseService.client.rpc(
         'agent_approve_deposit',
         params: {'p_transaction_id': transactionId},
       );
-      
+
       SafeGetx.debugTrace(
         className: 'AgentController',
         method: 'approveDeposit',
@@ -461,7 +462,7 @@ class AgentController extends GetxController {
         status: 'INFO',
         params: {'response': response},
       );
-      
+
       parsed = _parseRpcResponse(response);
 
       if (parsed?['success'] == true) {
@@ -555,10 +556,7 @@ class AgentController extends GetxController {
 
   Future<void> rejectTransaction(String transactionId, String reason) async {
     if (reason.trim().isEmpty) {
-      SafeGetx.snackbar(
-        title: 'error'.tr,
-        message: 'rejection_reason_hint'.tr,
-      );
+      SafeGetx.snackbar(title: 'error'.tr, message: 'rejection_reason_hint'.tr);
       return;
     }
 
@@ -567,10 +565,7 @@ class AgentController extends GetxController {
     try {
       final response = await SupabaseService.client.rpc(
         'agent_reject_transaction',
-        params: {
-          'p_transaction_id': transactionId,
-          'p_reason': reason.trim(),
-        },
+        params: {'p_transaction_id': transactionId, 'p_reason': reason.trim()},
       );
       parsed = _parseRpcResponse(response);
 
@@ -611,10 +606,13 @@ class AgentController extends GetxController {
 
     final newStatus = !agentProfile.value!.isAvailableNow;
     try {
-      await SupabaseService.client.from('agents').update({
-        'is_available_now': newStatus,
-        'last_active_at': DateTime.now().toIso8601String(),
-      }).eq('id', agentProfile.value!.id);
+      await SupabaseService.client
+          .from('agents')
+          .update({
+            'is_available_now': newStatus,
+            'last_active_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', agentProfile.value!.id);
 
       agentProfile.value = agentProfile.value!.copyWith(
         isAvailableNow: newStatus,
@@ -628,8 +626,9 @@ class AgentController extends GetxController {
       SafeGetx.snackbar(
         title: 'success'.tr,
         message: newStatus ? 'agent_now_online'.tr : 'agent_now_offline'.tr,
-        backgroundColor:
-            newStatus ? AppColors.softGreen : AppColors.textSecondary,
+        backgroundColor: newStatus
+            ? AppColors.softGreen
+            : AppColors.textSecondary,
         colorText: Colors.white,
       );
     } catch (e, stack) {
@@ -647,9 +646,10 @@ class AgentController extends GetxController {
   Future<void> updateHeartbeat() async {
     if (agentProfile.value == null) return;
     try {
-      await SupabaseService.client.from('agents').update({
-        'last_active_at': DateTime.now().toIso8601String(),
-      }).eq('id', agentProfile.value!.id);
+      await SupabaseService.client
+          .from('agents')
+          .update({'last_active_at': DateTime.now().toIso8601String()})
+          .eq('id', agentProfile.value!.id);
     } catch (_) {}
   }
 }

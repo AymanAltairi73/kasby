@@ -165,8 +165,10 @@ void main() {
           expectedProfit: 150.0,
         );
 
-        expect(investment.expectedProfit,
-            investment.amount * investment.profitPercentage / 100);
+        expect(
+          investment.expectedProfit,
+          investment.amount * investment.profitPercentage / 100,
+        );
       });
     });
 
@@ -186,11 +188,7 @@ void main() {
       });
 
       test('profit adds to profit balance', () {
-        final wallet = WalletModel(
-          id: 'w1',
-          userId: 'u1',
-          profitBalance: 50.0,
-        );
+        final wallet = WalletModel(id: 'w1', userId: 'u1', profitBalance: 50.0);
 
         final profitAmount = 10.0;
         final updated = wallet.copyWith(
@@ -212,7 +210,10 @@ void main() {
           repaymentDate: DateTime(2026, 12, 31),
         );
 
-        expect(loan.totalDue, loan.amount + (loan.amount * loan.interestRate / 100));
+        expect(
+          loan.totalDue,
+          loan.amount + (loan.amount * loan.interestRate / 100),
+        );
       });
 
       test('loan disbursement is credit transaction', () {
@@ -299,9 +300,13 @@ void main() {
         );
 
         expect(wallet.totalBalance, 6500.0);
-        expect(wallet.totalBalance,
-            wallet.availableBalance + wallet.profitBalance +
-            wallet.investedBalance + wallet.pendingBalance);
+        expect(
+          wallet.totalBalance,
+          wallet.availableBalance +
+              wallet.profitBalance +
+              wallet.investedBalance +
+              wallet.pendingBalance,
+        );
       });
 
       test('balance never goes negative via copyWith validation', () {

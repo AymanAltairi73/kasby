@@ -28,18 +28,18 @@ class CurrencyModel {
   factory CurrencyModel.fromJson(Map<String, dynamic> json) {
     try {
       return CurrencyModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      code: json['code'] as String,
-      symbol: json['symbol'] as String? ?? '',
-      rate: (json['rate'] as num).toDouble(),
-      decimalPlaces: json['decimal_places'] as int? ?? 2,
-      isBase: json['is_base'] as bool? ?? false,
-      isActive: json['is_active'] as bool? ?? true,
-      flag: json['flag'] as String? ?? '',
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+        id: json['id'] as String,
+        name: json['name'] as String,
+        code: json['code'] as String,
+        symbol: json['symbol'] as String? ?? '',
+        rate: (json['rate'] as num).toDouble(),
+        decimalPlaces: json['decimal_places'] as int? ?? 2,
+        isBase: json['is_base'] as bool? ?? false,
+        isActive: json['is_active'] as bool? ?? true,
+        flag: json['flag'] as String? ?? '',
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'])
+            : null,
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(

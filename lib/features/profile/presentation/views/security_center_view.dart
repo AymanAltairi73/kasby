@@ -93,7 +93,11 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
                     kycVerified,
                     onTap: kycVerified ? null : () => Get.toNamed(Routes.kyc),
                   ),
-                  _buildCheckRow(Icons.alternate_email_rounded, 'email_address'.tr, emailVerified),
+                  _buildCheckRow(
+                    Icons.alternate_email_rounded,
+                    'email_address'.tr,
+                    emailVerified,
+                  ),
                   _buildCheckRow(
                     Icons.phone_android_rounded,
                     'phone_number'.tr,
@@ -109,15 +113,17 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
                   ),
                   const SizedBox(height: KasbySpacing.lg),
                   _sectionTitle('security_settings'.tr),
-                  Obx(() => _buildToggleTile(
-                        Icons.fingerprint_rounded,
-                        'biometric_login'.tr,
-                        'biometric_login_desc'.tr,
-                        BiometricLoginService.to.isEnabled.value,
-                        BiometricLoginService.to.isAvailable.value
-                            ? _setBiometric
-                            : null,
-                      )),
+                  Obx(
+                    () => _buildToggleTile(
+                      Icons.fingerprint_rounded,
+                      'biometric_login'.tr,
+                      'biometric_login_desc'.tr,
+                      BiometricLoginService.to.isEnabled.value,
+                      BiometricLoginService.to.isAvailable.value
+                          ? _setBiometric
+                          : null,
+                    ),
+                  ),
                   _buildInfoTile(
                     Icons.lock_clock_rounded,
                     'auto_lock'.tr,
@@ -128,11 +134,14 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
                     'transaction_pin_manage'.tr,
                     'transaction_pin_manage_desc'.tr,
                     onTap: () async {
-                      final ok = await TransactionAuthService.to.changeTransactionPin();
+                      final ok = await TransactionAuthService.to
+                          .changeTransactionPin();
                       if (ok) {
-                        unawaited(_activity.logEvent(
-                          SecurityEventType.transactionPinChange,
-                        ));
+                        unawaited(
+                          _activity.logEvent(
+                            SecurityEventType.transactionPinChange,
+                          ),
+                        );
                         await _activity.fetchEvents();
                         if (mounted) setState(() {});
                       }
@@ -176,17 +185,20 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
                     );
                   }),
                   const SizedBox(height: KasbySpacing.md),
-                  Obx(() => _buildInfoTile(
-                        Icons.warning_amber_rounded,
-                        'failed_login_attempts'.tr,
-                        '${_activity.failedLoginCount.value}',
-                      )),
+                  Obx(
+                    () => _buildInfoTile(
+                      Icons.warning_amber_rounded,
+                      'failed_login_attempts'.tr,
+                      '${_activity.failedLoginCount.value}',
+                    ),
+                  ),
                   _buildInfoTile(
                     Icons.login_rounded,
                     'last_login'.tr,
                     user?.lastSignInAt != null
                         ? DateHelper.dateTime(
-                            DateTime.tryParse(user!.lastSignInAt!))
+                            DateTime.tryParse(user!.lastSignInAt!),
+                          )
                         : '--',
                   ),
                 ],
@@ -209,8 +221,8 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
     final color = pct >= 1
         ? AppColors.softGreen
         : pct >= 0.5
-            ? AppColors.darkGold
-            : AppColors.error;
+        ? AppColors.darkGold
+        : AppColors.error;
     return KasbyCard(
       padding: const EdgeInsets.all(KasbySpacing.lg),
       borderRadius: KasbyRadius.card,
@@ -315,17 +327,26 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
               children: [
                 Text(
                   _eventLabel(type),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '$deviceName · $platform',
-                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 if (createdAt != null)
                   Text(
                     DateHelper.dateTime(DateTime.tryParse(createdAt)),
-                    style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
               ],
             ),
@@ -352,7 +373,11 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
       ),
       child: Text(
         isFailed ? 'failed'.tr : 'success'.tr,
-        style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -393,13 +418,20 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
     );
   }
 
-  Widget _buildCheckRow(IconData icon, String title, bool done,
-      {VoidCallback? onTap}) {
+  Widget _buildCheckRow(
+    IconData icon,
+    String title,
+    bool done, {
+    VoidCallback? onTap,
+  }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       visualDensity: VisualDensity.compact,
       leading: Icon(icon, color: AppColors.darkGold, size: 22),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
       trailing: Icon(
         done ? Icons.check_circle_rounded : Icons.error_outline_rounded,
         color: done ? AppColors.softGreen : AppColors.darkGold,
@@ -431,9 +463,20 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                Text(subtitle,
-                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -468,13 +511,28 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                  Text(subtitle,
-                      style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -494,9 +552,20 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                Text(subtitle,
-                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),

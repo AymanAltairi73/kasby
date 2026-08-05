@@ -36,9 +36,7 @@ class TransactionAuthService extends GetxService {
   }
 
   /// Confirms identity before a financial mutation.
-  Future<bool> requireConfirmation({
-    required String purpose,
-  }) async {
+  Future<bool> requireConfirmation({required String purpose}) async {
     if (!SupabaseService.isLoggedIn) {
       AppSnack.error('error'.tr, 'session_expired'.tr);
       return false;
@@ -56,28 +54,35 @@ class TransactionAuthService extends GetxService {
       final canBio = await _localAuth.canCheckBiometrics;
       final supported = await _localAuth.isDeviceSupported();
       if (!canBio && !supported) {
-        _log('_tryBiometric', 'Biometrics unavailable; falling back to PIN', params: {
-          'purpose': purpose,
-        });
+        _log(
+          '_tryBiometric',
+          'Biometrics unavailable; falling back to PIN',
+          params: {'purpose': purpose},
+        );
         return false;
       }
 
       final ok = await _localAuth.authenticate(
         localizedReason: 'transaction_biometric_reason'.tr,
-        options: AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: canBio,
-        ),
+        options: AuthenticationOptions(stickyAuth: true, biometricOnly: canBio),
       );
 
       if (ok) {
-        _log('requireConfirmation', 'Biometric confirmed', params: {'purpose': purpose});
+        _log(
+          'requireConfirmation',
+          'Biometric confirmed',
+          params: {'purpose': purpose},
+        );
       }
       return ok;
     } catch (e, stack) {
-      _log('_tryBiometric', 'Biometric error', status: 'ERROR', params: {
-        'purpose': purpose,
-      }, error: e);
+      _log(
+        '_tryBiometric',
+        'Biometric error',
+        status: 'ERROR',
+        params: {'purpose': purpose},
+        error: e,
+      );
       SafeGetx.debugTrace(
         className: 'TransactionAuthService',
         method: '_tryBiometric',
@@ -128,9 +133,11 @@ class TransactionAuthService extends GetxService {
 
       final verify = await _verifyPinOnServer(pin);
       if (verify['success'] == true) {
-        _log('requireConfirmation', 'Transaction PIN confirmed', params: {
-          'purpose': purpose,
-        });
+        _log(
+          'requireConfirmation',
+          'Transaction PIN confirmed',
+          params: {'purpose': purpose},
+        );
         return true;
       }
 

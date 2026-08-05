@@ -72,50 +72,56 @@ class AgentModel {
       final profile = json['profiles'] as Map<String, dynamic>?;
 
       return AgentModel(
-      id: json['id'] as String,
-      userId: json['user_id'] as String?,
-      // Fallback logic: Use profile if available, otherwise use agents table fields
-      name: (profile?['full_name'] ?? json['name'] ?? '') as String,
-      username: (profile?['referral_code'] ?? profile?['username'])?.toString(),
-      avatarUrl: profile?['avatar_url']?.toString(),
-      kycStatus: (profile?['kyc_status'] ?? 'unverified') as String,
-      role: (profile?['role'] ?? 'agent') as String,
-      country:
-          (profile?['country_code'] ?? json['country'] ?? '') as String,
-      province: (profile?['province'] ?? json['province'] ?? '') as String,
-      city:
-          (profile?['city'] ?? json['city'] ?? json['province'] ?? '')
-               as String,
-      address: (profile?['address'] ?? json['address'] ?? '') as String,
-      phone: (profile?['phone'] ?? json['phone'] ?? '') as String,
-      whatsapp: (profile?['whatsapp'] ?? json['whatsapp'] ?? '') as String,
-      telegram: (profile?['telegram'] ?? json['telegram'] ?? '') as String,
-      email: (profile?['email'] ?? json['email'] ?? '') as String,
-      status: (json['status'] ?? 'active') as String,
-      availabilityStatus: (json['availability_status'] ?? (json['is_available_now'] == true ? 'available' : 'unavailable')) as String,
-      isAvailableNow: json['is_available_now'] as bool? ?? false,
-      supportedMethods:
-          (json['supported_methods'] as List<dynamic>?)
-               ?.map((e) => e.toString())
-               .toList() ??
-          [],
-      successRate: (json['success_rate'] as num?)?.toDouble() ?? 0.0,
-      totalTransactions: json['total_transactions'] as int? ?? 0,
-      escrowBalance: (json['escrow_balance'] as num?)?.toDouble() ?? 0.0,
-      availableCash: (json['available_cash'] as num?)?.toDouble() ?? 0.0,
-      maxCapacity: (json['max_capacity'] as num?)?.toDouble() ?? 1000.0,
-      totalCommissionEarned: (json['total_commission_earned'] as num?)?.toDouble() ?? 0.0,
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
-      lastActiveAt: json['last_active_at'] != null
-          ? DateTime.parse(json['last_active_at'])
-          : null,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+        id: json['id'] as String,
+        userId: json['user_id'] as String?,
+        // Fallback logic: Use profile if available, otherwise use agents table fields
+        name: (profile?['full_name'] ?? json['name'] ?? '') as String,
+        username: (profile?['referral_code'] ?? profile?['username'])
+            ?.toString(),
+        avatarUrl: profile?['avatar_url']?.toString(),
+        kycStatus: (profile?['kyc_status'] ?? 'unverified') as String,
+        role: (profile?['role'] ?? 'agent') as String,
+        country: (profile?['country_code'] ?? json['country'] ?? '') as String,
+        province: (profile?['province'] ?? json['province'] ?? '') as String,
+        city:
+            (profile?['city'] ?? json['city'] ?? json['province'] ?? '')
+                as String,
+        address: (profile?['address'] ?? json['address'] ?? '') as String,
+        phone: (profile?['phone'] ?? json['phone'] ?? '') as String,
+        whatsapp: (profile?['whatsapp'] ?? json['whatsapp'] ?? '') as String,
+        telegram: (profile?['telegram'] ?? json['telegram'] ?? '') as String,
+        email: (profile?['email'] ?? json['email'] ?? '') as String,
+        status: (json['status'] ?? 'active') as String,
+        availabilityStatus:
+            (json['availability_status'] ??
+                    (json['is_available_now'] == true
+                        ? 'available'
+                        : 'unavailable'))
+                as String,
+        isAvailableNow: json['is_available_now'] as bool? ?? false,
+        supportedMethods:
+            (json['supported_methods'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
+        successRate: (json['success_rate'] as num?)?.toDouble() ?? 0.0,
+        totalTransactions: json['total_transactions'] as int? ?? 0,
+        escrowBalance: (json['escrow_balance'] as num?)?.toDouble() ?? 0.0,
+        availableCash: (json['available_cash'] as num?)?.toDouble() ?? 0.0,
+        maxCapacity: (json['max_capacity'] as num?)?.toDouble() ?? 1000.0,
+        totalCommissionEarned:
+            (json['total_commission_earned'] as num?)?.toDouble() ?? 0.0,
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
+        lastActiveAt: json['last_active_at'] != null
+            ? DateTime.parse(json['last_active_at'])
+            : null,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'])
+            : null,
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'])
+            : null,
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -206,7 +212,8 @@ class AgentModel {
       escrowBalance: escrowBalance ?? this.escrowBalance,
       availableCash: availableCash ?? this.availableCash,
       maxCapacity: maxCapacity ?? this.maxCapacity,
-      totalCommissionEarned: totalCommissionEarned ?? this.totalCommissionEarned,
+      totalCommissionEarned:
+          totalCommissionEarned ?? this.totalCommissionEarned,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,

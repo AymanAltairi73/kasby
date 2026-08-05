@@ -201,9 +201,7 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
 
         Get.snackbar(
           'check_in_success'.tr,
-          'bonus_points_msg'.trParams({
-            'count': '${response['points'] ?? 10}',
-          }),
+          'bonus_points_msg'.trParams({'count': '${response['points'] ?? 10}'}),
           backgroundColor: AppColors.softGreen,
           colorText: Colors.white,
           icon: const Icon(Icons.celebration_rounded, color: Colors.white),
@@ -312,7 +310,9 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
-                        ).animate().fadeIn(delay: const Duration(milliseconds: 300)),
+                        ).animate().fadeIn(
+                          delay: const Duration(milliseconds: 300),
+                        ),
                         const SizedBox(height: 16),
                         if (_history.isEmpty)
                           Center(
@@ -368,43 +368,43 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
                       ),
                     )
                   : _canCheckIn
-                      ? KasbyButton(
-                          text: 'check_in_today'.tr,
-                          onPressed: _handleCheckIn,
-                          icon: Icons.check_circle_outline_rounded,
-                        ).animate().shimmer(duration: const Duration(seconds: 2))
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
+                  ? KasbyButton(
+                      text: 'check_in_today'.tr,
+                      onPressed: _handleCheckIn,
+                      icon: Icons.check_circle_outline_rounded,
+                    ).animate().shimmer(duration: const Duration(seconds: 2))
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.check_circle,
-                                  color: AppColors.softGreen,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'checkin_done_today'.tr,
-                                  style: TextStyle(
-                                    color: AppColors.softGreen,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
+                            Icon(
+                              Icons.check_circle,
+                              color: AppColors.softGreen,
+                              size: 20,
                             ),
-                            const SizedBox(height: 12),
-                            KasbyButton(
-                              text: 'checkin_done_today'.tr,
-                              onPressed: null,
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.1)
-                                  : Colors.black.withValues(alpha: 0.1),
+                            const SizedBox(width: 10),
+                            Text(
+                              'checkin_done_today'.tr,
+                              style: TextStyle(
+                                color: AppColors.softGreen,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                           ],
                         ),
+                        const SizedBox(height: 12),
+                        KasbyButton(
+                          text: 'checkin_done_today'.tr,
+                          onPressed: null,
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.black.withValues(alpha: 0.1),
+                        ),
+                      ],
+                    ),
             ),
           ).animate().slideY(begin: 1.0, end: 0.0),
         ],
@@ -425,13 +425,15 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
               AppColors.softGreen.withValues(alpha: 0.05),
             ],
           ),
-          border: Border.all(
-            color: AppColors.softGreen.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: AppColors.softGreen.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
-            Icon(Icons.celebration_rounded, color: AppColors.softGreen, size: 28),
+            Icon(
+              Icons.celebration_rounded,
+              color: AppColors.softGreen,
+              size: 28,
+            ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
@@ -450,40 +452,41 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
 
     // Cooldown state with countdown
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03),
-        border: Border.all(
-          color: AppColors.darkGold.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.timer_outlined,
-            color: AppColors.darkGold,
-            size: 36,
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                begin: const Offset(1, 1),
-                end: const Offset(1.1, 1.1),
-                duration: const Duration(seconds: 1),
-              ),
-          const SizedBox(height: 16),
-          Text(
-            'checkin_done_today'.tr,
-            style: TextStyle(
-              color: AppColors.darkGold,
-              fontWeight: FontWeight.w900,
-              fontSize: 24,
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.03),
+            border: Border.all(
+              color: AppColors.darkGold.withValues(alpha: 0.2),
             ),
           ),
-        ],
-      ),
-    ).animate().fadeIn(delay: const Duration(milliseconds: 200)).slideY(begin: 0.1, end: 0);
+          child: Column(
+            children: [
+              Icon(Icons.timer_outlined, color: AppColors.darkGold, size: 36)
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scale(
+                    begin: const Offset(1, 1),
+                    end: const Offset(1.1, 1.1),
+                    duration: const Duration(seconds: 1),
+                  ),
+              const SizedBox(height: 16),
+              Text(
+                'checkin_done_today'.tr,
+                style: TextStyle(
+                  color: AppColors.darkGold,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                ),
+              ),
+            ],
+          ),
+        )
+        .animate()
+        .fadeIn(delay: const Duration(milliseconds: 200))
+        .slideY(begin: 0.1, end: 0);
   }
 
   Widget _buildStreakCard() {
@@ -662,7 +665,9 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
                         ],
                       ),
                       Text(
-                        'checkin_streak_label'.trParams({'count': '${item['streak'] ?? 1}'}),
+                        'checkin_streak_label'.trParams({
+                          'count': '${item['streak'] ?? 1}',
+                        }),
                         style: TextStyle(
                           color: AppColors.softGreen,
                           fontSize: 12,

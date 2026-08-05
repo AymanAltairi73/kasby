@@ -97,10 +97,7 @@ class ReferralService {
       _log(
         'Referral code validated',
         method: 'validateReferralCode',
-        params: {
-          'referrerId': referrerId,
-          'canonicalCode': canonicalCode,
-        },
+        params: {'referrerId': referrerId, 'canonicalCode': canonicalCode},
       );
       return ReferralCodeLookup(
         referrerId: referrerId,
@@ -178,8 +175,9 @@ class ReferralService {
         },
       );
 
-      final Map<String, dynamic>? response =
-          result is Map<String, dynamic> ? result : null;
+      final Map<String, dynamic>? response = result is Map<String, dynamic>
+          ? result
+          : null;
 
       if (response != null && response['success'] == true) {
         final commission = response['commission'] as num?;

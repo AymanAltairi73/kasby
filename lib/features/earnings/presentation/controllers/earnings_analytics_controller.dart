@@ -10,7 +10,9 @@ class EarningsAnalyticsController extends GetxController {
   static EarningsAnalyticsController get to => Get.find();
 
   // Analytics data
-  final Rx<EarningsAnalyticsModel?> analytics = Rx<EarningsAnalyticsModel?>(null);
+  final Rx<EarningsAnalyticsModel?> analytics = Rx<EarningsAnalyticsModel?>(
+    null,
+  );
   final RxBool isLoading = false.obs;
   final RxBool hasError = false.obs;
   final RxString errorMessage = ''.obs;
@@ -58,7 +60,7 @@ class EarningsAnalyticsController extends GetxController {
     _earningsCallback = () {
       fetchEarningsAnalytics();
     };
-    
+
     EarningsEventService.to.onEarningsUpdated(_earningsCallback!);
   }
 
@@ -89,8 +91,10 @@ class EarningsAnalyticsController extends GetxController {
       );
 
       if (response != null) {
-        analytics.value = EarningsAnalyticsModel.fromJson(response as Map<String, dynamic>);
-        
+        analytics.value = EarningsAnalyticsModel.fromJson(
+          response as Map<String, dynamic>,
+        );
+
         if (!analytics.value!.success) {
           hasError.value = true;
           errorMessage.value = analytics.value!.error ?? 'unknown_error'.tr;
@@ -160,14 +164,14 @@ class EarningsAnalyticsController extends GetxController {
   /// Get breakdown with KSP converted to USD
   List<BreakdownItem> getBreakdownWithConversion() {
     if (analytics.value == null) return [];
-    
+
     return analytics.value!.breakdown.map((item) {
       final totalUsd = item.getTotalUsdEquivalent();
       final totalEarnings = getTotalEarningsUsd();
-      final percentage = totalEarnings > 0 
-          ? (totalUsd / totalEarnings * 100) 
+      final percentage = totalEarnings > 0
+          ? (totalUsd / totalEarnings * 100)
           : 0.0;
-      
+
       return BreakdownItem(
         source: item.source,
         amountUsd: item.amountUsd,

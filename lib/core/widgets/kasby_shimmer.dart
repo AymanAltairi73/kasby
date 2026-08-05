@@ -63,12 +63,24 @@ class KasbyShimmer extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 140, height: 14, color: Colors.white, margin: const EdgeInsets.only(bottom: 8)),
+                  Container(
+                    width: 140,
+                    height: 14,
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(bottom: 8),
+                  ),
                   Container(width: 80, height: 10, color: Colors.white),
                 ],
               ),
             ),
-            Container(width: 40, height: 24, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12))),
+            Container(
+              width: 40,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ],
         ),
       ),
@@ -86,7 +98,8 @@ class KasbyShimmer extends StatelessWidget {
   }
 
   factory KasbyShimmer.transactionItem({Key? key, bool isDark = false}) {
-    return KasbyShimmer( // we don't extend KasbyShimmer, we just return KasbyShimmer wrapping a custom layout
+    return KasbyShimmer(
+      // we don't extend KasbyShimmer, we just return KasbyShimmer wrapping a custom layout
       key: key,
       width: double.infinity,
       height: 52,
@@ -97,7 +110,9 @@ class KasbyShimmer extends StatelessWidget {
           color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFFFFFF),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.08),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.08),
           ),
         ),
         child: Row(
@@ -116,7 +131,12 @@ class KasbyShimmer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(width: 120, height: 16, color: Colors.white, margin: const EdgeInsets.only(bottom: 8)),
+                  Container(
+                    width: 120,
+                    height: 16,
+                    color: Colors.white,
+                    margin: const EdgeInsets.only(bottom: 8),
+                  ),
                   Container(width: 80, height: 12, color: Colors.white),
                 ],
               ),
@@ -125,7 +145,12 @@ class KasbyShimmer extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(width: 60, height: 18, color: Colors.white, margin: const EdgeInsets.only(bottom: 6)),
+                Container(
+                  width: 60,
+                  height: 18,
+                  color: Colors.white,
+                  margin: const EdgeInsets.only(bottom: 6),
+                ),
                 Container(width: 40, height: 10, color: Colors.white),
               ],
             ),
@@ -138,27 +163,29 @@ class KasbyShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Smooth gray gradient colors as requested
-    final baseColor = isDark 
-        ? Colors.white.withValues(alpha: 0.05) 
+    final baseColor = isDark
+        ? Colors.white.withValues(alpha: 0.05)
         : Colors.black.withValues(alpha: 0.05);
-    final highlightColor = isDark 
-        ? Colors.white.withValues(alpha: 0.15) 
+    final highlightColor = isDark
+        ? Colors.white.withValues(alpha: 0.15)
         : Colors.black.withValues(alpha: 0.1);
 
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,
-      child: child ?? Container(
-        width: width,
-        height: height,
-        margin: margin,
-        decoration: BoxDecoration(
-          color: isDark ? Colors.black : Colors.white,
-          borderRadius: borderRadius,
-        ),
-      ),
+      child:
+          child ??
+          Container(
+            width: width,
+            height: height,
+            margin: margin,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black : Colors.white,
+              borderRadius: borderRadius,
+            ),
+          ),
     );
   }
 }

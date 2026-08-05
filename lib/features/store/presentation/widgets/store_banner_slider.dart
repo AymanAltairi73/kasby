@@ -63,7 +63,9 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
               const Color(0xFF15141A),
             ],
           ),
-          border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: AppColors.primaryGold.withValues(alpha: 0.3),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.3),
@@ -82,12 +84,20 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
                   color: AppColors.primaryGold.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.shopping_bag_outlined, color: AppColors.primaryGold, size: 28),
+                child: const Icon(
+                  Icons.shopping_bag_outlined,
+                  color: AppColors.primaryGold,
+                  size: 28,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
                 'مرحباً بك في متجر كاسبي الرقمي',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -145,7 +155,11 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
                             ),
                             errorWidget: (_, __, ___) => Container(
                               color: const Color(0xFF1E1E26),
-                              child: const Icon(Icons.broken_image, color: Colors.grey, size: 36),
+                              child: const Icon(
+                                Icons.broken_image,
+                                color: Colors.grey,
+                                size: 36,
+                              ),
                             ),
                           ),
                         )
@@ -205,7 +219,10 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                     shadows: [
-                                      Shadow(color: Colors.black, blurRadius: 4),
+                                      Shadow(
+                                        color: Colors.black,
+                                        blurRadius: 4,
+                                      ),
                                     ],
                                   ),
                                 ),
