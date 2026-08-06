@@ -20,6 +20,10 @@ ios/Pods/
 .env.local
 .env.*.local
 
+# Database / SQL migrations
+sql/
+supabase/migrations/
+
 # Temporary files
 *.tmp
 *.temp

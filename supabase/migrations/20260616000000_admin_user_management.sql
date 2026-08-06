@@ -1,6 +1,0 @@
--- See kasby/sql/admin_user_management.sql for full migration source.
--- Applied to production via Supabase MCP migrations:
---   admin_user_management
---   admin_user_management_rpc
---   admin_user_management_admin_rpcs
--- Plus execute_sql for fn_admin_update_user_profile, grants, policies, trigger.
