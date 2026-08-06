@@ -215,8 +215,8 @@ class StoreController extends GetxController {
       if (result['success'] == true) {
         SoundService.to.playPurchase();
         AppSnack.success(
-          'تم الشراء بنجاح',
-          'تم تسليم كود البطاقة بنجاح، يمكنك مشاهدته في سجل الطلبات.',
+          'purchase_success_title'.tr,
+          'purchase_success_desc'.tr,
         );
         fetchUserBalances();
         fetchOrders();
@@ -225,12 +225,13 @@ class StoreController extends GetxController {
           fetchCategoryProducts(selectedCategory.value!.id);
         }
       } else {
-        final errorMsg = result['message_ar'] as String? ?? 'فشلت عملية الشراء';
-        AppSnack.error('خطأ الشراء', errorMsg);
+        final errorMsg =
+            result['message_ar'] as String? ?? 'purchase_failed'.tr;
+        AppSnack.error('purchase_error_title'.tr, errorMsg);
       }
       return result;
     } catch (e) {
-      AppSnack.error('خطأ', 'حدث خطأ أثناء إجراء العملية: $e');
+      AppSnack.error('error'.tr, '${'operation_error'.tr} ($e)');
       return {'success': false, 'error': e.toString()};
     } finally {
       isPurchasing.value = false;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/features/store/domain/models/store_order_model.dart';
@@ -62,9 +63,9 @@ class StoreOrderCard extends StatelessWidget {
                     color: Colors.green.withValues(alpha: 0.4),
                   ),
                 ),
-                child: const Text(
-                  'تم التسليم',
-                  style: TextStyle(
+                child: Text(
+                  'marketplace_delivered'.tr,
+                  style: const TextStyle(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
                     fontSize: 11,
@@ -79,7 +80,7 @@ class StoreOrderCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'رقم الطلب: ${order.orderNumber}',
+                '${'marketplace_order_number'.tr}: ${order.orderNumber}',
                 style: TextStyle(color: Colors.grey[500], fontSize: 12),
               ),
               const Spacer(),
@@ -111,7 +112,9 @@ class StoreOrderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  order.paymentMethod == 'ksp' ? 'نقاط KSP' : 'محفظة USD',
+                  order.paymentMethod == 'ksp'
+                      ? 'ksp_points_badge'.tr
+                      : 'usd_wallet_badge'.tr,
                   style: const TextStyle(
                     color: AppColors.primaryGold,
                     fontSize: 10,
@@ -145,7 +148,7 @@ class StoreOrderCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'كود البطاقة المستلم:',
+                        'card_code_received'.tr,
                         style: TextStyle(color: Colors.grey[500], fontSize: 10),
                       ),
                       SelectableText(
@@ -172,14 +175,14 @@ class StoreOrderCard extends StatelessWidget {
                 IconButton(
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: order.deliveryCode));
-                    AppSnack.success('تم النسخ', 'تم نسخ كود البطاقة بنجاح');
+                    AppSnack.success('copied'.tr, 'code_copied_success'.tr);
                   },
                   icon: const Icon(
                     Icons.copy,
                     color: AppColors.primaryGold,
                     size: 20,
                   ),
-                  tooltip: 'نسخ الكود',
+                  tooltip: 'marketplace_copy_code'.tr,
                 ),
               ],
             ),

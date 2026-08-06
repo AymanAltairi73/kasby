@@ -1697,6 +1697,9 @@ class KasbyTranslations extends Translations {
           'This person has been removed from your friends list.',
       'security': 'Security',
       'loan_applied_successfully': 'Loan request submitted successfully!',
+      'loan_submission_error':
+          'An error occurred while submitting the loan request',
+      'loan_repayment_error': 'An error occurred during loan repayment',
       'no_agents': 'No agents available at the moment',
       'no_agent_locations': 'No agents have location data',
       'agents_without_location': 'agents without location',
@@ -2237,6 +2240,16 @@ class KasbyTranslations extends Translations {
       'marketplace_delivered': 'Delivered',
       'marketplace_provider_accepted': 'Provider Accepted',
       'marketplace_refunded': 'Refunded',
+      'card_code_received': 'Received Card Code:',
+      'ksp_points_badge': 'KSP Points',
+      'usd_wallet_badge': 'USD Wallet',
+      'code_copied_success': 'Card code copied successfully',
+      'purchase_success_title': 'Purchase Successful',
+      'purchase_success_desc':
+          'Digital card code delivered! You can view it in your order history.',
+      'purchase_error_title': 'Purchase Error',
+      'purchase_failed': 'Purchase failed. Please try again.',
+      'operation_error': 'An error occurred while processing the request.',
       // ── Localization infrastructure keys ──
       'account_deleted_by_admin_title': 'Account Deleted',
       'account_deleted_by_admin_message':
@@ -3848,6 +3861,8 @@ class KasbyTranslations extends Translations {
       'friend_removed_desc': 'تمت إزالة هذا الشخص من قائمة أصدقائك.',
       'security': 'الأمان',
       'loan_applied_successfully': 'تم تقديم طلب القرض بنجاح!',
+      'loan_submission_error': 'حدث خطأ أثناء تقديم طلب القرض',
+      'loan_repayment_error': 'حدث خطأ أثناء سداد القرض',
       'no_agents': 'لا يوجد وكلاء متاحون حالياً',
       'no_agent_locations': 'لا يوجد بيانات موقع للوكلاء',
       'agents_without_location': 'وكلاء بدون موقع',
@@ -4460,6 +4475,16 @@ class KasbyTranslations extends Translations {
       'marketplace_delivered': 'تم التسليم',
       'marketplace_provider_accepted': 'قبول المزود',
       'marketplace_refunded': 'تم الاسترداد',
+      'card_code_received': 'كود البطاقة المستلم:',
+      'ksp_points_badge': 'نقاط KSP',
+      'usd_wallet_badge': 'محفظة USD',
+      'code_copied_success': 'تم نسخ كود البطاقة بنجاح',
+      'purchase_success_title': 'تم الشراء بنجاح',
+      'purchase_success_desc':
+          'تم تسليم كود البطاقة بنجاح، يمكنك مشاهدته في سجل الطلبات.',
+      'purchase_error_title': 'خطأ الشراء',
+      'purchase_failed': 'فشلت عملية الشراء',
+      'operation_error': 'حدث خطأ أثناء إجراء العملية.',
       // ── مفاتيح البنية التحتية للترجمة ──
       'account_deleted_by_admin_title': 'تم حذف الحساب',
       'account_deleted_by_admin_message':

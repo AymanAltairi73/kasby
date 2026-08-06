@@ -209,10 +209,7 @@ class LoanController extends GetxController {
         );
         refreshData();
       } else {
-        Get.snackbar(
-          'error'.tr,
-          response?['message'] ?? 'Unknown error occurred',
-        );
+        Get.snackbar('error'.tr, response?['message'] ?? 'unknown_error'.tr);
       }
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -223,10 +220,7 @@ class LoanController extends GetxController {
         error: e,
         stackTrace: stack,
       );
-      Get.snackbar(
-        'error'.tr,
-        'An error occurred while submitting the loan request',
-      );
+      Get.snackbar('error'.tr, 'loan_submission_error'.tr);
     } finally {
       isSubmitting.value = false;
     }
@@ -269,8 +263,7 @@ class LoanController extends GetxController {
         );
         refreshData();
       } else {
-        final message =
-            response?['message']?.toString() ?? 'Unknown error occurred';
+        final message = response?['message']?.toString() ?? 'unknown_error'.tr;
         SafeGetx.debugTrace(
           className: 'LoanController',
           method: 'repayLoan',
@@ -289,7 +282,7 @@ class LoanController extends GetxController {
         error: e,
         stackTrace: stack,
       );
-      Get.snackbar('error'.tr, 'An error occurred during repayment');
+      Get.snackbar('error'.tr, 'loan_repayment_error'.tr);
     } finally {
       isSubmitting.value = false;
     }
