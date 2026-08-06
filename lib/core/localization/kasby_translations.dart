@@ -2324,6 +2324,14 @@ class KasbyTranslations extends Translations {
       'daily_profit_notification_title': 'Daily Profit Received 💰',
       'daily_profit_notification_body':
           'Investment profit of \$@amount has been credited from @plan.',
+      'confirm_logout': 'Confirm Logout',
+      'logout_desc': 'Are you sure you want to log out from this device?',
+      'biometric_unlock_prompt':
+          'Touch the biometric sensor or press unlock to proceed.',
+      'security_encryption_notice':
+          'Bank-grade 256-bit AES encryption protection',
+      'welcome_back_user': 'Welcome back, @name',
+      'kasby_secured_platform': 'Kasby Encrypted Security',
     },
     'ar_SA': {
       'daily_profit_notification_title': 'أرباح استثمار جديدة 💰',
@@ -3742,7 +3750,7 @@ class KasbyTranslations extends Translations {
       'feature_soon_desc': 'سيتم تفعيل هذه الميزة قريباً',
       'search_conversations': 'ابحث في المحادثات...',
       'edit_message': 'تعديل الرسالة',
-      'connecting_to_support': 'جاري الاتصال بفريق الدعم',
+      'connecting_to_support': 'ابدا الدردشة.',
       'edited': 'معدّلة',
       'copy_text': 'نسخ النص',
       'copied': 'تم النسخ',
@@ -4553,6 +4561,14 @@ class KasbyTranslations extends Translations {
       'user_invested_amount': '@name استثمر @amount USD',
       'user_investment_matured_msg': 'استثمار @name بقيمة @amount اكتمل.',
       'other_sector': 'أخرى (@percent%)',
+      'confirm_logout': 'تأكيد تسجيل الخروج',
+      'logout_desc': 'هل أنت تأكد من أنك تريد تسجيل الخروج من هذا الجهاز؟',
+      'biometric_unlock_prompt':
+          'إلمس مستشعر البصمة أو اضغط إلغاء القفل للمتابعة.',
+      'security_encryption_notice':
+          'تشفير وحماية عالية الأمان بمقاييس بنكية 256-bit',
+      'welcome_back_user': 'أهلاً بك مجدداً، @name',
+      'kasby_secured_platform': 'منصة مالية آمنة ومشفّرة',
     },
   };
 }
