@@ -134,10 +134,7 @@ class StoreService {
     try {
       final response = await _client.rpc(
         'fn_marketplace_buy_product',
-        params: {
-          'p_product_id': productId,
-          'p_payment_method': paymentMethod,
-        },
+        params: {'p_product_id': productId, 'p_payment_method': paymentMethod},
       );
       return Map<String, dynamic>.from(response as Map);
     } catch (e) {

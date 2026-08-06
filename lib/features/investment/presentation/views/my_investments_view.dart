@@ -472,12 +472,18 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildProgressRow(
-                                'next_profit'.tr,
-                                countdown,
-                                AppColors.darkGold,
-                              ),
+                              if (!isWaiting)
+                                _buildProgressRow(
+                                  'next_profit'.tr,
+                                  countdown,
+                                  AppColors.darkGold,
+                                ),
                               if (isWaiting) ...[
+                                _buildProgressRow(
+                                  'next_profit'.tr,
+                                  'cycle_completed_message'.tr,
+                                  AppColors.softGreen,
+                                ),
                                 const SizedBox(height: 12),
                                 SizedBox(
                                   width: double.infinity,

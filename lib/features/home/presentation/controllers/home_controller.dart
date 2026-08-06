@@ -1619,6 +1619,11 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
       // Update Individual Investment Timers
       for (final inv in myInvestments.where((i) => i.status == 'active')) {
+        // Non-subscribed cycle completed — show waiting state, not 00:00:00
+        if (inv.isCycleWaiting) {
+          investmentCountdowns[inv.id] = 'cycle_completed';
+          continue;
+        }
         final effective = inv.effectiveNextPayout;
         if (effective != null) {
           final diff = effective.difference(now);
@@ -1635,7 +1640,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             investmentCountdowns[inv.id] = _formatDuration(diff);
           }
         } else {
-          investmentCountdowns[inv.id] = '24:00:00';
+          investmentCountdowns[inv.id] = 'cycle_completed';
         }
       }
     });

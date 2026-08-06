@@ -42,14 +42,23 @@ class UserInvestmentModel {
     this.investment,
   });
 
-  /// Whether this investment's daily cycle is waiting to be manually started
-  bool get isCycleWaiting => false;
+  /// Whether this investment's daily cycle is waiting to be manually started.
+  bool get isCycleWaiting =>
+      status == 'active' &&
+      !autoRestartEnabled &&
+      (nextPayoutAt == null || !nextPayoutAt!.isAfter(DateTime.now()));
 
   /// Effective next profit distribution timestamp for active investments.
-  /// Always returns a valid future target timestamp (rolling over in 24h increments).
+  /// Subscribed (auto-restart) investments roll over; non-subscribed investments
+  /// stop when due, signaling cycle completion.
   DateTime? get effectiveNextPayout {
     if (status != 'active') return nextPayoutAt;
+    if (nextPayoutAt == null) return null;
     final now = DateTime.now();
+    // Non-subscribed investments do not auto-roll when payout is reached
+    if (!autoRestartEnabled && !nextPayoutAt!.isAfter(now)) {
+      return nextPayoutAt;
+    }
     DateTime base = nextPayoutAt ?? startDate ?? createdAt ?? now;
     if (!base.isAfter(now)) {
       final diffSeconds = now.difference(base).inSeconds;

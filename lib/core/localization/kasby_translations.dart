@@ -2269,6 +2269,7 @@ class KasbyTranslations extends Translations {
       'auto_restart_enabled': 'Auto-restart enabled successfully.',
       'auto_restart_disabled': 'Auto-restart disabled successfully.',
       'waiting_next_cycle': 'Waiting for next cycle',
+      'cycle_completed_message': 'Cycle completed — profits received',
       // ── Earnings Analytics ──
       'earnings_analytics': 'Earnings Analytics',
       'my_daily_earnings': 'My Daily Earnings',
@@ -4490,6 +4491,7 @@ class KasbyTranslations extends Translations {
       'auto_restart_enabled': 'تم تفعيل إعادة البدء التلقائي بنجاح.',
       'auto_restart_disabled': 'تم تعطيل إعادة البدء التلقائي بنجاح.',
       'waiting_next_cycle': 'بانتظار الدورة التالية',
+      'cycle_completed_message': 'تم استلام أرباح هذه الدورة',
       // ── Earnings Analytics ──
       'earnings_analytics': 'تحليلات الأرباح',
       'my_daily_earnings': 'أرباحي اليومية',

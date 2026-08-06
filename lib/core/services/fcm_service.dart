@@ -233,11 +233,8 @@ class FCMService extends GetxService {
 
   Future<void> _clearTokenOnServer() async {
     try {
-      if (SupabaseService.client.auth.currentUser != null) {
-        await SupabaseService.client
-            .from('profiles')
-            .update({'fcm_token': null})
-            .eq('id', SupabaseService.userId!);
+      if (SupabaseService.isLoggedIn) {
+        await SupabaseService.client.rpc('fn_clear_device_token');
         SafeGetx.debugTrace(
           className: 'FCMService',
           method: '_clearTokenOnServer',
@@ -255,6 +252,38 @@ class FCMService extends GetxService {
         stackTrace: stack,
       );
     }
+  }
+
+  /// On-demand trigger to synchronize current FCM token upon authentication / signup.
+  Future<void> syncCurrentToken() async {
+    try {
+      if (!SupabaseService.isLoggedIn) return;
+      String? token = fcmToken.value;
+      if (token.isEmpty) {
+        token = await _fcm.getToken();
+        if (token != null && token.isNotEmpty) {
+          fcmToken.value = token;
+        }
+      }
+      if (token != null && token.isNotEmpty) {
+        await syncTokenToServer(token);
+      }
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'FCMService',
+        method: 'syncCurrentToken',
+        feature: 'Core',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+    }
+  }
+
+  /// Public method to clear token disassociations on logout.
+  Future<void> clearTokenOnLogout() async {
+    await _clearTokenOnServer();
+    fcmToken.value = '';
   }
 
   void _showLocalNotification(RemoteMessage message) async {

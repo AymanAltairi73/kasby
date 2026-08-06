@@ -25,6 +25,7 @@ import 'package:kasby/core/services/crash_reporting/crash_breadcrumb.dart';
 import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/security_activity_service.dart';
+import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/routes/app_routes.dart';
 
 enum AuthStatus { initial, authenticated, unauthenticated }
@@ -302,6 +303,10 @@ class AuthController extends GetxController {
           pendingVerificationEmail.value = null;
           pendingVerificationPhone.value = null;
 
+          if (Get.isRegistered<FCMService>()) {
+            unawaited(FCMService.to.syncCurrentToken());
+          }
+
           unawaited(CrashReportingService.log(CrashBreadcrumb.loginCompleted));
           if (Get.isRegistered<HomeController>()) {
             HomeController.to.fetchAll();
@@ -337,6 +342,9 @@ class AuthController extends GetxController {
 
         case AuthChangeEvent.signedOut:
           _log('User signed out');
+          if (Get.isRegistered<FCMService>()) {
+            unawaited(FCMService.to.clearTokenOnLogout());
+          }
           unawaited(CrashReportingService.log(CrashBreadcrumb.logout));
           unawaited(CrashReportingService.clearUser());
           authStatus.value = AuthStatus.unauthenticated;

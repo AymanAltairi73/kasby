@@ -20,9 +20,6 @@ ios/Pods/
 .env.local
 .env.*.local
 
-# Supabase Migrations (Local only)
-supabase/migrations/
-
 # Temporary files
 *.tmp
 *.temp

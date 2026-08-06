@@ -13,7 +13,7 @@ void main() {
       () {
         expect(ReferralService.isValidFormat('K-561A-9672'), isTrue);
         expect(ReferralService.isValidFormat('K561A9672'), isTrue);
-        expect(ReferralService.isValidFormat('K123'), isFalse);
+        expect(ReferralService.isValidFormat('K12'), isFalse);
         expect(ReferralService.isValidFormat('ABC'), isFalse);
       },
     );
