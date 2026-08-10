@@ -1536,10 +1536,13 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     }
 
     // 2. Check active investments (automated continuous system)
-    final activeInvs = myInvestments.where((inv) => inv.status == 'active');
+    // Exclude non-subscribed investments that completed their cycle and are waiting for manual restart
+    final activeInvs = myInvestments.where(
+      (inv) => inv.status == 'active' && !inv.isCycleWaiting,
+    );
     for (final inv in activeInvs) {
       final effective = inv.effectiveNextPayout;
-      if (effective != null) {
+      if (effective != null && effective.isAfter(now)) {
         if (earliest == null || effective.isBefore(earliest)) {
           earliest = effective;
         }
@@ -1567,8 +1570,11 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       _startRewardTimer();
     } else {
       isProcessingUI.value = false;
-      rewardCountdownText.value = '';
-      canClaimRewards.value = false;
+      canClaimRewards.value = pendingRewards.isNotEmpty;
+      final hasWaitingCycle = myInvestments.any(
+        (inv) => inv.status == 'active' && inv.isCycleWaiting,
+      );
+      rewardCountdownText.value = hasWaitingCycle ? 'cycle_completed' : '';
       _rewardTimer?.cancel();
     }
   }
@@ -1583,10 +1589,12 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       if (pendingRewards.isNotEmpty) {
         earliest = DateTime.parse(pendingRewards.first['release_at']);
       }
-      final activeInvs = myInvestments.where((inv) => inv.status == 'active');
+      final activeInvs = myInvestments.where(
+        (inv) => inv.status == 'active' && !inv.isCycleWaiting,
+      );
       for (final inv in activeInvs) {
         final effective = inv.effectiveNextPayout;
-        if (effective != null) {
+        if (effective != null && effective.isAfter(now)) {
           if (earliest == null || effective.isBefore(earliest)) {
             earliest = effective;
           }
@@ -1614,7 +1622,10 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           rewardCountdownText.value = _formatDuration(difference);
         }
       } else {
-        rewardCountdownText.value = '';
+        final hasWaitingCycle = myInvestments.any(
+          (inv) => inv.status == 'active' && inv.isCycleWaiting,
+        );
+        rewardCountdownText.value = hasWaitingCycle ? 'cycle_completed' : '';
       }
 
       // Update Individual Investment Timers

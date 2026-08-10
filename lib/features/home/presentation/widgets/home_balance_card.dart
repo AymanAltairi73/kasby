@@ -614,68 +614,80 @@ class HomeBalanceCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         if (!canClaim)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Obx(
-                                () => homeController.isProcessingUI.value
-                                    ? Icon(
-                                            Icons.sync_rounded,
-                                            color: AppColors.softGreen,
-                                            size: 16,
-                                          )
-                                          .animate(onPlay: (c) => c.repeat())
-                                          .rotate(
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          )
-                                    : Icon(
-                                            Icons.hourglass_bottom_rounded,
-                                            color: AppColors.darkGold,
-                                            size: 16,
-                                          )
-                                          .animate(onPlay: (c) => c.repeat())
-                                          .rotate(
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          ),
-                              ),
-                              const SizedBox(width: 8),
-                              Obx(
-                                () => homeController.isProcessingUI.value
-                                    ? const SizedBox.shrink()
-                                    : GestureDetector(
-                                        onTap: () {
-                                          Get.toNamed(Routes.myInvestments);
-                                        },
-                                        child: Text(
-                                          'release_countdown'.tr,
-                                          style: TextStyle(
-                                            color: AppColors.textSecondary,
-                                            fontSize: 13,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
+                          Obx(() {
+                            final currentCountdown =
+                                homeController.rewardCountdownText.value;
+                            final isCycleComplete =
+                                currentCountdown == 'cycle_completed';
+                            final isProcessing =
+                                homeController.isProcessingUI.value;
+
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (isProcessing)
+                                  Icon(
+                                        Icons.sync_rounded,
+                                        color: AppColors.softGreen,
+                                        size: 16,
+                                      )
+                                      .animate(onPlay: (c) => c.repeat())
+                                      .rotate(
+                                        duration: const Duration(seconds: 2),
+                                      )
+                                else if (isCycleComplete)
+                                  Icon(
+                                    Icons.check_circle_outline_rounded,
+                                    color: AppColors.softGreen,
+                                    size: 16,
+                                  )
+                                else
+                                  Icon(
+                                        Icons.hourglass_bottom_rounded,
+                                        color: AppColors.darkGold,
+                                        size: 16,
+                                      )
+                                      .animate(onPlay: (c) => c.repeat())
+                                      .rotate(
+                                        duration: const Duration(seconds: 2),
                                       ),
-                              ),
-                              Obx(
-                                () => Text(
-                                  countdown,
-                                  style: TextStyle(
-                                    color: homeController.isProcessingUI.value
-                                        ? AppColors.softGreen
-                                        : AppColors.darkGold,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    fontFamily: 'Courier',
+                                const SizedBox(width: 8),
+                                if (!isProcessing)
+                                  GestureDetector(
+                                    onTap: () {
+                                      Get.toNamed(Routes.myInvestments);
+                                    },
+                                    child: Text(
+                                      isCycleComplete
+                                          ? 'cycle_completed_message'.tr
+                                          : 'release_countdown'.tr,
+                                      style: TextStyle(
+                                        color: isCycleComplete
+                                            ? AppColors.softGreen
+                                            : AppColors.textSecondary,
+                                        fontSize: 13,
+                                        fontWeight: isCycleComplete
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
-                          ).animate(autoPlay: motion).fadeIn(),
+                                if (!isCycleComplete)
+                                  Text(
+                                    currentCountdown,
+                                    style: TextStyle(
+                                      color: isProcessing
+                                          ? AppColors.softGreen
+                                          : AppColors.darkGold,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      fontFamily: 'Courier',
+                                    ),
+                                  ),
+                              ],
+                            );
+                          }).animate(autoPlay: motion).fadeIn(),
                         if (canClaim)
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),

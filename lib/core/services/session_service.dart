@@ -150,10 +150,8 @@ class SessionService extends GetxService with WidgetsBindingObserver {
 
       return await _auth.authenticate(
         localizedReason: 'authenticate_to_continue'.tr,
-        options: AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: canAuthenticateWithBiometrics,
-        ),
+        persistAcrossBackgrounding: true,
+        biometricOnly: canAuthenticateWithBiometrics,
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(
