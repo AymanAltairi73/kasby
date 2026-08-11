@@ -245,6 +245,9 @@ class _InvestmentsListState extends State<_InvestmentsList> {
   @override
   void initState() {
     super.initState();
+    debugPrint(
+      '[PROFIT_LIFECYCLE] event: MyInvestmentsView opened | isActive: ${widget.isActive}',
+    );
     SafeGetx.debugTrace(
       className: '_InvestmentsList',
       method: 'initState',
@@ -253,6 +256,14 @@ class _InvestmentsListState extends State<_InvestmentsList> {
       params: {'isActive': widget.isActive},
     );
     _fetchInvestments();
+  }
+
+  @override
+  void dispose() {
+    debugPrint(
+      '[PROFIT_LIFECYCLE] event: MyInvestmentsView disposed | isActive: ${widget.isActive}',
+    );
+    super.dispose();
   }
 
   Future<void> _fetchInvestments() async {
@@ -491,6 +502,9 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                                     text: 'start_next_cycle'.tr,
                                     isLoading: isStarting,
                                     onPressed: () async {
+                                      debugPrint(
+                                        '[PROFIT_CYCLE] User tapped start_next_cycle for investment_id: ${inv.id}',
+                                      );
                                       await HomeController.to.startNextCycle(
                                         inv.id,
                                       );

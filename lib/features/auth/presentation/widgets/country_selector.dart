@@ -163,27 +163,30 @@ class _CountrySearchListState extends State<_CountrySearchList> {
             separatorBuilder: (_, __) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
               final country = _filteredCountries[index];
-              return ListTile(
-                onTap: () => widget.onSelect(country),
-                contentPadding: EdgeInsets.zero,
-                leading: Text(
-                  country.flag,
-                  style: const TextStyle(fontSize: 28),
-                ),
-                title: Text(
-                  country.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+              return Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  onTap: () => widget.onSelect(country),
+                  contentPadding: EdgeInsets.zero,
+                  leading: Text(
+                    country.flag,
+                    style: const TextStyle(fontSize: 28),
                   ),
-                ),
-                trailing: Text(
-                  country.dialCode,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
+                  title: Text(
+                    country.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  textDirection: TextDirection.ltr,
+                  trailing: Text(
+                    country.dialCode,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textDirection: TextDirection.ltr,
+                  ),
                 ),
               );
             },

@@ -620,40 +620,43 @@ class _ProfileViewState extends State<ProfileView> {
     return Semantics(
       button: true,
       label: title,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: isDark ? 0.1 : 0.08),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 22),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        trailing:
-            trailing ??
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: DirectionalChevron(
-                size: 12,
-                color: isDark ? Colors.white54 : Colors.black38,
-              ),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: isDark ? 0.1 : 0.08),
+              borderRadius: BorderRadius.circular(12),
             ),
-        onTap: onTap,
+            child: Icon(icon, color: color, size: 22),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          trailing:
+              trailing ??
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: DirectionalChevron(
+                  size: 12,
+                  color: isDark ? Colors.white54 : Colors.black38,
+                ),
+              ),
+          onTap: onTap,
+        ),
       ),
     );
   }
@@ -990,34 +993,37 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   Widget _buildThemeToggle(BuildContext context, bool isDark) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.amber.withValues(alpha: isDark ? 0.1 : 0.08),
-          borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.amber.withValues(alpha: isDark ? 0.1 : 0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+            color: Colors.amber,
+            size: 22,
+          ),
         ),
-        child: Icon(
-          isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-          color: Colors.amber,
-          size: 22,
+        title: Text(
+          'dark_mode'.tr,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
-      ),
-      title: Text(
-        'dark_mode'.tr,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-      trailing: Obx(
-        () => Switch(
-          value: ThemeController.to.isDark.value,
-          onChanged: (_) => ThemeController.to.toggleTheme(),
-          activeThumbColor: AppColors.darkGold,
-          activeTrackColor: AppColors.darkGold.withValues(alpha: 0.3),
+        trailing: Obx(
+          () => Switch(
+            value: ThemeController.to.isDark.value,
+            onChanged: (_) => ThemeController.to.toggleTheme(),
+            activeThumbColor: AppColors.darkGold,
+            activeTrackColor: AppColors.darkGold.withValues(alpha: 0.3),
+          ),
         ),
       ),
     );

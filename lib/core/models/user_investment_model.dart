@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:kasby/core/models/investment_plan_model.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
@@ -43,9 +44,14 @@ class UserInvestmentModel {
   });
 
   /// Whether this investment's daily cycle is waiting to be manually started.
+  /// A cycle is only considered "waiting" after at least one payout has occurred
+  /// (lastPayoutAt != null). A brand-new investment with nextPayoutAt == null
+  /// and lastPayoutAt == null is still awaiting its first cron distribution
+  /// and should NOT show "cycle completed".
   bool get isCycleWaiting =>
       status == 'active' &&
       !autoRestartEnabled &&
+      lastPayoutAt != null &&
       (nextPayoutAt == null || !nextPayoutAt!.isAfter(DateTime.now()));
 
   /// Effective next profit distribution timestamp for active investments.
@@ -77,7 +83,7 @@ class UserInvestmentModel {
 
   factory UserInvestmentModel.fromJson(Map<String, dynamic> json) {
     try {
-      return UserInvestmentModel(
+      final model = UserInvestmentModel(
         id: json['id'] as String,
         userId: json['user_id'] as String,
         planId: json['plan_id'] as String,
@@ -111,6 +117,14 @@ class UserInvestmentModel {
             ? InvestmentPlanModel.fromJson(json['investment'])
             : null,
       );
+
+      debugPrint(
+        '[PROFIT_COUNTDOWN] Investment loaded -> investment_id: ${model.id} | status: ${model.status} | auto_restart_enabled: ${model.autoRestartEnabled} | next_payout_at: ${model.nextPayoutAt} | last_payout_at: ${model.lastPayoutAt} | isCycleWaiting: ${model.isCycleWaiting} | effectiveNextPayout: ${model.effectiveNextPayout}',
+      );
+
+      model._logStateVerification();
+
+      return model;
     } catch (e, stack) {
       SafeGetx.debugTrace(
         className: 'UserInvestmentModel',
@@ -122,6 +136,32 @@ class UserInvestmentModel {
         stackTrace: stack,
       );
       rethrow;
+    }
+  }
+
+  void _logStateVerification() {
+    if (!autoRestartEnabled) {
+      debugPrint(
+        '[PROFIT_NON_SUBSCRIBED] subscription_active: false | auto_restart_enabled: false | next_payout_at: $nextPayoutAt | isCycleWaiting: $isCycleWaiting',
+      );
+      if (isCycleWaiting) {
+        debugPrint(
+          '[PROFIT_NON_SUBSCRIBED] countdown_state: cycle_completed | show_cycle_completed_message: true | show_start_next_cycle_button: true | show_next_profit: false',
+        );
+      }
+    } else {
+      debugPrint(
+        '[PROFIT_SUBSCRIBED] subscription_active: true | auto_restart_enabled: true | next_payout_at: $nextPayoutAt',
+      );
+      if (isCycleWaiting) {
+        debugPrint(
+          '[PROFIT_ERROR] INVALID SUBSCRIBED STATE -> Subscribed investment cannot be in cycleWaiting state! investment_id: $id',
+        );
+      } else {
+        debugPrint(
+          '[PROFIT_SUBSCRIBED] countdown_state: active | show_cycle_completed_message: false | show_start_next_cycle_button: false',
+        );
+      }
     }
   }
 

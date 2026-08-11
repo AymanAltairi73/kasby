@@ -1162,10 +1162,13 @@ class _SupportChatViewState extends State<SupportChatView> {
     VoidCallback onTap, {
     Color? color,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? Colors.white),
-      title: Text(label, style: TextStyle(color: color ?? Colors.white)),
-      onTap: onTap,
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        leading: Icon(icon, color: color ?? Colors.white),
+        title: Text(label, style: TextStyle(color: color ?? Colors.white)),
+        onTap: onTap,
+      ),
     );
   }
 

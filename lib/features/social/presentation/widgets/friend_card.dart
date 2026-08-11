@@ -156,16 +156,19 @@ class _QuickActions extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: Icon(
-                Icons.person_remove_rounded,
-                color: AppColors.error,
+            Material(
+              color: Colors.transparent,
+              child: ListTile(
+                leading: Icon(
+                  Icons.person_remove_rounded,
+                  color: AppColors.error,
+                ),
+                title: Text('remove_friend'.tr),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.removeFriend(friend);
+                },
               ),
-              title: Text('remove_friend'.tr),
-              onTap: () {
-                Navigator.pop(context);
-                controller.removeFriend(friend);
-              },
             ),
           ],
         ),

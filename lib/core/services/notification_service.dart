@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -11,6 +12,7 @@ class NotificationService {
 
   Future<void> playNotificationSound() async {
     try {
+      debugPrint('[PROFIT_NOTIFICATION] Sound played for notification');
       await _audioPlayer.play(AssetSource('sounds/notification.mp3'));
       HapticFeedback.mediumImpact();
     } catch (e, stack) {

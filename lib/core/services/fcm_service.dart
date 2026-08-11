@@ -171,6 +171,9 @@ class FCMService extends GetxService {
 
       // Handle foreground messages (display only — navigate on tap)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint(
+          '[PROFIT_NOTIFICATION] FOREGROUND RECEIVED -> type: ${message.data['type']} | notification_id: ${message.data['id']} | title: ${message.notification?.title} | body: ${message.notification?.body}',
+        );
         SafeGetx.debugTrace(
           className: 'FCMService',
           method: 'onMessage',
@@ -265,8 +268,15 @@ class FCMService extends GetxService {
           fcmToken.value = token;
         }
       }
+      debugPrint(
+        '[PROFIT_FCM] AUTH SIGNED IN -> user_id: ${SupabaseService.userId} | has_token: ${fcmToken.value.isNotEmpty} | token_length: ${fcmToken.value.length}',
+      );
       if (token != null && token.isNotEmpty) {
         await syncTokenToServer(token);
+      } else {
+        debugPrint(
+          '[PROFIT_ERROR] FCM TOKEN MISSING -> user_id: ${SupabaseService.userId} has no valid FCM device token!',
+        );
       }
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -319,6 +329,9 @@ class FCMService extends GetxService {
         'fcm_channel_description',
       );
 
+      debugPrint(
+        '[PROFIT_NOTIFICATION] LOCAL NOTIFICATION CREATED -> title: $resolvedTitle | body: $resolvedBody',
+      );
       _localNotifications.show(
         id: notification.hashCode,
         title: resolvedTitle,
@@ -358,6 +371,9 @@ class FCMService extends GetxService {
   Future<void> syncTokenToServer(String token) async {
     try {
       if (SupabaseService.client.auth.currentUser != null) {
+        debugPrint(
+          '[PROFIT_FCM] TOKEN SYNC START -> user_id: ${SupabaseService.userId} | token: ${token.substring(0, token.length > 10 ? 10 : token.length)}...',
+        );
         await SupabaseService.client.rpc(
           'fn_register_device_token',
           params: {
@@ -365,6 +381,9 @@ class FCMService extends GetxService {
             'p_platform': GetPlatform.isIOS ? 'ios' : 'android',
             'p_app_type': 'user',
           },
+        );
+        debugPrint(
+          '[PROFIT_FCM] TOKEN SYNC SUCCESS -> user_id: ${SupabaseService.userId} | device_token_registered: true | rpc_success: true',
         );
         SafeGetx.debugTrace(
           className: 'FCMService',
@@ -374,6 +393,9 @@ class FCMService extends GetxService {
         );
       }
     } catch (e, stack) {
+      debugPrint(
+        '[PROFIT_ERROR] FCM TOKEN SYNC FAILED -> user_id: ${SupabaseService.userId} | error: $e',
+      );
       SafeGetx.debugTrace(
         className: 'FCMService',
         method: 'syncTokenToServer',

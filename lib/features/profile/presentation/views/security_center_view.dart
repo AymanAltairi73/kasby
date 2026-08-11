@@ -424,20 +424,23 @@ class _SecurityCenterViewState extends State<SecurityCenterView> {
     bool done, {
     VoidCallback? onTap,
   }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      visualDensity: VisualDensity.compact,
-      leading: Icon(icon, color: AppColors.darkGold, size: 22),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        leading: Icon(icon, color: AppColors.darkGold, size: 22),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        trailing: Icon(
+          done ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+          color: done ? AppColors.softGreen : AppColors.darkGold,
+          size: 20,
+        ),
+        onTap: onTap,
       ),
-      trailing: Icon(
-        done ? Icons.check_circle_rounded : Icons.error_outline_rounded,
-        color: done ? AppColors.softGreen : AppColors.darkGold,
-        size: 20,
-      ),
-      onTap: onTap,
     );
   }
 

@@ -328,38 +328,41 @@ class _GlobalSearchViewState extends State<GlobalSearchView> {
                 itemCount: searches.length,
                 itemBuilder: (context, index) {
                   final search = searches[index];
-                  return ListTile(
-                        leading: Icon(
-                          Icons.history_rounded,
-                          color: AppColors.textSecondary,
-                          size: 20,
-                        ),
-                        title: Text(
-                          search,
-                          style: TextStyle(
-                            color: AppColors.onSurface,
-                            fontSize: 15,
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(
-                            Icons.close_rounded,
+                  return Material(
+                        color: Colors.transparent,
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.history_rounded,
                             color: AppColors.textSecondary,
-                            size: 18,
+                            size: 20,
                           ),
-                          tooltip: 'close'.tr,
-                          onPressed: () =>
-                              _controller.removeRecentSearch(search),
+                          title: Text(
+                            search,
+                            style: TextStyle(
+                              color: AppColors.onSurface,
+                              fontSize: 15,
+                            ),
+                          ),
+                          trailing: IconButton(
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: AppColors.textSecondary,
+                              size: 18,
+                            ),
+                            tooltip: 'close'.tr,
+                            onPressed: () =>
+                                _controller.removeRecentSearch(search),
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          onTap: () {
+                            _textController.text = search;
+                            _textController.selection =
+                                TextSelection.fromPosition(
+                                  TextPosition(offset: search.length),
+                                );
+                            _controller.searchFromRecent(search);
+                          },
                         ),
-                        contentPadding: EdgeInsets.zero,
-                        onTap: () {
-                          _textController.text = search;
-                          _textController.selection =
-                              TextSelection.fromPosition(
-                                TextPosition(offset: search.length),
-                              );
-                          _controller.searchFromRecent(search);
-                        },
                       )
                       .animate()
                       .fadeIn(duration: 300.ms, delay: (50 * index).ms)

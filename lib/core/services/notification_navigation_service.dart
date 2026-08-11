@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 import 'package:get/get.dart';
 import 'package:kasby/core/models/notification_model.dart';
@@ -68,6 +69,9 @@ class NotificationNavigationService {
 
     if (data['type'] == 'otp_verification') return;
 
+    debugPrint(
+      '[PROFIT_NAVIGATION] PAYLOAD RECEIVED -> type: ${data['type']} | entity_id: ${data['entity_id']} | route: ${data['route']} | fromUserTap: $fromUserTap',
+    );
     SafeGetx.debugTrace(
       className: 'NotificationNavigationService',
       method: 'navigateFromPayload',
@@ -313,6 +317,12 @@ class NotificationNavigationService {
 
     try {
       final args = await _buildArguments(data, route);
+      debugPrint(
+        '[PROFIT_NAVIGATION] NOTIFICATION TAP -> type: ${data['type']} | investment_id: ${data['entity_id']} | route: $route',
+      );
+      debugPrint(
+        '[PROFIT_NAVIGATION] NAVIGATING -> target: $route | arguments: $args',
+      );
       if (args != null) {
         await Get.toNamed(route, arguments: args);
       } else {

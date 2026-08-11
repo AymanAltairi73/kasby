@@ -274,6 +274,9 @@ class AuthController extends GetxController {
       switch (event) {
         case AuthChangeEvent.signedIn:
           _log('User signed in: ${session?.user.id}');
+          debugPrint(
+            '[PROFIT_FCM] AUTH SIGNED IN -> user_id: ${session?.user.id} | token_present: ${Get.isRegistered<FCMService>() && FCMService.to.fcmToken.value.isNotEmpty}',
+          );
           if (!AuthOtpConfig.tempSkipEmailVerification &&
               session != null &&
               _requiresEmailVerification(session.user)) {

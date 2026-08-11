@@ -242,26 +242,29 @@ class _SupportViewState extends State<SupportView> {
   Widget _buildAppTutorialCard() {
     return KasbyCard(
       padding: EdgeInsets.zero,
-      child: ListTile(
-        leading: Icon(Icons.tour_rounded, color: AppColors.darkGold),
-        title: Text(
-          'app_tour'.tr,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          'tour_settings_desc'.tr,
-          style: TextStyle(
-            fontSize: 12,
-            color: isDark
-                ? AppColors.textSecondary
-                : AppColors.textSecondaryLight,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          leading: Icon(Icons.tour_rounded, color: AppColors.darkGold),
+          title: Text(
+            'app_tour'.tr,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
+          subtitle: Text(
+            'tour_settings_desc'.tr,
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLight,
+            ),
+          ),
+          trailing: Icon(
+            Icons.play_circle_outline_rounded,
+            color: AppColors.darkGold,
+          ),
+          onTap: () => TourSettingsSheet.show(context),
         ),
-        trailing: Icon(
-          Icons.play_circle_outline_rounded,
-          color: AppColors.darkGold,
-        ),
-        onTap: () => TourSettingsSheet.show(context),
       ),
     );
   }

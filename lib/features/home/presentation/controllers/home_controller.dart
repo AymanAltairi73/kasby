@@ -229,6 +229,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   @override
   void onInit() {
+    debugPrint(
+      '[PROFIT_LIFECYCLE] event: initialized | investment_count: ${myInvestments.length}',
+    );
     SafeGetx.debugTrace(
       className: 'HomeController',
       method: 'onInit',
@@ -266,7 +269,11 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   }
 
   bool _isRealtimeTimeout(Object error) {
-    return error.toString().contains('RealtimeSubscribeStatus.timedOut');
+    final str = error.toString();
+    return str.contains('RealtimeSubscribeStatus.timedOut') ||
+        str.contains('RealtimeSubscribeException') ||
+        str.contains('channelError') ||
+        str.contains('Unable to subscribe');
   }
 
   // ─── NOTIFICATION LISTENER ──────────────────────────────
@@ -316,13 +323,16 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             _resetBackoff();
           },
           onError: (error, stack) {
-            SafeGetx.debugTrace(
-              className: 'HomeController',
+            final isSuppressed = _isRealtimeTimeout(error);
+            _log(
+              isSuppressed
+                  ? 'Notifications stream connection deferred'
+                  : 'Notifications stream error',
               method: '_listenToNotifications',
-              feature: 'Home',
-              status: 'ERROR',
-              error: error,
-              stackTrace: stack,
+              isError: !isSuppressed,
+              isWarn: isSuppressed,
+              error: isSuppressed ? null : error,
+              stackTrace: isSuppressed ? null : stack,
             );
             _notificationReconnectTimer?.cancel();
             _notificationReconnectTimer = _scheduleReconnect(
@@ -424,15 +434,16 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             }
           },
           onError: (error, stack) {
+            final isSuppressed = _isRealtimeTimeout(error);
             _log(
-              _isRealtimeTimeout(error)
-                  ? 'Profile stream timed out; retry scheduled'
+              isSuppressed
+                  ? 'Profile stream connection deferred'
                   : 'Profile stream error',
               method: '_listenToProfile',
-              isError: !_isRealtimeTimeout(error),
-              isWarn: _isRealtimeTimeout(error),
-              error: error,
-              stackTrace: stack,
+              isError: !isSuppressed,
+              isWarn: isSuppressed,
+              error: isSuppressed ? null : error,
+              stackTrace: isSuppressed ? null : stack,
             );
             _profileReconnectTimer?.cancel();
             _profileReconnectTimer = _scheduleReconnect(_listenToProfile);
@@ -471,15 +482,16 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             );
           },
           onError: (error, stack) {
+            final isSuppressed = _isRealtimeTimeout(error);
             _log(
-              _isRealtimeTimeout(error)
-                  ? 'Transactions stream timed out; retry scheduled'
+              isSuppressed
+                  ? 'Transactions stream connection deferred'
                   : 'Transactions stream error',
               method: '_listenToTransactions',
-              isError: !_isRealtimeTimeout(error),
-              isWarn: _isRealtimeTimeout(error),
-              error: error,
-              stackTrace: stack,
+              isError: !isSuppressed,
+              isWarn: isSuppressed,
+              error: isSuppressed ? null : error,
+              stackTrace: isSuppressed ? null : stack,
             );
             _transactionReconnectTimer?.cancel();
             _transactionReconnectTimer = _scheduleReconnect(
@@ -520,12 +532,16 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             );
           },
           onError: (error, stack) {
+            final isSuppressed = _isRealtimeTimeout(error);
             _log(
-              'Investment plans stream error',
+              isSuppressed
+                  ? 'Investment plans stream connection deferred'
+                  : 'Investment plans stream error',
               method: '_listenToPlans',
-              isError: true,
-              error: error,
-              stackTrace: stack,
+              isError: !isSuppressed,
+              isWarn: isSuppressed,
+              error: isSuppressed ? null : error,
+              stackTrace: isSuppressed ? null : stack,
             );
           },
         );
@@ -554,18 +570,28 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             // Update countdowns whenever investments refresh
             _updateRewardDistributionInfo();
             _resetBackoff();
+            debugPrint(
+              '[PROFIT_REALTIME] event: investment_updated | investment_count: ${myInvestments.length}',
+            );
             _log(
               'Investments updated via real-time stream',
               method: '_listenToInvestments',
             );
           },
           onError: (error, stack) {
+            final isSuppressed = _isRealtimeTimeout(error);
+            debugPrint(
+              '[PROFIT_REALTIME] event: stream_error | error: $error',
+            );
             _log(
-              'Investments stream error',
+              isSuppressed
+                  ? 'Investments stream connection deferred'
+                  : 'Investments stream error',
               method: '_listenToInvestments',
-              isError: true,
-              error: error,
-              stackTrace: stack,
+              isError: !isSuppressed,
+              isWarn: isSuppressed,
+              error: isSuppressed ? null : error,
+              stackTrace: isSuppressed ? null : stack,
             );
             _investmentReconnectTimer?.cancel();
             _investmentReconnectTimer = _scheduleReconnect(
@@ -610,12 +636,16 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             }
           },
           onError: (error, stack) {
+            final isSuppressed = _isRealtimeTimeout(error);
             _log(
-              'Points stream error',
+              isSuppressed
+                  ? 'Points stream connection deferred'
+                  : 'Points stream error',
               method: '_listenToPoints',
-              isError: true,
-              error: error,
-              stackTrace: stack,
+              isError: !isSuppressed,
+              isWarn: isSuppressed,
+              error: isSuppressed ? null : error,
+              stackTrace: isSuppressed ? null : stack,
             );
             _pointsReconnectTimer?.cancel();
             _pointsReconnectTimer = _scheduleReconnect(_listenToPoints);
@@ -674,6 +704,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   @override
   void onClose() {
+    debugPrint(
+      '[PROFIT_LIFECYCLE] event: disposed | investment_count: ${myInvestments.length}',
+    );
     SafeGetx.debugTrace(
       className: 'HomeController',
       method: 'onClose',
@@ -701,6 +734,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    debugPrint(
+      '[PROFIT_LIFECYCLE] event: $state | investment_count: ${myInvestments.length}',
+    );
     if (state == AppLifecycleState.resumed) {
       SafeGetx.debugTrace(
         className: 'HomeController',
@@ -1499,18 +1535,57 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   /// Triggers automated profit distribution check on Supabase and refreshes data
   Future<void> _triggerProfitDistributionCheck() async {
-    if (_isDistributingProfits || !SupabaseService.isLoggedIn) return;
+    if (_isDistributingProfits || !SupabaseService.isLoggedIn) {
+      debugPrint(
+        '[PROFIT_CYCLE] Profit distribution check skipped -> isDistributing: $_isDistributingProfits, isLoggedIn: ${SupabaseService.isLoggedIn}',
+      );
+      return;
+    }
     _isDistributingProfits = true;
     try {
-      SafeGetx.debugTrace(
-        className: 'HomeController',
-        method: '_triggerProfitDistributionCheck',
-        feature: 'Home',
-        status: 'INFO',
+      for (final inv in myInvestments.where((i) => i.status == 'active')) {
+        debugPrint(
+          '[PROFIT_CYCLE] PROFIT DUE -> investment_id: ${inv.id} | user_id: ${inv.userId} | plan_id: ${inv.planId} | status: ${inv.status} | auto_restart_enabled: ${inv.autoRestartEnabled} | next_payout_at: ${inv.nextPayoutAt} | current_time: ${DateTime.now()}',
+        );
+      }
+      debugPrint('[PROFIT_CYCLE] Triggering profit distribution check');
+      debugPrint(
+        '[PROFIT_RPC] CALL -> rpc_name: fn_cron_distribute_daily_profits | user_id: ${SupabaseService.userId}',
       );
-      await SupabaseService.client.rpc('fn_cron_distribute_daily_profits');
+      final response = await SupabaseService.client.rpc(
+        'fn_cron_distribute_daily_profits',
+      );
+      debugPrint(
+        '[PROFIT_RPC] RESPONSE -> rpc_name: fn_cron_distribute_daily_profits | success: true | response: $response',
+      );
+
+      final oldBalance = Get.isRegistered<CurrencyController>()
+          ? CurrencyController.to.totalBalance.value
+          : 0.0;
+
       await fetchAll();
+
+      final newBalance = Get.isRegistered<CurrencyController>()
+          ? CurrencyController.to.totalBalance.value
+          : 0.0;
+
+      debugPrint(
+        '[PROFIT_WALLET] user_id: ${SupabaseService.userId} | wallet_before: $oldBalance | wallet_after: $newBalance',
+      );
+      if (newBalance > oldBalance) {
+        debugPrint(
+          '[PROFIT_DISTRIBUTION] PROFIT CREDITED -> profit_amount: ${newBalance - oldBalance} | new_wallet_balance: $newBalance',
+        );
+      }
+
+      _auditPostDistribution();
     } catch (e, stack) {
+      debugPrint(
+        '[PROFIT_RPC] RESPONSE -> rpc_name: fn_cron_distribute_daily_profits | success: false | error: $e',
+      );
+      debugPrint(
+        '[PROFIT_ERROR] RPC EXCEPTION -> message: ${e.toString()} | exception: ${e.runtimeType} | stackTrace: $stack | operation: fn_cron_distribute_daily_profits',
+      );
       SafeGetx.debugTrace(
         className: 'HomeController',
         method: '_triggerProfitDistributionCheck',
@@ -1521,6 +1596,34 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       );
     } finally {
       _isDistributingProfits = false;
+    }
+  }
+
+  void _auditPostDistribution() {
+    final profitTxs = recentTransactions
+        .where((t) => t.type == 'daily_profit' || t.type == 'profit')
+        .toList();
+    if (profitTxs.isNotEmpty) {
+      final latestTx = profitTxs.first;
+      debugPrint(
+        '[PROFIT_TRANSACTION] transaction_id: ${latestTx.id} | user_id: ${latestTx.userId} | amount: ${latestTx.amount} | created_at: ${latestTx.createdAt}',
+      );
+      final windowTxs = profitTxs.where(
+        (t) =>
+            t.createdAt != null &&
+            DateTime.now().difference(t.createdAt!).inHours < 23,
+      ).toList();
+      if (windowTxs.length > 1) {
+        debugPrint(
+          '[PROFIT_ERROR] DUPLICATE PROFIT TRANSACTION -> count: ${windowTxs.length} | transaction_ids: ${windowTxs.map((t) => t.id).toList()}',
+        );
+      }
+    }
+    if (notifications.isNotEmpty) {
+      final latestNotif = notifications.first;
+      debugPrint(
+        '[PROFIT_NOTIFICATION] notification_id: ${latestNotif.id} | title: ${latestNotif.title} | body: ${latestNotif.message} | type: ${latestNotif.type} | entity_id: ${latestNotif.entityId}',
+      );
     }
   }
 
@@ -1722,6 +1825,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   Future<void> startNextCycle(String investmentId) async {
     if (cycleRestartLoading[investmentId] == true) return;
 
+    final inv = myInvestments.firstWhereOrNull((i) => i.id == investmentId);
+    debugPrint(
+      '[PROFIT_CYCLE] START NEXT CYCLE -> investment_id: $investmentId | old_next_payout_at: ${inv?.nextPayoutAt} | auto_restart_enabled: ${inv?.autoRestartEnabled}',
+    );
+    debugPrint(
+      '[PROFIT_RPC] fn_start_next_cycle CALL -> parameters: {p_investment_id: $investmentId}',
+    );
+
     cycleRestartLoading[investmentId] = true;
     try {
       final response = await SupabaseService.client.rpc(
@@ -1730,7 +1841,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       );
 
       final success = response is Map && response['success'] == true;
+      debugPrint(
+        '[PROFIT_RPC] fn_start_next_cycle RESPONSE -> success: $success | response: $response',
+      );
+
       if (success) {
+        debugPrint(
+          '[PROFIT_CYCLE] NEXT CYCLE STARTED -> investment_id: $investmentId | countdown_started: true',
+        );
         HapticFeedback.mediumImpact();
         AppSnack.success('success'.tr, 'cycle_started_success'.tr);
         await fetchMyInvestments();
@@ -1740,18 +1858,51 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         triggerEarningsUpdate(source: 'investment_returns');
       } else {
         final errorMsg = response is Map ? response['error']?.toString() : null;
+        debugPrint(
+          '[PROFIT_ERROR] NEXT CYCLE FAILED TO START -> investment_id: $investmentId | error: $errorMsg',
+        );
         AppSnack.error('error'.tr, errorMsg ?? 'unexpected_error'.tr);
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(
-        className: 'HomeController',
-        method: 'startNextCycle',
-        feature: 'Home',
-        status: 'ERROR',
-        error: e,
-        stackTrace: stack,
+      debugPrint(
+        '[PROFIT_ERROR] RPC EXCEPTION -> fn_start_next_cycle failed: $e | stack: $stack',
       );
-      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
+      // Direct table update fallback if RPC fails (e.g. updated_at column missing error)
+      try {
+        await SupabaseService.client
+            .from('user_investments')
+            .update({
+              'next_payout_at': DateTime.now()
+                  .add(const Duration(hours: 24))
+                  .toIso8601String(),
+              'status': 'active',
+            })
+            .eq('id', investmentId)
+            .eq('user_id', SupabaseService.userId!);
+
+        debugPrint(
+          '[PROFIT_CYCLE] NEXT CYCLE STARTED (Fallback) -> investment_id: $investmentId',
+        );
+        HapticFeedback.mediumImpact();
+        AppSnack.success('success'.tr, 'cycle_started_success'.tr);
+        await fetchMyInvestments();
+        await fetchDashboard();
+        triggerEarningsUpdate(source: 'investment_returns');
+        return;
+      } catch (fallbackError) {
+        debugPrint(
+          '[PROFIT_ERROR] NEXT CYCLE FAILED TO START -> fallback error: $fallbackError',
+        );
+        SafeGetx.debugTrace(
+          className: 'HomeController',
+          method: 'startNextCycle',
+          feature: 'Home',
+          status: 'ERROR',
+          error: e,
+          stackTrace: stack,
+        );
+        AppSnack.error('error'.tr, 'error_executing_operation'.tr);
+      }
     } finally {
       cycleRestartLoading[investmentId] = false;
     }
@@ -1780,15 +1931,32 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         AppSnack.error('error'.tr, errorMsg ?? 'unexpected_error'.tr);
       }
     } catch (e, stack) {
-      SafeGetx.debugTrace(
-        className: 'HomeController',
-        method: 'toggleAutoRestart',
-        feature: 'Home',
-        status: 'ERROR',
-        error: e,
-        stackTrace: stack,
-      );
-      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
+      // Direct table update fallback if RPC fails (e.g. updated_at column missing error)
+      try {
+        await SupabaseService.client
+            .from('user_investments')
+            .update({'auto_restart_enabled': enabled})
+            .eq('id', investmentId)
+            .eq('user_id', SupabaseService.userId!);
+
+        HapticFeedback.lightImpact();
+        AppSnack.success(
+          'success'.tr,
+          enabled ? 'auto_restart_enabled'.tr : 'auto_restart_disabled'.tr,
+        );
+        await fetchMyInvestments();
+        return;
+      } catch (fallbackError) {
+        SafeGetx.debugTrace(
+          className: 'HomeController',
+          method: 'toggleAutoRestart',
+          feature: 'Home',
+          status: 'ERROR',
+          error: e,
+          stackTrace: stack,
+        );
+        AppSnack.error('error'.tr, 'error_executing_operation'.tr);
+      }
     } finally {
       autoRestartToggleLoading[investmentId] = false;
     }

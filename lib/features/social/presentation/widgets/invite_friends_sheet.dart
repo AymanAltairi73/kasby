@@ -48,13 +48,16 @@ class InviteFriendsSheet extends StatelessWidget {
       required VoidCallback onTap,
       Color? color,
     }) {
-      return ListTile(
-        leading: Icon(icon, color: color ?? AppColors.darkGold),
-        title: Text(label),
-        onTap: () {
-          Get.back();
-          onTap();
-        },
+      return Material(
+        color: Colors.transparent,
+        child: ListTile(
+          leading: Icon(icon, color: color ?? AppColors.darkGold),
+          title: Text(label),
+          onTap: () {
+            Get.back();
+            onTap();
+          },
+        ),
       );
     }
 

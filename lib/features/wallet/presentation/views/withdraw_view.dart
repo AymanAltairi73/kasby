@@ -574,53 +574,56 @@ class _WithdrawViewState extends State<WithdrawView> {
                 child: GlassCard(
                   padding: EdgeInsets.zero,
                   opacity: isDark ? 0.03 : 0.05,
-                  child: RadioListTile<int>(
-                    value: index,
-                    activeColor: AppColors.darkGold,
-                    title: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            agent.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        AgentStatusBadge(
-                          isOnline: agent.isAvailableNow,
-                          compact: true,
-                        ),
-                        if (agent.successRate > 0) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.softGreen.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: RadioListTile<int>(
+                      value: index,
+                      activeColor: AppColors.darkGold,
+                      title: Row(
+                        children: [
+                          Expanded(
                             child: Text(
-                              'success_rate'.trParams({
-                                'rate':
-                                    '${agent.successRate.toStringAsFixed(0)}%',
-                              }),
-                              style: TextStyle(
-                                color: AppColors.softGreen,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                              agent.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          AgentStatusBadge(
+                            isOnline: agent.isAvailableNow,
+                            compact: true,
+                          ),
+                          if (agent.successRate > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.softGreen.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'success_rate'.trParams({
+                                  'rate':
+                                      '${agent.successRate.toStringAsFixed(0)}%',
+                                }),
+                                style: TextStyle(
+                                  color: AppColors.softGreen,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ),
-                    subtitle: Text(
-                      '${agent.city}, ${agent.country}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                      ),
+                      subtitle: Text(
+                        '${agent.city}, ${agent.country}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ),

@@ -44,37 +44,46 @@ class TourSettingsSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ...TourId.values.map(
-            (id) => ListTile(
-              leading: Icon(
-                Icons.play_lesson_outlined,
-                color: AppColors.darkGold,
+            (id) => Material(
+              color: Colors.transparent,
+              child: ListTile(
+                leading: Icon(
+                  Icons.play_lesson_outlined,
+                  color: AppColors.darkGold,
+                ),
+                title: Text(id.labelKey.tr),
+                trailing: const Icon(Icons.replay_rounded, size: 20),
+                onTap: () {
+                  Navigator.pop(context);
+                  TourController.to.dismissActiveTour();
+                  TourController.to.replayTour(context, id);
+                },
               ),
-              title: Text(id.labelKey.tr),
-              trailing: const Icon(Icons.replay_rounded, size: 20),
-              onTap: () {
-                Navigator.pop(context);
-                TourController.to.dismissActiveTour();
-                TourController.to.replayTour(context, id);
-              },
             ),
           ),
           const Divider(),
-          ListTile(
-            leading: Icon(Icons.restart_alt_rounded, color: AppColors.darkGold),
-            title: Text('tour_reset_all'.tr),
-            onTap: () async {
-              await TourController.to.resetAllTours();
-              await TourService.setPermanentlySkipped(false);
-              if (context.mounted) Navigator.pop(context);
-            },
+          Material(
+            color: Colors.transparent,
+            child: ListTile(
+              leading: Icon(Icons.restart_alt_rounded, color: AppColors.darkGold),
+              title: Text('tour_reset_all'.tr),
+              onTap: () async {
+                await TourController.to.resetAllTours();
+                await TourService.setPermanentlySkipped(false);
+                if (context.mounted) Navigator.pop(context);
+              },
+            ),
           ),
-          ListTile(
-            leading: Icon(Icons.block_rounded, color: AppColors.error),
-            title: Text('tour_skip_forever'.tr),
-            onTap: () async {
-              await TourService.setPermanentlySkipped(true);
-              if (context.mounted) Navigator.pop(context);
-            },
+          Material(
+            color: Colors.transparent,
+            child: ListTile(
+              leading: Icon(Icons.block_rounded, color: AppColors.error),
+              title: Text('tour_skip_forever'.tr),
+              onTap: () async {
+                await TourService.setPermanentlySkipped(true);
+                if (context.mounted) Navigator.pop(context);
+              },
+            ),
           ),
         ],
       ),
