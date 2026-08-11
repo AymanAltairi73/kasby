@@ -4569,6 +4569,12 @@ class KasbyTranslations extends Translations {
           'تشفير وحماية عالية الأمان بمقاييس بنكية 256-bit',
       'welcome_back_user': 'أهلاً بك مجدداً، @name',
       'kasby_secured_platform': 'منصة مالية آمنة ومشفّرة',
+      'cycle_started_success': 'تم بدء الدورة التالية بنجاح.',
+      'auto_restart': 'التكرار التلقائي',
+      'auto_restart_enabled': 'تم تفعيل التكرار التلقائي بنجاح.',
+      'auto_restart_disabled': 'تم إيقاف التكرار التلقائي بنجاح.',
+      'waiting_next_cycle': 'بانتظار بدء الدورة التالية',
+      'cycle_completed_message': 'تم استلام أرباح هذه الدورة',
     },
   };
 }

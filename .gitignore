@@ -7,6 +7,7 @@ build/
 # Android
 android/.gradle/
 android/app/build/
+android/.kotlin/
 **/build/
 
 # iOS
@@ -15,6 +16,10 @@ ios/Pods/
 # APK
 *.apk
 *.aab
+
+# Keystore files
+*.jks
+*.keystore
 
 # Environment files (keep .env.example if exists)
 .env.local

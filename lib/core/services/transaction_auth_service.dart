@@ -64,7 +64,8 @@ class TransactionAuthService extends GetxService {
 
       final ok = await _localAuth.authenticate(
         localizedReason: 'transaction_biometric_reason'.tr,
-        options: AuthenticationOptions(stickyAuth: true, biometricOnly: canBio),
+        persistAcrossBackgrounding: true,
+        biometricOnly: canBio,
       );
 
       if (ok) {

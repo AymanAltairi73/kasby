@@ -101,7 +101,7 @@ class FCMService extends GetxService {
         );
 
     await _localNotifications.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (details) {
         SafeGetx.debugTrace(
           className: 'FCMService',
@@ -386,10 +386,10 @@ class FCMService extends GetxService {
       );
 
       _localNotifications.show(
-        notification.hashCode,
-        resolvedTitle,
-        resolvedBody,
-        NotificationDetails(
+        id: notification.hashCode,
+        title: resolvedTitle,
+        body: resolvedBody,
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             'high_importance_channel',
             channelName,
@@ -462,10 +462,10 @@ class FCMService extends GetxService {
     );
 
     await _localNotifications.show(
-      DateTime.now().millisecond,
-      ContentLocalizationService.resolve(title),
-      ContentLocalizationService.resolve(body),
-      NotificationDetails(
+      id: DateTime.now().millisecond,
+      title: ContentLocalizationService.resolve(title),
+      body: ContentLocalizationService.resolve(body),
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           'high_importance_channel',
           channelName,
@@ -531,9 +531,9 @@ class FCMService extends GetxService {
 
   /// Cancel all check-in reminder notifications.
   Future<void> cancelCheckInNotifications() async {
-    await _localNotifications.cancel(_checkIn5hId);
-    await _localNotifications.cancel(_checkIn3hId);
-    await _localNotifications.cancel(_checkIn1hId);
+    await _localNotifications.cancel(id: _checkIn5hId);
+    await _localNotifications.cancel(id: _checkIn3hId);
+    await _localNotifications.cancel(id: _checkIn1hId);
   }
 
   Future<void> _scheduleLocal({
@@ -554,10 +554,10 @@ class FCMService extends GetxService {
       );
 
       await _localNotifications.show(
-        id,
-        title,
-        body,
-        NotificationDetails(
+        id: id,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             'high_importance_channel',
             channelName,
