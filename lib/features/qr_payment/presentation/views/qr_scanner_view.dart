@@ -148,10 +148,10 @@ class _QrScannerViewState extends State<QrScannerView>
             controller: _scannerController,
             fit: BoxFit.cover,
             scanWindow: _scanWindow(MediaQuery.sizeOf(context)),
-            errorBuilder: (context, error, child) {
+            errorBuilder: (context, error) {
               return _buildCameraErrorState(error);
             },
-            placeholderBuilder: (context, child) {
+            placeholderBuilder: (context) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

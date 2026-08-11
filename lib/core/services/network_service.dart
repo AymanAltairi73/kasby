@@ -85,8 +85,8 @@ class NetworkService extends GetxService with WidgetsBindingObserver {
       _hasNetworkAdapter = true;
     }
 
-    // 2. Check initial internet state
-    await _checkConnection();
+    // 2. Check initial internet state asynchronously without blocking startup
+    unawaited(_checkConnection());
 
     // 3. Listen to connectivity changes (WiFi on/off, mobile data, etc.)
     _connectivitySub = _connectivity.onConnectivityChanged.listen(
