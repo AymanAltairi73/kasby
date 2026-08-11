@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -38,6 +39,9 @@ class FCMService extends GetxService {
   final RxString fcmToken = ''.obs;
   final RxString lastOtpCode = ''.obs;
   final RxBool isNotificationsEnabled = true.obs;
+  StreamSubscription<String>? _tokenRefreshSubscription;
+  StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
+  StreamSubscription<RemoteMessage>? _messageOpenedAppSubscription;
 
   Future<FCMService> init() async {
     final stopwatch = Stopwatch()..start();
@@ -54,8 +58,8 @@ class FCMService extends GetxService {
         prefs.getBool('notifications_enabled') ?? true;
 
     if (isNotificationsEnabled.value) {
-      await _setupFCM();
-      await _handleColdStartMessage();
+      unawaited(_setupFCM());
+      unawaited(_handleColdStartMessage());
     }
     SafeGetx.debugTrace(
       className: 'FCMService',
@@ -133,76 +137,135 @@ class FCMService extends GetxService {
   }
 
   Future<void> _setupFCM() async {
-    // Request permissions
-    NotificationSettings settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      SafeGetx.debugTrace(
-        className: 'FCMService',
-        method: '_setupFCM',
-        feature: 'Core',
-        status: 'SUCCESS',
-        message: 'User granted permission',
+    try {
+      // Request permissions
+      NotificationSettings settings = await _fcm.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
       );
 
-      // Get token
-      String? token = await _fcm.getToken();
-      if (token != null) {
-        fcmToken.value = token;
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         SafeGetx.debugTrace(
           className: 'FCMService',
           method: '_setupFCM',
           feature: 'Core',
           status: 'SUCCESS',
-          params: {'tokenPresent': true},
+          message: 'User granted permission',
         );
-        await syncTokenToServer(token);
-      }
 
-      // Listen for token refresh
-      _fcm.onTokenRefresh.listen((newToken) {
-        fcmToken.value = newToken;
-        syncTokenToServer(newToken);
-      });
+        if (!await _waitForApnsToken()) {
+          return;
+        }
 
-      // Handle foreground messages (display only — navigate on tap)
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint(
-          '[PROFIT_NOTIFICATION] FOREGROUND RECEIVED -> type: ${message.data['type']} | notification_id: ${message.data['id']} | title: ${message.notification?.title} | body: ${message.notification?.body}',
-        );
+        // An APNs token must be available before FCM registration on iOS.
+        try {
+          String? token = await _fcm.getToken();
+          if (token != null) {
+            fcmToken.value = token;
+            SafeGetx.debugTrace(
+              className: 'FCMService',
+              method: '_setupFCM',
+              feature: 'Core',
+              status: 'SUCCESS',
+              params: {'tokenPresent': true},
+            );
+            await syncTokenToServer(token);
+          }
+        } catch (e, stack) {
+          SafeGetx.debugTrace(
+            className: 'FCMService',
+            method: '_setupFCM',
+            feature: 'Core',
+            status: 'WARN',
+            message: 'Failed to get FCM token (e.g. on iOS Simulator)',
+            error: e,
+            stackTrace: stack,
+          );
+        }
+
+        _registerMessageListeners();
+      } else {
         SafeGetx.debugTrace(
           className: 'FCMService',
-          method: 'onMessage',
+          method: '_setupFCM',
           feature: 'Core',
-          status: 'INFO',
-          params: {'title': message.notification?.title ?? 'none'},
+          status: 'WARN',
+          message: 'User declined notification permission',
         );
-        _handleOtpFromMessage(message);
-        NotificationService().playNotificationSound();
-        _showLocalNotification(message);
-      });
-
-      // Handle message when app is opened from notification (background tap)
-      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        _handleOtpFromMessage(message);
-        NotificationNavigationService.navigateFromPayload(
-          message.data,
-          fromUserTap: true,
-        );
-      });
-    } else {
+      }
+    } catch (e, stack) {
       SafeGetx.debugTrace(
         className: 'FCMService',
         method: '_setupFCM',
         feature: 'Core',
         status: 'WARN',
-        message: 'User declined notification permission',
+        message: 'Error during FCM setup',
+        error: e,
+        stackTrace: stack,
       );
     }
+  }
+
+  /// On Apple platforms Firebase Messaging needs the APNs token before it can
+  /// create an FCM token. A physical device obtains this asynchronously after
+  /// notification permission and signed push capability are in place.
+  Future<bool> _waitForApnsToken() async {
+    if (kIsWeb || !GetPlatform.isIOS) return true;
+
+    const timeout = Duration(seconds: 10);
+    const retryInterval = Duration(milliseconds: 250);
+    final stopwatch = Stopwatch()..start();
+
+    while (stopwatch.elapsed < timeout) {
+      final apnsToken = await _fcm.getAPNSToken();
+      if (apnsToken != null && apnsToken.isNotEmpty) {
+        return true;
+      }
+      await Future<void>.delayed(retryInterval);
+    }
+
+    SafeGetx.debugTrace(
+      className: 'FCMService',
+      method: '_waitForApnsToken',
+      feature: 'Core',
+      status: 'WARN',
+      message:
+          'APNs token was not available. Verify push signing and test on a physical iPhone.',
+    );
+    return false;
+  }
+
+  void _registerMessageListeners() {
+    _tokenRefreshSubscription ??= _fcm.onTokenRefresh.listen((newToken) {
+      fcmToken.value = newToken;
+      unawaited(syncTokenToServer(newToken));
+    });
+
+    _foregroundMessageSubscription ??=
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          SafeGetx.debugTrace(
+            className: 'FCMService',
+            method: 'onMessage',
+            feature: 'Core',
+            status: 'INFO',
+            params: {'title': message.notification?.title ?? 'none'},
+          );
+          _handleOtpFromMessage(message);
+          NotificationService().playNotificationSound();
+          _showLocalNotification(message);
+        });
+
+    _messageOpenedAppSubscription ??=
+        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+          _handleOtpFromMessage(message);
+          unawaited(
+            NotificationNavigationService.navigateFromPayload(
+              message.data,
+              fromUserTap: true,
+            ),
+          );
+        });
   }
 
   Future<void> setNotificationsEnabled(bool enabled) async {
