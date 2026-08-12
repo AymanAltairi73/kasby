@@ -33,34 +33,22 @@ class _LoanViewState extends State<LoanView>
 
   double get currentLoanAmount =>
       double.tryParse(_amountController.text) ?? 0.0;
-  double get minLoanAmount =>
-      (loanController.activeInvestmentValue.value * 0.10);
-  double get maxLoanAmount =>
-      (loanController.activeInvestmentValue.value * 0.50);
   double get totalInterest =>
       currentLoanAmount *
       loanController.serverInterestRate.value *
       selectedDuration;
   double get totalRepayment => currentLoanAmount + totalInterest;
 
-  double get loanPercentage {
-    if (loanController.activeInvestmentValue.value <= 0) return 0.10;
-    return (currentLoanAmount / loanController.activeInvestmentValue.value)
-        .clamp(0.10, 0.50);
-  }
-
   void _incrementAmount() {
     double current = currentLoanAmount;
-    if (current < maxLoanAmount) {
-      setState(() {
-        _amountController.text = (current + 10).toStringAsFixed(0);
-      });
-    }
+    setState(() {
+      _amountController.text = (current + 10).toStringAsFixed(0);
+    });
   }
 
   void _decrementAmount() {
     double current = currentLoanAmount;
-    if (current > minLoanAmount) {
+    if (current > 10) {
       setState(() {
         _amountController.text = (current - 10).toStringAsFixed(0);
       });
@@ -463,52 +451,11 @@ class _LoanViewState extends State<LoanView>
               ),
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Divider(color: Colors.white10),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Obx(
-                () => _buildSimpleStat(
-                  'min_limit'.tr,
-                  currencyController.formatAmount(minLoanAmount),
-                ),
-              ),
-              Obx(
-                () => _buildSimpleStat(
-                  'max_limit'.tr,
-                  currencyController.formatAmount(maxLoanAmount),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     ).animate().fadeIn().slideY(begin: 0.1);
   }
 
-  Widget _buildSimpleStat(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: isDark
-                ? AppColors.textSecondary
-                : AppColors.textSecondaryLight,
-            fontSize: 11,
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-      ],
-    );
-  }
 
   Widget _buildAmountSelector() {
     return Column(
@@ -544,48 +491,6 @@ class _LoanViewState extends State<LoanView>
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 24),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: AppColors.darkGold,
-            inactiveTrackColor: isDark ? Colors.white12 : Colors.black12,
-            thumbColor: AppColors.darkGold,
-            overlayColor: AppColors.darkGold.withValues(alpha: 0.2),
-            trackHeight: 8,
-          ),
-          child: Slider(
-            value: loanPercentage,
-            min: 0.10,
-            max: 0.50,
-            onChanged: (val) {
-              setState(() {
-                _amountController.text =
-                    (loanController.activeInvestmentValue.value * val)
-                        .toStringAsFixed(0);
-              });
-            },
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '10%',
-              style: TextStyle(
-                color: isDark ? Colors.white38 : Colors.black38,
-                fontSize: 12,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '50%',
-              style: TextStyle(
-                color: isDark ? Colors.white38 : Colors.black38,
-                fontSize: 12,
-              ),
-            ),
-          ],
         ),
       ],
     );
@@ -873,23 +778,19 @@ class _LoanViewState extends State<LoanView>
   }
 
   void _handleSubmit() {
-    if (loanController.activeInvestmentValue.value <= 0) {
-      AppSnack.error('error'.tr, 'must_have_active_investments'.tr);
-      return;
-    }
+    debugPrint(
+      '[LOAN_VIEW] 👆 Loan confirm button tapped | Amount text: "${_amountController.text}", Parsed amount: $currentLoanAmount, Duration: $selectedDuration months, AgreedToTerms: $agreedToTerms',
+    );
 
-    if (currentLoanAmount < minLoanAmount ||
-        currentLoanAmount > maxLoanAmount) {
-      AppSnack.error(
-        'error'.tr,
-        'amount_must_be_between'.trParams({
-          'min': minLoanAmount.toStringAsFixed(0),
-          'max': maxLoanAmount.toStringAsFixed(0),
-        }),
+    if (currentLoanAmount <= 0) {
+      debugPrint(
+        '[LOAN_VIEW] ⚠️ Validation failed: Amount <= 0 ($currentLoanAmount)',
       );
+      AppSnack.error('error'.tr, 'invalid_amount'.tr);
       return;
     }
 
+    debugPrint('[LOAN_VIEW] ➡️ Calling loanController.applyForLoan...');
     loanController.applyForLoan(currentLoanAmount, selectedDuration);
   }
 

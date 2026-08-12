@@ -193,13 +193,22 @@ class LoanController extends GetxController {
 
   Future<void> applyForLoan(double amount, int duration) async {
     isSubmitting.value = true;
+    debugPrint(
+      '[LOAN_CONTROLLER] 🚀 applyForLoan initiated: amount=$amount, duration=$duration months, userId=${SupabaseService.userId}',
+    );
     try {
+      final params = {'p_amount': amount, 'p_duration_months': duration};
+      debugPrint('[LOAN_CONTROLLER] 📤 Sending RPC "create_loan" with params: $params');
+
       final response = await SupabaseService.client.rpc(
         'create_loan',
-        params: {'p_amount': amount, 'p_duration_months': duration},
+        params: params,
       );
 
-      if (response['success'] == true) {
+      debugPrint('[LOAN_CONTROLLER] 📥 RPC "create_loan" raw response: $response');
+
+      if (response != null && response['success'] == true) {
+        debugPrint('[LOAN_CONTROLLER] ✅ Loan application successful!');
         Get.back();
         Get.snackbar(
           'success'.tr,
@@ -209,9 +218,13 @@ class LoanController extends GetxController {
         );
         refreshData();
       } else {
-        Get.snackbar('error'.tr, response?['message'] ?? 'unknown_error'.tr);
+        final errorMsg = response?['message'] ?? response?['error'] ?? 'unknown_error'.tr;
+        debugPrint('[LOAN_CONTROLLER] ❌ Loan application refused by backend: $errorMsg');
+        Get.snackbar('error'.tr, errorMsg.toString());
       }
     } catch (e, stack) {
+      debugPrint('[LOAN_CONTROLLER] 💥 Exception during applyForLoan: $e');
+      debugPrint('[LOAN_CONTROLLER] 📜 Stack trace:\n$stack');
       SafeGetx.debugTrace(
         className: 'LoanController',
         method: 'applyForLoan',
@@ -223,6 +236,7 @@ class LoanController extends GetxController {
       Get.snackbar('error'.tr, 'loan_submission_error'.tr);
     } finally {
       isSubmitting.value = false;
+      debugPrint('[LOAN_CONTROLLER] 🏁 applyForLoan finished.');
     }
   }
 

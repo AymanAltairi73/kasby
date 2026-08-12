@@ -127,7 +127,7 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                         size: 22,
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'security_notice'.tr,
@@ -142,12 +142,12 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                   ],
                 ),
               ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05),
-              const SizedBox(height: 28),
+              const SizedBox(height: 10),
               _buildStepIndicator(
                 currentStep.value,
                 isDark,
               ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-              const SizedBox(height: 32),
+              const SizedBox(height: 15),
               if (currentStep.value == 0) ...[
                 Text(
                   'verify_password'.tr,
@@ -165,7 +165,7 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                     color: isDark ? Colors.white54 : Colors.black45,
                   ),
                 ).animate().fadeIn(delay: 150.ms),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
                 KasbyTextField(
                   key: const ValueKey('profile_update_password'),
                   controller: passwordController,
@@ -176,11 +176,11 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                     color: AppColors.darkGold,
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 10),
                 profileCtrl.isVerifyingPassword.value
                     ? const Center(
                         child: Padding(
-                          padding: EdgeInsets.all(16),
+                          padding: EdgeInsets.all(10),
                           child: CircularProgressIndicator(),
                         ),
                       )
@@ -204,17 +204,17 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                     color: isDark ? Colors.white : Colors.black87,
                   ),
                 ).animate().fadeIn(delay: 100.ms),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Text(
                   isEmailChange
                       ? 'enter_new_email_desc'.tr
                       : 'enter_new_phone_desc'.tr,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 10,
                     color: isDark ? Colors.white54 : Colors.black45,
                   ),
                 ).animate().fadeIn(delay: 150.ms),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
                 if (isEmailChange)
                   KasbyTextField(
                     key: const ValueKey('profile_update_email'),
@@ -239,7 +239,7 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                       currentCompletePhone = completeNumber;
                     },
                   ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 10),
                 KasbyButton(
                   text: 'next'.tr,
                   onPressed: () async {
@@ -304,58 +304,57 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                     ),
                   ).animate().fadeIn(delay: 200.ms),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
-                // ─── OTP expiry countdown ───
-                if (profileCtrl.otpExpiryCountdown.value > 0 ||
-                    profileCtrl.otpExpired.value)
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: profileCtrl.otpExpired.value
-                            ? Colors.red.withValues(alpha: 0.08)
-                            : AppColors.darkGold.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: profileCtrl.otpExpired.value
-                              ? Colors.red.withValues(alpha: 0.2)
-                              : AppColors.darkGold.withValues(alpha: 0.15),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            profileCtrl.otpExpired.value
-                                ? Icons.timer_off_rounded
-                                : Icons.timer_outlined,
-                            size: 18,
-                            color: profileCtrl.otpExpired.value
-                                ? Colors.red
-                                : AppColors.darkGold,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            profileCtrl.otpExpired.value
-                                ? 'otp_has_expired'.tr
-                                : '${'otp_expires_in'.tr} ${profileCtrl.formattedExpiry}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: profileCtrl.otpExpired.value
-                                  ? Colors.red
-                                  : AppColors.darkGold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 180.ms),
-
+                // // ─── OTP expiry countdown ───
+                // if (profileCtrl.otpExpiryCountdown.value > 0 ||
+                //     profileCtrl.otpExpired.value)
+                //   Center(
+                //     child: Container(
+                //       padding: const EdgeInsets.symmetric(
+                //         horizontal: 16,
+                //         vertical: 10,
+                //       ),
+                //       decoration: BoxDecoration(
+                //         color: profileCtrl.otpExpired.value
+                //             ? Colors.red.withValues(alpha: 0.08)
+                //             : AppColors.darkGold.withValues(alpha: 0.08),
+                //         borderRadius: BorderRadius.circular(12),
+                //         border: Border.all(
+                //           color: profileCtrl.otpExpired.value
+                //               ? Colors.red.withValues(alpha: 0.2)
+                //               : AppColors.darkGold.withValues(alpha: 0.15),
+                //         ),
+                //       ),
+                //       child: Row(
+                //         mainAxisSize: MainAxisSize.min,
+                //         children: [
+                //           Icon(
+                //             profileCtrl.otpExpired.value
+                //                 ? Icons.timer_off_rounded
+                //                 : Icons.timer_outlined,
+                //             size: 18,
+                //             color: profileCtrl.otpExpired.value
+                //                 ? Colors.red
+                //                 : AppColors.darkGold,
+                //           ),
+                //           const SizedBox(width: 8),
+                //           Text(
+                //             profileCtrl.otpExpired.value
+                //                 ? 'otp_has_expired'.tr
+                //                 : '${'otp_expires_in'.tr} ${profileCtrl.formattedExpiry}',
+                //             style: TextStyle(
+                //               fontSize: 13,
+                //               fontWeight: FontWeight.w600,
+                //               color: profileCtrl.otpExpired.value
+                //                   ? Colors.red
+                //                   : AppColors.darkGold,
+                //             ),
+                //           ),
+                //         ],
+                //       ),
+                //     ),
+                //   ).animate().fadeIn(delay: 180.ms),
                 const SizedBox(height: 20),
 
                 // ─── 6-box OTP input ───
@@ -449,49 +448,48 @@ class _ProfileUpdateViewState extends State<ProfileUpdateView> {
                   ),
                 ),
 
-                // ─── Check verification status (email only) ───
-                if (isEmailChange) ...[
-                  const SizedBox(height: 4),
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: profileCtrl.isLoading.value
-                          ? null
-                          : () async {
-                              final success = await profileCtrl
-                                  .checkEmailChangeComplete(
-                                    _buildTargetValue(),
-                                  );
-                              if (success) {
-                                profileCtrl.resetFlow();
-                                if (_isEmbedded && context.mounted) {
-                                  Navigator.of(context).pop();
-                                } else {
-                                  Get.offNamed(Routes.personalProfile);
-                                }
-                              } else {
-                                AppSnack.warning(
-                                  'change_email'.tr,
-                                  'email_not_verified_yet'.tr,
-                                );
-                              }
-                            },
-                      icon: Icon(
-                        Icons.refresh_rounded,
-                        size: 18,
-                        color: AppColors.darkGold,
-                      ),
-                      label: Text(
-                        'check_verification_status'.tr,
-                        style: TextStyle(
-                          color: AppColors.darkGold,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 16),
+                // // ─── Check verification status (email only) ───
+                // if (isEmailChange) ...[
+                //   const SizedBox(height: 4),
+                //   Center(
+                //     child: TextButton.icon(
+                //       onPressed: profileCtrl.isLoading.value
+                //           ? null
+                //           : () async {
+                //               final success = await profileCtrl
+                //                   .checkEmailChangeComplete(
+                //                     _buildTargetValue(),
+                //                   );
+                //               if (success) {
+                //                 profileCtrl.resetFlow();
+                //                 if (_isEmbedded && context.mounted) {
+                //                   Navigator.of(context).pop();
+                //                 } else {
+                //                   Get.offNamed(Routes.personalProfile);
+                //                 }
+                //               } else {
+                //                 AppSnack.warning(
+                //                   'change_email'.tr,
+                //                   'email_not_verified_yet'.tr,
+                //                 );
+                //               }
+                //             },
+                //       icon: Icon(
+                //         Icons.refresh_rounded,
+                //         size: 18,
+                //         color: AppColors.darkGold,
+                //       ),
+                //       label: Text(
+                //         'check_verification_status'.tr,
+                //         style: TextStyle(
+                //           color: AppColors.darkGold,
+                //           fontWeight: FontWeight.w600,
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                //],
+                const SizedBox(height: 8),
                 Center(
                   child: TextButton.icon(
                     onPressed: () => currentStep.value = 1,
