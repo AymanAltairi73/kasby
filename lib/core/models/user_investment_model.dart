@@ -81,6 +81,17 @@ class UserInvestmentModel {
     return diff > 0 ? diff : 0;
   }
 
+  /// Daily profit calculated for this investment instance.
+  double get dailyProfit {
+    final duration = investment?.durationDays ?? 30;
+    if (duration <= 0) return 0.0;
+    return (amount * profitPercentage / 100) / duration;
+  }
+
+  /// Estimated monthly profit (30-day cycle) calculated from daily profit.
+  double get monthlyProfit => dailyProfit * 30;
+
+
   factory UserInvestmentModel.fromJson(Map<String, dynamic> json) {
     try {
       final model = UserInvestmentModel(

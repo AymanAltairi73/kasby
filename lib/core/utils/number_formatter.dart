@@ -26,4 +26,15 @@ class KasbyNumberFormatter {
     }
     return formatted;
   }
+
+  /// Formats currency amounts cleanly:
+  /// - Whole numbers display without trailing decimals (e.g. 300.0 -> "300").
+  /// - Non-whole numbers display up to 2 decimal places (e.g. 370.80 -> "370.80", 12.36 -> "12.36").
+  static String formatAmount(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(2);
+  }
 }
+

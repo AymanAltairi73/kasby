@@ -471,8 +471,6 @@ class _InvestmentsListState extends State<_InvestmentsList> {
             final index = rawIndex - 1;
             final inv = investments[index];
             final isActive = inv.status == 'active';
-            final durationDays = inv.investment?.durationDays ?? 30;
-            final dailyProfit = (inv.amount * inv.profitPercentage / 100 / durationDays);
             final isAr = Get.locale?.languageCode == 'ar';
             final plan = inv.investment;
             final nameAr = plan?.nameAr;
@@ -568,15 +566,82 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      // ── Featured Monthly Profit Banner (Highlight Container) ──
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.darkGold.withValues(alpha: 0.08)
+                              : AppColors.darkGold.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.darkGold.withValues(alpha: 0.25),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.darkGold.withValues(
+                                  alpha: 0.15,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.calendar_month_rounded,
+                                color: AppColors.darkGold,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'monthly_profit'.tr,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white70
+                                          : AppColors.textSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'monthly_est_label'.tr,
+                                    style: TextStyle(
+                                      color: AppColors.darkGold,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              '+\$${KasbyNumberFormatter.formatAmount(inv.monthlyProfit)}',
+                              style: TextStyle(
+                                color: isDark
+                                    ? AppColors.darkGold
+                                    : const Color(0xFFB78628),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       _buildProgressRow(
                         'daily_profit'.tr,
-                        '+\$${dailyProfit.toStringAsFixed(2)}',
-                        AppColors.softGreen,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildProgressRow(
-                        'received_profit'.tr,
-                        '+\$${(inv.actualProfit ?? 0.0).toStringAsFixed(2)}',
+                        '+\$${inv.dailyProfit.toStringAsFixed(2)}',
                         AppColors.softGreen,
                       ),
                       const SizedBox(height: 8),

@@ -1063,7 +1063,9 @@ class KasbyTranslations extends Translations {
       'start_now': 'Start Now',
       'financial_services': 'Financial Services',
       'investment_center': 'Investment Center',
-      'received_profit':'Receive Profits',
+      'received_profit': 'Receive Profits',
+      'monthly_profit': 'Monthly Profit',
+      'monthly_est_label': 'Per 30 Days',
       'account_support': 'Account & Support',
       'full':'fully',
       'partial':'partially',
@@ -4042,7 +4044,9 @@ class KasbyTranslations extends Translations {
       // prize_type (نوع الجائزة)
       'enum_prize_points': 'KSP',
       'enum_prize_cash': 'نقدي',
-      'received_profit':'استلام الأرباح',
+      'received_profit': 'استلام الأرباح',
+      'monthly_profit': 'إجمالي الربح الشهري',
+      'monthly_est_label': 'لكل 30 يوماً',
       'enum_prize_voucher': 'قسيمة',
       'enum_prize_nothing': 'لا شيء',
       // limit_tier (مستوى الحد)
