@@ -297,7 +297,7 @@ class _MainShellViewState extends State<MainShellView> {
                   size: 24,
                   color: isActive
                       ? AppColors.darkGold
-                      : (isDark ? Colors.white38 : Colors.grey.shade400),
+                      : (isDark ? Colors.white38 : const Color(0xFF64748B)),
                 ),
               ),
               const SizedBox(height: 4),
@@ -311,7 +311,7 @@ class _MainShellViewState extends State<MainShellView> {
                   fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                   color: isActive
                       ? AppColors.darkGold
-                      : (isDark ? Colors.white38 : Colors.grey.shade400),
+                      : (isDark ? Colors.white38 : const Color(0xFF64748B)),
                 ),
               ),
             ],

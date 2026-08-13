@@ -15,8 +15,8 @@ class StoreHomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(StoreController());
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0E0E11) : const Color(0xFFF7F8FA);
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final bg = isDark ? const Color(0xFF0E0E11) : AppColors.backgroundLight;
+    final textColor = isDark ? Colors.white : AppColors.onSurfaceLight;
 
     return Scaffold(
       backgroundColor: bg,
@@ -40,9 +40,13 @@ class StoreHomeView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            const Text(
+            Text(
               'متجر كاسبي الرقمي',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: textColor,
+              ),
             ),
           ],
         ),
@@ -115,17 +119,19 @@ class StoreHomeView extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF2B2416), Color(0xFF16151B)],
+                      colors: isDark
+                          ? const [Color(0xFF2B2416), Color(0xFF16151B)]
+                          : const [Color(0xFF1E293B), Color(0xFF0F172A)],
                     ),
                     border: Border.all(
                       color: AppColors.primaryGold.withValues(alpha: 0.3),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -146,10 +152,10 @@ class StoreHomeView extends StatelessWidget {
                                   size: 16,
                                 ),
                                 const SizedBox(width: 6),
-                                Text(
+                                const Text(
                                   'رصيد المحفظة',
                                   style: TextStyle(
-                                    color: Colors.grey[400],
+                                    color: Color(0xFFCBD5E1),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -188,10 +194,10 @@ class StoreHomeView extends StatelessWidget {
                                   size: 16,
                                 ),
                                 const SizedBox(width: 6),
-                                Text(
+                                const Text(
                                   'رصيد KSP',
                                   style: TextStyle(
-                                    color: Colors.grey[400],
+                                    color: Color(0xFFCBD5E1),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -225,7 +231,9 @@ class StoreHomeView extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: 'ابحث عن بطاقة، لعبة، أو اشتراك...',
                       hintStyle: TextStyle(
-                        color: Colors.grey[500],
+                        color: isDark
+                            ? Colors.grey[500]
+                            : AppColors.textSecondaryLight,
                         fontSize: 13,
                       ),
                       prefixIcon: const Icon(
@@ -234,9 +242,11 @@ class StoreHomeView extends StatelessWidget {
                       ),
                       suffixIcon: controller.searchQuery.value.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.clear_rounded,
-                                color: Colors.grey,
+                                color: isDark
+                                    ? Colors.grey
+                                    : AppColors.textSecondaryLight,
                               ),
                               onPressed: () =>
                                   controller.searchQuery.value = '',
@@ -245,7 +255,7 @@ class StoreHomeView extends StatelessWidget {
                       filled: true,
                       fillColor: isDark
                           ? const Color(0xFF181820)
-                          : Colors.white,
+                          : AppColors.surfaceLight,
                       contentPadding: const EdgeInsets.symmetric(
                         vertical: 12,
                         horizontal: 16,
@@ -253,13 +263,17 @@ class StoreHomeView extends StatelessWidget {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide(
-                          color: AppColors.primaryGold.withValues(alpha: 0.2),
+                          color: isDark
+                              ? AppColors.primaryGold.withValues(alpha: 0.2)
+                              : AppColors.borderLight,
                         ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide(
-                          color: AppColors.primaryGold.withValues(alpha: 0.2),
+                          color: isDark
+                              ? AppColors.primaryGold.withValues(alpha: 0.2)
+                              : AppColors.borderLight,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
@@ -291,7 +305,7 @@ class StoreHomeView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _buildProductGrid(controller.filteredProducts),
+                  _buildProductGrid(controller.filteredProducts, isDark, textColor),
                 ] else ...[
                   // ── 4. Banners Slider ──
                   StoreBannerSlider(banners: controller.banners),
@@ -372,28 +386,32 @@ class StoreHomeView extends StatelessWidget {
 
                   // ── 6. Top Selling Products ──
                   if (controller.topSellingProducts.isNotEmpty) ...[
-                    _buildSectionHeader('🔥 الأكثر مبيعاً'),
+                    _buildSectionHeader('🔥 الأكثر مبيعاً', textColor),
                     _buildHorizontalProductList(controller.topSellingProducts),
                     const SizedBox(height: 24),
                   ],
 
                   // ── 7. Offers & Discounts Section ──
                   if (controller.offerProducts.isNotEmpty) ...[
-                    _buildSectionHeader('🏷️ أقوى العروض والتخفيضات'),
+                    _buildSectionHeader('🏷️ أقوى العروض والتخفيضات', textColor),
                     _buildHorizontalProductList(controller.offerProducts),
                     const SizedBox(height: 24),
                   ],
 
                   // ── 8. Latest Products Section ──
                   if (controller.latestProducts.isNotEmpty) ...[
-                    _buildSectionHeader('✨ أحدث المنتجات'),
+                    _buildSectionHeader('✨ أحدث المنتجات', textColor),
                     _buildHorizontalProductList(controller.latestProducts),
                     const SizedBox(height: 24),
                   ],
 
                   // ── 9. Suggested Products Grid ──
-                  _buildSectionHeader('⭐ منتجات مقترحة لك'),
-                  _buildProductGrid(controller.allProducts.take(6).toList()),
+                  _buildSectionHeader('⭐ منتجات مقترحة لك', textColor),
+                  _buildProductGrid(
+                    controller.allProducts.take(6).toList(),
+                    isDark,
+                    textColor,
+                  ),
                 ],
               ],
             ),
@@ -403,7 +421,7 @@ class StoreHomeView extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, Color textColor) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
       child: Row(
@@ -419,8 +437,8 @@ class StoreHomeView extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -452,14 +470,20 @@ class StoreHomeView extends StatelessWidget {
     );
   }
 
-  Widget _buildProductGrid(List<StoreProductModel> products) {
+  Widget _buildProductGrid(
+    List<StoreProductModel> products,
+    bool isDark,
+    Color textColor,
+  ) {
     if (products.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(30),
+          padding: const EdgeInsets.all(30),
           child: Text(
             'لا توجد منتجات مطابقة حالياً',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(
+              color: isDark ? Colors.grey : AppColors.textSecondaryLight,
+            ),
           ),
         ),
       );

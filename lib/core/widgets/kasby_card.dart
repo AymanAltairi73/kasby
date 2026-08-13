@@ -43,18 +43,18 @@ class KasbyCard extends StatelessWidget {
                 border ??
                 Border.all(
                   color: isDark
-                      ? AppColors.onSurface.withValues(alpha: 0.05)
-                      : Colors.black.withValues(alpha: 0.06),
+                      ? AppColors.onSurface.withValues(alpha: 0.08)
+                      : AppColors.borderLight,
                   width: 1,
                 ),
             boxShadow: hasShadow
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: isDark ? 0.3 : 0.08,
-                      ),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
+                      color: isDark
+                          ? Colors.black.withValues(alpha: 0.3)
+                          : const Color(0x0F0F172A),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
                     ),
                   ]
                 : null,

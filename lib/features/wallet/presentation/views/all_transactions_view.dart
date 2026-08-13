@@ -496,7 +496,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                 border: Border.all(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.05)
-                      : Colors.black.withValues(alpha: 0.08),
+                      : AppColors.borderLight,
                 ),
                 boxShadow: [
                   BoxShadow(

@@ -757,7 +757,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
             border: Border.all(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.05),
+                  : AppColors.borderLight,
             ),
           ),
           child: Column(
@@ -812,7 +812,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
             border: Border.all(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.05),
+                  : AppColors.borderLight,
             ),
           ),
           child: Column(

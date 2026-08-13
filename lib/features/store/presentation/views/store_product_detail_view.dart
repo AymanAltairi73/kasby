@@ -322,10 +322,12 @@ class StoreProductDetailView extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isDark
                           ? const Color(0xFF16161D)
-                          : Colors.grey[100],
+                          : AppColors.surfaceLight,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : AppColors.borderLight,
                       ),
                     ),
                     child: Text(
@@ -333,7 +335,9 @@ class StoreProductDetailView extends StatelessWidget {
                           ? product.descriptionAr
                           : 'احصل على هذا المنتج كود رقمي فوري ومضمون 100%، يمكنك استخدامه مباشرة عبر المنصة المحددة.',
                       style: TextStyle(
-                        color: Colors.grey[300],
+                        color: isDark
+                            ? Colors.grey[300]
+                            : AppColors.onSurfaceLight,
                         fontSize: 14,
                         height: 1.6,
                       ),
@@ -346,23 +350,29 @@ class StoreProductDetailView extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1B1B22) : Colors.white,
+                      color: isDark
+                          ? const Color(0xFF1B1B22)
+                          : AppColors.surfaceLight,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : AppColors.borderLight,
                       ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildFeatureChip(Icons.flash_on_rounded, 'تسليم فوري'),
+                        _buildFeatureChip(Icons.flash_on_rounded, 'تسليم فوري', isDark),
                         _buildFeatureChip(
                           Icons.verified_user_rounded,
                           'كود مضمون 100%',
+                          isDark,
                         ),
                         _buildFeatureChip(
                           Icons.support_agent_rounded,
                           'دعم 24/7',
+                          isDark,
                         ),
                       ],
                     ),
@@ -376,9 +386,13 @@ class StoreProductDetailView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF16161D) : Colors.white,
+              color: isDark ? const Color(0xFF16161D) : AppColors.surfaceLight,
               border: Border(
-                top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                top: BorderSide(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : AppColors.borderLight,
+                ),
               ),
             ),
             child: SizedBox(
@@ -424,15 +438,15 @@ class StoreProductDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildFeatureChip(IconData icon, String label) {
+  Widget _buildFeatureChip(IconData icon, String label, bool isDark) {
     return Row(
       children: [
         Icon(icon, color: AppColors.primaryGold, size: 18),
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.grey,
+          style: TextStyle(
+            color: isDark ? Colors.grey : AppColors.textSecondaryLight,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),

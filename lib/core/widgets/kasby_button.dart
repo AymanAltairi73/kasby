@@ -123,16 +123,20 @@ class _KasbyButtonState extends State<KasbyButton>
                   widget.textColor ??
                   (widget.isSecondary && widget.color == null
                       ? AppColors.darkGold
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.black
-                            : Colors.white)),
+                      : ((widget.color == null ||
+                              widget.color == AppColors.darkGold ||
+                              widget.color == AppColors.goldLight)
+                          ? Colors.black
+                          : Colors.white)),
               disabledForegroundColor:
                   widget.textColor ??
                   (widget.isSecondary && widget.color == null
                       ? AppColors.darkGold
-                      : (Theme.of(context).brightness == Brightness.dark
-                            ? Colors.black
-                            : Colors.white)),
+                      : ((widget.color == null ||
+                              widget.color == AppColors.darkGold ||
+                              widget.color == AppColors.goldLight)
+                          ? Colors.black
+                          : Colors.white)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: widget.isSecondary && widget.color == null
@@ -148,9 +152,12 @@ class _KasbyButtonState extends State<KasbyButton>
                     width: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.black
-                          : Colors.white,
+                      color: widget.textColor ??
+                          ((widget.color == null ||
+                                  widget.color == AppColors.darkGold ||
+                                  widget.color == AppColors.goldLight)
+                              ? Colors.black
+                              : Colors.white),
                     ),
                   )
                 : Row(

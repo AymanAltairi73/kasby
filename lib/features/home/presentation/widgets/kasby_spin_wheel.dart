@@ -338,9 +338,11 @@ class KasbySpinWheelOuterRing extends StatelessWidget {
           Container(
             width: size - size * 0.082,
             height: size - size * 0.082,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.black,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black
+                  : const Color(0xFF0F172A),
             ),
           ),
           ...List.generate(ledCount, (i) {
@@ -460,7 +462,9 @@ class KasbySpinWheelCenterHub extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.black,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.black
+            : const Color(0xFF0F172A),
         border: Border.all(color: const Color(0xFFC9A24D), width: 3),
         boxShadow: [
           BoxShadow(

@@ -486,7 +486,7 @@ class _DepositViewState extends State<DepositView> {
                 border: Border.all(
                   color: isSelected
                       ? AppColors.darkGold
-                      : (isDark ? Colors.white12 : Colors.black12),
+                      : (isDark ? Colors.white12 : AppColors.borderLight),
                   width: isSelected ? 2 : 1,
                 ),
                 color: isSelected

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/features/store/presentation/controllers/store_controller.dart';
 import 'package:kasby/features/store/presentation/widgets/store_product_card.dart';
 
@@ -11,14 +12,18 @@ class StoreProductsView extends StatelessWidget {
     final controller = StoreController.to;
     final category = controller.selectedCategory.value;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0E0E11) : const Color(0xFFF7F8FA);
+    final bg = isDark ? const Color(0xFF0E0E11) : AppColors.backgroundLight;
+    final textColor = isDark ? Colors.white : AppColors.onSurfaceLight;
 
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(category != null ? category.nameAr : 'منتجات القسم'),
+        title: Text(
+          category != null ? category.nameAr : 'منتجات القسم',
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Obx(() {
         if (controller.categoryProducts.isEmpty) {
@@ -29,12 +34,19 @@ class StoreProductsView extends StatelessWidget {
                 Icon(
                   Icons.inventory_2_outlined,
                   size: 64,
-                  color: Colors.grey[600],
+                  color: isDark
+                      ? Colors.grey[600]
+                      : AppColors.textSecondaryLight,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'لا توجد منتجات متوفرة في هذا القسم حالياً',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 15),
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.grey[400]
+                        : AppColors.textSecondaryLight,
+                    fontSize: 15,
+                  ),
                 ),
               ],
             ),

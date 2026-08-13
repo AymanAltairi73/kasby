@@ -431,12 +431,16 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
     required String code,
     String? serialNumber,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E26),
+          backgroundColor: isDark
+              ? const Color(0xFF1E1E26)
+              : AppColors.surfaceLight,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
           ),
@@ -456,10 +460,10 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'تم الشراء والتسليم بنجاح!',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: isDark ? Colors.white : AppColors.onSurfaceLight,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -467,7 +471,12 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
               const SizedBox(height: 6),
               Text(
                 productName,
-                style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.grey[400]
+                      : AppColors.textSecondaryLight,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 18),
 
@@ -475,7 +484,9 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF121216),
+                  color: isDark
+                      ? const Color(0xFF121216)
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.primaryGold),
                 ),
@@ -483,7 +494,12 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                   children: [
                     Text(
                       'كود البطاقة الخاص بك:',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.grey[400]
+                            : AppColors.textSecondaryLight,
+                        fontSize: 11,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     SelectableText(

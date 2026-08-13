@@ -81,12 +81,22 @@ class StoreOrderCard extends StatelessWidget {
             children: [
               Text(
                 '${'marketplace_order_number'.tr}: ${order.orderNumber}',
-                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.grey[500]
+                      : AppColors.textSecondaryLight,
+                  fontSize: 12,
+                ),
               ),
               const Spacer(),
               Text(
                 dateStr,
-                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.grey[500]
+                      : AppColors.textSecondaryLight,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -131,9 +141,13 @@ class StoreOrderCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF121216) : Colors.grey[100],
+              color: isDark ? const Color(0xFF121216) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+              border: Border.all(
+                color: isDark
+                    ? Colors.grey.withValues(alpha: 0.2)
+                    : AppColors.borderLight,
+              ),
             ),
             child: Row(
               children: [
@@ -149,7 +163,12 @@ class StoreOrderCard extends StatelessWidget {
                     children: [
                       Text(
                         'card_code_received'.tr,
-                        style: TextStyle(color: Colors.grey[500], fontSize: 10),
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.grey[500]
+                              : AppColors.textSecondaryLight,
+                          fontSize: 10,
+                        ),
                       ),
                       SelectableText(
                         order.deliveryCode,
@@ -165,7 +184,9 @@ class StoreOrderCard extends StatelessWidget {
                         Text(
                           'S/N: ${order.serialNumber}',
                           style: TextStyle(
-                            color: Colors.grey[500],
+                            color: isDark
+                                ? Colors.grey[500]
+                                : AppColors.textSecondaryLight,
                             fontSize: 10,
                           ),
                         ),

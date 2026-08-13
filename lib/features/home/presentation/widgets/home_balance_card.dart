@@ -669,7 +669,6 @@ class HomeBalanceCard extends StatelessWidget {
                                         fontWeight: isCycleComplete
                                             ? FontWeight.w600
                                             : FontWeight.normal,
-                                        decoration: TextDecoration.underline,
                                       ),
                                     ),
                                   ),

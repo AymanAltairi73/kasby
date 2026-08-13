@@ -130,15 +130,23 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
                     : widget.suffixIcon,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(
+                    color: isDark
+                        ? Colors.transparent
+                        : const Color(0xFFCBD5E1),
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(
+                    color: isDark
+                        ? Colors.transparent
+                        : const Color(0xFFCBD5E1),
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: AppColors.darkGold, width: 1),
+                  borderSide: BorderSide(color: AppColors.darkGold, width: 1.5),
                 ),
               ),
             ),

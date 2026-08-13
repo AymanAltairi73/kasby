@@ -167,10 +167,10 @@ class KasbyShimmer extends StatelessWidget {
     // Smooth gray gradient colors as requested
     final baseColor = isDark
         ? Colors.white.withValues(alpha: 0.05)
-        : Colors.black.withValues(alpha: 0.05);
+        : const Color(0xFFE2E8F0);
     final highlightColor = isDark
         ? Colors.white.withValues(alpha: 0.15)
-        : Colors.black.withValues(alpha: 0.1);
+        : const Color(0xFFF8FAFC);
 
     return Shimmer.fromColors(
       baseColor: baseColor,

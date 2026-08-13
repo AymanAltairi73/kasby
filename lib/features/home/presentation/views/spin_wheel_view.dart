@@ -204,21 +204,40 @@ class _SpinWheelViewState extends State<SpinWheelView>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : AppColors.borderLight,
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Image.asset('assets/images/ksp_coin.png', width: 18, height: 18),
           const SizedBox(width: 8),
-          Text(
-            '${'ksp_balance'.tr}: $balance KSP',
-            style: const TextStyle(
-              color: Color(0xFFC9A24D),
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '${'ksp_balance'.tr}: $balance KSP',
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFC9A24D) : AppColors.darkGold,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
             ),
           ),
         ],
@@ -230,29 +249,42 @@ class _SpinWheelViewState extends State<SpinWheelView>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFC9A24D).withValues(alpha: 0.12),
+        color: isDark
+            ? const Color(0xFFC9A24D).withValues(alpha: 0.12)
+            : AppColors.darkGold.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFFC9A24D).withValues(alpha: 0.35),
+          color: isDark
+              ? const Color(0xFFC9A24D).withValues(alpha: 0.35)
+              : AppColors.darkGold.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.bolt_rounded, color: Color(0xFFC9A24D), size: 20)
+          Icon(
+                Icons.bolt_rounded,
+                color: isDark ? const Color(0xFFC9A24D) : AppColors.darkGold,
+                size: 20,
+              )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2)),
           const SizedBox(width: 8),
-          Text(
-            _isFreeSpinAvailable
-                ? 'free_spin_now'.tr
-                : _storedSpins > 0
-                ? 'use_stored_spin'.trParams({'count': _storedSpins.toString()})
-                : 'next_free_spin'.trParams({'time': _timeUntilNextSpin}),
-            style: const TextStyle(
-              color: Color(0xFFC9A24D),
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _isFreeSpinAvailable
+                    ? 'free_spin_now'.tr
+                    : _storedSpins > 0
+                    ? 'use_stored_spin'.trParams({'count': _storedSpins.toString()})
+                    : 'next_free_spin'.trParams({'time': _timeUntilNextSpin}),
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFC9A24D) : AppColors.darkGold,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
             ),
           ),
         ],
@@ -728,18 +760,20 @@ class _SpinWheelViewState extends State<SpinWheelView>
     return PopScope(
       canPop: !_isSpinning,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: isDark ? Colors.black : const Color(0xFFF8FAFC),
         appBar: AppBar(
           title: Text(
             'spin_win'.tr,
-            style: const TextStyle(
-              color: Color(0xFFC9A24D),
+            style: TextStyle(
+              color: isDark ? const Color(0xFFC9A24D) : AppColors.darkGold,
               fontWeight: FontWeight.bold,
             ),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Color(0xFFC9A24D)),
+          iconTheme: IconThemeData(
+            color: isDark ? const Color(0xFFC9A24D) : AppColors.darkGold,
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: _isSpinning ? null : () => Get.safeBack(),
@@ -757,10 +791,12 @@ class _SpinWheelViewState extends State<SpinWheelView>
                   children: [
                     Text(
                       'feeling_lucky'.tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 25,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFC9A24D),
+                        color: isDark
+                            ? const Color(0xFFC9A24D)
+                            : AppColors.darkGold,
                       ),
                     ).animate().fadeIn().slideY(begin: -0.2, end: 0),
                     const SizedBox(height: 7),
@@ -768,7 +804,9 @@ class _SpinWheelViewState extends State<SpinWheelView>
                       'spin_desc'.tr,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.65)
+                            : AppColors.textSecondaryLight,
                         fontSize: 16,
                       ),
                     ).animate().fadeIn(delay: 200.ms),

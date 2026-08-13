@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/features/store/presentation/controllers/store_controller.dart';
 import 'package:kasby/features/store/presentation/widgets/store_category_card.dart';
 
@@ -10,21 +11,27 @@ class StoreCategoriesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = StoreController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0E0E11) : const Color(0xFFF7F8FA);
+    final bg = isDark ? const Color(0xFF0E0E11) : AppColors.backgroundLight;
+    final textColor = isDark ? Colors.white : AppColors.onSurfaceLight;
 
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('جميع أقسام المتجر'),
+        title: Text(
+          'جميع أقسام المتجر',
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Obx(() {
         if (controller.categories.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               'لا توجد أقسام متوفرة حالياً',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(
+                color: isDark ? Colors.grey : AppColors.textSecondaryLight,
+              ),
             ),
           );
         }

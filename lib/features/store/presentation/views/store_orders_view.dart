@@ -11,14 +11,18 @@ class StoreOrdersView extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = StoreController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0E0E11) : const Color(0xFFF7F8FA);
+    final bg = isDark ? const Color(0xFF0E0E11) : AppColors.backgroundLight;
+    final textColor = isDark ? Colors.white : AppColors.onSurfaceLight;
 
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('سجل الطلبات والأكواد'),
+        title: Text(
+          'سجل الطلبات والأكواد',
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () => controller.fetchOrders(),
@@ -36,13 +40,15 @@ class StoreOrdersView extends StatelessWidget {
                       Icon(
                         Icons.receipt_long_outlined,
                         size: 70,
-                        color: Colors.grey[600],
+                        color: isDark
+                            ? Colors.grey[600]
+                            : AppColors.textSecondaryLight,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'لا توجد طلبات سابقة في المتجر',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: textColor,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -50,7 +56,12 @@ class StoreOrdersView extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         'جميع مشترياتك وأكوادك المشتراة تظهر هنا فوراً',
-                        style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.grey[400]
+                              : AppColors.textSecondaryLight,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
