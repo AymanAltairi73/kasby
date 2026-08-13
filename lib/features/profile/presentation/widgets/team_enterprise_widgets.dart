@@ -732,19 +732,60 @@ class _TreeNodeTile extends StatelessWidget {
 
 Widget _emptyState(String message) {
   return Center(
-    child: Padding(
-      padding: const EdgeInsets.all(KasbySpacing.xxl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.groups_outlined,
-            size: 48,
-            color: AppColors.textSecondary.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: KasbySpacing.md),
-          Text(message, style: TextStyle(color: AppColors.textSecondary)),
-        ],
+    child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.all(KasbySpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.darkGold.withValues(alpha: 0.15),
+                    AppColors.darkGold.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.darkGold.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.groups_outlined,
+                size: 52,
+                color: AppColors.darkGold,
+              ),
+            ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+            const SizedBox(height: KasbySpacing.lg),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ).animate().fadeIn(delay: 200.ms),
+            const SizedBox(height: KasbySpacing.sm),
+            Text(
+              'invite_friends_grow_team'.tr,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ).animate().fadeIn(delay: 300.ms),
+          ],
+        ),
       ),
     ),
   );

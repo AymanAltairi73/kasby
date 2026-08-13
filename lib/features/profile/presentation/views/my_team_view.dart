@@ -93,6 +93,58 @@ class _MyTeamViewState extends State<MyTeamView>
 
         return Column(
           children: [
+            // ─── TEAM SUMMARY STATS ───
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                KasbySpacing.lg,
+                KasbySpacing.sm,
+                KasbySpacing.lg,
+                0,
+              ),
+              child: Obx(() {
+                final s = _team.statistics;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildMiniStat(
+                        Icons.groups_rounded,
+                        _team.totalMembers.value.toString(),
+                        'total_members'.tr,
+                        AppColors.darkGold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMiniStat(
+                        Icons.person_rounded,
+                        _team.activeMembers.value.toString(),
+                        'active'.tr,
+                        AppColors.softGreen,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMiniStat(
+                        Icons.attach_money_rounded,
+                        '\$${((s['total_team_investment'] as num?)?.toInt() ?? 0)}',
+                        'investment'.tr,
+                        const Color(0xFF2196F3),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMiniStat(
+                        Icons.trending_up_rounded,
+                        '\$${((s['total_referral_earnings'] as num?)?.toStringAsFixed(0) ?? '0')}',
+                        'earnings'.tr,
+                        AppColors.softGreen,
+                      ),
+                    ),
+                  ],
+                ).animate().fadeIn(duration: 400.ms);
+              }),
+            ),
+            const SizedBox(height: KasbySpacing.sm),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 KasbySpacing.lg,
@@ -179,6 +231,50 @@ class _MyTeamViewState extends State<MyTeamView>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMiniStat(IconData icon, String value, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      decoration: BoxDecoration(
+        color: isDark
+            ? color.withValues(alpha: 0.08)
+            : color.withValues(alpha: 0.06),
+        borderRadius: KasbyRadius.cardR,
+        border: Border.all(
+          color: color.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isDark ? Colors.white : AppColors.onSurfaceLight,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

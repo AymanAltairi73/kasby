@@ -166,6 +166,8 @@ class _NotificationsViewState extends State<NotificationsView> {
                     }
                     final notification = notifications[index];
                     final isRead = notification.isRead;
+                    final category = _categoryOf(notification);
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
 
                     return GestureDetector(
                       onTap: () {
@@ -176,71 +178,186 @@ class _NotificationsViewState extends State<NotificationsView> {
                       },
                       child: KasbyCard(
                         padding: const EdgeInsets.all(16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color:
-                                    (isRead
-                                            ? AppColors.textSecondary
-                                            : _getTypeColor(notification.type))
-                                        .withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                _getTypeIcon(notification.type, isRead),
-                                color: isRead
-                                    ? AppColors.textSecondary
-                                    : _getTypeColor(notification.type),
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        borderRadius: KasbyRadius.card,
+                        hasShadow: true,
+                        border: Border.all(
+                          color: !isRead
+                              ? AppColors.darkGold.withValues(alpha: 0.4)
+                              : (isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : AppColors.borderLight),
+                        ),
+                        child: Container(
+                          decoration: !isRead
+                              ? BoxDecoration(
+                                  borderRadius: KasbyRadius.cardR,
+                                  color: AppColors.darkGold.withValues(
+                                    alpha: isDark ? 0.05 : 0.03,
+                                  ),
+                                )
+                              : null,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Stack(
                                 children: [
-                                  Text(
-                                    notification.localizedTitle,
-                                    style: TextStyle(
-                                      fontWeight: isRead
-                                          ? FontWeight.normal
-                                          : FontWeight.bold,
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: (isRead
+                                              ? AppColors.textSecondary
+                                              : _getTypeColor(notification.type))
+                                          .withValues(alpha: 0.12),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      _getTypeIcon(notification.type, isRead),
+                                      color: isRead
+                                          ? AppColors.textSecondary
+                                          : _getTypeColor(notification.type),
+                                      size: 22,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    notification.localizedMessage,
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  if (notification.sentAt != null) ...[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      DateHelper.relative(notification.sentAt),
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 11,
+                                  if (!isRead)
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.darkGold,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isDark
+                                                ? AppColors.surface
+                                                : Colors.white,
+                                            width: 2,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ],
                                 ],
                               ),
-                            ),
-                            if (!isRead)
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: AppColors.darkGold,
-                                  shape: BoxShape.circle,
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            notification.localizedTitle,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: isRead
+                                                  ? FontWeight.w600
+                                                  : FontWeight.bold,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : AppColors.onSurfaceLight,
+                                            ),
+                                          ),
+                                        ),
+                                        _buildTypeBadge(notification.type, category),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      notification.localizedMessage,
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.75)
+                                            : AppColors.textSecondaryLight,
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 6,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      children: [
+                                        if (notification.sentAt != null)
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.access_time_rounded,
+                                                size: 13,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                DateHelper.relative(notification.sentAt),
+                                                style: TextStyle(
+                                                  color: AppColors.textSecondary,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        if (notification.entityType != null &&
+                                            notification.entityType!.isNotEmpty)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.darkGold.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              _getLocalizedEntityLabel(notification.entityType!),
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.darkGold,
+                                              ),
+                                            ),
+                                          ),
+                                        if (notification.deepLink != null &&
+                                            notification.deepLink!.isNotEmpty)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.softGreen.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'action_view'.tr,
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AppColors.softGreen,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 2),
+                                                Icon(
+                                                  Icons.arrow_forward_ios_rounded,
+                                                  size: 9,
+                                                  color: AppColors.softGreen,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -254,9 +371,67 @@ class _NotificationsViewState extends State<NotificationsView> {
     );
   }
 
+  String _getLocalizedEntityLabel(String entityType) {
+    final key = entityType.toLowerCase().trim();
+    switch (key) {
+      case 'transaction':
+        return 'transaction'.tr;
+      case 'investment':
+        return 'investment'.tr;
+      case 'loan':
+        return 'loan'.tr;
+      case 'wallet':
+        return 'wallet'.tr;
+      case 'deposit':
+        return 'deposit'.tr;
+      case 'withdraw':
+      case 'withdrawal':
+        return 'withdraw'.tr;
+      case 'transfer':
+        return 'transfer'.tr;
+      case 'ksp':
+        return 'ksp'.tr;
+      case 'subscription':
+        return 'subscription'.tr;
+      case 'friend':
+      case 'friend_request':
+        return 'friend'.tr;
+      case 'chat':
+      case 'message':
+        return 'chat'.tr;
+      case 'team':
+        return 'team'.tr;
+      case 'referral':
+        return 'referral'.tr;
+      default:
+        return key.tr;
+    }
+  }
+
+  Widget _buildTypeBadge(String type, String category) {
+    Color badgeColor = _getTypeColor(type);
+    String label = category.tr;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: badgeColor,
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterBar() {
     final filters = <String, String>{
-      'all': 'all'.tr,
+      'all': 'filter_all'.tr,
       'unread': 'unread'.tr,
       'financial': 'financial'.tr,
       'security': 'security'.tr,
@@ -304,12 +479,26 @@ class _NotificationsViewState extends State<NotificationsView> {
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.darkGold.withValues(alpha: 0.08),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.darkGold.withValues(alpha: 0.15),
+                      AppColors.darkGold.withValues(alpha: 0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.darkGold.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
                 child: Icon(
-                  Icons.notifications_off_outlined,
+                  Icons.notifications_active_outlined,
                   size: 64,
-                  color: AppColors.darkGold.withValues(alpha: 0.5),
+                  color: AppColors.darkGold,
                 ),
               ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
               const SizedBox(height: 28),
@@ -338,7 +527,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.darkGold,
                   side: BorderSide(
-                    color: AppColors.darkGold.withValues(alpha: 0.3),
+                    color: AppColors.darkGold.withValues(alpha: 0.4),
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

@@ -177,9 +177,76 @@ class _InvestmentPlansListState extends State<_InvestmentPlansList> {
             child: SizedBox(
               height: Get.height * 0.7,
               child: Center(
-                child: Text(
-                  'no_plans'.tr,
-                  style: TextStyle(color: AppColors.textSecondary),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(28),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.darkGold.withValues(alpha: 0.15),
+                              AppColors.darkGold.withValues(alpha: 0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.darkGold.withValues(alpha: 0.1),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.account_balance_rounded,
+                          size: 56,
+                          color: AppColors.darkGold,
+                        ),
+                      ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+                      const SizedBox(height: 24),
+                      Text(
+                        'no_plans'.tr,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ).animate().fadeIn(delay: 200.ms),
+                      const SizedBox(height: 12),
+                      Text(
+                        'no_plans_desc'.tr,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                      ).animate().fadeIn(delay: 300.ms),
+                      const SizedBox(height: 24),
+                      OutlinedButton.icon(
+                        onPressed: _fetchPlans,
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: Text('refresh'.tr),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.darkGold,
+                          side: BorderSide(
+                            color: AppColors.darkGold.withValues(alpha: 0.4),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                        ),
+                      ).animate().fadeIn(delay: 400.ms),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -324,20 +391,62 @@ class _InvestmentsListState extends State<_InvestmentsList> {
             child: SizedBox(
               height: Get.height * 0.7,
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.trending_up_rounded,
-                      size: 64,
-                      color: AppColors.textSecondary.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'no_investments'.tr,
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(28),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.softGreen.withValues(alpha: 0.15),
+                              AppColors.softGreen.withValues(alpha: 0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.softGreen.withValues(alpha: 0.1),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.trending_up_rounded,
+                          size: 56,
+                          color: AppColors.softGreen,
+                        ),
+                      ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+                      const SizedBox(height: 24),
+                      Text(
+                        'no_investments'.tr,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ).animate().fadeIn(delay: 200.ms),
+                      const SizedBox(height: 12),
+                      Text(
+                        'no_investments_desc'.tr,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
+                      ).animate().fadeIn(delay: 300.ms),
+                      const SizedBox(height: 24),
+                      KasbyButton(
+                        text: 'browse_plans'.tr,
+                        onPressed: () => Get.toNamed(Routes.investmentPlans),
+                      ).animate().fadeIn(delay: 400.ms),
+                    ],
+                  ),
                 ),
               ),
             ),

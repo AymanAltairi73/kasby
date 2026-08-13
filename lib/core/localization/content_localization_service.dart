@@ -104,12 +104,45 @@ class ContentLocalizationService {
     if (trimmed == 'عمولة إحالة 💰') {
       return _resolveKey('referral_commission_simple');
     }
-    if (lowercase == 'daily profit distribution') {
+    if (lowercase == 'daily profit distribution' ||
+        lowercase == 'توزيع الأرباح اليومية') {
       return _resolveKey('daily_profit_distribution');
     }
     if (lowercase == 'investment matured — principal returned' ||
-        lowercase == 'investment matured - principal returned') {
+        lowercase == 'investment matured - principal returned' ||
+        trimmed == 'استثمارك نضج — تم إرجاع رأس المال') {
       return _resolveKey('investment_matured_principal_returned');
+    }
+
+    // Common notification title & message pattern matches
+    if (trimmed == 'أرباح جديدة' || lowercase == 'new profits') {
+      return _resolveKey('new_profits');
+    }
+    if (trimmed == 'تم إيداع أرباحك اليومية بنجاح' ||
+        lowercase == 'your daily profits have been successfully deposited') {
+      return _resolveKey('daily_profits_deposited_msg');
+    }
+    if (trimmed == 'طلب سحب قيد المعالجة' ||
+        lowercase == 'withdrawal request processing') {
+      return _resolveKey('withdrawal_request_processing');
+    }
+    if (trimmed == 'طلب السحب الخاص بك قيد الدراسة والمراجعة وسيتم التحويل قريبا' ||
+        lowercase ==
+            'your withdrawal request is being reviewed and the transfer will be completed soon') {
+      return _resolveKey('withdrawal_request_review_msg');
+    }
+    if (trimmed == 'إيداع ناجح' || lowercase == 'deposit successful') {
+      return _resolveKey('deposit_successful');
+    }
+    if (trimmed == 'سحب ناجح' || lowercase == 'withdrawal successful') {
+      return _resolveKey('withdrawal_successful');
+    }
+    if (trimmed == 'تم توثيق الحساب بنجاح' ||
+        lowercase == 'account verified successfully') {
+      return _resolveKey('account_verified_success');
+    }
+    if (trimmed == 'جائزة عجلة الحظ' || lowercase == 'spin wheel reward') {
+      return _resolveKey('spin_wheel_reward');
     }
 
     // Pattern matches
