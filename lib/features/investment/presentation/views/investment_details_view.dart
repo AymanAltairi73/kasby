@@ -29,6 +29,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
   final Map<String, dynamic> plan = Get.arguments;
   final TextEditingController amountController = TextEditingController();
   double estimatedProfit = 0.0;
+  double estimatedDailyProfit = 0.0;
   bool _isSubmitting = false;
 
   bool get isDark => Get.isDarkMode;
@@ -41,7 +42,10 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
 
   void calculateProfit(String val) {
     if (val.isEmpty) {
-      setState(() => estimatedProfit = 0.0);
+      setState(() {
+        estimatedProfit = 0.0;
+        estimatedDailyProfit = 0.0;
+      });
       return;
     }
     double amount = double.tryParse(val) ?? 0.0;
@@ -57,9 +61,17 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           0.0;
     }
 
+    // Total expected profit = amount × (percentage / 100)
     double percentage = rawProfit / 100;
+    final totalProfit = amount * percentage;
+
+    // Daily profit = totalProfit / duration_days (matches backend formula)
+    final durationDays = (plan['duration_days'] as int?) ?? 30;
+    final dailyProfit = durationDays > 0 ? totalProfit / durationDays : 0.0;
+
     setState(() {
-      estimatedProfit = amount * percentage;
+      estimatedProfit = totalProfit;
+      estimatedDailyProfit = dailyProfit;
     });
   }
 
@@ -224,20 +236,53 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
             if (estimatedProfit > 0)
               KasbyCard(
                 color: AppColors.softGreen.withValues(alpha: 0.1),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
-                    Text(
-                      'estimated_profit'.tr,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'estimated_profit'.tr,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '\$${estimatedProfit.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            color: AppColors.softGreen,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      '\$${estimatedProfit.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: AppColors.softGreen,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
+                    const SizedBox(height: 8),
+                    Divider(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.black.withValues(alpha: 0.06),
+                      height: 1,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'daily_profit'.tr,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          '+\$${estimatedDailyProfit.toStringAsFixed(4)}',
+                          style: TextStyle(
+                            color: AppColors.softGreen,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

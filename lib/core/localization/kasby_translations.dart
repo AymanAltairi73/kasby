@@ -1063,7 +1063,10 @@ class KasbyTranslations extends Translations {
       'start_now': 'Start Now',
       'financial_services': 'Financial Services',
       'investment_center': 'Investment Center',
+      'received_profit':'Receive Profits',
       'account_support': 'Account & Support',
+      'full':'fully',
+      'partial':'partially',
       'salefni_kasby': 'Kasby Loan',
       'salefni_confirm': 'Confirm Loan Request',
       'apply_loan': 'Apply Loan',
@@ -2233,8 +2236,11 @@ class KasbyTranslations extends Translations {
           'Confirm your order and complete payment?',
       'marketplace_delivery_instant': 'Instant digital delivery',
       'marketplace_payment_success': 'Payment Successful!',
+      'no_plans': 'لا يوجد خطط عند العميل',
+
       'marketplace_order_number': 'Order Number',
       'marketplace_view_order': 'View Order',
+      'agent':'Agent',
       'marketplace_continue_shopping': 'Continue Shopping',
       'marketplace_order_timeline': 'Order Timeline',
       'marketplace_delivered': 'Delivered',
@@ -2496,6 +2502,8 @@ class KasbyTranslations extends Translations {
       'stage_completed': 'مكتمل',
       'stage_rejected': 'مرفوض',
       'share_receipt': 'مشاركة الإيصال',
+      'full':'سداد كامل',
+      'partial':'سداد جزئي',
       'filter_by_date': 'تصفية حسب التاريخ',
       'date_range': 'النطاق الزمني',
       'from_date': 'من',
@@ -2528,6 +2536,8 @@ class KasbyTranslations extends Translations {
       'search_faq': 'ابحث في الأسئلة الشائعة',
 
       'contact_support': 'التواصل مع الدعم',
+    'agent':'الوكيل',
+
       'support_prompt': 'تواصل مع الدعم الآن',
       'subscription_active_desc':
           'لديك بالفعل اشتراك نشط. لا يمكنك تفعيل اشتراك جديد حتى انتهاء الاشتراك الحالي.',
@@ -2621,6 +2631,7 @@ class KasbyTranslations extends Translations {
       'next': 'التالي',
       // Auth
       'welcome_back': 'مرحباً بعودتك',
+
       'sign_in_desc': 'ادخل إلى محفظتك بأمان وتابع استثماراتك في أي وقت.',
       'email_or_phone': 'البريد الإلكتروني أو الهاتف',
       'enter_email_phone': 'أدخل البريد الإلكتروني أو رقم الهاتف',
@@ -2963,6 +2974,7 @@ class KasbyTranslations extends Translations {
       'silver_investment_profit': 'أرباح استثمار فضة',
       'wallet_withdrawal': 'سحب رصيد محفظة',
       'hours_ago_short': 'منذ @count ساعة',
+      'no_plans': 'لا يوجد خطط',
       'gold_sector': 'ذهب (@percent%)',
       'silver_sector': 'فضة (@percent%)',
       'real_estate_sector': 'عقارات (@percent%)',
@@ -3967,6 +3979,7 @@ class KasbyTranslations extends Translations {
       // prize_type (نوع الجائزة)
       'enum_prize_points': 'KSP',
       'enum_prize_cash': 'نقدي',
+      'received_profit':'استلام الأرباح',
       'enum_prize_voucher': 'قسيمة',
       'enum_prize_nothing': 'لا شيء',
       // limit_tier (مستوى الحد)

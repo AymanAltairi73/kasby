@@ -15,6 +15,7 @@ class InvestmentPlanCard extends StatefulWidget {
   final Color color;
   final List<String>? amounts;
   final double? rawProfitPercentage;
+  final int? durationDays;
   final String? duration;
   final String? riskLevel;
 
@@ -28,6 +29,7 @@ class InvestmentPlanCard extends StatefulWidget {
     required this.color,
     this.amounts,
     this.rawProfitPercentage,
+    this.durationDays,
     this.duration,
     this.riskLevel,
   });
@@ -64,6 +66,7 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
             'title': widget.title.tr,
             'profit': widget.profit,
             'profit_percentage': widget.rawProfitPercentage,
+            'duration_days': widget.durationDays,
             'minAmount': widget.minAmount,
             'color': widget.color,
             'amounts': widget.amounts,

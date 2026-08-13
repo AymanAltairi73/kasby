@@ -362,7 +362,8 @@ class _InvestmentsListState extends State<_InvestmentsList> {
             final index = rawIndex - 1;
             final inv = investments[index];
             final isActive = inv.status == 'active';
-            final dailyProfit = (inv.amount * inv.profitPercentage / 100 / 30);
+            final durationDays = inv.investment?.durationDays ?? 30;
+            final dailyProfit = (inv.amount * inv.profitPercentage / 100 / durationDays);
             final isAr = Get.locale?.languageCode == 'ar';
             final plan = inv.investment;
             final nameAr = plan?.nameAr;
@@ -465,9 +466,15 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                       ),
                       const SizedBox(height: 8),
                       _buildProgressRow(
-                        'total_profit'.tr,
-                        '+\$${(inv.actualProfit ?? inv.expectedProfit).toStringAsFixed(2)}',
+                        'received_profit'.tr,
+                        '+\$${(inv.actualProfit ?? 0.0).toStringAsFixed(2)}',
                         AppColors.softGreen,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildProgressRow(
+                        'expected_profit'.tr,
+                        '+\$${inv.expectedProfit.toStringAsFixed(2)}',
+                        AppColors.darkGold,
                       ),
                       const SizedBox(height: 8),
                       if (isActive)
@@ -656,13 +663,14 @@ class _InvestmentsListState extends State<_InvestmentsList> {
     for (var i = 0; i < investments.length; i++) {
       final inv = investments[i];
       totalInvested += inv.amount;
-      final profit = inv.actualProfit ?? inv.expectedProfit;
+      final profit = inv.actualProfit ?? 0.0;
       totalReturns += profit;
       cumulative += inv.amount;
       trend.add(cumulative);
+      final planName = inv.investment?.nameAr ?? inv.investment?.nameEn ?? '\$${inv.amount.toStringAsFixed(0)}';
       segments.add(
         AllocationSegment(
-          label: '\$${inv.amount.toStringAsFixed(0)}',
+          label: planName,
           value: inv.amount,
           color: palette[i % palette.length],
         ),

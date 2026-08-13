@@ -164,7 +164,7 @@ class PortfolioController extends GetxController {
 
     for (final inv in investments) {
       invested += inv.amount;
-      returns += (inv.actualProfit ?? inv.expectedProfit);
+      returns += (inv.actualProfit ?? 0.0);
     }
 
     totalInvested.value = invested;
@@ -186,7 +186,7 @@ class PortfolioController extends GetxController {
     for (final inv in investments) {
       final expectedRoi = inv.profitPercentage;
       final actualRoi = inv.amount > 0
-          ? ((inv.actualProfit ?? inv.expectedProfit) / inv.amount * 100)
+          ? ((inv.actualProfit ?? 0.0) / inv.amount * 100)
           : 0.0;
       bench.add({
         'planName': inv.investment?.nameEn ?? inv.investment?.nameAr ?? 'Plan',

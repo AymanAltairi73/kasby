@@ -262,6 +262,7 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
                                 color: _planColor(plan.riskLevel),
                                 riskLevel: plan.riskLevel,
                                 amounts: amounts,
+                                durationDays: plan.durationDays,
                                 duration: _formatDuration(plan.durationDays),
                               ),
                             )
