@@ -3,13 +3,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
-import 'package:kasby/core/utils/number_formatter.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/services/currency_conversion_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/features/home/presentation/widgets/ksp_rewards_explainer.dart';
+import 'package:kasby/features/home/presentation/widgets/wallet_growth_indicator.dart';
 import 'package:kasby/routes/app_routes.dart';
 
 class HomeBalanceCard extends StatelessWidget {
@@ -108,43 +108,17 @@ class HomeBalanceCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.softGreen.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: AppColors.softGreen.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Obx(
-                          () => Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.trending_up_rounded,
-                                color: AppColors.softGreen,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                KasbyNumberFormatter.formatProfitPercentage(
-                                  homeController.profitPercentage,
-                                  includeSign: true,
-                                ),
-                                style: TextStyle(
-                                  color: AppColors.softGreen,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ).animate(autoPlay: motion).fadeIn().slideX(),
+                      Obx(() {
+                        final total = currencyController.totalBalance.value;
+                        final profit = currencyController.profitBalance.value;
+                        final invested = currencyController.investedBalance.value;
+                        return WalletGrowthIndicator(
+                          totalBalance: total,
+                          profitBalance: profit,
+                          investedBalance: invested,
+                          compact: true,
+                        );
+                      }),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -152,19 +126,41 @@ class HomeBalanceCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            Icons.account_balance_wallet_outlined,
-                            color: AppColors.textSecondary,
-                            size: 14,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.account_balance_wallet_outlined,
+                                color: AppColors.textSecondary,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'total_balance'.tr,
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'total_balance'.tr,
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
+                          IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 28,
+                              minHeight: 28,
                             ),
+                            icon: Obx(
+                              () => Icon(
+                                currencyController.isBalanceHidden.value
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: AppColors.textSecondary,
+                                size: 18,
+                              ),
+                            ),
+                            onPressed: () => currencyController.toggleBalancePrivacy(),
                           ),
                         ],
                       ),

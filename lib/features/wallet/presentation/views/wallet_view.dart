@@ -6,7 +6,7 @@ import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
-import 'package:kasby/core/services/currency_conversion_service.dart';
+// import 'package:kasby/core/services/currency_conversion_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
@@ -117,9 +117,9 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                   key: TourTargetKeys.walletBalance,
                   child: _buildBalanceSummary(),
                 ),
-                const SizedBox(height: 20),
-                _buildKspRewardsCard(),
-                const SizedBox(height: 40),
+                // const SizedBox(height: 20),
+                // _buildKspRewardsCard(),
+                const SizedBox(height: 10),
                 _buildActionButtons(),
                 const SizedBox(height: 40),
                 KeyedSubtree(
@@ -504,70 +504,70 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
     ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1));
   }
 
-  Widget _buildKspRewardsCard() {
-    return Obx(() {
-      final effective = homeController.userPoints.value;
-      final reward = homeController.rewardKsp.value;
-      final walletPart = homeController.walletKsp.value;
-      final hidden = currencyController.isBalanceHidden.value;
-      return GlassCard(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Image.asset('assets/images/ksp_coin.png', width: 36, height: 36),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ksp_balance'.tr,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      hidden ? '**********' : '$effective KSP',
-                      style: TextStyle(
-                        color: AppColors.darkGold,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    if (!hidden)
-                      Text(
-                        CurrencyConversionService.getUsdEquivalentText(
-                          effective.toDouble(),
-                        ),
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    Text(
-                      'ksp_effective_breakdown'.trParams({
-                        'wallet': walletPart.toString(),
-                        'reward': reward.toString(),
-                      }),
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
+  // Widget _buildKspRewardsCard() {
+  //   return Obx(() {
+  //     final effective = homeController.userPoints.value;
+  //     final reward = homeController.rewardKsp.value;
+  //     final walletPart = homeController.walletKsp.value;
+  //     final hidden = currencyController.isBalanceHidden.value;
+  //     return GlassCard(
+  //       child: Padding(
+  //         padding: const EdgeInsets.all(20),
+  //         child: Row(
+  //           children: [
+  //             Image.asset('assets/images/ksp_coin.png', width: 36, height: 36),
+  //             const SizedBox(width: 16),
+  //             Expanded(
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Text(
+  //                     'ksp_balance'.tr,
+  //                     style: TextStyle(
+  //                       color: AppColors.textSecondary,
+  //                       fontSize: 12,
+  //                       fontWeight: FontWeight.w600,
+  //                     ),
+  //                   ),
+  //                   const SizedBox(height: 4),
+  //                   Text(
+  //                     hidden ? '**********' : '$effective KSP',
+  //                     style: TextStyle(
+  //                       color: AppColors.darkGold,
+  //                       fontSize: 24,
+  //                       fontWeight: FontWeight.w800,
+  //                     ),
+  //                   ),
+  //                   if (!hidden)
+  //                     Text(
+  //                       CurrencyConversionService.getUsdEquivalentText(
+  //                         effective.toDouble(),
+  //                       ),
+  //                       style: TextStyle(
+  //                         color: AppColors.textSecondary,
+  //                         fontSize: 13,
+  //                         fontWeight: FontWeight.w500,
+  //                       ),
+  //                     ),
+  //                   Text(
+  //                     'ksp_effective_breakdown'.trParams({
+  //                       'wallet': walletPart.toString(),
+  //                       'reward': reward.toString(),
+  //                     }),
+  //                     style: TextStyle(
+  //                       color: AppColors.textSecondary,
+  //                       fontSize: 11,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     );
+  //   });
+  // }
 
   Widget _buildCardChip() {
     return Container(
