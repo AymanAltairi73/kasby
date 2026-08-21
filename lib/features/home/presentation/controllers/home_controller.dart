@@ -122,14 +122,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       profile.value?.kycStatus ?? dashboard.value?.kycStatus ?? 'none';
   int get pointsBalance => userPoints.value;
   int get effectiveKsp => userPoints.value;
-  double get dailyProfit {
-    final fromDashboard = dashboard.value?.dailyProfit;
-    if (fromDashboard != null && fromDashboard > 0) return fromDashboard;
-    if (Get.isRegistered<CurrencyController>()) {
-      return CurrencyController.to.profitBalance.value;
-    }
-    return 0.0;
-  }
+  double get dailyProfit => dashboard.value?.dailyProfit ?? 0.0;
 
   double get profitPercentage => dashboard.value?.profitPercentage ?? 0.0;
   String get referralCode =>
@@ -475,6 +468,16 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             if (allTransactions.isNotEmpty && selectedFilter.value == 'all') {
               fetchAllTransactions(reset: true);
             }
+
+            // Check if any completed profit transaction was received
+            final hasProfitTx = data.any(
+              (json) => json['type'] == 'profit' && json['status'] == 'completed',
+            );
+            if (hasProfitTx) {
+              fetchDashboard();
+              triggerEarningsUpdate(source: 'realtime_transaction');
+            }
+
             _resetBackoff();
             _log(
               'Transactions updated via real-time stream',

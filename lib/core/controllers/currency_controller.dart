@@ -239,6 +239,8 @@ class CurrencyController extends GetxController {
                   isFrozen: wallet.isFrozen,
                   frozenReason: wallet.frozenReason,
                 );
+                HomeController.to.fetchDashboard();
+                HomeController.to.triggerEarningsUpdate(source: 'realtime_wallet');
               }
               if (Get.isRegistered<KspBalanceService>() &&
                   Get.isRegistered<HomeController>()) {
