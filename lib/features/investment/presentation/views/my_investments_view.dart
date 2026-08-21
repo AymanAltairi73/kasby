@@ -727,11 +727,7 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                           ),
                         ),
                       ],
-                      if (isActive &&
-                          (HomeController.to.profile.value?.accountTier ==
-                                  'vip' ||
-                              HomeController.to.profile.value?.accountTier ==
-                                  'premium')) ...[
+                      if (isActive) ...[
                         const SizedBox(height: 12),
                         const Divider(height: 1),
                         const SizedBox(height: 12),
