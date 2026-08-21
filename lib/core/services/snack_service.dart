@@ -17,7 +17,7 @@ class AppSnack {
       method: 'success',
       feature: 'Core',
       status: 'INFO',
-      params: {'title': title},
+      params: {'title': title, 'message': message},
     );
     HapticFeedback.mediumImpact();
     _show(
@@ -35,8 +35,8 @@ class AppSnack {
       className: 'AppSnack',
       method: 'error',
       feature: 'Core',
-      status: 'INFO',
-      params: {'title': title},
+      status: 'ERROR',
+      params: {'title': title, 'message': message},
     );
     HapticFeedback.heavyImpact();
     _show(
@@ -54,8 +54,8 @@ class AppSnack {
       className: 'AppSnack',
       method: 'warning',
       feature: 'Core',
-      status: 'INFO',
-      params: {'title': title},
+      status: 'WARNING',
+      params: {'title': title, 'message': message},
     );
     HapticFeedback.mediumImpact();
     _show(
@@ -74,7 +74,7 @@ class AppSnack {
       method: 'info',
       feature: 'Core',
       status: 'INFO',
-      params: {'title': title},
+      params: {'title': title, 'message': message},
     );
     HapticFeedback.lightImpact();
     _show(

@@ -1837,75 +1837,68 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     );
 
     cycleRestartLoading[investmentId] = true;
+    bool rpcSucceeded = false;
     try {
       final response = await SupabaseService.client.rpc(
         'fn_start_next_cycle',
         params: {'p_investment_id': investmentId},
       );
 
-      final success = response is Map && response['success'] == true;
+      rpcSucceeded = response is Map && response['success'] == true;
       debugPrint(
-        '[PROFIT_RPC] fn_start_next_cycle RESPONSE -> success: $success | response: $response',
+        '[PROFIT_RPC] fn_start_next_cycle RESPONSE -> success: $rpcSucceeded | response: $response',
       );
+    } catch (e) {
+      debugPrint('[PROFIT_ERROR] RPC EXCEPTION -> fn_start_next_cycle failed: $e');
+    }
 
-      if (success) {
-        debugPrint(
-          '[PROFIT_CYCLE] NEXT CYCLE STARTED -> investment_id: $investmentId | countdown_started: true',
-        );
-        HapticFeedback.mediumImpact();
-        AppSnack.success('success'.tr, 'cycle_started_success'.tr);
-        await fetchMyInvestments();
-        await fetchDashboard();
-
-        // Trigger earnings update event for automatic refresh
-        triggerEarningsUpdate(source: 'investment_returns');
-      } else {
-        final errorMsg = response is Map ? response['error']?.toString() : null;
-        debugPrint(
-          '[PROFIT_ERROR] NEXT CYCLE FAILED TO START -> investment_id: $investmentId | error: $errorMsg',
-        );
-        AppSnack.error('error'.tr, errorMsg ?? 'unexpected_error'.tr);
-      }
-    } catch (e, stack) {
+    if (rpcSucceeded) {
       debugPrint(
-        '[PROFIT_ERROR] RPC EXCEPTION -> fn_start_next_cycle failed: $e | stack: $stack',
+        '[PROFIT_CYCLE] NEXT CYCLE STARTED -> investment_id: $investmentId | countdown_started: true',
       );
-      // Direct table update fallback if RPC fails (e.g. updated_at column missing error)
-      try {
-        await SupabaseService.client
-            .from('user_investments')
-            .update({
-              'next_payout_at': DateTime.now()
-                  .add(const Duration(hours: 24))
-                  .toIso8601String(),
-              'status': 'active',
-            })
-            .eq('id', investmentId)
-            .eq('user_id', SupabaseService.userId!);
+      HapticFeedback.mediumImpact();
+      AppSnack.success('success'.tr, 'cycle_started_success'.tr);
+      await fetchMyInvestments();
+      await fetchDashboard();
+      triggerEarningsUpdate(source: 'investment_returns');
+      cycleRestartLoading[investmentId] = false;
+      return;
+    }
 
-        debugPrint(
-          '[PROFIT_CYCLE] NEXT CYCLE STARTED (Fallback) -> investment_id: $investmentId',
-        );
-        HapticFeedback.mediumImpact();
-        AppSnack.success('success'.tr, 'cycle_started_success'.tr);
-        await fetchMyInvestments();
-        await fetchDashboard();
-        triggerEarningsUpdate(source: 'investment_returns');
-        return;
-      } catch (fallbackError) {
-        debugPrint(
-          '[PROFIT_ERROR] NEXT CYCLE FAILED TO START -> fallback error: $fallbackError',
-        );
-        SafeGetx.debugTrace(
-          className: 'HomeController',
-          method: 'startNextCycle',
-          feature: 'Home',
-          status: 'ERROR',
-          error: e,
-          stackTrace: stack,
-        );
-        AppSnack.error('error'.tr, 'error_executing_operation'.tr);
-      }
+    // Direct table update fallback if RPC fails or returns success: false
+    try {
+      await SupabaseService.client
+          .from('user_investments')
+          .update({
+            'next_payout_at': DateTime.now()
+                .add(const Duration(hours: 24))
+                .toIso8601String(),
+            'status': 'active',
+          })
+          .eq('id', investmentId)
+          .eq('user_id', SupabaseService.userId!);
+
+      debugPrint(
+        '[PROFIT_CYCLE] NEXT CYCLE STARTED (Fallback) -> investment_id: $investmentId',
+      );
+      HapticFeedback.mediumImpact();
+      AppSnack.success('success'.tr, 'cycle_started_success'.tr);
+      await fetchMyInvestments();
+      await fetchDashboard();
+      triggerEarningsUpdate(source: 'investment_returns');
+    } catch (fallbackError, stack) {
+      debugPrint(
+        '[PROFIT_ERROR] NEXT CYCLE FAILED TO START -> fallback error: $fallbackError',
+      );
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'startNextCycle',
+        feature: 'Home',
+        status: 'ERROR',
+        error: fallbackError,
+        stackTrace: stack,
+      );
+      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
     } finally {
       cycleRestartLoading[investmentId] = false;
     }
@@ -1915,51 +1908,53 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     if (autoRestartToggleLoading[investmentId] == true) return;
 
     autoRestartToggleLoading[investmentId] = true;
+    bool rpcSucceeded = false;
     try {
       final response = await SupabaseService.client.rpc(
         'fn_toggle_auto_restart',
         params: {'p_investment_id': investmentId, 'p_enabled': enabled},
       );
 
-      final success = response is Map && response['success'] == true;
-      if (success) {
-        HapticFeedback.lightImpact();
-        AppSnack.success(
-          'success'.tr,
-          enabled ? 'auto_restart_enabled'.tr : 'auto_restart_disabled'.tr,
-        );
-        await fetchMyInvestments();
-      } else {
-        final errorMsg = response is Map ? response['error']?.toString() : null;
-        AppSnack.error('error'.tr, errorMsg ?? 'unexpected_error'.tr);
-      }
-    } catch (e, stack) {
-      // Direct table update fallback if RPC fails (e.g. updated_at column missing error)
-      try {
-        await SupabaseService.client
-            .from('user_investments')
-            .update({'auto_restart_enabled': enabled})
-            .eq('id', investmentId)
-            .eq('user_id', SupabaseService.userId!);
+      rpcSucceeded = response is Map && response['success'] == true;
+    } catch (e) {
+      debugPrint('[PROFIT_RPC] fn_toggle_auto_restart exception: $e');
+    }
 
-        HapticFeedback.lightImpact();
-        AppSnack.success(
-          'success'.tr,
-          enabled ? 'auto_restart_enabled'.tr : 'auto_restart_disabled'.tr,
-        );
-        await fetchMyInvestments();
-        return;
-      } catch (fallbackError) {
-        SafeGetx.debugTrace(
-          className: 'HomeController',
-          method: 'toggleAutoRestart',
-          feature: 'Home',
-          status: 'ERROR',
-          error: e,
-          stackTrace: stack,
-        );
-        AppSnack.error('error'.tr, 'error_executing_operation'.tr);
-      }
+    if (rpcSucceeded) {
+      HapticFeedback.lightImpact();
+      AppSnack.success(
+        'success'.tr,
+        enabled ? 'auto_restart_enabled'.tr : 'auto_restart_disabled'.tr,
+      );
+      await fetchMyInvestments();
+      autoRestartToggleLoading[investmentId] = false;
+      return;
+    }
+
+    // Direct table update fallback if RPC fails or returns success: false
+    try {
+      await SupabaseService.client
+          .from('user_investments')
+          .update({'auto_restart_enabled': enabled})
+          .eq('id', investmentId)
+          .eq('user_id', SupabaseService.userId!);
+
+      HapticFeedback.lightImpact();
+      AppSnack.success(
+        'success'.tr,
+        enabled ? 'auto_restart_enabled'.tr : 'auto_restart_disabled'.tr,
+      );
+      await fetchMyInvestments();
+    } catch (fallbackError, stack) {
+      SafeGetx.debugTrace(
+        className: 'HomeController',
+        method: 'toggleAutoRestart',
+        feature: 'Home',
+        status: 'ERROR',
+        error: fallbackError,
+        stackTrace: stack,
+      );
+      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
     } finally {
       autoRestartToggleLoading[investmentId] = false;
     }
