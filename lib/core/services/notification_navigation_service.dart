@@ -57,6 +57,8 @@ class NotificationNavigationService {
     Routes.profileUpdate,
     Routes.qrScanner,
     Routes.myQr,
+    Routes.store,
+    Routes.storeOrders,
   };
 
   static Future<void> navigateFromPayload(
@@ -198,6 +200,9 @@ class NotificationNavigationService {
       case 'agent_withdrawal_pending':
       case 'agent_role_change':
         return Routes.agentDashboard;
+      case 'store_purchase':
+      case 'store_order':
+        return Routes.storeOrders;
       case 'check_in_reminder':
         return Routes.dailyCheckIn;
       case 'announcement':
@@ -214,6 +219,7 @@ class NotificationNavigationService {
         if (entityType == 'transaction') return Routes.transactionDetails;
         if (entityType == 'conversation') return Routes.supportChat;
         if (entityType == 'investment') return Routes.myInvestments;
+        if (entityType == 'store_order') return Routes.storeOrders;
         return Routes.notifications;
     }
   }
@@ -246,6 +252,8 @@ class NotificationNavigationService {
       '/all-transactions': Routes.allTransactions,
       '/transfer': Routes.transfer,
       '/spin-wheel': Routes.spinWheel,
+      '/store': Routes.store,
+      '/store-orders': Routes.storeOrders,
       '/home': Routes.home,
     };
     return mapping[normalized] ?? normalized;
@@ -386,6 +394,15 @@ class NotificationNavigationService {
         data['type'] == 'daily_profit') {
       if (entityId.isNotEmpty) {
         return {'investment_id': entityId, 'from_notification': true};
+      }
+    }
+
+    if (route == Routes.storeOrders ||
+        entityType == 'store_order' ||
+        data['type'] == 'store_purchase') {
+      final orderId = entityId.isNotEmpty ? entityId : (data['order_id'] ?? '');
+      if (orderId.isNotEmpty) {
+        return {'order_id': orderId, 'from_notification': true};
       }
     }
 

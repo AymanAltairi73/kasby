@@ -63,6 +63,36 @@ class StoreOrdersView extends StatelessWidget {
                           fontSize: 13,
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          if (Get.previousRoute == '/store') {
+                            Get.back();
+                          } else {
+                            Get.offNamed('/store');
+                          }
+                        },
+                        icon: const Icon(Icons.storefront_rounded, size: 20),
+                        label: const Text(
+                          'تصفح المتجر الآن',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGold,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 28,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
                     ],
                   ),
                 ),

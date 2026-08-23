@@ -1298,6 +1298,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         notifications[index] = notifications[index].copyWith(
           readAt: DateTime.now(),
         );
+        notifications.refresh();
         unreadNotificationCount.value = notifications
             .where((n) => !n.isRead)
             .length;
@@ -1338,6 +1339,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           notifications[i] = notifications[i].copyWith(readAt: now);
         }
       }
+      notifications.refresh();
       unreadNotificationCount.value = 0;
 
       HapticFeedback.mediumImpact();

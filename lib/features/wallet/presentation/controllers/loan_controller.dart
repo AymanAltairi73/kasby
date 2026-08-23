@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/models/loan_model.dart';
 import 'package:kasby/core/models/loan_repayment_model.dart';
-import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 class LoanController extends GetxController {
@@ -210,17 +210,15 @@ class LoanController extends GetxController {
       if (response != null && response['success'] == true) {
         debugPrint('[LOAN_CONTROLLER] ✅ Loan application successful!');
         Get.back();
-        Get.snackbar(
+        AppSnack.success(
           'success'.tr,
           'loan_applied_successfully'.tr,
-          backgroundColor: AppColors.softGreen,
-          colorText: Colors.white,
         );
         refreshData();
       } else {
         final errorMsg = response?['message'] ?? response?['error'] ?? 'unknown_error'.tr;
         debugPrint('[LOAN_CONTROLLER] ❌ Loan application refused by backend: $errorMsg');
-        Get.snackbar('error'.tr, errorMsg.toString());
+        AppSnack.error('error'.tr, errorMsg.toString());
       }
     } catch (e, stack) {
       debugPrint('[LOAN_CONTROLLER] 💥 Exception during applyForLoan: $e');
@@ -233,7 +231,7 @@ class LoanController extends GetxController {
         error: e,
         stackTrace: stack,
       );
-      Get.snackbar('error'.tr, 'loan_submission_error'.tr);
+      AppSnack.error('error'.tr, 'loan_submission_error'.tr);
     } finally {
       isSubmitting.value = false;
       debugPrint('[LOAN_CONTROLLER] 🏁 applyForLoan finished.');
@@ -269,11 +267,9 @@ class LoanController extends GetxController {
           status: 'SUCCESS',
           params: {'remaining': response['remaining']},
         );
-        Get.snackbar(
+        AppSnack.success(
           'success'.tr,
           response['message']?.toString() ?? 'repayment_success'.tr,
-          backgroundColor: AppColors.softGreen,
-          colorText: Colors.white,
         );
         refreshData();
       } else {
@@ -285,7 +281,7 @@ class LoanController extends GetxController {
           status: 'FAILED',
           params: {'message': message},
         );
-        Get.snackbar('error'.tr, message);
+        AppSnack.error('error'.tr, message);
       }
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -296,7 +292,7 @@ class LoanController extends GetxController {
         error: e,
         stackTrace: stack,
       );
-      Get.snackbar('error'.tr, 'loan_repayment_error'.tr);
+      AppSnack.error('error'.tr, 'loan_repayment_error'.tr);
     } finally {
       isSubmitting.value = false;
     }

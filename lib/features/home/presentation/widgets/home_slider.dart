@@ -81,7 +81,7 @@ class _HomeSliderState extends State<HomeSlider> {
         children: [
           Container(
             height: 190,
-            padding: const EdgeInsets.symmetric(vertical: 5),
+            padding: const EdgeInsets.symmetric(vertical: 2),
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
