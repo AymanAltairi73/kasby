@@ -24,6 +24,35 @@ class CurrencyController extends GetxController {
   final RxBool isWalletFrozen = false.obs;
   final RxnString walletFrozenReason = RxnString();
 
+  /// Unified Spendable Wallet Balance in USD (wallets.available_balance).
+  RxDouble get unifiedWalletBalance => totalBalance;
+
+  /// Net Portfolio Value in USD (Available Cash + Active Investments + Pending Withdrawals).
+  double get netPortfolioValue =>
+      totalBalance.value + investedBalance.value + pendingBalance.value;
+
+  /// Total unified financial balance in USD (Available Cash Wallet + Reward Points in USD equivalent).
+  double get totalEffectiveUsd {
+    double rewardUsd = 0.0;
+    if (Get.isRegistered<KspBalanceService>()) {
+      rewardUsd = KspBalanceService.to.rewardKsp.value / kspPerUsd;
+    } else if (Get.isRegistered<HomeController>()) {
+      rewardUsd = HomeController.to.rewardKsp.value / kspPerUsd;
+    }
+    return totalBalance.value + rewardUsd;
+  }
+
+  /// Total unified financial balance in KSP (Available Cash in KSP + Reward Points in KSP).
+  int get totalEffectiveKsp {
+    if (Get.isRegistered<KspBalanceService>()) {
+      return KspBalanceService.to.effectiveKsp.value;
+    } else if (Get.isRegistered<HomeController>()) {
+      return HomeController.to.userPoints.value;
+    }
+    return (totalBalance.value * kspPerUsd).round();
+  }
+
+
   /// Currencies fetched from DB (falls back to hardcoded data).
   final RxList<CurrencyModel> currencies = <CurrencyModel>[].obs;
 
@@ -54,7 +83,10 @@ class CurrencyController extends GetxController {
     );
     super.onInit();
     _loadBalancePrivacy();
-    // Initial wallet/currency load is owned by HomeController.fetchAll().
+    fetchCurrencies();
+    fetchWalletBalances();
+    _listenToWallet();
+    _listenToPoints();
   }
 
   /// Starts the wallet realtime listener after the initial data fetch settles.
@@ -138,6 +170,28 @@ class CurrencyController extends GetxController {
     }
   }
 
+  /// Helper to update wallet values and perform instant synchronous synchronization across controllers.
+  void _updateWalletData(WalletModel wallet) {
+    totalBalance.value = wallet.availableBalance;
+    profitBalance.value = wallet.profitBalance;
+    investedBalance.value = wallet.investedBalance;
+    pendingBalance.value = wallet.pendingBalance;
+    isWalletFrozen.value = wallet.isFrozen;
+    walletFrozenReason.value = wallet.frozenReason;
+
+    // Synchronously push wallet changes to KSP Service & HomeController
+    if (Get.isRegistered<KspBalanceService>()) {
+      KspBalanceService.to.walletUsd.value = wallet.availableBalance;
+      KspBalanceService.to.walletKsp.value = (wallet.availableBalance * kspPerUsd).round();
+      KspBalanceService.to.effectiveKsp.value =
+          KspBalanceService.to.walletKsp.value + KspBalanceService.to.rewardKsp.value;
+      if (Get.isRegistered<HomeController>()) {
+        HomeController.to.userPoints.value = KspBalanceService.to.effectiveKsp.value;
+        HomeController.to.walletKsp.value = KspBalanceService.to.walletKsp.value;
+      }
+    }
+  }
+
   /// Fetch wallet balances from the database.
   Future<void> fetchWalletBalances() async {
     if (!SupabaseService.isLoggedIn) return;
@@ -154,12 +208,7 @@ class CurrencyController extends GetxController {
 
       if (response != null) {
         final wallet = WalletModel.fromJson(response);
-        totalBalance.value = wallet.availableBalance;
-        profitBalance.value = wallet.profitBalance;
-        investedBalance.value = wallet.investedBalance;
-        pendingBalance.value = wallet.pendingBalance;
-        isWalletFrozen.value = wallet.isFrozen;
-        walletFrozenReason.value = wallet.frozenReason;
+        _updateWalletData(wallet);
       }
       if (Get.isRegistered<KspBalanceService>() &&
           Get.isRegistered<HomeController>()) {
@@ -228,12 +277,7 @@ class CurrencyController extends GetxController {
             }
             if (usdRows.isNotEmpty) {
               final wallet = WalletModel.fromJson(usdRows.first);
-              totalBalance.value = wallet.availableBalance;
-              profitBalance.value = wallet.profitBalance;
-              investedBalance.value = wallet.investedBalance;
-              pendingBalance.value = wallet.pendingBalance;
-              isWalletFrozen.value = wallet.isFrozen;
-              walletFrozenReason.value = wallet.frozenReason;
+              _updateWalletData(wallet);
               if (Get.isRegistered<HomeController>()) {
                 HomeController.to.syncDashboardFreezeState(
                   isFrozen: wallet.isFrozen,
@@ -278,6 +322,42 @@ class CurrencyController extends GetxController {
         );
   }
 
+  StreamSubscription? _pointsSubscription;
+
+  void _listenToPoints() {
+    if (!SupabaseService.isLoggedIn) return;
+
+    _pointsSubscription?.cancel();
+    _pointsSubscription = SupabaseService.client
+        .from('user_points')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', SupabaseService.userId!)
+        .listen(
+          (data) {
+            if (data.isNotEmpty && Get.isRegistered<KspBalanceService>()) {
+              unawaited(
+                KspBalanceService.to.refresh().then((_) {
+                  if (Get.isRegistered<HomeController>()) {
+                    HomeController.to.syncKspFromService();
+                  }
+                }),
+              );
+            }
+          },
+          onError: (e) {
+            SafeGetx.debugTrace(
+              className: 'CurrencyController',
+              method: '_listenToPoints',
+              feature: 'Wallet',
+              status: 'WARN',
+              error: e,
+            );
+          },
+        );
+  }
+
+
+
   @override
   void onClose() {
     SafeGetx.debugTrace(
@@ -288,6 +368,7 @@ class CurrencyController extends GetxController {
     );
     _walletReconnectTimer?.cancel();
     _walletSubscription?.cancel();
+    _pointsSubscription?.cancel();
     super.onClose();
   }
 

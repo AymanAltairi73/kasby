@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 // import 'package:kasby/core/services/currency_conversion_service.dart';
+// import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
@@ -117,9 +118,9 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                   key: TourTargetKeys.walletBalance,
                   child: _buildBalanceSummary(),
                 ),
-                // const SizedBox(height: 20),
+                // const SizedBox(height: 16),
                 // _buildKspRewardsCard(),
-                const SizedBox(height: 10),
+                const SizedBox(height: 18),
                 _buildActionButtons(),
                 const SizedBox(height: 40),
                 KeyedSubtree(
@@ -314,7 +315,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                             ? '**********'
                                             : currencyController.formatToUSD(
                                                 currencyController
-                                                    .totalBalance
+                                                    .unifiedWalletBalance
                                                     .value,
                                               ),
                                         style: const TextStyle(
@@ -459,29 +460,26 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                             ),
                                           ),
                                           Obx(
-                                            () =>
-                                                Text(
-                                                      currencyController
-                                                          .formatAmount(
-                                                            currencyController
-                                                                .totalBalance
-                                                                .value,
-                                                          ),
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w900,
-                                                        fontSize: 14,
-                                                        color: Colors.white,
-                                                      ),
-                                                    )
-                                                    .animate(
-                                                      key: ValueKey(
-                                                        currencyController
-                                                            .selectedCurrency
-                                                            .value,
-                                                      ),
-                                                    )
-                                                    .scale(),
+                                            () => Text(
+                                              currencyController.formatAmount(
+                                                currencyController
+                                                    .unifiedWalletBalance
+                                                    .value,
+                                              ),
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                                .animate(
+                                                  key: ValueKey(
+                                                    currencyController
+                                                        .selectedCurrency
+                                                        .value,
+                                                  ),
+                                                )
+                                                .scale(),
                                           ),
                                         ],
                                       ),
@@ -506,9 +504,15 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
 
   // Widget _buildKspRewardsCard() {
   //   return Obx(() {
-  //     final effective = homeController.userPoints.value;
-  //     final reward = homeController.rewardKsp.value;
-  //     final walletPart = homeController.walletKsp.value;
+  //     final effective = Get.isRegistered<KspBalanceService>()
+  //         ? KspBalanceService.to.effectiveKsp.value
+  //         : currencyController.totalEffectiveKsp;
+  //     final reward = Get.isRegistered<KspBalanceService>()
+  //         ? KspBalanceService.to.rewardKsp.value
+  //         : homeController.rewardKsp.value;
+  //     final walletPart = Get.isRegistered<KspBalanceService>()
+  //         ? KspBalanceService.to.walletKsp.value
+  //         : homeController.walletKsp.value;
   //     final hidden = currencyController.isBalanceHidden.value;
   //     return GlassCard(
   //       child: Padding(
@@ -531,14 +535,15 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
   //                   ),
   //                   const SizedBox(height: 4),
   //                   Text(
-  //                     hidden ? '**********' : '$effective KSP',
+  //                     hidden ? '**********' : '${'ksp_balance'.tr}: ${currencyController.formatKspAmount(effective.toDouble())}',
   //                     style: TextStyle(
   //                       color: AppColors.darkGold,
-  //                       fontSize: 24,
+  //                       fontSize: 18,
   //                       fontWeight: FontWeight.w800,
   //                     ),
   //                   ),
-  //                   if (!hidden)
+  //                   if (!hidden) ...[
+  //                     const SizedBox(height: 2),
   //                     Text(
   //                       CurrencyConversionService.getUsdEquivalentText(
   //                         effective.toDouble(),
@@ -549,6 +554,8 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
   //                         fontWeight: FontWeight.w500,
   //                       ),
   //                     ),
+  //                   ],
+  //                   const SizedBox(height: 4),
   //                   Text(
   //                     'ksp_effective_breakdown'.trParams({
   //                       'wallet': walletPart.toString(),

@@ -137,10 +137,11 @@ class HomeBalanceCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'total_balance'.tr,
+                                'total_portfolio_balance'.tr,
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -166,7 +167,8 @@ class HomeBalanceCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Obx(() {
-                        final balance = currencyController.totalBalance.value;
+                        final balance = currencyController.unifiedWalletBalance.value;
+                        final effectiveKsp = currencyController.totalEffectiveKsp;
                         final hidden = currencyController.isBalanceHidden.value;
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,7 +195,7 @@ class HomeBalanceCard extends StatelessWidget {
                             if (!hidden) ...[
                               const SizedBox(height: 4),
                               Text(
-                                '≈ ${CurrencyConversionService.formatKsp(CurrencyConversionService.usdToKsp(balance))} KSP',
+                                '≈ ${CurrencyConversionService.formatKsp(effectiveKsp.toDouble())} KSP',
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w500,
@@ -203,7 +205,7 @@ class HomeBalanceCard extends StatelessWidget {
                               const SizedBox(height: 8),
                               Obx(() {
                                 final effective =
-                                    homeController.userPoints.value;
+                                    currencyController.totalEffectiveKsp;
                                 final reward = homeController.rewardKsp.value;
                                 final walletPart =
                                     homeController.walletKsp.value;
@@ -445,7 +447,7 @@ class HomeBalanceCard extends StatelessWidget {
                               () =>
                                   Text(
                                         currencyController.formatAmount(
-                                          currencyController.totalBalance.value,
+                                          currencyController.unifiedWalletBalance.value,
                                         ),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w900,

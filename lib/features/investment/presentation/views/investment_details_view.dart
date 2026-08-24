@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/controllers/currency_controller.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/core/services/crash_reporting/crash_breadcrumb.dart';
 import 'package:kasby/core/services/crash_reporting/crash_error_category.dart';
 import 'package:kasby/core/services/crash_reporting_service.dart';
@@ -438,6 +440,15 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
         return;
       }
 
+      final availableCash = CurrencyController.to.totalBalance.value;
+      if (amount > availableCash) {
+        AppSnack.error(
+          'error'.tr,
+          'رصيد الكاش المتاح (\$${availableCash.toStringAsFixed(2)}) غير كافٍ لإكمال الاستثمار بمبلغ (\$${amount.toStringAsFixed(2)})',
+        );
+        return;
+      }
+
       final result = await SafeGetx.traceAsync(
         className: 'InvestmentDetailsView',
         method: '_executeInvestment',
@@ -476,6 +487,13 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
         HapticFeedback.heavyImpact();
         unawaited(CrashReportingService.log(CrashBreadcrumb.investmentCreated));
 
+        if (Get.isRegistered<CurrencyController>()) {
+          unawaited(CurrencyController.to.fetchWalletBalances());
+        }
+        if (Get.isRegistered<KspBalanceService>()) {
+          unawaited(KspBalanceService.to.afterFinancialMutation(response));
+        }
+
         // Process referral commission asynchronously
         ReferralService.processReferralCommission(
           investmentAmount: amount,
@@ -489,25 +507,27 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           response['message'] ?? 'investment_success_desc'.tr,
         );
       } else {
+        final errorDetail = response['message'] ?? response['error'] ?? 'unexpected_error'.tr;
         SafeGetx.debugTrace(
           className: 'InvestmentDetailsView',
           method: '_executeInvestment',
           feature: 'Investment',
           status: 'WARNING',
-          message: response['error']?.toString(),
+          message: '$errorDetail (code: ${response['error']})',
         );
         unawaited(
           CrashReportingService.recordBusinessError(
-            Exception(response['error']?.toString() ?? 'Investment RPC failed'),
+            Exception(errorDetail.toString()),
             category: CrashErrorCategory.investments,
             operation: 'create_investment',
             context: {
               CrashCustomKey.investmentPlan: planId,
               'amount_range': CrashReportingService.balanceRange(amount),
+              'details': response['details']?.toString() ?? '',
             },
           ),
         );
-        AppSnack.error('error'.tr, response['error'] ?? 'unexpected_error'.tr);
+        AppSnack.error('error'.tr, errorDetail.toString());
       }
     } catch (e, st) {
       SafeGetx.debugTrace(

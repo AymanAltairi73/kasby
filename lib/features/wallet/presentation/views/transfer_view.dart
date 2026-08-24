@@ -101,7 +101,9 @@ class _TransferViewState extends State<TransferView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildTypeToggle(),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
+              _buildAvailableBalanceCard(),
+              const SizedBox(height: 24),
               _buildTransferForm(),
               const SizedBox(height: 16),
               _buildRecentRecipients(),
@@ -192,6 +194,64 @@ class _TransferViewState extends State<TransferView> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAvailableBalanceCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.darkGold.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isPoints ? Icons.stars_rounded : Icons.account_balance_wallet_rounded,
+                color: AppColors.darkGold,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isPoints ? 'رصيد النقاط المتاح' : 'رصيد الكاش المتاح',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          Obx(() {
+            if (isPoints) {
+              final pts = KspBalanceService.to.balance;
+              return Text(
+                '${pts.toInt()} KSP',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.darkGold,
+                ),
+              );
+            }
+            final cash = CurrencyController.to.totalBalance.value;
+            return Text(
+              '\$${cash.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
@@ -521,20 +581,24 @@ class _TransferViewState extends State<TransferView> {
       if (amount > points) {
         Get.snackbar(
           'error'.tr,
-          'insufficient_balance'.tr,
+          'رصيد النقاط المتاح (${points.toInt()} KSP) غير كافٍ لتغطية المعاملة',
           backgroundColor: AppColors.error.withValues(alpha: 0.7),
           colorText: Colors.white,
         );
         return;
       }
     } else {
-      final balance = CurrencyController.to.totalBalance.value;
-      if (amount > balance) {
+      final fee = FeeService.totalFee('transfer', amount);
+      final totalRequired = amount + fee;
+      final availableCash = CurrencyController.to.totalBalance.value;
+      if (totalRequired > availableCash) {
+        final feeStr = fee > 0 ? ' (شاملة رسوم \$${fee.toStringAsFixed(2)})' : '';
         Get.snackbar(
           'error'.tr,
-          'insufficient_balance'.tr,
-          backgroundColor: AppColors.error.withValues(alpha: 0.7),
+          'رصيد الكاش المتاح (\$${availableCash.toStringAsFixed(2)}) غير كافٍ لتغطية المبلغ المطلوب (\$${totalRequired.toStringAsFixed(2)})$feeStr',
+          backgroundColor: AppColors.error.withValues(alpha: 0.85),
           colorText: Colors.white,
+          duration: const Duration(seconds: 4),
         );
         return;
       }

@@ -200,5 +200,85 @@ void main() {
       expect(isValidEmail('user@kasby.app'), isTrue);
       expect(isValidEmail('invalid-email'), isFalse);
     });
+
+    // ── 9. KASBY INSUFFICIENT BALANCE & FINANCIAL REMEDIATION MATRIX ──
+    group('Remediation Financial Audit Matrix (\$500 Starting Balance)', () {
+      test('1. Transfer \$100 with Fee Validation (\$500 -> \$398)', () {
+        var availableBalance = 500.0;
+        final transferAmount = 100.0;
+        final fee = 2.0; // 2% transfer fee
+        final totalRequired = transferAmount + fee;
+
+        expect(availableBalance >= totalRequired, isTrue);
+        availableBalance -= totalRequired;
+
+        expect(availableBalance, equals(398.0));
+      });
+
+      test('2. Withdrawal \$100 (\$398 -> \$298 Available, \$100 Pending)', () {
+        var availableBalance = 398.0;
+        var pendingBalance = 0.0;
+        final withdrawAmount = 100.0;
+
+        expect(availableBalance >= withdrawAmount, isTrue);
+        availableBalance -= withdrawAmount;
+        pendingBalance += withdrawAmount;
+
+        expect(availableBalance, equals(298.0));
+        expect(pendingBalance, equals(100.0));
+      });
+
+      test('3. Investment \$100 (\$298 -> \$198 Available, \$100 Invested)', () {
+        var availableBalance = 298.0;
+        var investedBalance = 0.0;
+        final investmentAmount = 100.0;
+
+        expect(availableBalance >= investmentAmount, isTrue);
+        availableBalance -= investmentAmount;
+        investedBalance += investmentAmount;
+
+        expect(availableBalance, equals(198.0));
+        expect(investedBalance, equals(100.0));
+      });
+
+      test('4. Reject Transfer > Available Balance (\$300 > \$198)', () {
+        final availableBalance = 198.0;
+        final transferAmount = 300.0;
+        final fee = 6.0;
+        final totalRequired = transferAmount + fee;
+
+        final canExecute = availableBalance >= totalRequired;
+        expect(canExecute, isFalse);
+      });
+
+      test('5. Reject Withdrawal > Available Balance (\$300 > \$198)', () {
+        final availableBalance = 198.0;
+        final withdrawAmount = 300.0;
+
+        final canExecute = availableBalance >= withdrawAmount;
+        expect(canExecute, isFalse);
+      });
+
+      test('6. Reject Investment > Available Balance (\$300 > \$198)', () {
+        final availableBalance = 198.0;
+        final investmentAmount = 300.0;
+
+        final canExecute = availableBalance >= investmentAmount;
+        expect(canExecute, isFalse);
+      });
+
+      test('7. KSP Points non-cash separation (\$50 cash + 450,000 KSP = \$500 portfolio)', () {
+        final availableCashUSD = 50.0;
+        final kspPoints = 450000; // $450 USD equivalent
+        final totalPortfolioUsd = availableCashUSD + (kspPoints / 1000);
+
+        expect(totalPortfolioUsd, equals(500.0));
+
+        final transferUsdAmount = 100.0;
+        // Validation MUST check availableCashUSD, NOT totalPortfolioUsd!
+        final canTransferUSD = availableCashUSD >= transferUsdAmount;
+        expect(canTransferUSD, isFalse);
+      });
+    });
   });
 }

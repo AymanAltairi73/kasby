@@ -6,6 +6,7 @@ import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/models/agent_model.dart';
 import 'package:kasby/core/models/profile_model.dart';
+import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'dart:async';
@@ -86,6 +87,9 @@ class AgentController extends GetxController {
 
   Future<void> refreshData() async {
     await fetchAgentProfile();
+    if (Get.isRegistered<CurrencyController>()) {
+      unawaited(CurrencyController.to.fetchWalletBalances());
+    }
     await Future.wait([
       fetchOperations(),
       fetchPerformanceStats(),

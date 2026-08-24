@@ -39,19 +39,34 @@ class FinancialRepository {
     Map<String, dynamic> response,
     String fallback,
   ) {
+    if (response['details'] != null && response['details'] is Map) {
+      final details = response['details'] as Map;
+      final available = (details['available_balance'] as num?)?.toDouble();
+      final totalReq = (details['total_required'] as num?)?.toDouble();
+      final fee = (details['fee'] as num?)?.toDouble() ?? 0;
+      if (available != null && totalReq != null) {
+        final feeStr = fee > 0 ? ' (شاملة رسوم \$${fee.toStringAsFixed(2)})' : '';
+        return 'رصيد الكاش المتاح (\$${available.toStringAsFixed(2)}) غير كافٍ لتغطية المبلغ المطلوب (\$${totalReq.toStringAsFixed(2)})$feeStr';
+      }
+    }
+
+    final message = response['message']?.toString();
+    if (message != null && message.isNotEmpty && message != 'null') {
+      return message;
+    }
+
     final error =
         response['error']?.toString() ??
-        response['message']?.toString() ??
         fallback;
     if (error.contains('PERMISSION_DENIED')) {
       return 'financial_permission_denied'.tr;
     }
     if (error.contains('SYSTEM_FROZEN')) return 'system_frozen'.tr;
-    if (error.contains('Insufficient balance')) {
+    if (error.contains('insufficient_balance') || error.contains('Insufficient balance')) {
       return 'insufficient_balance'.tr;
     }
     if (error.contains('Insufficient points')) return 'insufficient_points'.tr;
-    if (error.contains('Receiver not found')) return 'receiver_not_found'.tr;
+    if (error.contains('receiver_not_found') || error.contains('Receiver not found')) return 'receiver_not_found'.tr;
     if (error.contains('pending withdrawal')) {
       return 'pending_withdrawal_exists'.tr;
     }

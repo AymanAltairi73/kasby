@@ -151,9 +151,10 @@ class _WithdrawViewState extends State<WithdrawView> {
     if (amount > totalBalance) {
       Get.snackbar(
         'error'.tr,
-        'insufficient_balance'.tr,
-        backgroundColor: AppColors.error.withValues(alpha: 0.7),
+        'رصيد الكاش المتاح (\$${totalBalance.toStringAsFixed(2)}) غير كافٍ لتغطية مبلغ السحب (\$${amount.toStringAsFixed(2)})',
+        backgroundColor: AppColors.error.withValues(alpha: 0.85),
         colorText: Colors.white,
+        duration: const Duration(seconds: 4),
       );
       return;
     }
@@ -566,7 +567,7 @@ class _WithdrawViewState extends State<WithdrawView> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: agents.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final agent = agents[index];
               return Padding(

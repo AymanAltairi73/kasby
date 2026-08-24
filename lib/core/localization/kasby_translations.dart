@@ -683,6 +683,10 @@ class KasbyTranslations extends Translations {
       // Wallet
       'my_wallet': 'My Wallet',
       'available_balance': 'Available Balance',
+      'wallet_cash_balance': 'Wallet Cash Balance',
+      'ksp_reward_balance': 'KSP Reward Balance',
+      'total_portfolio_balance': 'Total Effective Portfolio',
+      'total_portfolio_hint': 'Combines Wallet Cash + Reward KSP Value',
       'profits': 'Profits',
       'points': 'KSP',
       'deposit': 'Deposit',
@@ -3126,6 +3130,10 @@ class KasbyTranslations extends Translations {
       // Wallet
       'my_wallet': 'محفظتي',
       'available_balance': 'الرصيد المتاح',
+      'wallet_cash_balance': 'رصيد المحفظة النقدية',
+      'ksp_reward_balance': 'رصيد مكافآت KSP',
+      'total_portfolio_balance': 'إجمالي المحفظة الشاملة',
+      'total_portfolio_hint': 'يشمل كاش المحفظة + قيمة مكافآت KSP',
       'profits': 'الأرباح',
       'points': 'رصيد KSP',
       'deposit': 'إيداع',

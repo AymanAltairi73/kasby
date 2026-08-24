@@ -142,9 +142,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   double get _currentPortfolioValue {
     if (!Get.isRegistered<CurrencyController>()) return 0;
     final c = CurrencyController.to;
-    return c.totalBalance.value +
-        c.investedBalance.value +
-        c.profitBalance.value;
+    // Net Portfolio Value = Available Cash + Active Investments + Pending Withdrawals
+    // profitBalance is NOT included — it is a cumulative lifetime log, not separate money.
+    return c.netPortfolioValue;
   }
 
   /// Cumulative portfolio value curve for the selected period.

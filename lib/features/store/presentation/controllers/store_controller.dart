@@ -6,6 +6,7 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/services/sound_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/features/store/domain/models/store_banner_model.dart';
 import 'package:kasby/features/store/domain/models/store_category_model.dart';
@@ -80,33 +81,10 @@ class StoreController extends GetxController {
       if (Get.isRegistered<CurrencyController>()) {
         usdBalance.value = CurrencyController.to.totalBalance.value;
       }
-      if (Get.isRegistered<HomeController>()) {
+      if (Get.isRegistered<KspBalanceService>()) {
+        kspBalance.value = KspBalanceService.to.effectiveKsp.value.toDouble();
+      } else if (Get.isRegistered<HomeController>()) {
         kspBalance.value = HomeController.to.pointsBalance.toDouble();
-      } else {
-        final userId = SupabaseService.userId;
-        if (userId != null) {
-          final walletRes = await SupabaseService.client
-              .from('wallets')
-              .select('available_balance')
-              .eq('user_id', userId)
-              .maybeSingle();
-
-          if (walletRes != null) {
-            usdBalance.value =
-                (walletRes['available_balance'] as num?)?.toDouble() ?? 0.0;
-          }
-
-          final kspRes = await SupabaseService.client
-              .from('user_points')
-              .select('current_balance')
-              .eq('user_id', userId)
-              .maybeSingle();
-
-          if (kspRes != null) {
-            kspBalance.value =
-                (kspRes['current_balance'] as num?)?.toDouble() ?? 0.0;
-          }
-        }
       }
     } catch (e) {
       debugPrint('[STORE_CONTROLLER] Error fetching balances: $e');
@@ -218,6 +196,12 @@ class StoreController extends GetxController {
           'purchase_success_title'.tr,
           'purchase_success_desc'.tr,
         );
+        if (Get.isRegistered<CurrencyController>()) {
+          unawaited(CurrencyController.to.fetchWalletBalances());
+        }
+        if (Get.isRegistered<KspBalanceService>()) {
+          unawaited(KspBalanceService.to.afterFinancialMutation(result));
+        }
         fetchUserBalances();
         fetchOrders();
         fetchCatalog();

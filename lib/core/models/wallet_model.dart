@@ -31,9 +31,15 @@ class WalletModel {
     this.updatedAt,
   });
 
-  /// Total balance across all balance types.
-  double get totalBalance =>
-      availableBalance + profitBalance + investedBalance + pendingBalance;
+  /// Unified Spendable Wallet Balance (Liquid USD Cash available for operations).
+  double get totalBalance => availableBalance;
+
+  /// Alias for Unified Spendable Wallet Balance.
+  double get unifiedBalance => availableBalance;
+
+  /// Net Portfolio Value (Total Net Worth: Cash + Active Investments + Pending Withdrawals).
+  double get netPortfolioValue =>
+      availableBalance + investedBalance + pendingBalance;
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
     try {
