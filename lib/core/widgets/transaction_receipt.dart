@@ -211,9 +211,14 @@ class _TransactionReceiptState extends State<TransactionReceipt> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/logo.png',
+                      'assets/images/logo5.png',
                       width: 40,
                       height: 40,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'assets/images/logo.png',
+                        width: 40,
+                        height: 40,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     const Text(

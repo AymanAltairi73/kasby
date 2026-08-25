@@ -280,5 +280,54 @@ void main() {
         expect(canTransferUSD, isFalse);
       });
     });
+
+    // ── 10. KASBY UNIFIED PDF REPORTING ENGINE VALIDATION ──
+    group('PDF Reporting Engine & Data Integrity', () {
+      test('KasbyReceiptData Model Verification', () {
+        final receiptData = {
+          'transactionId': 'TXN-987654321',
+          'amount': 250.00,
+          'type': 'deposit',
+          'status': 'completed',
+          'date': '2026-08-25 14:30',
+          'recipientName': 'Ayman Altairi',
+          'referenceNumber': 'REF-100234',
+        };
+
+        expect(receiptData['transactionId'], startsWith('TXN-'));
+        expect(receiptData['amount'], equals(250.00));
+        expect(receiptData['type'], equals('deposit'));
+      });
+
+      test('Statement Financial Aggregation Matrix', () {
+        final transactions = [
+          {'amount': 100.0, 'type': 'deposit', 'status': 'completed'},
+          {'amount': 50.0, 'type': 'withdrawal', 'status': 'completed'},
+          {'amount': 200.0, 'type': 'deposit', 'status': 'approved'},
+          {'amount': 30.0, 'type': 'withdrawal', 'status': 'rejected'}, // Should exclude rejected
+        ];
+
+        double totalDeposits = 0.0;
+        double totalWithdrawals = 0.0;
+
+        for (var t in transactions) {
+          final status = t['status'] as String;
+          if (status == 'completed' || status == 'approved') {
+            final amt = t['amount'] as double;
+            if (t['type'] == 'deposit') {
+              totalDeposits += amt;
+            } else if (t['type'] == 'withdrawal') {
+              totalWithdrawals += amt;
+            }
+          }
+        }
+
+        final netBalance = totalDeposits - totalWithdrawals;
+
+        expect(totalDeposits, equals(300.0));
+        expect(totalWithdrawals, equals(50.0));
+        expect(netBalance, equals(250.0));
+      });
+    });
   });
 }

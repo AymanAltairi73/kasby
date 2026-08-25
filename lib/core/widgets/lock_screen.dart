@@ -336,27 +336,34 @@ class _LockScreenState extends State<LockScreen> {
                                       ? AppColors.surfaceDark
                                       : Colors.white,
                                 ),
-                                child:
-                                    profile?.avatarUrl != null &&
-                                            profile!.avatarUrl!.isNotEmpty
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              50,
-                                            ),
-                                            child: Image.network(
-                                              profile.avatarUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (_, __, ___) => Image.asset(
-                                                    'assets/images/logo.png',
-                                                    fit: BoxFit.contain,
-                                                  ),
-                                            ),
-                                          )
-                                        : Image.asset(
-                                            'assets/images/logo.png',
+                                child: profile?.avatarUrl != null &&
+                                        profile!.avatarUrl!.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(50),
+                                        child: Image.network(
+                                          profile.avatarUrl!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Image.asset(
+                                            'assets/images/logo5.png',
                                             fit: BoxFit.contain,
+                                            errorBuilder: (_, __, ___) =>
+                                                Image.asset(
+                                              'assets/images/logo.png',
+                                              fit: BoxFit.contain,
+                                            ),
                                           ),
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        'assets/images/logo5.png',
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, __, ___) =>
+                                            Image.asset(
+                                          'assets/images/logo.png',
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
                               ),
                             ),
                           ],
