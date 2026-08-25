@@ -2,6 +2,11 @@
 class KasbyLegalContent {
   KasbyLegalContent._();
 
+  static const String privacyPolicyUrl =
+      'https://kasby-investment.netlify.app/privacy-policy';
+  static const String termsOfServiceUrl =
+      'https://kasby-investment.netlify.app/terms-of-service';
+
   static String termsForLocale(String? languageCode) {
     return languageCode == 'ar' ? termsAr : termsEn;
   }

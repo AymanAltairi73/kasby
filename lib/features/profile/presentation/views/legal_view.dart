@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/legal/kasby_legal_content.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LegalView extends StatefulWidget {
   const LegalView({super.key});
@@ -59,6 +60,22 @@ class _LegalViewState extends State<LegalView>
             Tab(text: 'privacy_policy'.tr),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.open_in_browser_rounded),
+            tooltip: 'open_in_browser'.tr,
+            onPressed: () async {
+              final isTerms = _tabController.index == 0;
+              final url = isTerms
+                  ? KasbyLegalContent.termsOfServiceUrl
+                  : KasbyLegalContent.privacyPolicyUrl;
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
+        ],
       ),
       body: TabBarView(
         controller: _tabController,

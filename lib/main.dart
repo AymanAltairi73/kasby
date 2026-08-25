@@ -42,6 +42,7 @@ import 'package:kasby/core/services/presence_service.dart';
 import 'package:kasby/core/services/app_version_service.dart';
 import 'package:kasby/core/services/deep_link_service.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
+import 'package:kasby/core/services/app_lifecycle_lock_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/widgets/app_error_widget.dart';
@@ -163,6 +164,7 @@ Future<void> _bootstrap() async {
   Get.put(TourController(), permanent: true);
   Get.put(SessionService(), permanent: true);
   Get.put(BiometricLoginService(), permanent: true);
+  Get.put(AppLifecycleLockService(), permanent: true);
   Get.put(SecurityActivityService(), permanent: true);
   Get.put(ConfettiService(), permanent: true);
   Get.put(SoundService(), permanent: true);
