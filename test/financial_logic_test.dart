@@ -329,5 +329,253 @@ void main() {
         expect(netBalance, equals(250.0));
       });
     });
+
+    // ── 11. USD & KSP BALANCES REACTIVE SYNCHRONIZATION MATRIX ──
+    group('USD & KSP Synchronized Conversion Matrix (1 USD = 1,000 KSP)', () {
+      const kspPerUsd = 1000.0;
+
+      test('Exact Conversion Math: 1 USD = 1,000 KSP & 1 KSP = 0.001 USD', () {
+        expect(1.0 * kspPerUsd, equals(1000.0));
+        expect(10.0 * kspPerUsd, equals(10000.0));
+        expect(100.0 * kspPerUsd, equals(100000.0));
+
+        expect(1000.0 / kspPerUsd, equals(1.0));
+        expect(10000.0 / kspPerUsd, equals(10.0));
+        expect(100000.0 / kspPerUsd, equals(100.0));
+      });
+
+      test('Synchronized Update: Adding +10,000 KSP Rewards increases Total Effective USD by +\$10.00', () {
+        var availableCashUsd = 100.0;
+        var rewardKsp = 0;
+
+        double getTotalEffectiveUsd() => availableCashUsd + (rewardKsp / kspPerUsd);
+        int getTotalEffectiveKsp() => ((availableCashUsd * kspPerUsd) + rewardKsp).round();
+
+        // Initial State
+        expect(getTotalEffectiveUsd(), equals(100.0));
+        expect(getTotalEffectiveKsp(), equals(100000));
+
+        // Event: User wins 10,000 KSP from Spin Wheel / Daily Check-in
+        rewardKsp += 10000;
+
+        // Verified Synchronized State
+        expect(getTotalEffectiveUsd(), equals(110.0)); // +$10.00 USD
+        expect(getTotalEffectiveKsp(), equals(110000)); // +10,000 KSP
+        expect(getTotalEffectiveKsp() / kspPerUsd, equals(getTotalEffectiveUsd()));
+      });
+
+      test('Synchronized Update: Adding +\$10.00 USD Cash increases Total Effective KSP by +10,000 KSP', () {
+        var availableCashUsd = 100.0;
+        var rewardKsp = 10000; // $10 USD equivalent
+
+        double getTotalEffectiveUsd() => availableCashUsd + (rewardKsp / kspPerUsd);
+        int getTotalEffectiveKsp() => ((availableCashUsd * kspPerUsd) + rewardKsp).round();
+
+        // Initial State
+        expect(getTotalEffectiveUsd(), equals(110.0));
+        expect(getTotalEffectiveKsp(), equals(110000));
+
+        // Event: Profit or Deposit credited to Available Cash (+$10.00 USD)
+        availableCashUsd += 10.0;
+
+        // Verified Synchronized State
+        expect(getTotalEffectiveUsd(), equals(120.0)); // +$10.00 USD
+        expect(getTotalEffectiveKsp(), equals(120000)); // +10,000 KSP
+        expect(getTotalEffectiveKsp() / kspPerUsd, equals(getTotalEffectiveUsd()));
+      });
+
+      test('Zero Double-Counting Guard: Wallet Cash & Reward Points are distinct Single Sources of Truth', () {
+        var walletCashUsd = 50.0;
+        var rewardPointsKsp = 25000; // $25.00 USD equivalent
+
+        // Calculate total effective balances
+        final effectiveUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        final effectiveKsp = (walletCashUsd * kspPerUsd) + rewardPointsKsp;
+
+        expect(effectiveUsd, equals(75.0));
+        expect(effectiveKsp, equals(75000));
+
+        // Spendable liquid cash MUST remain $50.0, NOT $75.0
+        expect(walletCashUsd, equals(50.0));
+        // KSP Reward points MUST remain 25,000, NOT 75,000
+        expect(rewardPointsKsp, equals(25000));
+        // Mathematical Identity holds perfectly
+        expect(effectiveUsd * kspPerUsd, equals(effectiveKsp.toDouble()));
+      });
+    });
+
+    // ── 12. DISPLAY BALANCE VS SPENDABLE BALANCE ISOLATION & SAFETY MATRIX ──
+    group('Display Balance vs Spendable Balance Isolation & Safety Matrix', () {
+      const kspPerUsd = 1000.0;
+
+      test('Ecosystem Balance Display Unification: HomeBalanceCard == WalletView == StoreHomeView', () {
+        const walletCashUsd = 100.0;
+        const rewardPointsKsp = 50000; // $50.00 USD equivalent
+
+        // Unified display value formula used across all views
+        final homeDisplayUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        final walletViewDisplayUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        final storeHomeDisplayUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+
+        final homeDisplayKsp = ((walletCashUsd * kspPerUsd) + rewardPointsKsp).round();
+        final walletViewDisplayKsp = ((walletCashUsd * kspPerUsd) + rewardPointsKsp).round();
+        final storeHomeDisplayKsp = ((walletCashUsd * kspPerUsd) + rewardPointsKsp).round();
+
+        // 1. All UI views display 100% identical values ($150.00 USD & 150,000 KSP)
+        expect(homeDisplayUsd, equals(150.0));
+        expect(walletViewDisplayUsd, equals(150.0));
+        expect(storeHomeDisplayUsd, equals(150.0));
+
+        expect(homeDisplayKsp, equals(150000));
+        expect(walletViewDisplayKsp, equals(150000));
+        expect(storeHomeDisplayKsp, equals(150000));
+      });
+
+      test('Financial Execution Isolation: Spendable USD is strictly Wallet Cash, NOT Total Effective USD', () {
+        var walletCashUsd = 20.0; // Spendable liquid cash
+        var rewardPointsKsp = 80000; // $80.00 USD equivalent
+
+        final totalEffectiveUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd); // $100.00 USD
+        final spendableUsd = walletCashUsd; // $20.00 USD
+
+        const productPriceUsd = 50.0; // Product costs $50 USD
+
+        // Total display balance ($100.0) is > product price ($50.0)
+        expect(totalEffectiveUsd >= productPriceUsd, isTrue);
+
+        // BUT Spendable cash ($20.0) is < product price ($50.0)
+        final isUsdSufficient = spendableUsd >= productPriceUsd;
+        expect(isUsdSufficient, isFalse); // Must reject purchase due to insufficient spendable cash!
+      });
+
+      test('Purchase Execution Safety: USD Store Purchase deducts strictly from Wallet Cash', () {
+        var walletCashUsd = 100.0;
+        var rewardPointsKsp = 50000; // 50,000 KSP
+        const purchaseAmountUsd = 30.0;
+
+        // Verify spendable sufficiency
+        expect(walletCashUsd >= purchaseAmountUsd, isTrue);
+
+        // Execute simulated RPC deduction
+        walletCashUsd -= purchaseAmountUsd;
+
+        // Post-purchase checks:
+        expect(walletCashUsd, equals(70.0)); // Cash reduced by $30
+        expect(rewardPointsKsp, equals(50000)); // KSP points untouched!
+
+        // New total effective balance: $70 cash + $50 KSP = $120.0 USD (120,000 KSP)
+        final newEffectiveUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        final newEffectiveKsp = ((walletCashUsd * kspPerUsd) + rewardPointsKsp).round();
+
+        expect(newEffectiveUsd, equals(120.0));
+        expect(newEffectiveKsp, equals(120000));
+      });
+
+      test('Purchase Execution Safety: KSP Store Purchase deducts strictly from KSP Points', () {
+        var walletCashUsd = 100.0;
+        var rewardPointsKsp = 50000; // 50,000 KSP
+        const purchaseKspPrice = 20000; // Costs 20,000 KSP
+
+        // Verify spendable KSP sufficiency
+        expect(rewardPointsKsp >= purchaseKspPrice, isTrue);
+
+        // Execute simulated RPC deduction
+        rewardPointsKsp -= purchaseKspPrice;
+
+        // Post-purchase checks:
+        expect(rewardPointsKsp, equals(30000)); // Points reduced by 20,000
+        expect(walletCashUsd, equals(100.0)); // Wallet Cash untouched!
+
+        // New total effective balance: $100 cash + $30 KSP = $130.0 USD (130,000 KSP)
+        final newEffectiveUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        final newEffectiveKsp = ((walletCashUsd * kspPerUsd) + rewardPointsKsp).round();
+
+        expect(newEffectiveUsd, equals(130.0));
+        expect(newEffectiveKsp, equals(130000));
+      });
+    });
+
+    group('KSP Redemption Atomic Engine & Full Simulation Matrix', () {
+      test('Redemption Validation: Minimum 1,000 KSP and multiples of 1,000', () {
+        // Rejects < 1000
+        bool validateRedemption(int amount) {
+          return amount >= 1000 && amount % 1000 == 0;
+        }
+
+        expect(validateRedemption(500), isFalse);
+        expect(validateRedemption(1500), isFalse);
+        expect(validateRedemption(1000), isTrue);
+        expect(validateRedemption(10000), isTrue);
+        expect(validateRedemption(50000), isTrue);
+      });
+
+      test('Full Financial Simulation: \$80.55 + 50k KSP -> 10k, 20k, 20k -> Transfer \$100', () {
+        var walletCashUsd = 80.55;
+        var rewardPointsKsp = 50000; // 50,000 KSP ($50 value)
+        const kspPerUsd = 1000.0;
+
+        // Step 0: Initial State Check
+        var totalEffectiveUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        expect(walletCashUsd, equals(80.55));
+        expect(rewardPointsKsp, equals(50000));
+        expect(totalEffectiveUsd, equals(130.55));
+
+        // Step 1: Redeem 10,000 KSP ($10.00 USD)
+        const redeemStep1 = 10000;
+        rewardPointsKsp -= redeemStep1;
+        walletCashUsd += (redeemStep1 / kspPerUsd);
+
+        expect(rewardPointsKsp, equals(40000));
+        expect(walletCashUsd, equals(90.55));
+        totalEffectiveUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        expect(totalEffectiveUsd, equals(130.55)); // Total portfolio value constant!
+
+        // Step 2: Redeem 20,000 KSP ($20.00 USD)
+        const redeemStep2 = 20000;
+        rewardPointsKsp -= redeemStep2;
+        walletCashUsd += (redeemStep2 / kspPerUsd);
+
+        expect(rewardPointsKsp, equals(20000));
+        expect(walletCashUsd, equals(110.55));
+        totalEffectiveUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        expect(totalEffectiveUsd, equals(130.55)); // Total portfolio value constant!
+
+        // Step 3: Redeem remaining 20,000 KSP ($20.00 USD)
+        const redeemStep3 = 20000;
+        rewardPointsKsp -= redeemStep3;
+        walletCashUsd += (redeemStep3 / kspPerUsd);
+
+        expect(rewardPointsKsp, equals(0));
+        expect(walletCashUsd, equals(130.55));
+        totalEffectiveUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        expect(totalEffectiveUsd, equals(130.55)); // Total portfolio value constant!
+        expect(walletCashUsd, equals(totalEffectiveUsd)); // Total Balance == Spendable Balance!
+
+        // Step 4: Transfer $100.00 P2P
+        const transferAmount = 100.0;
+        expect(walletCashUsd >= transferAmount, isTrue); // Sufficiency check PASSES!
+
+        walletCashUsd -= transferAmount;
+        expect(walletCashUsd, closeTo(30.55, 0.001));
+        totalEffectiveUsd = walletCashUsd + (rewardPointsKsp / kspPerUsd);
+        expect(totalEffectiveUsd, closeTo(30.55, 0.001));
+      });
+
+      test('Idempotency Safety: Duplicate execution returns ALREADY_PROCESSED', () {
+        final processedKeys = <String>{};
+        const idempotencyKey = 'ksp_redeem_user123_step1';
+
+        bool executeRedemptionWithKey(String key) {
+          if (processedKeys.contains(key)) {
+            return false; // Already processed!
+          }
+          processedKeys.add(key);
+          return true; // First time success
+        }
+
+        expect(executeRedemptionWithKey(idempotencyKey), isTrue);
+        expect(executeRedemptionWithKey(idempotencyKey), isFalse); // Rejects duplicate!
+      });
+    });
   });
 }

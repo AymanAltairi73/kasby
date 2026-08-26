@@ -21,6 +21,27 @@ class SessionService extends GetxService with WidgetsBindingObserver {
   bool _isLocked = false;
   bool get isLocked => _isLocked;
 
+  bool _isBiometricPromptActive = false;
+  bool get isBiometricPromptActive => _isBiometricPromptActive;
+
+  DateTime? _lastBiometricPromptEndedAt;
+  DateTime? get lastBiometricPromptEndedAt => _lastBiometricPromptEndedAt;
+
+  bool get isBiometricJustFinished {
+    if (_isBiometricPromptActive) return true;
+    if (_lastBiometricPromptEndedAt == null) return false;
+    return DateTime.now().difference(_lastBiometricPromptEndedAt!) < const Duration(seconds: 3);
+  }
+
+  void notifyBiometricPromptStarted() {
+    _isBiometricPromptActive = true;
+  }
+
+  void notifyBiometricPromptEnded() {
+    _isBiometricPromptActive = false;
+    _lastBiometricPromptEndedAt = DateTime.now();
+  }
+
   @override
   void onInit() {
     SafeGetx.debugTrace(
@@ -140,6 +161,7 @@ class SessionService extends GetxService with WidgetsBindingObserver {
   }
 
   Future<bool> authenticate() async {
+    notifyBiometricPromptStarted();
     try {
       final bool canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
       final bool isDeviceSupported = await _auth.isDeviceSupported();
@@ -163,6 +185,8 @@ class SessionService extends GetxService with WidgetsBindingObserver {
         stackTrace: stack,
       );
       return false;
+    } finally {
+      notifyBiometricPromptEnded();
     }
   }
 }

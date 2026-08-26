@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/features/store/domain/models/store_product_model.dart';
 import 'package:kasby/features/store/presentation/controllers/store_controller.dart';
@@ -93,7 +94,7 @@ class StoreHomeView extends StatelessWidget {
                           mainAxisSpacing: 10,
                         ),
                     itemCount: 6,
-                    itemBuilder: (_, __) =>
+                    itemBuilder: (_, _) =>
                         const StoreShimmer(height: 80, borderRadius: 16),
                   ),
                 ],
@@ -162,13 +163,20 @@ class StoreHomeView extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Text(
-                              '\$${controller.usdBalance.value.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: AppColors.primaryGold,
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Builder(
+                              builder: (_) {
+                                final effUsd = Get.isRegistered<CurrencyController>()
+                                    ? CurrencyController.to.totalEffectiveUsd
+                                    : controller.usdBalance.value;
+                                return Text(
+                                  '\$${effUsd.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: AppColors.primaryGold,
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -204,13 +212,20 @@ class StoreHomeView extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Text(
-                              '${controller.kspBalance.value.toStringAsFixed(0)} KSP',
-                              style: const TextStyle(
-                                color: Colors.amber,
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Builder(
+                              builder: (_) {
+                                final effKsp = Get.isRegistered<CurrencyController>()
+                                    ? CurrencyController.to.totalEffectiveKsp
+                                    : controller.kspBalance.value.round();
+                                return Text(
+                                  '$effKsp KSP',
+                                  style: const TextStyle(
+                                    color: Colors.amber,
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),

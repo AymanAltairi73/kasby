@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:kasby/core/services/session_service.dart';
 import 'package:kasby/core/services/sensitive_operation_guard.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
@@ -50,6 +51,9 @@ class TransactionAuthService extends GetxService {
   }
 
   Future<bool> _tryBiometric({required String purpose}) async {
+    if (Get.isRegistered<SessionService>()) {
+      SessionService.to.notifyBiometricPromptStarted();
+    }
     try {
       final canBio = await _localAuth.canCheckBiometrics;
       final supported = await _localAuth.isDeviceSupported();
@@ -92,6 +96,10 @@ class TransactionAuthService extends GetxService {
         stackTrace: stack,
       );
       return false;
+    } finally {
+      if (Get.isRegistered<SessionService>()) {
+        SessionService.to.notifyBiometricPromptEnded();
+      }
     }
   }
 

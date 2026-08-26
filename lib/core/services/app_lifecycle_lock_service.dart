@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/biometric_login_service.dart';
+import 'package:kasby/core/services/session_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -25,7 +26,7 @@ class AppLifecycleLockService extends GetxService with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused) {
       _pausedAt ??= DateTime.now();
     } else if (state == AppLifecycleState.resumed) {
       _handleAppResume();
@@ -42,6 +43,18 @@ class AppLifecycleLockService extends GetxService with WidgetsBindingObserver {
     if (!biometricEnabled) return;
 
     if (Get.currentRoute == Routes.lockScreen) return;
+
+    // Ignore resume triggered by native biometric authentication dialog dismissal
+    if (Get.isRegistered<SessionService>() &&
+        SessionService.to.isBiometricJustFinished) {
+      return;
+    }
+
+    // Ignore momentary background pauses (e.g. system popups/overlays under 2 seconds)
+    if (_pausedAt != null &&
+        DateTime.now().difference(_pausedAt!) < const Duration(seconds: 2)) {
+      return;
+    }
 
     // Route to lockScreen immediately on resume
     Get.toNamed(Routes.lockScreen);

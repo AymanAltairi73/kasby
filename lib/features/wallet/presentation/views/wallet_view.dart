@@ -6,10 +6,11 @@ import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
-// import 'package:kasby/core/services/currency_conversion_service.dart';
-// import 'package:kasby/core/services/ksp_balance_service.dart';
+import 'package:kasby/core/services/currency_conversion_service.dart';
+import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
+import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 // import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/controllers/shell_controller.dart';
@@ -315,8 +316,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                             ? '**********'
                                             : currencyController.formatToUSD(
                                                 currencyController
-                                                    .unifiedWalletBalance
-                                                    .value,
+                                                    .totalEffectiveUsd,
                                               ),
                                         style: const TextStyle(
                                           color: Colors.white,
@@ -327,6 +327,25 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Obx(() {
+                                    final isHidden =
+                                        currencyController.isBalanceHidden.value;
+                                    final kspVal =
+                                        currencyController.totalEffectiveKsp;
+                                    return Text(
+                                      isHidden
+                                          ? '≈ **** KSP'
+                                          : '≈ ${CurrencyConversionService.formatKsp(kspVal.toDouble())} KSP',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.8,
+                                        ),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    );
+                                  }),
                                   const SizedBox(height: 8),
                                   Obx(() {
                                     final pending =
@@ -463,8 +482,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                             () => Text(
                                               currencyController.formatAmount(
                                                 currencyController
-                                                    .unifiedWalletBalance
-                                                    .value,
+                                                    .totalEffectiveUsd,
                                               ),
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.w900,
@@ -737,8 +755,289 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        _buildKspRedeemButton(),
       ],
     ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  Widget _buildKspRedeemButton() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 4),
+      child: OutlinedButton.icon(
+        onPressed: () => _showKspRedeemBottomSheet(context),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          side: BorderSide(
+            color: AppColors.darkGold.withValues(alpha: 0.5),
+            width: 1.2,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        icon: Image.asset(
+          'assets/images/logo4.png',
+          width: 22,
+          height: 22,
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.stars_rounded,
+            color: AppColors.darkGold,
+            size: 20,
+          ),
+        ),
+        label: Text(
+          'تحويل نقاط KSP إلى عملة دولاري ',
+          style: TextStyle(
+            color: AppColors.darkGold,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showKspRedeemBottomSheet(BuildContext context) {
+    final kspService = Get.isRegistered<KspBalanceService>()
+        ? KspBalanceService.to
+        : null;
+    final rewardKsp = kspService?.rewardKsp.value ?? homeController.rewardKsp.value;
+
+    if (rewardKsp < 1000) {
+      Get.snackbar(
+        'تنبيه',
+        'الحد الأدنى للتحويل هو 1,000 نقطة KSP (\$1.00 USD). رصيدك الحالي: $rewardKsp KSP',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final maxRedeemable = (rewardKsp ~/ 1000) * 1000;
+    int selectedKsp = maxRedeemable;
+    bool isSubmitting = false;
+
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final usdCredit = selectedKsp / 1000.0;
+          final currentCash = currencyController.totalBalance.value;
+          final postCash = currentCash + usdCredit;
+          final postKsp = rewardKsp - selectedKsp;
+          final postTotalUsd = currencyController.totalEffectiveUsd;
+
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surface : AppColors.surfaceLight,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(
+                color: AppColors.darkGold.withValues(alpha: 0.2),
+              ),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(Icons.currency_exchange_rounded, color: AppColors.darkGold, size: 24),
+                      const SizedBox(width: 10),
+                      Text(
+                        'تحويل نقاط KSP إلى كاش',
+                        style: TextStyle(
+                          color: AppColors.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  KasbyCard(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'النقاط المراد تحويلها:',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              '$selectedKsp KSP',
+                              style: TextStyle(
+                                color: AppColors.darkGold,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'المقابل بالدولار:',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              '+${currencyController.formatToUSD(usdCredit)}',
+                              style: TextStyle(
+                                color: AppColors.softGreen,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'سعر التحويل / الرسوم:',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '1,000 KSP = \$1.00 USD (مجاناً 0\$)',
+                                textAlign: TextAlign.end,
+                                style: TextStyle(
+                                  color: AppColors.onSurface,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'الرصيد المتوقع بعد التحويل:',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  KasbyCard(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('رصيد الكاش المتاح للصرف:', style: TextStyle(fontSize: 12)),
+                            Text(currencyController.formatToUSD(postCash), style: TextStyle(color: AppColors.softGreen, fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('نقاط KSP المتبقية:', style: TextStyle(fontSize: 12)),
+                            Text('$postKsp KSP', style: TextStyle(color: AppColors.darkGold, fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('إجمالي قيمة المحفظة (Total):', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            Text(currencyController.formatToUSD(postTotalUsd), style: TextStyle(color: AppColors.darkGold, fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: KasbyButton(
+                      text: isSubmitting ? 'جاري التحويل...' : 'تأكيد تحويل $selectedKsp KSP',
+                      isLoading: isSubmitting,
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              setSheetState(() => isSubmitting = true);
+                              try {
+                                final service = Get.isRegistered<KspBalanceService>()
+                                    ? KspBalanceService.to
+                                    : null;
+                                if (service == null) return;
+                                final result = await service.redeemKspToCash(selectedKsp);
+                                Get.back(); // close bottom sheet
+                                if (result['success'] == true) {
+                                  Get.snackbar(
+                                    'تم التحويل بنجاح',
+                                    'تمت إضافة +${currencyController.formatToUSD(usdCredit)} إلى رصيدك النقدي.',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor: AppColors.softGreen,
+                                    colorText: Colors.white,
+                                    icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+                                  );
+                                } else {
+                                  Get.snackbar(
+                                    'فشل التحويل',
+                                    result['error']?.toString() ?? 'حدث خطأ غير متوقع',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                    backgroundColor: AppColors.error,
+                                    colorText: Colors.white,
+                                  );
+                                }
+                              } catch (e) {
+                                Get.back();
+                                Get.snackbar(
+                                  'خطأ',
+                                  e.toString(),
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: AppColors.error,
+                                  colorText: Colors.white,
+                                );
+                              }
+                            },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+      isScrollControlled: true,
+    );
   }
 
   Widget _buildSquareActionButton({

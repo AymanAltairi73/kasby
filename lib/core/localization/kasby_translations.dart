@@ -3134,7 +3134,7 @@ class KasbyTranslations extends Translations {
       'available_balance': 'الرصيد المتاح',
       'wallet_cash_balance': 'رصيد المحفظة النقدية',
       'ksp_reward_balance': 'رصيد مكافآت KSP',
-      'total_portfolio_balance': 'إجمالي المحفظة الشاملة',
+      'total_portfolio_balance': 'المتاح الرصيد ',
       'total_portfolio_hint': 'يشمل كاش المحفظة + قيمة مكافآت KSP',
       'profits': 'الأرباح',
       'points': 'رصيد KSP',

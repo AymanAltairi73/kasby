@@ -330,7 +330,7 @@ class CurrencyController extends GetxController {
     _pointsSubscription?.cancel();
     _pointsSubscription = SupabaseService.client
         .from('user_points')
-        .stream(primaryKey: ['id'])
+        .stream(primaryKey: ['user_id'])
         .eq('user_id', SupabaseService.userId!)
         .listen(
           (data) {

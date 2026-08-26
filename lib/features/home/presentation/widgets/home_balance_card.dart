@@ -8,7 +8,6 @@ import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/services/currency_conversion_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
-import 'package:kasby/features/home/presentation/widgets/ksp_rewards_explainer.dart';
 import 'package:kasby/features/home/presentation/widgets/wallet_growth_indicator.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -92,7 +91,7 @@ class HomeBalanceCard extends StatelessWidget {
                       Row(
                         children: [
                           Image.asset(
-                            'assets/images/ksp_coin.png',
+                            'assets/images/logo4.png',
                             width: 28,
                             height: 28,
                           ),
@@ -122,194 +121,88 @@ class HomeBalanceCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.account_balance_wallet_outlined,
-                                color: AppColors.textSecondary,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'total_portfolio_balance'.tr,
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                          Icon(
+                            Icons.account_balance_wallet_outlined,
+                            color: AppColors.textSecondary,
+                            size: 14,
                           ),
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 28,
-                              minHeight: 28,
+                          const SizedBox(width: 4),
+                          Text(
+                            'total_portfolio_balance'.tr,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
-                            icon: Obx(
-                              () => Icon(
-                                currencyController.isBalanceHidden.value
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                color: AppColors.textSecondary,
-                                size: 18,
-                              ),
-                            ),
-                            onPressed: () => currencyController.toggleBalancePrivacy(),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Obx(() {
-                        final balance = currencyController.unifiedWalletBalance.value;
-                        final effectiveKsp = currencyController.totalEffectiveKsp;
-                        final hidden = currencyController.isBalanceHidden.value;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                                  hidden
-                                      ? '••••••'
-                                      : currencyController.formatToUSD(balance),
-                                  style: Get.textTheme.displaySmall?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                    letterSpacing: -1,
-                                  ),
-                                )
-                                .animate(autoPlay: motion)
-                                .shimmer(
-                                  duration: KasbyMotion.duration(
-                                    context,
-                                    const Duration(seconds: 3),
-                                  ),
-                                ),
-                            if (!hidden) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                '≈ ${CurrencyConversionService.formatKsp(effectiveKsp.toDouble())} KSP',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Obx(() {
-                                final effective =
-                                    currencyController.totalEffectiveKsp;
-                                final reward = homeController.rewardKsp.value;
-                                final walletPart =
-                                    homeController.walletKsp.value;
-                                return Container(
-                                  key: kspSectionKey,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.darkGold.withValues(
-                                      alpha: 0.08,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: AppColors.darkGold.withValues(
-                                        alpha: 0.18,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Image.asset(
-                                            'assets/images/ksp_coin.png',
-                                            width: 18,
-                                            height: 18,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            '${'ksp_balance'.tr}: ${currencyController.formatKspAmount(effective.toDouble())}',
-                                            style: TextStyle(
-                                              color: AppColors.darkGold,
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        CurrencyConversionService.getUsdEquivalentText(
-                                          effective.toDouble(),
-                                        ),
-                                        style: TextStyle(
-                                          color: AppColors.textSecondary,
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'ksp_effective_breakdown'.trParams({
-                                          'wallet': walletPart.toString(),
-                                          'reward': reward.toString(),
-                                        }),
-                                        style: TextStyle(
-                                          color: AppColors.textSecondary,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'ksp_rewards_hint'.tr,
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(
-                                      minWidth: 32,
-                                      minHeight: 32,
-                                    ),
-                                    icon: Icon(
-                                      Icons.info_outline_rounded,
-                                      size: 16,
-                                      color: AppColors.darkGold,
-                                    ),
-                                    tooltip: 'ksp_explainer_title'.tr,
-                                    onPressed: () =>
-                                        KspRewardsExplainer.show(context),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        );
-                      }),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 28,
+                          minHeight: 28,
+                        ),
+                        icon: Obx(
+                          () => Icon(
+                            currencyController.isBalanceHidden.value
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: AppColors.textSecondary,
+                            size: 18,
+                          ),
+                        ),
+                        onPressed: () => currencyController.toggleBalancePrivacy(),
+                      ),
                     ],
                   ),
+                  const SizedBox(height: 4),
+                  Obx(() {
+                    final balance = currencyController.totalEffectiveUsd;
+                    final effectiveKsp = currencyController.totalEffectiveKsp;
+                    final hidden = currencyController.isBalanceHidden.value;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                              hidden
+                                  ? '••••••'
+                                  : currencyController.formatToUSD(balance),
+                              style: Get.textTheme.displaySmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface,
+                                letterSpacing: -1,
+                              ),
+                            )
+                            .animate(autoPlay: motion)
+                            .shimmer(
+                              duration: KasbyMotion.duration(
+                                context,
+                                const Duration(seconds: 3),
+                              ),
+                            ),
+                        if (!hidden) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '≈ ${CurrencyConversionService.formatKsp(effectiveKsp.toDouble())} KSP',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
+                    );
+                  }),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -447,7 +340,7 @@ class HomeBalanceCard extends StatelessWidget {
                               () =>
                                   Text(
                                         currencyController.formatAmount(
-                                          currencyController.unifiedWalletBalance.value,
+                                          currencyController.totalEffectiveUsd,
                                         ),
                                         style: TextStyle(
                                           fontWeight: FontWeight.w900,

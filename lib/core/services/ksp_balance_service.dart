@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 
 /// Unified KSP balance: Effective KSP = (Wallet USD × 1000) + Reward KSP.
 ///
@@ -140,11 +141,121 @@ class KspBalanceService extends GetxService {
     return response;
   }
 
+  /// Redeems [kspAmount] reward points into liquid USD wallet cash.
+  /// Enforces minimum 1,000 KSP and multiples of 1,000.
+  Future<Map<String, dynamic>> redeemKspToCash(
+    int kspAmount, {
+    String? idempotencyKey,
+  }) async {
+    SafeGetx.debugTrace(
+      className: 'KspBalanceService',
+      method: 'redeemKspToCash',
+      feature: 'Wallet',
+      status: 'INFO',
+      params: {
+        'kspAmount': kspAmount,
+        'idempotencyKey': idempotencyKey,
+        'rewardKsp': rewardKsp.value,
+        'walletUsd': walletUsd.value,
+      },
+    );
+
+    if (kspAmount < 1000 || kspAmount % 1000 != 0) {
+      SafeGetx.debugTrace(
+        className: 'KspBalanceService',
+        method: 'redeemKspToCash',
+        feature: 'Wallet',
+        status: 'ERROR',
+        params: {'reason': 'INVALID_KSP_AMOUNT_MUST_BE_MULTIPLE_OF_1000', 'kspAmount': kspAmount},
+      );
+      return {
+        'success': false,
+        'error': 'INVALID_KSP_AMOUNT_MUST_BE_MULTIPLE_OF_1000',
+      };
+    }
+
+    try {
+      final key = idempotencyKey ??
+          'ksp_redeem_${SupabaseService.userId}_${DateTime.now().millisecondsSinceEpoch}';
+
+      SafeGetx.debugTrace(
+        className: 'KspBalanceService',
+        method: 'redeemKspToCash',
+        feature: 'Wallet',
+        status: 'INFO',
+        message: 'Calling RPC fn_redeem_ksp_to_wallet',
+        params: {'p_ksp_amount': kspAmount, 'p_idempotency_key': key},
+      );
+
+      final raw = await SupabaseService.client.rpc(
+        'fn_redeem_ksp_to_wallet',
+        params: {
+          'p_ksp_amount': kspAmount,
+          'p_idempotency_key': key,
+        },
+      );
+
+      SafeGetx.debugTrace(
+        className: 'KspBalanceService',
+        method: 'redeemKspToCash',
+        feature: 'Wallet',
+        status: 'INFO',
+        message: 'RPC raw response received',
+        params: {'rawType': raw.runtimeType.toString(), 'raw': raw.toString()},
+      );
+
+      final response = raw is Map
+          ? Map<String, dynamic>.from(raw)
+          : <String, dynamic>{'success': false, 'error': 'Invalid response'};
+
+      if (response['success'] == true) {
+        SafeGetx.debugTrace(
+          className: 'KspBalanceService',
+          method: 'redeemKspToCash',
+          feature: 'Wallet',
+          status: 'SUCCESS',
+          message: 'Redemption successful, applying mutations',
+          params: response,
+        );
+        applyFromRpc(response);
+        await afterFinancialMutation(response);
+      } else {
+        SafeGetx.debugTrace(
+          className: 'KspBalanceService',
+          method: 'redeemKspToCash',
+          feature: 'Wallet',
+          status: 'ERROR',
+          message: 'RPC returned failure',
+          params: response,
+        );
+      }
+      return response;
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'KspBalanceService',
+        method: 'redeemKspToCash',
+        feature: 'Wallet',
+        status: 'ERROR',
+        message: 'Exception during RPC call',
+        error: e,
+        stackTrace: stack,
+      );
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   Future<void> afterFinancialMutation([
     Map<String, dynamic>? rpcPayload,
   ]) async {
     applyFromRpc(rpcPayload);
-    await Future.wait([refresh(), CurrencyController.to.fetchWalletBalances()]);
+    await Future.wait([
+      refresh(),
+      if (Get.isRegistered<CurrencyController>()) CurrencyController.to.fetchWalletBalances(),
+      if (Get.isRegistered<HomeController>()) HomeController.to.fetchRecentTransactions(),
+      if (Get.isRegistered<HomeController>()) HomeController.to.fetchNotifications(),
+      if (Get.isRegistered<HomeController>()) HomeController.to.fetchDashboard(),
+      if (Get.isRegistered<HomeController>()) HomeController.to.fetchProfile(),
+    ]);
   }
 
   void _reset() {

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/core/services/transaction_auth_service.dart';
 import 'package:kasby/features/store/domain/models/store_product_model.dart';
 import 'package:kasby/features/store/presentation/controllers/store_controller.dart';
 
@@ -33,14 +34,14 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Obx(() {
-        final usdAvailable = controller.usdBalance.value;
-        final kspAvailable = controller.kspBalance.value;
+        final spendableUsd = controller.spendableUsd;
+        final spendableKsp = controller.spendableKsp;
 
         final hasKsp =
             widget.product.kspPrice != null && widget.product.kspPrice! > 0;
-        final isUsdSufficient = usdAvailable >= widget.product.walletPrice;
+        final isUsdSufficient = spendableUsd >= widget.product.walletPrice;
         final isKspSufficient =
-            hasKsp && kspAvailable >= widget.product.kspPrice!;
+            hasKsp && spendableKsp >= widget.product.kspPrice!;
 
         final isCurrentSufficient = _selectedMethod == 'wallet'
             ? isUsdSufficient
@@ -121,7 +122,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                           ? CachedNetworkImage(
                               imageUrl: widget.product.imageUrl!,
                               fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => const Icon(
+                              errorWidget: (_, _, _) => const Icon(
                                 Icons.card_giftcard_rounded,
                                 color: AppColors.primaryGold,
                               ),
@@ -228,7 +229,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'المتوفر: \$${usdAvailable.toStringAsFixed(2)}',
+                            'المتوفر كاش: \$${spendableUsd.toStringAsFixed(2)}',
                             style: TextStyle(
                               color: isUsdSufficient
                                   ? Colors.green
@@ -300,7 +301,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'المتوفر: ${kspAvailable.toStringAsFixed(0)} KSP',
+                              'المتوفر نقاط: ${spendableKsp.toStringAsFixed(0)} KSP',
                               style: TextStyle(
                                 color: isKspSufficient
                                     ? Colors.green
@@ -373,6 +374,10 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                     (!isCurrentSufficient || controller.isPurchasing.value)
                     ? null
                     : () async {
+                        final confirmed = await TransactionAuthService.to
+                            .requireConfirmation(purpose: 'store_purchase');
+                        if (!confirmed) return;
+
                         final res = await controller.executePurchase(
                           product: widget.product,
                           paymentMethod: _selectedMethod,

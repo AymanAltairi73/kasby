@@ -79,9 +79,9 @@ class StoreController extends GetxController {
   Future<void> fetchUserBalances() async {
     try {
       if (Get.isRegistered<CurrencyController>()) {
-        usdBalance.value = CurrencyController.to.totalBalance.value;
-      }
-      if (Get.isRegistered<KspBalanceService>()) {
+        usdBalance.value = CurrencyController.to.totalEffectiveUsd;
+        kspBalance.value = CurrencyController.to.totalEffectiveKsp.toDouble();
+      } else if (Get.isRegistered<KspBalanceService>()) {
         kspBalance.value = KspBalanceService.to.effectiveKsp.value.toDouble();
       } else if (Get.isRegistered<HomeController>()) {
         kspBalance.value = HomeController.to.pointsBalance.toDouble();
@@ -89,6 +89,22 @@ class StoreController extends GetxController {
     } catch (e) {
       debugPrint('[STORE_CONTROLLER] Error fetching balances: $e');
     }
+  }
+
+  /// Liquid cash available in USD wallet for checkout validation
+  double get spendableUsd =>
+      Get.isRegistered<CurrencyController>()
+          ? CurrencyController.to.totalBalance.value
+          : 0.0;
+
+  /// Reward points available in KSP for checkout validation
+  double get spendableKsp {
+    if (Get.isRegistered<KspBalanceService>()) {
+      return KspBalanceService.to.rewardKsp.value.toDouble();
+    } else if (Get.isRegistered<HomeController>()) {
+      return HomeController.to.rewardKsp.value.toDouble();
+    }
+    return 0.0;
   }
 
   Future<void> fetchBanners() async {
@@ -209,8 +225,11 @@ class StoreController extends GetxController {
           fetchCategoryProducts(selectedCategory.value!.id);
         }
       } else {
-        final errorMsg =
-            result['message_ar'] as String? ?? 'purchase_failed'.tr;
+        final rawMsg = result['message_ar'] as String? ??
+            result['message'] as String? ??
+            result['error'] as String? ??
+            '';
+        final errorMsg = _mapPurchaseError(rawMsg);
         AppSnack.error('purchase_error_title'.tr, errorMsg);
       }
       return result;
@@ -220,5 +239,24 @@ class StoreController extends GetxController {
     } finally {
       isPurchasing.value = false;
     }
+  }
+
+  String _mapPurchaseError(String rawMsg) {
+    if (rawMsg.isEmpty) return 'purchase_failed'.tr;
+    final lower = rawMsg.toLowerCase();
+    if (lower.contains('outofstock') ||
+        lower.contains('out of stock') ||
+        lower.contains('no digital code') ||
+        lower.contains('no_code') ||
+        lower.contains('stock')) {
+      return 'نفد مخزون هذا المنتج حالياً، يرجى المحاولة لاحقاً.';
+    }
+    if (lower.contains('insufficient') || lower.contains('balance')) {
+      return 'رصيدك غير كافٍ لإتمام عملية الشراء.';
+    }
+    if (lower.contains('inactive') || lower.contains('not_found')) {
+      return 'هذا المنتج غير متوفر حالياً في المتجر.';
+    }
+    return rawMsg;
   }
 }
