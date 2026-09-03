@@ -3,6 +3,8 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 /// Unified KSP balance: Effective KSP = (Wallet USD × 1000) + Reward KSP.
 ///
@@ -12,6 +14,10 @@ class KspBalanceService extends GetxService {
   static KspBalanceService get to => Get.find<KspBalanceService>();
 
   static const double kspPerUsd = 1000;
+
+  static const String _redeemKeyPref = 'kasby_fin_idem_ksp_redeem';
+  static const String _redeemKeyAmountPref = 'kasby_fin_idem_ksp_redeem_amount';
+  static const _uuid = Uuid();
 
   final RxInt effectiveKsp = 0.obs;
   final RxInt rewardKsp = 0.obs;
@@ -174,10 +180,14 @@ class KspBalanceService extends GetxService {
       };
     }
 
-    try {
-      final key = idempotencyKey ??
-          'ksp_redeem_${SupabaseService.userId}_${DateTime.now().millisecondsSinceEpoch}';
+    // Resolve the idempotency key for this logical redemption operation.
+    // A persisted (key, amount) pair that matches the requested amount is
+    // reused across retries/timeouts/restarts so the DB can deduplicate.
+    // A different requested amount (or no persisted operation) is a NEW
+    // operation and must receive a NEW key. Cleared only on confirmed success.
+    final key = await _resolveRedemptionKey(idempotencyKey, kspAmount);
 
+    try {
       SafeGetx.debugTrace(
         className: 'KspBalanceService',
         method: 'redeemKspToCash',
@@ -217,6 +227,7 @@ class KspBalanceService extends GetxService {
           message: 'Redemption successful, applying mutations',
           params: response,
         );
+        await _clearPersistedRedemptionKey();
         applyFromRpc(response);
         await afterFinancialMutation(response);
       } else {
@@ -242,6 +253,41 @@ class KspBalanceService extends GetxService {
       );
       return {'success': false, 'error': e.toString()};
     }
+  }
+
+  /// Resolves the idempotency key for a logical redemption operation.
+  ///
+  /// Lifecycle:
+  ///   - No persisted operation  -> create + persist a NEW key.
+  ///   - Persisted key with SAME amount -> reuse it (retry/timeout/restart).
+  ///   - Persisted key with DIFFERENT amount -> NEW operation, NEW key.
+  ///   - Cleared only on confirmed success (see [redeemKspToCash]).
+  Future<String> _resolveRedemptionKey(
+    String? callerKey,
+    int kspAmount,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final persistedKey = prefs.getString(_redeemKeyPref);
+    final persistedAmount = prefs.getInt(_redeemKeyAmountPref);
+
+    if (persistedKey != null && persistedKey.isNotEmpty) {
+      if (persistedAmount == kspAmount) {
+        return persistedKey;
+      }
+    }
+
+    final newKey = callerKey ?? _uuid.v4();
+    await prefs.setString(_redeemKeyPref, newKey);
+    await prefs.setInt(_redeemKeyAmountPref, kspAmount);
+    return newKey;
+  }
+
+  /// Clears the persisted redemption operation only after confirmed success,
+  /// allowing the next intentional redemption to receive a fresh key.
+  Future<void> _clearPersistedRedemptionKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_redeemKeyPref);
+    await prefs.remove(_redeemKeyAmountPref);
   }
 
   Future<void> afterFinancialMutation([

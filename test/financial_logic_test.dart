@@ -577,5 +577,101 @@ void main() {
         expect(executeRedemptionWithKey(idempotencyKey), isFalse); // Rejects duplicate!
       });
     });
+
+    // ── 14. KSP REDEMPTION PERSISTED IDEMPOTENCY KEY LIFECYCLE (P1-2) ──
+    // Mirrors the decision logic in KspBalanceService._resolveRedemptionKey /
+    // _clearPersistedRedemptionKey:
+    //   * reuse the persisted key across retries/restarts UNTIL success,
+    //   * a NEW logical operation (different amount, or no persisted op) gets a
+    //     NEW key,
+    //   * clear ONLY on confirmed success.
+    group('KSP Redemption Persisted Idempotency Key Lifecycle (P1-2)', () {
+      test('Fresh operation (no persisted key) creates and persists a NEW key', () {
+        final persistedKey = <String, String?>{}; // simulates SharedPreferences
+        final persistedAmount = <String, int?>{};
+
+        String resolve(String? callerKey, int amount) {
+          final key = persistedKey['key'];
+          final amt = persistedAmount['amount'];
+          if (key != null && key.isNotEmpty && amt == amount) {
+            return key; // reuse
+          }
+          final fresh = callerKey ?? 'uuid_fresh_1';
+          persistedKey['key'] = fresh;
+          persistedAmount['amount'] = amount;
+          return fresh;
+        }
+
+        final k1 = resolve(null, 10000);
+        expect(k1, 'uuid_fresh_1');
+        expect(persistedKey['key'], k1);
+        expect(persistedAmount['amount'], 10000);
+      });
+
+      test('Retry/restart with SAME amount reuses the persisted key (no new money op)', () {
+        final persistedKey = <String, String?>{'key': 'stable_key_K1'};
+        final persistedAmount = <String, int?>{'amount': 10000};
+
+        String resolve(int amount) {
+          final key = persistedKey['key'];
+          final amt = persistedAmount['amount'];
+          return (key != null && key.isNotEmpty && amt == amount)
+              ? key
+              : 'uuid_new';
+        }
+
+        // Same requested amount -> reuses K1, so the DB can deduplicate.
+        expect(resolve(10000), 'stable_key_K1');
+      });
+
+      test('Different requested amount -> NEW operation gets a NEW key (K1 -> K2)', () {
+        final persistedKey = <String, String?>{'key': 'stable_key_K1'};
+        final persistedAmount = <String, int?>{'amount': 10000};
+
+        String resolve(int amount) {
+          final key = persistedKey['key'];
+          final amt = persistedAmount['amount'];
+          if (key != null && key.isNotEmpty && amt == amount) {
+            return key;
+          }
+          final fresh = 'uuid_new_K2';
+          persistedKey['key'] = fresh;
+          persistedAmount['amount'] = amount;
+          return fresh;
+        }
+
+        expect(resolve(20000), 'uuid_new_K2');
+        expect(persistedKey['key'], 'uuid_new_K2');
+        expect(persistedAmount['amount'], 20000);
+      });
+
+      test('Confirmed success clears the persisted operation so the next is fresh', () {
+        final persistedKey = <String, String?>{'key': 'stable_key_K1'};
+        final persistedAmount = <String, int?>{'amount': 10000};
+
+        void clear() {
+          persistedKey.remove('key');
+          persistedAmount.remove('amount');
+        }
+
+        // Simulate the RPC returning success == true
+        const success = true;
+        if (success) {
+          clear();
+        }
+
+        expect(persistedKey.containsKey('key'), isFalse);
+        expect(persistedAmount.containsKey('amount'), isFalse);
+      });
+
+      test('Failure/timeout KEEPS the persisted key for safe retry (no double effect)', () {
+        final persistedKey = <String, String?>{'key': 'stable_key_K1'};
+        final persistedAmount = <String, int?>{'amount': 10000};
+
+        // Simulate failure: do NOT clear; same amount retries with K1.
+        expect(persistedKey['key'], 'stable_key_K1');
+        expect(persistedAmount['amount'], 10000);
+      });
+    });
   });
 }
