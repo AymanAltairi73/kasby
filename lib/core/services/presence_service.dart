@@ -98,13 +98,15 @@ class PresenceService extends GetxService with WidgetsBindingObserver {
     // Listen to login status to start/stop presence
     _authSubscription = SupabaseService.auth.onAuthStateChange.listen((event) {
       if (event.session != null) {
-        _setupPresence();
+        if (_presenceChannel == null) {
+          _setupPresence();
+        }
       } else {
         _cleanupPresence();
       }
     });
 
-    if (SupabaseService.isLoggedIn) {
+    if (SupabaseService.isLoggedIn && _presenceChannel == null) {
       _setupPresence();
       _updateLastSeen();
     }

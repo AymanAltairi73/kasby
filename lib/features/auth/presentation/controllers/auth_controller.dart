@@ -395,6 +395,10 @@ class AuthController extends GetxController {
           _log('MFA Challenge Verified');
           break;
 
+        case AuthChangeEvent.initialSession:
+          _log('Initial session event handled');
+          break;
+
         default:
           _log('Unhandled auth event: ${event.name}');
       }

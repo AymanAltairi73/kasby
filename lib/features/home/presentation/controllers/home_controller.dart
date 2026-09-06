@@ -758,8 +758,22 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     }
   }
 
-  /// Fetch all data in parallel.
+  Future<void>? _fetchAllInFlight;
+
+  /// Fetch all data in parallel. Deduplicated if already in flight.
   Future<void> fetchAll() async {
+    if (_fetchAllInFlight != null) {
+      return _fetchAllInFlight;
+    }
+    _fetchAllInFlight = _executeFetchAll();
+    try {
+      await _fetchAllInFlight;
+    } finally {
+      _fetchAllInFlight = null;
+    }
+  }
+
+  Future<void> _executeFetchAll() async {
     final stopwatch = Stopwatch()..start();
     await Future.wait([
       fetchInvestmentPlans(),
