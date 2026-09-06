@@ -275,7 +275,9 @@ class _InvestmentPlansListState extends State<_InvestmentPlansList> {
                     color: Colors.transparent,
                     child: InvestmentPlanCard(
                       id: plan.id,
-                      title: plan.nameAr,
+                      title: Get.locale?.languageCode == 'ar'
+                          ? plan.nameAr
+                          : (plan.nameEn ?? plan.nameAr),
                       profit: KasbyNumberFormatter.formatProfitPercentage(
                         plan.profitPercentage,
                       ),
@@ -837,7 +839,10 @@ class _InvestmentsListState extends State<_InvestmentsList> {
       totalReturns += profit;
       cumulative += inv.amount;
       trend.add(cumulative);
-      final planName = inv.investment?.nameAr ?? inv.investment?.nameEn ?? '\$${inv.amount.toStringAsFixed(0)}';
+      final planName = (Get.locale?.languageCode == 'ar'
+          ? (inv.investment?.nameAr ?? inv.investment?.nameEn)
+          : (inv.investment?.nameEn ?? inv.investment?.nameAr))
+          ?? '\$${inv.amount.toStringAsFixed(0)}';
       segments.add(
         AllocationSegment(
           label: planName,

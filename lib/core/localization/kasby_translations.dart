@@ -2400,6 +2400,136 @@ class KasbyTranslations extends Translations {
       'no_notifications': 'No notifications yet',
       'no_notifications_desc':
           'We\'ll notify you when important events or updates occur.',
+
+      // ─── NOTIFICATION KEYS ───
+      'notif_daily_profit_received_title': 'Daily Profits Received ✅',
+      'notif_daily_profit_received_msg':
+          'A profit of @amount from (@plan) has been credited successfully.',
+      'notif_new_investment_profit_title': 'New Investment Profit 💰',
+      'notif_new_investment_profit_msg':
+          'A profit of @amount from @plan has been added',
+      'notif_daily_profits_title': 'Daily Profit 📈',
+      'notif_daily_profits_wallet_msg':
+          '@amount profit has been added to your wallet.',
+      'notif_admin_deposit_pending_title': 'New Deposit Pending Review 📥',
+      'notif_admin_deposit_pending_msg':
+          '@user submitted a deposit request for @amount',
+      'notif_admin_withdrawal_pending_title':
+          'New Withdrawal Pending Review 📤',
+      'notif_admin_withdrawal_pending_msg':
+          '@user submitted a withdrawal request for @amount',
+      'notif_loan_approved_title': '💰 Congratulations!',
+      'notif_loan_approved_msg':
+          'Your loan request has been approved. Funds have been credited to your wallet.',
+      'notif_loan_requested_title': 'Loan Request Submitted 📝',
+      'notif_loan_requested_msg':
+          'Your loan request of @amount has been submitted and is currently under review.',
+      'notif_loan_repayment_success_title': 'Repayment Successful',
+      'notif_loan_repayment_success_msg':
+          '@paid has been deducted for loan repayment. Remaining: @remaining',
+      'notif_kyc_verified_title': '✅ Account Verified',
+      'notif_kyc_verified_msg':
+          'Your account is verified! You can now enjoy all platform features.',
+      'notif_admin_kyc_pending_title': 'New KYC Verification Request 📋',
+      'notif_admin_kyc_pending_msg':
+          'A new KYC request is awaiting admin review.',
+      'notif_friend_request_title': 'New Friend Request',
+      'notif_friend_request_msg': '@user sent you a friend request.',
+      'notif_balance_adjustment_title': '⚖️ Balance Adjustment',
+      'notif_balance_adjustment_msg':
+          'The system updated your wallet balance by @amount. Check transactions for details.',
+      'notif_account_blocked_title': '⚠️ Account Notice',
+      'notif_account_blocked_msg':
+          'Your account has been temporarily blocked. Please contact support.',
+      'notif_account_unblocked_title': '✅ Account Activated',
+      'notif_account_unblocked_msg':
+          'Your account has been reactivated! You can now log in and use the app.',
+      'notif_account_frozen_title': 'Account Frozen ⛔',
+      'notif_account_frozen_msg':
+          'Your account has been frozen. Please contact customer support.',
+      'notif_account_deleted_title': 'Account Deleted',
+      'notif_account_deleted_msg':
+          'Your account was deleted by administration. Contact support if you believe this was an error.',
+      'notif_maintenance_title': '🏗️ Scheduled Maintenance',
+      'notif_maintenance_msg':
+          'The system is undergoing maintenance to ensure best service. We will be back soon.',
+      'notif_ksp_redeem_success_title': 'KSP Points Redeemed Successfully',
+      'notif_ksp_redeem_success_msg':
+          'Converted @points KSP and credited @amount to your cash balance.',
+      'notif_investment_matured_title': 'Investment Matured 🎉',
+      'notif_investment_matured_msg':
+          'Your investment in @plan has matured and principal of @amount has been returned.',
+
+      // ─── TRANSACTION DESCRIPTIONS ───
+      'txn_profit_daily_from_plan': 'Daily profit from @plan',
+      'txn_profit_daily_plan_alt': 'Daily profits — @plan',
+      'txn_profit_monthly': 'Monthly profits',
+      'txn_invest_in_plan': 'Investment in @plan',
+      'txn_invest_in_plan_prefixed': 'Investment in @plan plan',
+      'txn_invest_real_estate_legacy': 'Real estate investment',
+      'txn_admin_credit': 'Balance credit by admin',
+      'txn_admin_debit': 'Balance debit by admin',
+      'txn_loan_disbursement_months': 'Loan disbursement - @months months',
+      'txn_loan_repayment_full': 'Full loan repayment',
+      'txn_loan_repayment_partial': 'Partial loan repayment',
+      'txn_deposit_agent': 'Deposit via agent: @agent',
+      'txn_deposit_initial_test': 'Initial test deposit',
+      'txn_deposit_agent_generic': 'Deposit via agent',
+      'txn_withdrawal_request': 'Withdrawal request',
+      'txn_withdrawal_request_agent': 'Agent withdrawal request',
+      'txn_withdrawal_agent': 'Withdrawal via agent: @agent',
+      'txn_transfer_to_user': 'Transfer to @user',
+      'txn_transfer_out_generic': 'Balance transfer',
+      'txn_transfer_from_user': 'Transfer from @user',
+      'txn_transfer_in_generic': 'Transfer from user',
+      'txn_transfer_in_friend': 'Transfer received from a friend',
+      'txn_reward_referral_invest':
+          'Referral commission from investment of @user',
+      'txn_reward_deposit_fee': 'Deposit commission — @amount',
+      'txn_reward_withdrawal_fee': 'Withdrawal commission — @amount',
+      'txn_ksp_redemption':
+          'Converted @points KSP to cash balance (@amount)',
+      'txn_marketplace_purchase': 'Kasby Store purchase: @product',
+      'txn_fee_vip_subscription': 'VIP Subscription Fee',
+      'txn_investment_return': 'Investment matured — principal returned',
+
+      // ─── STANDARDIZED ADMIN REASONS ───
+      'reason_kyc_mismatch':
+          'Information does not match submitted documents',
+      'reason_kyc_unclear_doc':
+          'Document photo is blurry or unreadable',
+      'reason_loan_insufficient_earnings':
+          'Insufficient earnings history to qualify for a loan',
+      'reason_loan_ineligible':
+          'Account is not eligible for a loan at this time',
+      'reason_account_policy_violation':
+          'Violation of platform terms of service',
+
+      // ─── ERROR CODES MAPPING ───
+      'error_not_authenticated':
+          'You must be logged in to perform this action.',
+      'error_invalid_amount': 'The specified amount is invalid.',
+      'error_receiver_not_found': 'Recipient referral code was not found.',
+      'error_self_transfer': 'You cannot transfer funds to your own account.',
+      'error_wallet_frozen':
+          'Your wallet is temporarily frozen. Please contact support.',
+      'error_insufficient_balance':
+          'Your available cash balance is insufficient.',
+      'error_min_withdrawal_error':
+          'The requested amount is below the minimum withdrawal limit.',
+      'error_plan_not_found':
+          'The requested investment plan is not available.',
+      'error_below_min_investment':
+          'The amount is below the minimum investment limit.',
+      'error_above_max_investment':
+          'The amount exceeds the maximum investment limit.',
+      'error_system_frozen':
+          'Financial operations are temporarily suspended.',
+      'error_system_paused':
+          'This operation is currently paused by administration.',
+      'insufficient_balance_detail':
+          'Available cash balance is insufficient for the requested amount',
+      'including_fees': 'including fees',
     },
     'ar_SA': {
       'new_profits': 'أرباح جديدة',
@@ -4702,6 +4832,122 @@ class KasbyTranslations extends Translations {
       'source_breakdown': 'توزيع الأرباح حسب المصدر',
       'earnings_trend': 'تطور الأرباح',
       'earnings_timeline': 'سجل الأرباح',
+
+      // ─── NOTIFICATION KEYS ───
+      'notif_daily_profit_received_title': 'أرباحك اليومية وصلت ✅',
+      'notif_daily_profit_received_msg':
+          'تم إضافة ربح بقيمة @amount من استثمار (@plan) بنجاح.',
+      'notif_new_investment_profit_title': 'أرباح استثمار جديدة 💰',
+      'notif_new_investment_profit_msg':
+          'تمت إضافة ربح بقيمة @amount من @plan',
+      'notif_daily_profits_title': 'أرباح يومية 📈',
+      'notif_daily_profits_wallet_msg':
+          'تمت إضافة أرباح بقيمة @amount إلى محفظتك.',
+      'notif_admin_deposit_pending_title': 'طلب إيداع جديد بانتظار المراجعة 📥',
+      'notif_admin_deposit_pending_msg':
+          'قام @user بتقديم طلب إيداع بمبلغ @amount',
+      'notif_admin_withdrawal_pending_title':
+          'طلب سحب جديد بانتظار المراجعة 📤',
+      'notif_admin_withdrawal_pending_msg':
+          'قام @user بتقديم طلب سحب بمبلغ @amount',
+      'notif_loan_approved_title': '💰 مبروك!',
+      'notif_loan_approved_msg':
+          'تمت الموافقة على طلب السلفة الخاص بك. تم إضافة المبلغ إلى محفظتك.',
+      'notif_loan_requested_title': 'طلب سلفة قيد المراجعة 📝',
+      'notif_loan_requested_msg':
+          'تم استلام طلب السلفة بقيمة @amount وهو قيد المراجعة حالياً.',
+      'notif_loan_repayment_success_title': 'سداد السلفة بنجاح',
+      'notif_loan_repayment_success_msg':
+          'تم خصم @paid لسداد السلفة. المبلغ المتبقي: @remaining',
+      'notif_kyc_verified_title': '✅ تم توثيق الحساب',
+      'notif_kyc_verified_msg':
+          'تم توثيق حسابك بنجاح! يمكنك الآن الاستفادة من جميع الميزات.',
+      'notif_admin_kyc_pending_title': 'طلب توثيق جديد 📋',
+      'notif_admin_kyc_pending_msg':
+          'طلب توثيق جديد بانتظار مراجعة الإدارة.',
+      'notif_friend_request_title': 'طلب صداقة جديد',
+      'notif_friend_request_msg': 'أرسل لك @user طلب صداقة.',
+      'notif_balance_adjustment_title': '⚖️ تعديل الرصيد',
+      'notif_balance_adjustment_msg':
+          'قام النظام بتعديل رصيد محفظتك بمقدار @amount. راجع المعاملات للتفاصيل.',
+      'notif_account_blocked_title': '⚠️ تنبيه حساب',
+      'notif_account_blocked_msg':
+          'تم إيقاف حسابك مؤقتاً. يرجى التواصل مع الدعم.',
+      'notif_account_unblocked_title': '✅ تم تنشيط الحساب',
+      'notif_account_unblocked_msg':
+          'تمت إعادة تنشيط حسابك! يمكنك الآن تسجيل الدخول واستخدام التطبيق.',
+      'notif_account_frozen_title': 'تم تجميد الحساب ⛔',
+      'notif_account_frozen_msg':
+          'تم تجميد حسابك. يرجى مراجعة خدمة العملاء.',
+      'notif_account_deleted_title': 'تم حذف الحساب',
+      'notif_account_deleted_msg':
+          'تم حذف حسابك من قبل الإدارة. اتصل بالدعم إذا كنت تعتقد أن هذا خطأ.',
+      'notif_maintenance_title': '🏗️ صيانة مجدولة',
+      'notif_maintenance_msg':
+          'النظام يخضع للصيانة لتقديم أفضل خدمة. سنعود قريباً.',
+      'notif_ksp_redeem_success_title': 'تم استبدال نقاط KSP بنجاح',
+      'notif_ksp_redeem_success_msg':
+          'تم تحويل @points نقطة وإيداع @amount في رصيدك النقدي.',
+      'notif_investment_matured_title': 'استحقاق الاستثمار 🎉',
+      'notif_investment_matured_msg':
+          'اكتمل استثمارك في @plan وتمت استعادة رأس المال بقيمة @amount.',
+
+      // ─── TRANSACTION DESCRIPTIONS ───
+      'txn_profit_daily_from_plan': 'ربح يومي من @plan',
+      'txn_profit_daily_plan_alt': 'أرباح يومية — @plan',
+      'txn_profit_monthly': 'أرباح شهرية',
+      'txn_invest_in_plan': 'استثمار في @plan',
+      'txn_invest_in_plan_prefixed': 'استثمار في باقة @plan',
+      'txn_invest_real_estate_legacy': 'استثمار في العقارات',
+      'txn_admin_credit': 'إضافة رصيد من الإدارة',
+      'txn_admin_debit': 'خصم رصيد من الإدارة',
+      'txn_loan_disbursement_months': 'صرف سلفة مالية - @months أشهر',
+      'txn_loan_repayment_full': 'سداد السلفة كاملة',
+      'txn_loan_repayment_partial': 'سداد جزئي للسلفة',
+      'txn_deposit_agent': 'إيداع عبر الوكيل: @agent',
+      'txn_deposit_initial_test': 'إيداع تجريبي مبدئي',
+      'txn_deposit_agent_generic': 'إيداع عبر وكيل',
+      'txn_withdrawal_request': 'طلب سحب',
+      'txn_withdrawal_request_agent': 'طلب سحب عبر وكيل',
+      'txn_withdrawal_agent': 'سحب عبر الوكيل: @agent',
+      'txn_transfer_to_user': 'تحويل إلى @user',
+      'txn_transfer_out_generic': 'تحويل رصيد',
+      'txn_transfer_from_user': 'تحويل من @user',
+      'txn_transfer_in_generic': 'تحويل من مستخدم',
+      'txn_transfer_in_friend': 'تحويل مستلم من صديق',
+      'txn_reward_referral_invest':
+          'عمولة إحالة من استثمار @user',
+      'txn_reward_deposit_fee': 'عمولة إيداع — @amount',
+      'txn_reward_withdrawal_fee': 'عمولة سحب — @amount',
+      'txn_ksp_redemption':
+          'استبدال @points نقطة KSP بالرصيد النقدي (@amount)',
+      'txn_marketplace_purchase': 'شراء من متجر كسب: @product',
+      'txn_fee_vip_subscription': 'رسوم اشتراك VIP',
+      'txn_investment_return': 'استحقاق الاستثمار - استعادة رأس المال',
+
+      // ─── STANDARDIZED ADMIN REASONS ───
+      'reason_kyc_mismatch': 'البيانات غير مطابقة للمستندات المرفقة',
+      'reason_kyc_unclear_doc': 'صورة الوثيقة غير واضحة أو غير مقروءة',
+      'reason_loan_insufficient_earnings': 'سجل الأرباح غير كافٍ للحصول على السلفة',
+      'reason_loan_ineligible': 'الحساب غير مؤهل للحصول على سلفة حالياً',
+      'reason_account_policy_violation': 'مخالفة شروط وسياسات استخدام المنصة',
+
+      // ─── ERROR CODES MAPPING ───
+      'error_not_authenticated': 'يجب تسجيل الدخول لإتمام هذه العملية.',
+      'error_invalid_amount': 'المبلغ المحدد غير صالح.',
+      'error_receiver_not_found': 'رمز إحالة المستلم غير موجود.',
+      'error_self_transfer': 'لا يمكنك تحويل الأموال إلى حسابك الشخصي.',
+      'error_wallet_frozen': 'محفظتك مجمدة مؤقتاً. يرجى التواصل مع الدعم.',
+      'error_insufficient_balance': 'رصيدك النقدي المتاح غير كافٍ.',
+      'error_min_withdrawal_error': 'المبلغ المطلوب أقل من الحد الأدنى للسحب.',
+      'error_plan_not_found': 'خطة الاستثمار المطلوبة غير متوفرة.',
+      'error_below_min_investment': 'المبلغ أقل من الحد الأدنى للاستثمار.',
+      'error_above_max_investment': 'المبلغ يتجاوز الحد الأقصى للاستثمار.',
+      'error_system_frozen': 'العمليات المالية معلقة مؤقتاً.',
+      'error_system_paused': 'هذه العملية متوقفة حالياً بقرار إداري.',
+      'insufficient_balance_detail':
+          'رصيد الكاش المتاح غير كافٍ لتغطية المبلغ المطلوب',
+      'including_fees': 'شاملة رسوم',
     },
   };
 }

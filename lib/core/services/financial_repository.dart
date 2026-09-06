@@ -39,38 +39,57 @@ class FinancialRepository {
     Map<String, dynamic> response,
     String fallback,
   ) {
+    // 1. Check machine-readable 'error' key first — maps to GetX translation keys
+    final error = response['error']?.toString();
+    if (error != null && error.isNotEmpty && error != 'null') {
+      // Map known error codes to localized keys
+      final errorKey = 'error_$error';
+      final translated = errorKey.tr;
+      // If GetX resolved it (not same as key), use it
+      if (translated != errorKey) return translated;
+
+      // Legacy pattern matching
+      if (error.contains('PERMISSION_DENIED')) {
+        return 'financial_permission_denied'.tr;
+      }
+      if (error.contains('SYSTEM_FROZEN')) return 'system_frozen'.tr;
+      if (error.contains('insufficient_balance') ||
+          error.contains('Insufficient balance')) {
+        return 'insufficient_balance'.tr;
+      }
+      if (error.contains('Insufficient points')) {
+        return 'insufficient_points'.tr;
+      }
+      if (error.contains('receiver_not_found') ||
+          error.contains('Receiver not found')) {
+        return 'receiver_not_found'.tr;
+      }
+      if (error.contains('pending withdrawal')) {
+        return 'pending_withdrawal_exists'.tr;
+      }
+    }
+
+    // 2. Structured balance detail — localized
     if (response['details'] != null && response['details'] is Map) {
       final details = response['details'] as Map;
       final available = (details['available_balance'] as num?)?.toDouble();
       final totalReq = (details['total_required'] as num?)?.toDouble();
       final fee = (details['fee'] as num?)?.toDouble() ?? 0;
       if (available != null && totalReq != null) {
-        final feeStr = fee > 0 ? ' (شاملة رسوم \$${fee.toStringAsFixed(2)})' : '';
-        return 'رصيد الكاش المتاح (\$${available.toStringAsFixed(2)}) غير كافٍ لتغطية المبلغ المطلوب (\$${totalReq.toStringAsFixed(2)})$feeStr';
+        final feeStr = fee > 0
+            ? ' (${'including_fees'.tr} \$${fee.toStringAsFixed(2)})'
+            : '';
+        return '${'insufficient_balance_detail'.tr} (\$${available.toStringAsFixed(2)}) / (\$${totalReq.toStringAsFixed(2)})$feeStr';
       }
     }
 
+    // 3. Fallback to raw message (may be Arabic from backend)
     final message = response['message']?.toString();
     if (message != null && message.isNotEmpty && message != 'null') {
       return message;
     }
 
-    final error =
-        response['error']?.toString() ??
-        fallback;
-    if (error.contains('PERMISSION_DENIED')) {
-      return 'financial_permission_denied'.tr;
-    }
-    if (error.contains('SYSTEM_FROZEN')) return 'system_frozen'.tr;
-    if (error.contains('insufficient_balance') || error.contains('Insufficient balance')) {
-      return 'insufficient_balance'.tr;
-    }
-    if (error.contains('Insufficient points')) return 'insufficient_points'.tr;
-    if (error.contains('receiver_not_found') || error.contains('Receiver not found')) return 'receiver_not_found'.tr;
-    if (error.contains('pending withdrawal')) {
-      return 'pending_withdrawal_exists'.tr;
-    }
-    return error;
+    return fallback;
   }
 
   static Future<Map<String, dynamic>> createWithdrawal({

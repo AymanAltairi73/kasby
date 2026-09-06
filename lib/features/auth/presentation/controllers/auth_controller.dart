@@ -26,6 +26,7 @@ import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/security_activity_service.dart';
 import 'package:kasby/core/services/fcm_service.dart';
+import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/routes/app_routes.dart';
 
 enum AuthStatus { initial, authenticated, unauthenticated }
@@ -309,6 +310,7 @@ class AuthController extends GetxController {
           if (Get.isRegistered<FCMService>()) {
             unawaited(FCMService.to.syncCurrentToken());
           }
+          unawaited(LocaleHelper.syncLanguageToServer());
 
           unawaited(CrashReportingService.log(CrashBreadcrumb.loginCompleted));
           if (Get.isRegistered<HomeController>()) {
