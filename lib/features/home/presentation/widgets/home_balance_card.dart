@@ -89,6 +89,7 @@ class HomeBalanceCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Image.asset(
                             'assets/images/logo4.png',
@@ -107,17 +108,20 @@ class HomeBalanceCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Obx(() {
-                        final total = currencyController.totalBalance.value;
-                        final profit = currencyController.profitBalance.value;
-                        final invested = currencyController.investedBalance.value;
-                        return WalletGrowthIndicator(
-                          totalBalance: total,
-                          profitBalance: profit,
-                          investedBalance: invested,
-                          compact: true,
-                        );
-                      }),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Obx(() {
+                          final total = currencyController.totalBalance.value;
+                          final profit = currencyController.profitBalance.value;
+                          final invested = currencyController.investedBalance.value;
+                          return WalletGrowthIndicator(
+                            totalBalance: total,
+                            profitBalance: profit,
+                            investedBalance: invested,
+                            compact: true,
+                          );
+                        }),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),

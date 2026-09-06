@@ -57,13 +57,17 @@ class WalletGrowthIndicator extends StatelessWidget {
               color: isDark ? Colors.white60 : Colors.black54,
             ),
             const SizedBox(width: 5),
-            Text(
-              'no_growth_data'.tr,
-              style: TextStyle(
-                fontFamily: 'IBMPlexSansArabic',
-                fontSize: compact ? 10 : 11,
-                fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white60 : Colors.black54,
+            Flexible(
+              child: Text(
+                compact ? 'no_growth_data_compact'.tr : 'no_growth_data'.tr,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  fontFamily: 'IBMPlexSansArabic',
+                  fontSize: compact ? 10 : 11,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
               ),
             ),
           ],
@@ -112,24 +116,32 @@ class WalletGrowthIndicator extends StatelessWidget {
                 color: badgeColor,
               ),
               const SizedBox(width: 4),
-              Text(
-                formattedValue,
-                style: TextStyle(
-                  fontFamily: 'IBMPlexSansArabic',
-                  fontSize: compact ? 11 : 12,
-                  fontWeight: FontWeight.w700,
-                  color: badgeColor,
+              Flexible(
+                child: Text(
+                  formattedValue,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontFamily: 'IBMPlexSansArabic',
+                    fontSize: compact ? 11 : 12,
+                    fontWeight: FontWeight.w700,
+                    color: badgeColor,
+                  ),
                 ),
               ),
               if (!compact) ...[
                 const SizedBox(width: 4),
-                Text(
-                  'wallet_growth'.tr,
-                  style: TextStyle(
-                    fontFamily: 'IBMPlexSansArabic',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: badgeColor.withValues(alpha: 0.8),
+                Flexible(
+                  child: Text(
+                    'wallet_growth'.tr,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontFamily: 'IBMPlexSansArabic',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: badgeColor.withValues(alpha: 0.8),
+                    ),
                   ),
                 ),
               ],
