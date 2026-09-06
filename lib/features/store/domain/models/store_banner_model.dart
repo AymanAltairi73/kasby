@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class StoreBannerModel {
   final String id;
   final String? titleAr;
@@ -33,5 +35,13 @@ class StoreBannerModel {
       isActive: json['is_active'] as bool? ?? true,
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
     );
+  }
+
+  String? get title {
+    final lang = Get.locale?.languageCode ?? 'ar';
+    if (lang == 'en' && (titleEn?.trim().isNotEmpty ?? false)) {
+      return titleEn;
+    }
+    return (titleAr?.trim().isNotEmpty ?? false) ? titleAr : titleEn;
   }
 }

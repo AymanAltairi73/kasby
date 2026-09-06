@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class StoreOrderModel {
   final String id;
   final String orderNumber;
@@ -47,5 +49,13 @@ class StoreOrderModel {
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
     );
+  }
+
+  String get productName {
+    final lang = Get.locale?.languageCode ?? 'ar';
+    if (lang == 'en' && productNameEn.trim().isNotEmpty) {
+      return productNameEn;
+    }
+    return productNameAr.isNotEmpty ? productNameAr : productNameEn;
   }
 }

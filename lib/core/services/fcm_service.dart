@@ -12,6 +12,7 @@ import 'notification_service.dart';
 import 'notification_preferences_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kasby/core/localization/content_localization_service.dart';
+import 'package:kasby/core/localization/kasby_l10n.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -374,18 +375,41 @@ class FCMService extends GetxService {
           );
       if (!allowed) return;
 
-      final title = ContentLocalizationService.resolve(
-        message.data['title_key'] as String? ?? notification.title,
-      );
-      final body = ContentLocalizationService.resolve(
-        message.data['message_key'] as String? ?? notification.body,
-      );
-      final resolvedTitle = title.isNotEmpty
-          ? title
-          : ContentLocalizationService.resolve(notification.title);
-      final resolvedBody = body.isNotEmpty
-          ? body
-          : ContentLocalizationService.resolve(notification.body);
+      final titleKey = message.data['title_key'] as String?;
+      final messageKey = message.data['message_key'] as String?;
+      Map<String, String>? params;
+      if (message.data['parameters'] != null) {
+        try {
+          final pRaw = message.data['parameters'];
+          final pMap = pRaw is Map
+              ? pRaw
+              : (pRaw is String ? jsonDecode(pRaw as String) : null);
+          if (pMap is Map) {
+            params = pMap.map(
+              (k, v) => MapEntry(k.toString(), v?.toString() ?? ''),
+            );
+          }
+        } catch (_) {}
+      }
+
+      String resolvedTitle = '';
+      if (titleKey != null &&
+          titleKey.isNotEmpty &&
+          KasbyL10n.hasKey(titleKey)) {
+        resolvedTitle = ContentLocalizationService.tr(titleKey, params: params);
+      } else {
+        resolvedTitle = ContentLocalizationService.resolve(notification.title);
+      }
+
+      String resolvedBody = '';
+      if (messageKey != null &&
+          messageKey.isNotEmpty &&
+          KasbyL10n.hasKey(messageKey)) {
+        resolvedBody =
+            ContentLocalizationService.tr(messageKey, params: params);
+      } else {
+        resolvedBody = ContentLocalizationService.resolve(notification.body);
+      }
 
       final channelName = await LocaleHelper.translate('fcm_channel_name');
       final channelDescription = await LocaleHelper.translate(

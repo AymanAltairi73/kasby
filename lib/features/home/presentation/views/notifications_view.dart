@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/models/notification_model.dart';
@@ -250,7 +251,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                                           child: Text(
                                             notification.localizedTitle,
                                             style: TextStyle(
-                                              fontSize: 15,
+                                              fontSize: KasbyTypography.sp(ar: 15.0, en: 14.0, context: context),
                                               fontWeight: isRead
                                                   ? FontWeight.w600
                                                   : FontWeight.bold,
@@ -270,7 +271,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                                         color: isDark
                                             ? Colors.white.withValues(alpha: 0.75)
                                             : AppColors.textSecondaryLight,
-                                        fontSize: 13,
+                                        fontSize: KasbyTypography.sp(ar: 13.0, en: 12.0, context: context),
                                         height: 1.4,
                                       ),
                                     ),
@@ -294,7 +295,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                                                 DateHelper.relative(notification.sentAt),
                                                 style: TextStyle(
                                                   color: AppColors.textSecondary,
-                                                  fontSize: 11,
+                                                  fontSize: KasbyTypography.sp(ar: 11.0, en: 10.0, context: context),
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
@@ -314,7 +315,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                                             child: Text(
                                               _getLocalizedEntityLabel(notification.entityType!),
                                               style: TextStyle(
-                                                fontSize: 10,
+                                                fontSize: KasbyTypography.badge(context),
                                                 fontWeight: FontWeight.bold,
                                                 color: AppColors.darkGold,
                                               ),
@@ -337,7 +338,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                                                 Text(
                                                   'action_view'.tr,
                                                   style: TextStyle(
-                                                    fontSize: 10,
+                                                    fontSize: KasbyTypography.badge(context),
                                                     fontWeight: FontWeight.bold,
                                                     color: AppColors.softGreen,
                                                   ),
@@ -421,7 +422,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: KasbyTypography.badge(context),
           fontWeight: FontWeight.bold,
           color: badgeColor,
         ),
@@ -451,7 +452,7 @@ class _NotificationsViewState extends State<NotificationsView> {
               selected: selected,
               showCheckmark: false,
               labelStyle: TextStyle(
-                fontSize: 13,
+                fontSize: KasbyTypography.sp(ar: 13.0, en: 12.0, context: context),
                 fontWeight: selected ? FontWeight.bold : FontWeight.w500,
                 color: selected ? Colors.black : AppColors.textSecondary,
               ),
@@ -504,8 +505,8 @@ class _NotificationsViewState extends State<NotificationsView> {
               const SizedBox(height: 28),
               Text(
                 'no_notifications'.tr,
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontSize: KasbyTypography.sectionHeader(context),
                   fontWeight: FontWeight.bold,
                 ),
               ).animate().fadeIn(delay: 200.ms),
@@ -515,7 +516,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: KasbyTypography.body(context),
                   height: 1.5,
                 ),
               ).animate().fadeIn(delay: 300.ms),

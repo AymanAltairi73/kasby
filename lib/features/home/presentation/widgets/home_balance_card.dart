@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/services/currency_conversion_service.dart';
@@ -140,7 +141,11 @@ class HomeBalanceCard extends StatelessWidget {
                             'total_portfolio_balance'.tr,
                             style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 12,
+                              fontSize: KasbyTypography.sp(
+                                ar: 12.0,
+                                en: 11.0,
+                                context: context,
+                              ),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -229,7 +234,11 @@ class HomeBalanceCard extends StatelessWidget {
                                     'my_daily_earnings'.tr,
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
-                                      fontSize: 12,
+                                      fontSize: KasbyTypography.sp(
+                                        ar: 12.0,
+                                        en: 11.0,
+                                        context: context,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -410,7 +419,11 @@ class HomeBalanceCard extends StatelessWidget {
                           'portfolio_distribution'.tr,
                           style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 14,
+                            fontSize: KasbyTypography.sp(
+                              ar: 14.0,
+                              en: 12.5,
+                              context: context,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -560,7 +573,11 @@ class HomeBalanceCard extends StatelessWidget {
                                         color: isCycleComplete
                                             ? AppColors.softGreen
                                             : AppColors.textSecondary,
-                                        fontSize: 13,
+                                        fontSize: KasbyTypography.sp(
+                                          ar: 13.0,
+                                          en: 12.0,
+                                          context: context,
+                                        ),
                                         fontWeight: isCycleComplete
                                             ? FontWeight.w600
                                             : FontWeight.normal,
@@ -630,7 +647,11 @@ class _BalanceLegendItem extends StatelessWidget {
             color: isDark
                 ? AppColors.textSecondary
                 : AppColors.textSecondaryLight,
-            fontSize: 10,
+            fontSize: KasbyTypography.sp(
+              ar: 10.0,
+              en: 9.5,
+              context: context,
+            ),
           ),
         ),
       ],

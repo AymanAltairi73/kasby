@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class StoreProductModel {
   final String id;
   final String categoryId;
@@ -84,4 +86,20 @@ class StoreProductModel {
   }
 
   bool get inStock => availableStock > 0;
+
+  String get name {
+    final lang = Get.locale?.languageCode ?? 'ar';
+    if (lang == 'en' && nameEn.trim().isNotEmpty) {
+      return nameEn;
+    }
+    return nameAr.isNotEmpty ? nameAr : nameEn;
+  }
+
+  String get description {
+    final lang = Get.locale?.languageCode ?? 'ar';
+    if (lang == 'en' && descriptionEn.trim().isNotEmpty) {
+      return descriptionEn;
+    }
+    return descriptionAr.isNotEmpty ? descriptionAr : descriptionEn;
+  }
 }

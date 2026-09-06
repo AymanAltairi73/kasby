@@ -20,7 +20,7 @@ class StoreOrdersView extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'سجل الطلبات والأكواد',
+          'store_orders_history_title'.tr,
           style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
         ),
       ),
@@ -46,7 +46,7 @@ class StoreOrdersView extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'لا توجد طلبات سابقة في المتجر',
+                        'store_no_orders'.tr,
                         style: TextStyle(
                           color: textColor,
                           fontSize: 18,
@@ -55,7 +55,7 @@ class StoreOrdersView extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'جميع مشترياتك وأكوادك المشتراة تظهر هنا فوراً',
+                        'store_no_orders_subtitle'.tr,
                         style: TextStyle(
                           color: isDark
                               ? Colors.grey[400]
@@ -73,9 +73,9 @@ class StoreOrdersView extends StatelessWidget {
                           }
                         },
                         icon: const Icon(Icons.storefront_rounded, size: 20),
-                        label: const Text(
-                          'تصفح المتجر الآن',
-                          style: TextStyle(
+                        label: Text(
+                          'store_browse_now'.tr,
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                           ),

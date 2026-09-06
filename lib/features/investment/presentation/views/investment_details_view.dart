@@ -9,6 +9,7 @@ import 'package:kasby/core/services/crash_reporting/crash_error_category.dart';
 import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/services/supabase_service.dart';
@@ -174,7 +175,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                               'select_amount'.tr,
                               style: TextStyle(
                                 color: AppColors.textSecondary,
-                                fontSize: 14,
+                                fontSize: KasbyTypography.sp(ar: 14.0, en: 13.0, context: context),
                               ),
                             ),
                             icon: Icon(
@@ -191,7 +192,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                                   ? Colors.white
                                   : AppColors.textBodyLight,
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontSize: KasbyTypography.sp(ar: 16.0, en: 14.5, context: context),
                             ),
                             onChanged: (String? newValue) {
                               if (newValue != null) {
@@ -242,17 +243,24 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          'estimated_profit'.tr,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        Expanded(
+                          child: Text(
+                            'estimated_profit'.tr,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
-                        Text(
-                          '\$${estimatedProfit.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: AppColors.softGreen,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            '\$${estimatedProfit.toStringAsFixed(2)}',
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              color: AppColors.softGreen,
+                              fontWeight: FontWeight.bold,
+                              fontSize: KasbyTypography.sectionHeader(context),
+                            ),
                           ),
                         ),
                       ],
@@ -267,21 +275,28 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          'daily_profit'.tr,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
+                        Expanded(
+                          child: Text(
+                            'daily_profit'.tr,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: KasbyTypography.bodySecondary(context),
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ),
-                        Text(
-                          '+\$${estimatedDailyProfit.toStringAsFixed(4)}',
-                          style: TextStyle(
-                            color: AppColors.softGreen,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            '+\$${estimatedDailyProfit.toStringAsFixed(4)}',
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              color: AppColors.softGreen,
+                              fontWeight: FontWeight.bold,
+                              fontSize: KasbyTypography.body(context),
+                            ),
                           ),
                         ),
                       ],
@@ -314,14 +329,24 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
   Widget _buildDetailRow(String label, String value, Color valueColor) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label, style: TextStyle(color: AppColors.textSecondary)),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              color: valueColor,
+              fontWeight: FontWeight.bold,
+              fontSize: KasbyTypography.sp(ar: 16.0, en: 14.5, context: context),
+            ),
           ),
         ),
       ],
@@ -586,7 +611,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDark ? Colors.white : AppColors.textBodyLight,
-                  fontSize: 22,
+                  fontSize: KasbyTypography.cardTitle(context),
                   fontWeight: FontWeight.w900,
                   decoration: TextDecoration.none,
                 ),
@@ -597,7 +622,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: KasbyTypography.body(context),
                   fontWeight: FontWeight.normal,
                   decoration: TextDecoration.none,
                   height: 1.5,

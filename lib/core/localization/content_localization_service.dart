@@ -563,11 +563,23 @@ class ContentLocalizationService {
     return transactionTypeLabel(tx.type);
   }
 
-  static String notificationTitle(NotificationModel notification) =>
-      resolve(notification.title, context: 'notification_title');
+  static String notificationTitle(NotificationModel notification) {
+    if (notification.titleKey != null && notification.titleKey!.isNotEmpty) {
+      final params = notification.parameters
+          ?.map((k, v) => MapEntry(k, v?.toString() ?? ''));
+      return tr(notification.titleKey!, params: params);
+    }
+    return resolve(notification.title, context: 'notification_title');
+  }
 
-  static String notificationMessage(NotificationModel notification) =>
-      resolve(notification.message, context: 'notification_message');
+  static String notificationMessage(NotificationModel notification) {
+    if (notification.messageKey != null && notification.messageKey!.isNotEmpty) {
+      final params = notification.parameters
+          ?.map((k, v) => MapEntry(k, v?.toString() ?? ''));
+      return tr(notification.messageKey!, params: params);
+    }
+    return resolve(notification.message, context: 'notification_message');
+  }
 
   /// Convenience wrapper matching GetX `.tr` for UI code.
   static String tr(String key, {Map<String, String>? params}) {

@@ -20,7 +20,7 @@ class StoreCategoriesView extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'جميع أقسام المتجر',
+          'store_all_categories'.tr,
           style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
         ),
       ),
@@ -28,7 +28,7 @@ class StoreCategoriesView extends StatelessWidget {
         if (controller.categories.isEmpty) {
           return Center(
             child: Text(
-              'لا توجد أقسام متوفرة حالياً',
+              'store_no_categories'.tr,
               style: TextStyle(
                 color: isDark ? Colors.grey : AppColors.textSecondaryLight,
               ),

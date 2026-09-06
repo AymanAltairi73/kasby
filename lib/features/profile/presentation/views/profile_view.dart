@@ -230,14 +230,14 @@ class _ProfileViewState extends State<ProfileView> {
                       Colors.cyanAccent,
                       () => Get.toNamed(Routes.support),
                     ),
-                    _buildProfileItem(
-                      context,
-                      isDark,
-                      Icons.tour_rounded,
-                      'app_tour'.tr,
-                      Colors.amberAccent,
-                      () => TourSettingsSheet.show(context),
-                    ),
+                    // _buildProfileItem(
+                    //   context,
+                    //   isDark,
+                    //   Icons.tour_rounded,
+                    //   'app_tour'.tr,
+                    //   Colors.amberAccent,
+                    //   () => TourSettingsSheet.show(context),
+                    // ),
                     _buildProfileItem(
                       context,
                       isDark,

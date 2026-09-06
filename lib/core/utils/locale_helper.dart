@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kasby/core/localization/kasby_l10n.dart';
 import 'package:kasby/core/localization/localization_logger.dart';
@@ -61,6 +62,31 @@ class LocaleHelper {
       debugPrint('[LocaleHelper] Language preference synced to server: $code');
     } catch (e) {
       debugPrint('[LocaleHelper] Server language sync ignored or failed: $e');
+    }
+  }
+
+  /// Adopts server language preference upon login or profile load.
+  /// If the server has a valid language preference that differs from local storage,
+  /// updates local preferences and GetX locale.
+  static Future<void> adoptServerLanguage(String? serverLanguage) async {
+    if (serverLanguage == null ||
+        !KasbyL10n.supportedLanguageCodes.contains(serverLanguage)) {
+      return;
+    }
+    try {
+      final localCode = await getLanguageCode();
+      if (localCode != serverLanguage) {
+        debugPrint(
+          '[LocaleHelper] Adopting server language preference: $serverLanguage (was $localCode)',
+        );
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(localeKey, serverLanguage);
+        if (Get.locale?.languageCode != serverLanguage) {
+          await Get.updateLocale(KasbyL10n.localeFromCode(serverLanguage));
+        }
+      }
+    } catch (e) {
+      debugPrint('[LocaleHelper] Error adopting server language: $e');
     }
   }
 

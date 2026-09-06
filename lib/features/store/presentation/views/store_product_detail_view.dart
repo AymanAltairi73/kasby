@@ -20,8 +20,8 @@ class StoreProductDetailView extends StatelessWidget {
     if (product == null) {
       return Scaffold(
         backgroundColor: bg,
-        appBar: AppBar(title: const Text('تفاصيل المنتج')),
-        body: const Center(child: Text('عذراً، تعذر تحميل بيانات المنتج')),
+        appBar: AppBar(title: Text('store_product_details'.tr)),
+        body: Center(child: Text('store_product_load_error'.tr)),
       );
     }
 
@@ -39,7 +39,7 @@ class StoreProductDetailView extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          product.nameAr,
+          product.name,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
@@ -77,12 +77,12 @@ class StoreProductDetailView extends StatelessWidget {
                           ? CachedNetworkImage(
                               imageUrl: product.imageUrl!,
                               fit: BoxFit.contain,
-                              placeholder: (_, __) => const Center(
+                              placeholder: (_, _) => const Center(
                                 child: CircularProgressIndicator(
                                   color: AppColors.primaryGold,
                                 ),
                               ),
-                              errorWidget: (_, __, ___) => const Center(
+                              errorWidget: (_, _, _) => const Center(
                                 child: Icon(
                                   Icons.card_giftcard_rounded,
                                   color: AppColors.primaryGold,
@@ -133,8 +133,8 @@ class StoreProductDetailView extends StatelessWidget {
                             const SizedBox(width: 6),
                             Text(
                               product.inStock
-                                  ? 'متوفر للتسليم الفوري'
-                                  : 'نفد المخزون حالياً',
+                                  ? 'store_in_stock_instant'.tr
+                                  : 'store_out_of_stock'.tr,
                               style: TextStyle(
                                 color: product.inStock
                                     ? Colors.green
@@ -164,7 +164,7 @@ class StoreProductDetailView extends StatelessWidget {
                             ],
                           ),
                           child: Text(
-                            'خصم ${product.discountPercent}%',
+                            'store_discount_percent'.trParams({'percent': product.discountPercent.toString()}),
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -180,7 +180,7 @@ class StoreProductDetailView extends StatelessWidget {
 
                   // ── Title ──
                   Text(
-                    product.nameAr,
+                    product.name,
                     style: TextStyle(
                       color: textColor,
                       fontSize: 22,
@@ -214,7 +214,7 @@ class StoreProductDetailView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'السعر بالدولار (USD)',
+                              'store_price_usd'.tr,
                               style: TextStyle(
                                 color: Colors.grey[500],
                                 fontSize: 12,
@@ -259,7 +259,7 @@ class StoreProductDetailView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                'السعر بعملة KSP',
+                                'store_price_ksp'.tr,
                                 style: TextStyle(
                                   color: Colors.grey[500],
                                   fontSize: 12,
@@ -306,7 +306,7 @@ class StoreProductDetailView extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'تفاصيل ووصف المنتج',
+                        'store_description_header'.tr,
                         style: TextStyle(
                           color: textColor,
                           fontSize: 16,
@@ -331,9 +331,9 @@ class StoreProductDetailView extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      product.descriptionAr.isNotEmpty
-                          ? product.descriptionAr
-                          : 'احصل على هذا المنتج كود رقمي فوري ومضمون 100%، يمكنك استخدامه مباشرة عبر المنصة المحددة.',
+                      product.description.isNotEmpty
+                          ? product.description
+                          : 'store_default_desc'.tr,
                       style: TextStyle(
                         color: isDark
                             ? Colors.grey[300]
@@ -348,7 +348,8 @@ class StoreProductDetailView extends StatelessWidget {
 
                   // Features summary chips
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                     decoration: BoxDecoration(
                       color: isDark
                           ? const Color(0xFF1B1B22)
@@ -360,18 +361,21 @@ class StoreProductDetailView extends StatelessWidget {
                             : AppColors.borderLight,
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceAround,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 10,
                       children: [
-                        _buildFeatureChip(Icons.flash_on_rounded, 'تسليم فوري', isDark),
+                        _buildFeatureChip(Icons.flash_on_rounded, 'store_instant_delivery'.tr, isDark),
                         _buildFeatureChip(
                           Icons.verified_user_rounded,
-                          'كود مضمون 100%',
+                          'store_verified_code'.tr,
                           isDark,
                         ),
                         _buildFeatureChip(
                           Icons.support_agent_rounded,
-                          'دعم 24/7',
+                          'store_support_24_7'.tr,
                           isDark,
                         ),
                       ],
@@ -422,8 +426,8 @@ class StoreProductDetailView extends StatelessWidget {
                 ),
                 label: Text(
                   product.inStock
-                      ? 'شراء المنتج الآن'
-                      : 'غير متوفر بالمخزون حالياً',
+                      ? 'store_buy_now'.tr
+                      : 'store_unavailable'.tr,
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 16,
@@ -440,14 +444,15 @@ class StoreProductDetailView extends StatelessWidget {
 
   Widget _buildFeatureChip(IconData icon, String label, bool isDark) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: AppColors.primaryGold, size: 18),
-        const SizedBox(width: 6),
+        Icon(icon, color: AppColors.primaryGold, size: 16),
+        const SizedBox(width: 5),
         Text(
           label,
           style: TextStyle(
-            color: isDark ? Colors.grey : AppColors.textSecondaryLight,
-            fontSize: 12,
+            color: isDark ? Colors.grey[400] : AppColors.textSecondaryLight,
+            fontSize: 11.5,
             fontWeight: FontWeight.w600,
           ),
         ),

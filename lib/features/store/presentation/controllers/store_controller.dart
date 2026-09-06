@@ -249,13 +249,13 @@ class StoreController extends GetxController {
         lower.contains('no digital code') ||
         lower.contains('no_code') ||
         lower.contains('stock')) {
-      return 'نفد مخزون هذا المنتج حالياً، يرجى المحاولة لاحقاً.';
+      return 'store_err_out_of_stock'.tr;
     }
     if (lower.contains('insufficient') || lower.contains('balance')) {
-      return 'رصيدك غير كافٍ لإتمام عملية الشراء.';
+      return 'store_err_insufficient_balance'.tr;
     }
     if (lower.contains('inactive') || lower.contains('not_found')) {
-      return 'هذا المنتج غير متوفر حالياً في المتجر.';
+      return 'store_err_product_unavailable'.tr;
     }
     return rawMsg;
   }

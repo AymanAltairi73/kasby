@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -276,7 +277,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                           color: Colors.white.withValues(
                                             alpha: 0.5,
                                           ),
-                                          fontSize: 10,
+                                          fontSize: KasbyTypography.sp(ar: 10.0, en: 9.0, context: context),
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1.2,
                                         ),
@@ -1084,7 +1085,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                             ? AppColors.textSecondary
                             : AppColors.textSecondaryLight)
                       : Theme.of(context).colorScheme.onSurface,
-                  fontSize: 16,
+                  fontSize: KasbyTypography.sp(ar: 16.0, en: 14.5, context: context),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1139,7 +1140,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                             ? AppColors.textSecondary
                             : AppColors.textSecondaryLight)
                       : Theme.of(context).colorScheme.onSurface,
-                  fontSize: 14,
+                  fontSize: KasbyTypography.sp(ar: 14.0, en: 13.0, context: context),
                   fontWeight: FontWeight.bold,
                 ),
               ),

@@ -21,7 +21,7 @@ class StoreProductsView extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          category != null ? category.nameAr : 'منتجات القسم',
+          category != null ? category.name : 'store_category_products'.tr,
           style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
         ),
       ),
@@ -40,7 +40,7 @@ class StoreProductsView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'لا توجد منتجات متوفرة في هذا القسم حالياً',
+                  'store_no_products_in_category'.tr,
                   style: TextStyle(
                     color: isDark
                         ? Colors.grey[400]

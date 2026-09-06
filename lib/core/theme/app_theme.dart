@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'kasby_typography.dart';
 
 class AppTheme {
   static ThemeData get darkTheme {
+    final isEn = KasbyTypography.isEnglish();
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -14,68 +16,28 @@ class AppTheme {
         onSurface: AppColors.onSurfaceDark,
         error: AppColors.errorDark,
       ),
-      textTheme: TextTheme(
-        displayLarge: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: AppColors.onSurfaceDark,
-        ),
-        displayMedium: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: AppColors.onSurfaceDark,
-        ),
-        displaySmall: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: AppColors.onSurfaceDark,
-        ),
-        headlineMedium: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: AppColors.onSurfaceDark,
-        ),
-        titleLarge: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.onSurfaceDark,
-        ),
-        bodyLarge: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 16,
-          color: AppColors.textBodyDark,
-        ),
-        bodyMedium: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 14,
-          color: AppColors.textBodyDark,
-        ),
-        labelLarge: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppColors.goldDark,
-        ),
-      ),
+      textTheme: _buildTextTheme(isDark: true, isEnglish: isEn),
       cardTheme: CardThemeData(
         color: AppColors.surfaceDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         elevation: 0,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEn ? 17 : 18,
+          fontWeight: FontWeight.bold,
+          color: AppColors.onSurfaceDark,
+        ),
       ),
     );
   }
 
   static ThemeData get lightTheme {
+    final isEn = KasbyTypography.isEnglish();
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -97,94 +59,7 @@ class AppTheme {
         outline: AppColors.borderLight,
         outlineVariant: AppColors.borderStrongLight,
       ),
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: AppColors.onSurfaceLight,
-        ),
-        displayMedium: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: AppColors.onSurfaceLight,
-        ),
-        displaySmall: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: AppColors.onSurfaceLight,
-        ),
-        headlineLarge: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          color: AppColors.onSurfaceLight,
-        ),
-        headlineMedium: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: AppColors.onSurfaceLight,
-        ),
-        headlineSmall: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.onSurfaceLight,
-        ),
-        titleLarge: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.onSurfaceLight,
-        ),
-        titleMedium: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: AppColors.onSurfaceLight,
-        ),
-        titleSmall: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppColors.onSurfaceLight,
-        ),
-        bodyLarge: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 16,
-          color: AppColors.textBodyLight,
-        ),
-        bodyMedium: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 14,
-          color: AppColors.textBodyLight,
-        ),
-        bodySmall: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 12,
-          color: AppColors.textSecondaryLight,
-        ),
-        labelLarge: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppColors.onSurfaceLight,
-        ),
-        labelMedium: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textSecondaryLight,
-        ),
-        labelSmall: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 10,
-          color: AppColors.textSecondaryLight,
-        ),
-      ),
+      textTheme: _buildTextTheme(isDark: false, isEnglish: isEn),
       cardTheme: CardThemeData(
         color: AppColors.surfaceLight,
         elevation: 0,
@@ -199,16 +74,16 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.backgroundLight,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: AppColors.onSurfaceLight),
-        actionsIconTheme: IconThemeData(color: AppColors.onSurfaceLight),
+        iconTheme: const IconThemeData(color: AppColors.onSurfaceLight),
+        actionsIconTheme: const IconThemeData(color: AppColors.onSurfaceLight),
         titleTextStyle: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 18,
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEn ? 17 : 18,
           fontWeight: FontWeight.bold,
           color: AppColors.onSurfaceLight,
         ),
@@ -371,4 +246,105 @@ class AppTheme {
       ),
     );
   }
+
+  static TextTheme _buildTextTheme({required bool isDark, required bool isEnglish}) {
+    final primaryTextColor = isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight;
+    final secondaryTextColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final bodyTextColor = isDark ? AppColors.textBodyDark : AppColors.textBodyLight;
+
+    return TextTheme(
+      displayLarge: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 28 : 32,
+        fontWeight: FontWeight.bold,
+        color: primaryTextColor,
+      ),
+      displayMedium: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 24 : 28,
+        fontWeight: FontWeight.bold,
+        color: primaryTextColor,
+      ),
+      displaySmall: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 22 : 24,
+        fontWeight: FontWeight.bold,
+        color: primaryTextColor,
+      ),
+      headlineLarge: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 20 : 22,
+        fontWeight: FontWeight.bold,
+        color: primaryTextColor,
+      ),
+      headlineMedium: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 18 : 20,
+        fontWeight: FontWeight.bold,
+        color: primaryTextColor,
+      ),
+      headlineSmall: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 16.5 : 18,
+        fontWeight: FontWeight.w600,
+        color: primaryTextColor,
+      ),
+      titleLarge: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 18 : 20,
+        fontWeight: FontWeight.bold,
+        color: primaryTextColor,
+      ),
+      titleMedium: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 15 : 16,
+        fontWeight: FontWeight.w600,
+        color: primaryTextColor,
+      ),
+      titleSmall: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 13.5 : 14,
+        fontWeight: FontWeight.w600,
+        color: secondaryTextColor,
+      ),
+      bodyLarge: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 14.5 : 16,
+        fontWeight: FontWeight.normal,
+        color: bodyTextColor,
+      ),
+      bodyMedium: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 13 : 14,
+        fontWeight: FontWeight.normal,
+        color: bodyTextColor,
+      ),
+      bodySmall: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 11.5 : 12,
+        fontWeight: FontWeight.normal,
+        color: secondaryTextColor,
+      ),
+      labelLarge: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 13.5 : 14,
+        fontWeight: FontWeight.w600,
+        color: primaryTextColor,
+        letterSpacing: isEnglish ? 0.2 : 0,
+      ),
+      labelMedium: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 11.5 : 12,
+        fontWeight: FontWeight.w500,
+        color: secondaryTextColor,
+      ),
+      labelSmall: TextStyle(
+        fontFamily: KasbyTypography.fontFamily,
+        fontSize: isEnglish ? 10 : 11,
+        fontWeight: FontWeight.w500,
+        color: secondaryTextColor,
+      ),
+    );
+  }
 }
+

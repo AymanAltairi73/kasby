@@ -106,7 +106,7 @@ class StoreCategoryCard extends StatelessWidget {
                           width: 24,
                           height: 24,
                           fit: BoxFit.contain,
-                          errorWidget: (_, __, ___) => Icon(
+                          errorWidget: (_, _, _) => Icon(
                             _getIconData(category.iconName),
                             color: AppColors.primaryGold,
                             size: 22,
@@ -121,7 +121,7 @@ class StoreCategoryCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                category.nameAr,
+                category.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,

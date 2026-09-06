@@ -81,7 +81,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'تأكيد الدفع والشراء',
+                  'store_checkout_title'.tr,
                   style: TextStyle(
                     color: textColor,
                     fontSize: 18,
@@ -139,7 +139,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.product.nameAr,
+                          widget.product.name,
                           style: TextStyle(
                             color: textColor,
                             fontWeight: FontWeight.bold,
@@ -156,7 +156,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'التسليم: تلقائي فوري',
+                              'store_delivery_instant'.tr,
                               style: TextStyle(
                                 color: Colors.grey[400],
                                 fontSize: 11,
@@ -173,7 +173,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
 
             const SizedBox(height: 20),
             Text(
-              'اختر طريقة الدفع المناسبة:',
+              'store_select_payment_method'.tr,
               style: TextStyle(
                 color: textColor,
                 fontWeight: FontWeight.bold,
@@ -220,7 +220,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'رصيد المحفظة (USD Wallet)',
+                            'store_usd_wallet_title'.tr,
                             style: TextStyle(
                               color: textColor,
                               fontWeight: FontWeight.bold,
@@ -229,7 +229,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'المتوفر كاش: \$${spendableUsd.toStringAsFixed(2)}',
+                            'store_available_cash'.trParams({'amount': '\$${spendableUsd.toStringAsFixed(2)}'}),
                             style: TextStyle(
                               color: isUsdSufficient
                                   ? Colors.green
@@ -292,7 +292,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'رصيد نقاط KSP',
+                              'store_ksp_points_title'.tr,
                               style: TextStyle(
                                 color: textColor,
                                 fontWeight: FontWeight.bold,
@@ -301,7 +301,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'المتوفر نقاط: ${spendableKsp.toStringAsFixed(0)} KSP',
+                              'store_available_points'.trParams({'amount': spendableKsp.toStringAsFixed(0)}),
                               style: TextStyle(
                                 color: isKspSufficient
                                     ? Colors.green
@@ -349,8 +349,8 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                     Expanded(
                       child: Text(
                         _selectedMethod == 'wallet'
-                            ? 'رصيد المحفظة غير كافٍ لإتمام العملية.'
-                            : 'رصيد نقاط KSP غير كافٍ لإتمام العملية.',
+                            ? 'store_insufficient_usd'.tr
+                            : 'store_insufficient_ksp'.tr,
                         style: const TextStyle(color: Colors.red, fontSize: 12),
                       ),
                     ),
@@ -387,7 +387,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                           Get.back(); // close sheet
                           _showSuccessDeliveryModal(
                             context: Get.context!,
-                            productName: widget.product.nameAr,
+                            productName: widget.product.name,
                             code: res['delivery_code'] as String? ?? '',
                             serialNumber: res['serial_number'] as String?,
                           );
@@ -402,18 +402,18 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.check_circle_rounded,
                             color: Colors.black,
                             size: 20,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
-                            'تأكيد الدفع والشراء الآن',
-                            style: TextStyle(
+                            'store_confirm_purchase_btn'.tr,
+                            style: const TextStyle(
                               color: Colors.black,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -466,7 +466,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
               ),
               const SizedBox(height: 16),
               Text(
-                'تم الشراء والتسليم بنجاح!',
+                'store_purchase_success_modal_title'.tr,
                 style: TextStyle(
                   color: isDark ? Colors.white : AppColors.onSurfaceLight,
                   fontSize: 18,
@@ -498,7 +498,7 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                 child: Column(
                   children: [
                     Text(
-                      'كود البطاقة الخاص بك:',
+                      'store_your_card_code'.tr,
                       style: TextStyle(
                         color: isDark
                             ? Colors.grey[400]
@@ -546,8 +546,8 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: code));
                         AppSnack.success(
-                          'تم النسخ',
-                          'تم نسخ كود البطاقة بنجاح.',
+                          'copied'.tr,
+                          'store_code_copied'.tr,
                         );
                       },
                       icon: const Icon(
@@ -555,9 +555,9 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                         color: AppColors.primaryGold,
                         size: 18,
                       ),
-                      label: const Text(
-                        'نسخ الكود',
-                        style: TextStyle(
+                      label: Text(
+                        'store_copy_code_btn'.tr,
+                        style: const TextStyle(
                           color: AppColors.primaryGold,
                           fontWeight: FontWeight.bold,
                         ),
@@ -578,9 +578,9 @@ class _StoreCheckoutSheetState extends State<StoreCheckoutSheet> {
                         Get.back();
                         Get.toNamed('/store-orders');
                       },
-                      child: const Text(
-                        'سجل الطلبات',
-                        style: TextStyle(
+                      child: Text(
+                        'store_orders_history_btn'.tr,
+                        style: const TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.bold,
                         ),

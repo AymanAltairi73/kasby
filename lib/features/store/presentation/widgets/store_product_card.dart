@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/features/store/domain/models/store_product_model.dart';
@@ -64,7 +65,7 @@ class StoreProductCard extends StatelessWidget {
                           ? CachedNetworkImage(
                               imageUrl: product.imageUrl!,
                               fit: BoxFit.cover,
-                              placeholder: (_, __) => const Center(
+                              placeholder: (_, _) => const Center(
                                 child: SizedBox(
                                   width: 24,
                                   height: 24,
@@ -74,7 +75,7 @@ class StoreProductCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              errorWidget: (_, __, ___) => const Center(
+                              errorWidget: (_, _, _) => const Center(
                                 child: Icon(
                                   Icons.card_giftcard_rounded,
                                   color: AppColors.primaryGold,
@@ -150,7 +151,7 @@ class StoreProductCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 3),
                           Text(
-                            product.inStock ? 'متوفر' : 'غير متوفر',
+                            product.inStock ? 'store_in_stock'.tr : 'store_out_of_stock_badge'.tr,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -173,7 +174,7 @@ class StoreProductCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        product.nameAr,
+                        product.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

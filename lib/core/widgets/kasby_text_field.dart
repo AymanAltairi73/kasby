@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class KasbyTextField extends StatefulWidget {
@@ -72,10 +73,12 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
               Text(
                 widget.label!,
                 style: TextStyle(
+                  fontFamily: KasbyTypography.fontFamily,
                   color: isDark
                       ? AppColors.textSecondary
                       : AppColors.textSecondaryLight,
-                  fontSize: 14,
+                  fontSize:
+                      KasbyTypography.sp(ar: 14.0, en: 13.0, context: context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -93,10 +96,18 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
               enabled: widget.enabled,
               autocorrect: widget.autocorrect,
               textCapitalization: widget.textCapitalization,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              style: TextStyle(
+                fontFamily: KasbyTypography.fontFamily,
+                fontSize:
+                    KasbyTypography.sp(ar: 15.0, en: 14.0, context: context),
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               decoration: InputDecoration(
                 hintText: widget.hint,
                 hintStyle: TextStyle(
+                  fontFamily: KasbyTypography.fontFamily,
+                  fontSize:
+                      KasbyTypography.sp(ar: 14.0, en: 13.0, context: context),
                   color: Theme.of(
                     context,
                   ).colorScheme.onSurface.withValues(alpha: 0.55),

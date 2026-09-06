@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class StoreCategoryModel {
   final String id;
   final String slug;
@@ -43,5 +45,13 @@ class StoreCategoryModel {
       'sort_order': sortOrder,
       'is_active': isActive,
     };
+  }
+
+  String get name {
+    final lang = Get.locale?.languageCode ?? 'ar';
+    if (lang == 'en' && nameEn.trim().isNotEmpty) {
+      return nameEn;
+    }
+    return nameAr.isNotEmpty ? nameAr : nameEn;
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:get/get.dart';
 import 'package:kasby/core/localization/kasby_translations.dart';
 import 'package:kasby/core/localization/localization_logger.dart';
@@ -37,6 +38,12 @@ class KasbyL10n {
       return 'ar_SA';
     }
     return languageCode == 'ar' ? 'ar_SA' : 'en_US';
+  }
+
+  static Locale localeFromCode(String languageCode) {
+    return languageCode == 'en'
+        ? const Locale('en', 'US')
+        : const Locale('ar', 'SA');
   }
 
   /// Resolve a key for an explicit language (background tasks, scheduled notifications).

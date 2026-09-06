@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/features/social/presentation/widgets/invite_friends_sheet.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -134,8 +135,9 @@ class HomeQuickActions extends StatelessWidget {
             children: [
               Text(
                 'more'.tr,
-                style: const TextStyle(
-                  fontSize: 18,
+                style: TextStyle(
+                  fontFamily: KasbyTypography.fontFamily,
+                  fontSize: KasbyTypography.sectionHeader(context),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -285,7 +287,10 @@ class HomeQuickActionItem extends StatelessWidget {
                 softWrap: true,
                 overflow: TextOverflow.fade,
                 style: TextStyle(
-                  fontSize: (maxLabelWidth ?? 72) < 68 ? 10 : 11,
+                  fontFamily: KasbyTypography.fontFamily,
+                  fontSize: KasbyTypography.isEnglish(context)
+                      ? ((maxLabelWidth ?? 72) < 68 ? 9 : 10)
+                      : ((maxLabelWidth ?? 72) < 68 ? 10 : 11),
                   fontWeight: FontWeight.w500,
                   height: 1.2,
                 ),

@@ -21,6 +21,7 @@ import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/core/services/ksp_balance_service.dart';
 import 'package:kasby/core/services/fee_service.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
@@ -911,6 +912,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
       if (response != null) {
         profile.value = ProfileModel.fromJson(response);
+        unawaited(LocaleHelper.adoptServerLanguage(profile.value?.language));
         unawaited(CrashReportingService.syncUserContextFromProfile());
         if (Get.isRegistered<AccountRestrictionService>()) {
           AccountRestrictionService.to.onProfileUpdated();

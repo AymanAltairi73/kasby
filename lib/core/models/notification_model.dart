@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 class NotificationModel {
@@ -16,6 +17,9 @@ class NotificationModel {
   final String? entityType;
   final String? entityId;
   final String? roleTarget;
+  final String? titleKey;
+  final String? messageKey;
+  final Map<String, dynamic>? parameters;
 
   const NotificationModel({
     required this.id,
@@ -33,12 +37,31 @@ class NotificationModel {
     this.entityType,
     this.entityId,
     this.roleTarget,
+    this.titleKey,
+    this.messageKey,
+    this.parameters,
   });
 
   bool get isRead => readAt != null || status == 'read';
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     try {
+      Map<String, dynamic>? parsedParams;
+      if (json['parameters'] != null) {
+        if (json['parameters'] is Map) {
+          parsedParams = Map<String, dynamic>.from(json['parameters'] as Map);
+        } else if (json['parameters'] is String) {
+          try {
+            final decoded = jsonDecode(json['parameters'] as String);
+            if (decoded is Map) {
+              parsedParams = Map<String, dynamic>.from(decoded);
+            }
+          } catch (_) {
+            parsedParams = null;
+          }
+        }
+      }
+
       return NotificationModel(
         id: json['id'] as String,
         title: json['title'] as String,
@@ -61,6 +84,9 @@ class NotificationModel {
         entityType: json['entity_type'] as String?,
         entityId: json['entity_id'] as String?,
         roleTarget: json['role_target'] as String?,
+        titleKey: json['title_key'] as String?,
+        messageKey: json['message_key'] as String?,
+        parameters: parsedParams,
       );
     } catch (e, stack) {
       SafeGetx.debugTrace(
@@ -93,6 +119,9 @@ class NotificationModel {
       'entity_type': entityType,
       'entity_id': entityId,
       'role_target': roleTarget,
+      'title_key': titleKey,
+      'message_key': messageKey,
+      'parameters': parameters,
     };
   }
 
@@ -112,6 +141,9 @@ class NotificationModel {
     String? entityType,
     String? entityId,
     String? roleTarget,
+    String? titleKey,
+    String? messageKey,
+    Map<String, dynamic>? parameters,
   }) {
     return NotificationModel(
       id: id ?? this.id,
@@ -129,6 +161,10 @@ class NotificationModel {
       entityType: entityType ?? this.entityType,
       entityId: entityId ?? this.entityId,
       roleTarget: roleTarget ?? this.roleTarget,
+      titleKey: titleKey ?? this.titleKey,
+      messageKey: messageKey ?? this.messageKey,
+      parameters: parameters ?? this.parameters,
     );
   }
 }
+

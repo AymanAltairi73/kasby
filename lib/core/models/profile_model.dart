@@ -21,6 +21,7 @@ class ProfileModel {
   final String whatsapp;
   final String telegram;
   final String role; // user, admin, agent
+  final String language; // ar, en
   final DateTime? lastLoginAt;
   final String? lastLoginIp;
   final DateTime? createdAt;
@@ -51,6 +52,7 @@ class ProfileModel {
     this.createdAt,
     this.updatedAt,
     required this.role,
+    this.language = 'ar',
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
@@ -67,6 +69,7 @@ class ProfileModel {
         accountTier: json['account_tier'] as String? ?? 'free',
         kycStatus: json['kyc_status'] as String? ?? 'unverified',
         role: json['role'] as String? ?? 'user',
+        language: json['language'] as String? ?? 'ar',
         referralCode: json['referral_code'] as String?,
         referredBy:
             json['referred_by_id'] as String? ?? json['referred_by'] as String?,
@@ -126,6 +129,7 @@ class ProfileModel {
       'last_login_at': lastLoginAt?.toIso8601String(),
       'last_login_ip': lastLoginIp,
       'role': role,
+      'language': language,
     };
   }
 
@@ -152,6 +156,7 @@ class ProfileModel {
     DateTime? lastLoginAt,
     String? lastLoginIp,
     String? role,
+    String? language,
   }) {
     return ProfileModel(
       id: id ?? this.id,
@@ -176,6 +181,7 @@ class ProfileModel {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       lastLoginIp: lastLoginIp ?? this.lastLoginIp,
       role: role ?? this.role,
+      language: language ?? this.language,
     );
   }
 }

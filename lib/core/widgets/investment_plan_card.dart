@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/routes/app_routes.dart';
@@ -134,50 +135,60 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    widget.title.tr,
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.5,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
+                                  Expanded(
+                                    child: Text(
+                                      widget.title.tr,
+                                      style: TextStyle(
+                                        fontFamily: KasbyTypography.fontFamily,
+                                        fontSize:
+                                            KasbyTypography.cardTitle(context),
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing:
+                                            KasbyTypography.isEnglish(context)
+                                                ? 0.3
+                                                : 0.5,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.05)
-                                        : Colors.black.withValues(alpha: 0.05),
-                                    shape: BoxShape.circle,
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.05)
+                                          : Colors.black.withValues(alpha: 0.05),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 14,
+                                      color: widget.color,
+                                    ),
                                   ),
-                                  child: Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    size: 14,
-                                    color: widget.color,
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  const Spacer(),
+                                  Text(
+                                    'invest_now'.tr,
+                                    style: TextStyle(
+                                      fontFamily: KasbyTypography.fontFamily,
+                                      color: widget.color,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: KasbyTypography.sp(
+                                        ar: 14.0,
+                                        en: 13.0,
+                                        context: context,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                const Spacer(),
-                                Text(
-                                  'invest_now'.tr,
-                                  style: TextStyle(
-                                    color: widget.color,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
                           ],
                         ),
                       ),

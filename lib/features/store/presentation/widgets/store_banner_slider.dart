@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/features/store/domain/models/store_banner_model.dart';
@@ -91,9 +92,9 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'مرحباً بك في متجر كاسبي الرقمي',
-                style: TextStyle(
+              Text(
+                'store_welcome_banner'.tr,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -101,7 +102,7 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
               ),
               const SizedBox(height: 4),
               Text(
-                'اشتر بطاقاتك واشتراكاتك المفضلة فوراً',
+                'store_banner_subtitle'.tr,
                 style: TextStyle(color: Colors.grey[400], fontSize: 12),
               ),
             ],
@@ -144,7 +145,7 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
                           child: CachedNetworkImage(
                             imageUrl: banner.imageUrl,
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
+                            placeholder: (_, _) => Container(
                               color: const Color(0xFF1E1E26),
                               child: const Center(
                                 child: CircularProgressIndicator(
@@ -153,7 +154,7 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
                                 ),
                               ),
                             ),
-                            errorWidget: (_, __, ___) => Container(
+                            errorWidget: (_, _, _) => Container(
                               color: const Color(0xFF1E1E26),
                               child: const Icon(
                                 Icons.broken_image,
@@ -193,7 +194,7 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
                       ),
 
                       // Text Info
-                      if (banner.titleAr != null && banner.titleAr!.isNotEmpty)
+                      if (banner.title != null && banner.title!.isNotEmpty)
                         Positioned(
                           bottom: 14,
                           right: 14,
@@ -211,7 +212,7 @@ class _StoreBannerSliderState extends State<StoreBannerSlider> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  banner.titleAr!,
+                                  banner.title!,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(

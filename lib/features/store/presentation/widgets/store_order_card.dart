@@ -43,7 +43,7 @@ class StoreOrderCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  order.productNameAr,
+                  order.productName,
                   style: TextStyle(
                     color: textColor,
                     fontWeight: FontWeight.bold,

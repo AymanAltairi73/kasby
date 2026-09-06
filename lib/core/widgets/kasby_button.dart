@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 
 class KasbyButton extends StatefulWidget {
   final String text;
@@ -169,8 +170,11 @@ class _KasbyButtonState extends State<KasbyButton>
                       ],
                       Text(
                         widget.text,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: TextStyle(
+                          fontFamily: KasbyTypography.fontFamily,
+                          fontSize: KasbyTypography.button(context),
+                          letterSpacing:
+                              KasbyTypography.isEnglish(context) ? 0.2 : 0.0,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
