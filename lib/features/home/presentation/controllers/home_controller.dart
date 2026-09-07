@@ -340,15 +340,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     _batchTimer?.cancel();
     _batchTimer = Timer(const Duration(milliseconds: 1500), () {
       if (_pendingNotifications.isEmpty) return;
-
-      NotificationService().playNotificationSound();
-
-      if (_pendingNotifications.length == 1) {
-        final latest = _pendingNotifications.first;
-        _showNotificationSnack(latest);
-      } else {
-        _showMultipleNotificationsSnack(_pendingNotifications.length);
-      }
+      // Automatic in-app notification popups/snackbars disabled by design.
+      // Notifications are still stored and accessible via NotificationsView.
       _pendingNotifications.clear();
     });
   }

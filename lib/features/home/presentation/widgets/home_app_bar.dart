@@ -170,13 +170,41 @@ class HomeAppBar extends StatelessWidget {
         KeyedSubtree(
           key: TourTargetKeys.notifications,
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
               IconButton(
-                icon: Icon(
-                  Icons.notifications_none_rounded,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.9),
+                icon: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primaryGold.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryGold.withValues(alpha: 0.15),
+                        blurRadius: 4,
+                        spreadRadius: 0.5,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/logo4.png',
+                      width: 32,
+                      height: 32,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.notifications_none_rounded,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.9),
+                        size: 20,
+                      ),
+                    ),
+                  ),
                 ),
                 tooltip: 'notifications'.tr,
                 onPressed: () => Get.toNamed(Routes.notifications),
@@ -184,8 +212,8 @@ class HomeAppBar extends StatelessWidget {
               Obx(
                 () => homeController.unreadNotificationCount.value > 0
                     ? Positioned(
-                        right: 8,
-                        top: 8,
+                        right: 6,
+                        top: 6,
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(

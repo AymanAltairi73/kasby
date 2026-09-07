@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -93,7 +94,7 @@ class FCMService extends GetxService {
 
   Future<void> _setupLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_stat_notification');
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
@@ -253,8 +254,9 @@ class FCMService extends GetxService {
             params: {'title': message.notification?.title ?? 'none'},
           );
           _handleOtpFromMessage(message);
-          NotificationService().playNotificationSound();
-          _showLocalNotification(message);
+          // Automatic in-app notification display disabled by design.
+          // Notifications are still received, processed, and stored via
+          // the realtime stream in HomeController.
         });
 
     _messageOpenedAppSubscription ??=
@@ -430,7 +432,9 @@ class FCMService extends GetxService {
             channelDescription: channelDescription,
             importance: Importance.max,
             priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
+            icon: '@drawable/ic_stat_notification',
+            largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+            color: const Color(0xFFC9A24D),
           ),
           iOS: const DarwinNotificationDetails(),
         ),
