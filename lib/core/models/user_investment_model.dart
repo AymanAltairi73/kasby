@@ -44,21 +44,33 @@ class UserInvestmentModel {
   });
 
   /// Whether this investment's daily cycle is waiting to be manually started.
-  /// A cycle is only considered "waiting" after at least one payout has occurred
-  /// (lastPayoutAt != null). A brand-new investment with nextPayoutAt == null
-  /// and lastPayoutAt == null is still awaiting its first cron distribution
-  /// and should NOT show "cycle completed".
-  bool get isCycleWaiting =>
+  /// Applies to:
+  /// 1. Brand new non-subscribed investment (status == 'not_active')
+  /// 2. Post-payout waiting investment (status == 'not_active' or unstarted cycle)
+  bool get isCycleWaiting {
+    if (status == 'matured' || status == 'completed' || status == 'cancelled') {
+      return false;
+    }
+    if (status == 'not_active') {
+      return true;
+    }
+    if (status == 'active' && !autoRestartEnabled) {
+      return nextPayoutAt == null || !nextPayoutAt!.isAfter(DateTime.now());
+    }
+    return false;
+  }
+
+  /// Whether the investment currently has an active running cycle.
+  bool get isCycleActive =>
       status == 'active' &&
-      !autoRestartEnabled &&
-      lastPayoutAt != null &&
-      (nextPayoutAt == null || !nextPayoutAt!.isAfter(DateTime.now()));
+      nextPayoutAt != null &&
+      nextPayoutAt!.isAfter(DateTime.now());
 
   /// Effective next profit distribution timestamp for active investments.
   /// Subscribed (auto-restart) investments roll over; non-subscribed investments
   /// stop when due, signaling cycle completion.
   DateTime? get effectiveNextPayout {
-    if (status != 'active') return nextPayoutAt;
+    if (status != 'active') return null;
     if (nextPayoutAt == null) return null;
     final now = DateTime.now();
     // Non-subscribed investments do not auto-roll when payout is reached

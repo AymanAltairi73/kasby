@@ -27,7 +27,6 @@ $idempotencyKey = [System.Guid]::NewGuid().ToString()
 
 Write-Output "Testing /rpc/fn_create_investment with user token..."
 $fnBody = @{
-    "p_user_id" = $userId
     "p_plan_id" = $silverPlanId
     "p_amount" = $amount
     "p_idempotency_key" = $idempotencyKey

@@ -3,6 +3,7 @@ import 'dart:math' show Random;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/models/profile_model.dart';
 import 'package:kasby/core/models/transaction_model.dart';
@@ -89,12 +90,18 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   final RxMap<String, bool> cycleRestartLoading = <String, bool>{}.obs;
   final RxMap<String, bool> autoRestartToggleLoading = <String, bool>{}.obs;
 
+  // Authoritative subscription state
+  final RxBool isSubscribed = false.obs;
+  final Rx<Map<String, dynamic>?> activeSubscription =
+      Rx<Map<String, dynamic>?>(null);
+
   Timer? _rewardTimer;
   Timer? _notificationReconnectTimer;
   Timer? _profileReconnectTimer;
   Timer? _transactionReconnectTimer;
   Timer? _investmentReconnectTimer;
   Timer? _pointsReconnectTimer;
+  Timer? _subscriptionReconnectTimer;
   Timer? _lifecycleReconnectTimer;
   bool _streamsStarted = false;
 
@@ -259,6 +266,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     Future.delayed(const Duration(seconds: 5), _listenToTransactions);
     Future.delayed(const Duration(seconds: 7), _listenToInvestments);
     Future.delayed(const Duration(seconds: 9), _listenToPoints);
+    Future.delayed(const Duration(seconds: 11), _listenToSubscriptions);
     _setupEarningsListener();
   }
 
@@ -650,6 +658,105 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         );
   }
 
+  // ─── SUBSCRIPTIONS LISTENER ───────────────────────────
+  StreamSubscription? _subscriptionSubscription;
+
+  void _listenToSubscriptions() {
+    if (!SupabaseService.isLoggedIn) return;
+
+    _subscriptionReconnectTimer?.cancel();
+    _subscriptionSubscription?.cancel();
+    _subscriptionSubscription = SupabaseService.client
+        .from('subscriptions')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', SupabaseService.userId!)
+        .order('created_at', ascending: false)
+        .listen(
+          (data) {
+            _evaluateSubscriptions(data);
+            _resetBackoff();
+            _log(
+              'Subscriptions updated via real-time stream',
+              method: '_listenToSubscriptions',
+              params: {'isSubscribed': isSubscribed.value},
+            );
+          },
+          onError: (error, stack) {
+            final isSuppressed = _isRealtimeTimeout(error);
+            _log(
+              isSuppressed
+                  ? 'Subscriptions stream connection deferred'
+                  : 'Subscriptions stream error',
+              method: '_listenToSubscriptions',
+              isError: !isSuppressed,
+              isWarn: isSuppressed,
+              error: isSuppressed ? null : error,
+              stackTrace: isSuppressed ? null : stack,
+            );
+            _subscriptionReconnectTimer?.cancel();
+            _subscriptionReconnectTimer =
+                _scheduleReconnect(_listenToSubscriptions);
+          },
+        );
+  }
+
+  void _evaluateSubscriptions(List<dynamic> data) {
+    final now = DateTime.now();
+    final active = data.firstWhereOrNull((sub) {
+      if (sub['status'] != 'active') return false;
+      final expStr = sub['expires_at'] ?? sub['end_date'];
+      if (expStr == null) return true;
+      final expDate = DateTime.tryParse(expStr.toString());
+      return expDate == null || expDate.isAfter(now);
+    });
+
+    if (active != null) {
+      activeSubscription.value = Map<String, dynamic>.from(active);
+      isSubscribed.value = true;
+    } else {
+      activeSubscription.value = null;
+      isSubscribed.value = false;
+    }
+  }
+
+  Future<void> fetchSubscriptionStatus() async {
+    if (!SupabaseService.isLoggedIn) {
+      isSubscribed.value = false;
+      activeSubscription.value = null;
+      return;
+    }
+    try {
+      final res = await SupabaseService.client
+          .from('subscriptions')
+          .select()
+          .eq('user_id', SupabaseService.userId!)
+          .eq('status', 'active')
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (res != null) {
+        final now = DateTime.now();
+        final expStr = res['expires_at'] ?? res['end_date'];
+        if (expStr == null) {
+          isSubscribed.value = true;
+          activeSubscription.value = Map<String, dynamic>.from(res);
+        } else {
+          final expDate = DateTime.tryParse(expStr.toString());
+          final valid = expDate == null || expDate.isAfter(now);
+          isSubscribed.value = valid;
+          activeSubscription.value =
+              valid ? Map<String, dynamic>.from(res) : null;
+        }
+      } else {
+        isSubscribed.value = false;
+        activeSubscription.value = null;
+      }
+    } catch (e) {
+      debugPrint('[SUBSCRIPTION] fetchSubscriptionStatus error: $e');
+    }
+  }
+
   /// Listen for earnings updates and refresh dashboard
   void _setupEarningsListener() {
     if (!Get.isRegistered<EarningsEventService>()) {
@@ -724,6 +831,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     _transactionReconnectTimer?.cancel();
     _investmentReconnectTimer?.cancel();
     _pointsReconnectTimer?.cancel();
+    _subscriptionSubscription?.cancel();
+    _subscriptionReconnectTimer?.cancel();
     _lifecycleReconnectTimer?.cancel();
     super.onClose();
   }
@@ -782,6 +891,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       CurrencyController.to.fetchCurrencies(),
       CurrencyController.to.fetchWalletBalances(),
       FeeService.load(),
+      fetchSubscriptionStatus(),
     ]);
     SafeGetx.debugTrace(
       className: 'HomeController',
@@ -822,6 +932,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     rewardCountdownText.value = '';
     canClaimRewards.value = false;
     portfolioPeriod.value = '7D';
+    isSubscribed.value = false;
+    activeSubscription.value = null;
   }
 
   /// Keeps dashboard freeze flags aligned with the USD wallet stream.
@@ -1546,6 +1658,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   }
 
   bool _isDistributingProfits = false;
+  DateTime? _lastProfitCheckAt;
+  bool _lastProfitCheckFailed = false;
+
+  /// Minimum interval between profit-distribution RPC calls. The server-side
+  /// pg_cron job already runs every minute, so polling more often only hammers
+  /// the API and amplifies server errors when payouts are stuck.
+  static const Duration _profitCheckCooldown = Duration(seconds: 60);
+  static const Duration _profitCheckBackoff = Duration(minutes: 5);
 
   /// Triggers automated profit distribution check on Supabase and refreshes data
   Future<void> _triggerProfitDistributionCheck() async {
@@ -1555,7 +1675,21 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       );
       return;
     }
+    final lastCheck = _lastProfitCheckAt;
+    if (lastCheck != null) {
+      final minInterval = _lastProfitCheckFailed
+          ? _profitCheckBackoff
+          : _profitCheckCooldown;
+      final elapsed = DateTime.now().difference(lastCheck);
+      if (elapsed < minInterval) {
+        debugPrint(
+          '[PROFIT_CYCLE] Profit distribution check throttled -> lastCheck: $lastCheck, elapsed: ${elapsed.inSeconds}s, minInterval: ${minInterval.inSeconds}s',
+        );
+        return;
+      }
+    }
     _isDistributingProfits = true;
+    _lastProfitCheckAt = DateTime.now();
     try {
       for (final inv in myInvestments.where((i) => i.status == 'active')) {
         debugPrint(
@@ -1593,6 +1727,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       }
 
       _auditPostDistribution();
+      _lastProfitCheckFailed = false;
     } catch (e, stack) {
       debugPrint(
         '[PROFIT_RPC] RESPONSE -> rpc_name: fn_cron_distribute_daily_profits | success: false | error: $e',
@@ -1608,6 +1743,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         error: e,
         stackTrace: stack,
       );
+      _lastProfitCheckFailed = true;
     } finally {
       _isDistributingProfits = false;
     }
@@ -1689,7 +1825,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       isProcessingUI.value = false;
       canClaimRewards.value = pendingRewards.isNotEmpty;
       final hasWaitingCycle = myInvestments.any(
-        (inv) => inv.status == 'active' && inv.isCycleWaiting,
+        (inv) => inv.isCycleWaiting,
       );
       rewardCountdownText.value = hasWaitingCycle ? 'cycle_completed' : '';
       _rewardTimer?.cancel();
@@ -1740,15 +1876,14 @@ class HomeController extends GetxController with WidgetsBindingObserver {
         }
       } else {
         final hasWaitingCycle = myInvestments.any(
-          (inv) => inv.status == 'active' && inv.isCycleWaiting,
+          (inv) => inv.isCycleWaiting,
         );
         rewardCountdownText.value = hasWaitingCycle ? 'cycle_completed' : '';
       }
 
       // Update Individual Investment Timers
-      for (final inv in myInvestments.where((i) => i.status == 'active')) {
-        // Non-subscribed cycle completed — show waiting state, not 00:00:00
-        if (inv.isCycleWaiting) {
+      for (final inv in myInvestments) {
+        if (inv.status != 'active' || inv.isCycleWaiting) {
           investmentCountdowns[inv.id] = 'cycle_completed';
           continue;
         }
@@ -1848,68 +1983,46 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     );
 
     cycleRestartLoading[investmentId] = true;
-    bool rpcSucceeded = false;
     try {
       final response = await SupabaseService.client.rpc(
         'fn_start_next_cycle',
         params: {'p_investment_id': investmentId},
       );
 
-      rpcSucceeded = response is Map && response['success'] == true;
+      final rpcSucceeded = response is Map && response['success'] == true;
       debugPrint(
         '[PROFIT_RPC] fn_start_next_cycle RESPONSE -> success: $rpcSucceeded | response: $response',
       );
-    } catch (e) {
+
+      if (rpcSucceeded) {
+        debugPrint(
+          '[PROFIT_CYCLE] NEXT CYCLE STARTED -> investment_id: $investmentId | countdown_started: true',
+        );
+        HapticFeedback.mediumImpact();
+        AppSnack.success('success'.tr, 'cycle_started_success'.tr);
+        await fetchMyInvestments();
+        await fetchDashboard();
+        triggerEarningsUpdate(source: 'investment_returns');
+      } else {
+        final errorMsg = (response is Map && response['error'] != null)
+            ? response['error'].toString()
+            : 'error_executing_operation'.tr;
+        AppSnack.error('error'.tr, errorMsg);
+      }
+    } catch (e, stack) {
       debugPrint('[PROFIT_ERROR] RPC EXCEPTION -> fn_start_next_cycle failed: $e');
-    }
-
-    if (rpcSucceeded) {
-      debugPrint(
-        '[PROFIT_CYCLE] NEXT CYCLE STARTED -> investment_id: $investmentId | countdown_started: true',
-      );
-      HapticFeedback.mediumImpact();
-      AppSnack.success('success'.tr, 'cycle_started_success'.tr);
-      await fetchMyInvestments();
-      await fetchDashboard();
-      triggerEarningsUpdate(source: 'investment_returns');
-      cycleRestartLoading[investmentId] = false;
-      return;
-    }
-
-    // Direct table update fallback if RPC fails or returns success: false
-    try {
-      await SupabaseService.client
-          .from('user_investments')
-          .update({
-            'next_payout_at': DateTime.now()
-                .add(const Duration(hours: 24))
-                .toIso8601String(),
-            'status': 'active',
-          })
-          .eq('id', investmentId)
-          .eq('user_id', SupabaseService.userId!);
-
-      debugPrint(
-        '[PROFIT_CYCLE] NEXT CYCLE STARTED (Fallback) -> investment_id: $investmentId',
-      );
-      HapticFeedback.mediumImpact();
-      AppSnack.success('success'.tr, 'cycle_started_success'.tr);
-      await fetchMyInvestments();
-      await fetchDashboard();
-      triggerEarningsUpdate(source: 'investment_returns');
-    } catch (fallbackError, stack) {
-      debugPrint(
-        '[PROFIT_ERROR] NEXT CYCLE FAILED TO START -> fallback error: $fallbackError',
-      );
       SafeGetx.debugTrace(
         className: 'HomeController',
         method: 'startNextCycle',
         feature: 'Home',
         status: 'ERROR',
-        error: fallbackError,
+        error: e,
         stackTrace: stack,
       );
-      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
+      final errorMsg = e is PostgrestException && e.message.isNotEmpty
+          ? e.message
+          : 'error_executing_operation'.tr;
+      AppSnack.error('error'.tr, errorMsg);
     } finally {
       cycleRestartLoading[investmentId] = false;
     }
@@ -1918,54 +2031,46 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   Future<void> toggleAutoRestart(String investmentId, bool enabled) async {
     if (autoRestartToggleLoading[investmentId] == true) return;
 
+    if (!isSubscribed.value && enabled) {
+      AppSnack.error('error'.tr, 'feature_for_subscribers_only'.tr);
+      return;
+    }
+
     autoRestartToggleLoading[investmentId] = true;
-    bool rpcSucceeded = false;
     try {
       final response = await SupabaseService.client.rpc(
         'fn_toggle_auto_restart',
         params: {'p_investment_id': investmentId, 'p_enabled': enabled},
       );
 
-      rpcSucceeded = response is Map && response['success'] == true;
-    } catch (e) {
+      final rpcSucceeded = response is Map && response['success'] == true;
+      if (rpcSucceeded) {
+        HapticFeedback.lightImpact();
+        AppSnack.success(
+          'success'.tr,
+          enabled ? 'auto_restart_enabled'.tr : 'auto_restart_disabled'.tr,
+        );
+        await fetchMyInvestments();
+      } else {
+        final errorMsg = (response is Map && response['error'] != null)
+            ? response['error'].toString()
+            : 'error_executing_operation'.tr;
+        AppSnack.error('error'.tr, errorMsg);
+      }
+    } catch (e, stack) {
       debugPrint('[PROFIT_RPC] fn_toggle_auto_restart exception: $e');
-    }
-
-    if (rpcSucceeded) {
-      HapticFeedback.lightImpact();
-      AppSnack.success(
-        'success'.tr,
-        enabled ? 'auto_restart_enabled'.tr : 'auto_restart_disabled'.tr,
-      );
-      await fetchMyInvestments();
-      autoRestartToggleLoading[investmentId] = false;
-      return;
-    }
-
-    // Direct table update fallback if RPC fails or returns success: false
-    try {
-      await SupabaseService.client
-          .from('user_investments')
-          .update({'auto_restart_enabled': enabled})
-          .eq('id', investmentId)
-          .eq('user_id', SupabaseService.userId!);
-
-      HapticFeedback.lightImpact();
-      AppSnack.success(
-        'success'.tr,
-        enabled ? 'auto_restart_enabled'.tr : 'auto_restart_disabled'.tr,
-      );
-      await fetchMyInvestments();
-    } catch (fallbackError, stack) {
       SafeGetx.debugTrace(
         className: 'HomeController',
         method: 'toggleAutoRestart',
         feature: 'Home',
         status: 'ERROR',
-        error: fallbackError,
+        error: e,
         stackTrace: stack,
       );
-      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
+      final errorMsg = e is PostgrestException && e.message.isNotEmpty
+          ? e.message
+          : 'error_executing_operation'.tr;
+      AppSnack.error('error'.tr, errorMsg);
     } finally {
       autoRestartToggleLoading[investmentId] = false;
     }

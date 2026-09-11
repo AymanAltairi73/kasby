@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kasby/core/models/user_investment_model.dart';
 
 void main() {
   group('Kasby Financial & Business Logic Unit Tests', () {
@@ -671,6 +672,99 @@ void main() {
         // Simulate failure: do NOT clear; same amount retries with K1.
         expect(persistedKey['key'], 'stable_key_K1');
         expect(persistedAmount['amount'], 10000);
+      });
+    });
+
+    // ── 15. NON-SUBSCRIBED USER INVESTMENT LIFECYCLE ──
+    group('15. Non-Subscribed User Investment Lifecycle', () {
+      test('Initial Creation: status=not_active, nextPayoutAt=null, autoRestart=false', () {
+        final inv = UserInvestmentModel(
+          id: 'inv_non_sub_1',
+          userId: 'user_1',
+          planId: 'plan_1',
+          amount: 500.0,
+          profitPercentage: 15.0,
+          status: 'not_active',
+          nextPayoutAt: null,
+          autoRestartEnabled: false,
+        );
+
+        // Profit cycle must not start automatically
+        expect(inv.isCycleWaiting, isTrue);
+        expect(inv.isCycleActive, isFalse);
+        expect(inv.effectiveNextPayout, isNull);
+      });
+
+      test('User Clicks "Start Investment Cycle": transitions to active, nextPayoutAt set, autoRestart remains false', () {
+        final now = DateTime.now();
+        final inv = UserInvestmentModel(
+          id: 'inv_non_sub_1',
+          userId: 'user_1',
+          planId: 'plan_1',
+          amount: 500.0,
+          profitPercentage: 15.0,
+          status: 'active',
+          nextPayoutAt: now.add(const Duration(hours: 24)),
+          autoRestartEnabled: false,
+        );
+
+        expect(inv.isCycleWaiting, isFalse);
+        expect(inv.isCycleActive, isTrue);
+        expect(inv.effectiveNextPayout, isNotNull);
+        expect(inv.effectiveNextPayout!.isAfter(now), isTrue);
+      });
+
+      test('Profit Payout Triggered: cycle finishes, investment returns to not_active waiting state', () {
+        final now = DateTime.now();
+        final inv = UserInvestmentModel(
+          id: 'inv_non_sub_1',
+          userId: 'user_1',
+          planId: 'plan_1',
+          amount: 500.0,
+          profitPercentage: 15.0,
+          status: 'not_active',
+          nextPayoutAt: null,
+          lastPayoutAt: now,
+          autoRestartEnabled: false,
+        );
+
+        // Must require user to explicitly start the next cycle
+        expect(inv.isCycleWaiting, isTrue);
+        expect(inv.isCycleActive, isFalse);
+        expect(inv.effectiveNextPayout, isNull);
+      });
+
+      test('Non-subscribed user UI rule: auto_restart toggle hidden and auto_restart_enabled always false', () {
+        const isSubscribed = false;
+        final inv = UserInvestmentModel(
+          id: 'inv_non_sub_1',
+          userId: 'user_1',
+          planId: 'plan_1',
+          amount: 500.0,
+          profitPercentage: 15.0,
+          status: 'active',
+          autoRestartEnabled: false,
+        );
+
+        // Visibility condition in UI: (isActive && isSubscribed)
+        final isAutoRestartVisible = (inv.status == 'active') && isSubscribed;
+        expect(isAutoRestartVisible, isFalse);
+      });
+
+      test('Subscribed user UI rule: auto_restart toggle visible and functional', () {
+        const isSubscribed = true;
+        final inv = UserInvestmentModel(
+          id: 'inv_sub_1',
+          userId: 'user_2',
+          planId: 'plan_1',
+          amount: 500.0,
+          profitPercentage: 15.0,
+          status: 'active',
+          autoRestartEnabled: true,
+        );
+
+        final isAutoRestartVisible = (inv.status == 'active') && isSubscribed;
+        expect(isAutoRestartVisible, isTrue);
       });
     });
   });

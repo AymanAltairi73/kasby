@@ -23,6 +23,7 @@ class TransactionModel {
   final DateTime? processedAt;
   final String? rejectionReason;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const TransactionModel({
     required this.id,
@@ -45,6 +46,7 @@ class TransactionModel {
     this.processedAt,
     this.rejectionReason,
     this.createdAt,
+    this.updatedAt,
   });
 
   /// Whether this is a credit (money in) transaction.
@@ -87,6 +89,9 @@ class TransactionModel {
         rejectionReason: json['rejection_reason'] as String?,
         createdAt: json['created_at'] != null
             ? DateTime.parse(json['created_at'])
+            : null,
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'])
             : null,
       );
     } catch (e, stack) {
@@ -143,6 +148,7 @@ class TransactionModel {
     DateTime? processedAt,
     String? rejectionReason,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -165,6 +171,7 @@ class TransactionModel {
       processedAt: processedAt ?? this.processedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

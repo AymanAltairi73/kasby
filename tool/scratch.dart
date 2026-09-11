@@ -1,14 +1,19 @@
-import 'dart:convert';
 import 'dart:io';
 
-const supabaseUrl = 'https://majnuiypsgosbzsaeefc.supabase.co';
-const serviceKey =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ham51aXlwc2dvc2J6c2FlZWZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA3MDk3NSwiZXhwIjoyMDg3NjQ2OTc1fQ.5EoQZEgv9HmYLYIlF14vzd6u3qNX9LmJB-RtzE4sA1Q';
-
-final _client = HttpClient();
-
-Future<void> main() async {
-  // Let's test what RPCs can give us database inspection
-  // Let's check archive/supabase_setup.sql or archive files for create_investment
-  // We can search all archive SQL files!
+void main() {
+  for (final path in [
+    'supabase/migrations/20260623120000_admin_hardening_phase2.sql',
+    'supabase/migrations/20260628120000_referral_financial_enterprise.sql',
+  ]) {
+    final file = File(path);
+    final lines = file.readAsLinesSync();
+    print('=== $path ===');
+    for (int i = 0; i < lines.length; i++) {
+      if (lines[i].contains('user_investments') && lines[i].contains('status') || lines[i].contains('status TEXT') || lines[i].contains('status VARCHAR')) {
+        for (int j = (i - 2 < 0 ? 0 : i - 2); j < (i + 5 > lines.length ? lines.length : i + 5); j++) {
+          print('${j + 1}: ${lines[j]}');
+        }
+      }
+    }
+  }
 }

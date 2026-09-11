@@ -810,27 +810,30 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                   color: AppColors.softGreen,
                 ),
               ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: inv.autoRestartEnabled
-                      ? AppColors.softGreen.withValues(alpha: 0.15)
-                      : Colors.orange.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  inv.autoRestartEnabled ? 'تلقائي' : 'يدوي',
-                  style: TextStyle(
-                    fontFamily: 'IBMPlexSansArabic',
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+              if (HomeController.to.isSubscribed.value) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
                     color: inv.autoRestartEnabled
-                        ? AppColors.softGreen
-                        : Colors.orange,
+                        ? AppColors.softGreen.withValues(alpha: 0.15)
+                        : Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    inv.autoRestartEnabled ? 'تلقائي' : 'يدوي',
+                    style: TextStyle(
+                      fontFamily: 'IBMPlexSansArabic',
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: inv.autoRestartEnabled
+                          ? AppColors.softGreen
+                          : Colors.orange,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ],

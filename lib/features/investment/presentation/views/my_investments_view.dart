@@ -473,6 +473,7 @@ class _InvestmentsListState extends State<_InvestmentsList> {
             final index = rawIndex - 1;
             final inv = investments[index];
             final isActive = inv.status == 'active';
+            final isNotActive = inv.status == 'not_active';
             final isAr = Get.locale?.languageCode == 'ar';
             final plan = inv.investment;
             final nameAr = plan?.nameAr;
@@ -543,23 +544,33 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                               color:
                                   (isActive
                                           ? AppColors.softGreen
-                                          : AppColors.textSecondary)
+                                          : isNotActive
+                                              ? AppColors.darkGold
+                                              : AppColors.textSecondary)
                                       .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color:
                                     (isActive
                                             ? AppColors.softGreen
-                                            : AppColors.textSecondary)
+                                            : isNotActive
+                                                ? AppColors.darkGold
+                                                : AppColors.textSecondary)
                                         .withValues(alpha: 0.3),
                               ),
                             ),
                             child: Text(
-                              isActive ? 'active'.tr : inv.status.tr,
+                              isActive
+                                  ? 'active'.tr
+                                  : isNotActive
+                                      ? 'not_active'.tr
+                                      : inv.status.tr,
                               style: TextStyle(
                                 color: isActive
                                     ? AppColors.softGreen
-                                    : AppColors.textSecondary,
+                                    : isNotActive
+                                        ? AppColors.darkGold
+                                        : AppColors.textSecondary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -653,7 +664,7 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                         AppColors.darkGold,
                       ),
                       const SizedBox(height: 8),
-                      if (isActive)
+                      if (isActive || inv.isCycleWaiting)
                         Obx(() {
                           final countdown =
                               HomeController.to.investmentCountdowns[inv.id] ??
@@ -675,18 +686,20 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                               if (isWaiting) ...[
                                 _buildProgressRow(
                                   'next_profit'.tr,
-                                  'cycle_completed_message'.tr,
-                                  AppColors.softGreen,
+                                  inv.lastPayoutAt != null
+                                      ? 'cycle_completed_message'.tr
+                                      : 'cycle_not_started_message'.tr,
+                                  AppColors.darkGold,
                                 ),
                                 const SizedBox(height: 12),
                                 SizedBox(
                                   width: double.infinity,
                                   child: KasbyButton(
-                                    text: 'start_next_cycle'.tr,
+                                    text: 'start_investment_cycle'.tr,
                                     isLoading: isStarting,
                                     onPressed: () async {
                                       debugPrint(
-                                        '[PROFIT_CYCLE] User tapped start_next_cycle for investment_id: ${inv.id}',
+                                        '[PROFIT_CYCLE] User tapped start_investment_cycle for investment_id: ${inv.id}',
                                       );
                                       await HomeController.to.startNextCycle(
                                         inv.id,
@@ -729,7 +742,7 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                           ),
                         ),
                       ],
-                      if (isActive) ...[
+                      if (isActive && HomeController.to.isSubscribed.value) ...[
                         const SizedBox(height: 12),
                         const Divider(height: 1),
                         const SizedBox(height: 12),

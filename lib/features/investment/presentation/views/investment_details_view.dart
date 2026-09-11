@@ -13,6 +13,7 @@ import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:kasby/core/services/referral_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:flutter/services.dart';
@@ -485,14 +486,28 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
           'planId': planId,
           'amount': amount,
         },
-        operation: () => SupabaseService.client.rpc(
-          'create_investment',
-          params: {
-            'p_plan_id': planId,
-            'p_amount': amount,
-            'p_idempotency_key': idempotencyKey,
-          },
-        ),
+        operation: () async {
+          try {
+            return await SupabaseService.client.rpc(
+              'create_investment',
+              params: {
+                'p_plan_id': planId,
+                'p_amount': amount,
+                'p_idempotency_key': idempotencyKey,
+              },
+            );
+          } catch (e) {
+            // Fallback attempt to fn_create_investment in case of RPC name alias difference
+            return await SupabaseService.client.rpc(
+              'fn_create_investment',
+              params: {
+                'p_plan_id': planId,
+                'p_amount': amount,
+                'p_idempotency_key': idempotencyKey,
+              },
+            );
+          }
+        },
         onSuccessParams: (rpcResult) {
           final rpcResponse = rpcResult is Map
               ? Map<String, dynamic>.from(rpcResult)
@@ -564,7 +579,10 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
         error: e,
         stackTrace: st,
       );
-      AppSnack.error('error'.tr, 'error_executing_operation'.tr);
+      final errorMsg = e is PostgrestException && e.message.isNotEmpty
+          ? e.message
+          : 'error_executing_operation'.tr;
+      AppSnack.error('error'.tr, errorMsg);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
