@@ -319,9 +319,13 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                                 currencyController
                                                     .totalEffectiveUsd,
                                               ),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 35,
+                                          fontSize: KasbyTypography.sp(
+                                            ar: 35.0,
+                                            en: 30.0,
+                                            context: context,
+                                          ),
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: -0.5,
                                         ),
@@ -342,7 +346,11 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                                         color: Colors.white.withValues(
                                           alpha: 0.8,
                                         ),
-                                        fontSize: 13,
+                                        fontSize: KasbyTypography.sp(
+                                          ar: 13.0,
+                                          en: 11.5,
+                                          context: context,
+                                        ),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     );
@@ -1085,7 +1093,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                             ? AppColors.textSecondary
                             : AppColors.textSecondaryLight)
                       : Theme.of(context).colorScheme.onSurface,
-                  fontSize: KasbyTypography.sp(ar: 16.0, en: 14.5, context: context),
+                  fontSize: KasbyTypography.button(context),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1140,7 +1148,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                             ? AppColors.textSecondary
                             : AppColors.textSecondaryLight)
                       : Theme.of(context).colorScheme.onSurface,
-                  fontSize: KasbyTypography.sp(ar: 14.0, en: 13.0, context: context),
+                  fontSize: KasbyTypography.sp(ar: 14.0, en: 12.5, context: context),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1247,7 +1255,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
             Text(
               'transaction_history'.tr,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: KasbyTypography.sectionHeader(context),
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -1414,9 +1422,13 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                   children: [
                     Text(
                       tx.description ?? tx.type.tr,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: KasbyTypography.sp(
+                          ar: 14.0,
+                          en: 12.5,
+                          context: context,
+                        ),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1426,7 +1438,11 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                       DateHelper.time(tx.createdAt),
                       style: TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 11,
+                        fontSize: KasbyTypography.sp(
+                          ar: 11.0,
+                          en: 10.0,
+                          context: context,
+                        ),
                       ),
                     ),
                   ],
@@ -1439,7 +1455,11 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                     '${isNegative ? "-" : "+"}${currencyController.formatAmount(tx.amount)}',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 15,
+                      fontSize: KasbyTypography.sp(
+                        ar: 15.0,
+                        en: 13.5,
+                        context: context,
+                      ),
                       color: isNegative ? AppColors.error : AppColors.softGreen,
                     ),
                   ),
@@ -1457,7 +1477,11 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                       tx.status.tr.toUpperCase(),
                       style: TextStyle(
                         color: _getStatusColor(tx.status),
-                        fontSize: 8,
+                        fontSize: KasbyTypography.sp(
+                          ar: 8.0,
+                          en: 7.5,
+                          context: context,
+                        ),
                         fontWeight: FontWeight.bold,
                       ),
                     ),

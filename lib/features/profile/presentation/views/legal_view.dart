@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/legal/kasby_legal_content.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LegalView extends StatefulWidget {
@@ -117,7 +118,11 @@ class _LegalDocumentBody extends StatelessWidget {
           Text(
             intro,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: KasbyTypography.sp(
+                ar: 16.0,
+                en: 13.5,
+                context: context,
+              ),
               fontWeight: FontWeight.w600,
               height: 1.5,
               color: Theme.of(context).colorScheme.onSurface,
@@ -130,8 +135,12 @@ class _LegalDocumentBody extends StatelessWidget {
               color: isDark
                   ? AppColors.textSecondary
                   : AppColors.textSecondaryLight,
-              height: 1.8,
-              fontSize: 14,
+              height: KasbyTypography.isEnglish(context) ? 1.55 : 1.8,
+              fontSize: KasbyTypography.sp(
+                ar: 14.0,
+                en: 12.5,
+                context: context,
+              ),
             ),
           ),
         ],

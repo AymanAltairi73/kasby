@@ -3,20 +3,24 @@ import 'app_colors.dart';
 import 'kasby_typography.dart';
 
 class AppTheme {
-  static ThemeData get darkTheme {
-    final isEn = KasbyTypography.isEnglish();
+  static ThemeData get darkTheme =>
+      getDarkTheme(isEnglish: KasbyTypography.isEnglish());
+  static ThemeData get lightTheme =>
+      getLightTheme(isEnglish: KasbyTypography.isEnglish());
+
+  static ThemeData getDarkTheme({required bool isEnglish}) {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       primaryColor: AppColors.primaryDark,
       scaffoldBackgroundColor: AppColors.backgroundDark,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryDark,
         surface: AppColors.surfaceDark,
         onSurface: AppColors.onSurfaceDark,
         error: AppColors.errorDark,
       ),
-      textTheme: _buildTextTheme(isDark: true, isEnglish: isEn),
+      textTheme: _buildTextTheme(isDark: true, isEnglish: isEnglish),
       cardTheme: CardThemeData(
         color: AppColors.surfaceDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -28,16 +32,142 @@ class AppTheme {
         centerTitle: true,
         titleTextStyle: TextStyle(
           fontFamily: KasbyTypography.fontFamily,
-          fontSize: isEn ? 17 : 18,
+          fontSize: isEnglish ? 16.5 : 18,
           fontWeight: FontWeight.bold,
           color: AppColors.onSurfaceDark,
         ),
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceDark,
+        hintStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          color: AppColors.textSecondaryDark.withValues(alpha: 0.6),
+          fontSize: isEnglish ? 12.5 : 14,
+        ),
+        labelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          color: AppColors.textSecondaryDark,
+          fontSize: isEnglish ? 12.5 : 14,
+        ),
+        prefixIconColor: AppColors.textSecondaryDark,
+        suffixIconColor: AppColors.textSecondaryDark,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.goldDark, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.errorDark),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.errorDark, width: 1.5),
+        ),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        elevation: 8,
+        selectedItemColor: AppColors.goldDark,
+        unselectedItemColor: AppColors.textSecondaryDark,
+        selectedLabelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 10 : 11,
+          fontWeight: FontWeight.bold,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 10 : 11,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        surfaceTintColor: Colors.transparent,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        titleTextStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 16 : 18,
+          fontWeight: FontWeight.bold,
+          color: AppColors.onSurfaceDark,
+        ),
+        contentTextStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 12.5 : 14,
+          color: AppColors.textBodyDark,
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        contentTextStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          color: Colors.white,
+          fontSize: isEnglish ? 13 : 14,
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: Colors.white.withValues(alpha: 0.05),
+        disabledColor: Colors.white.withValues(alpha: 0.02),
+        selectedColor: AppColors.goldDark.withValues(alpha: 0.18),
+        secondarySelectedColor: AppColors.goldDark,
+        labelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          color: AppColors.onSurfaceDark,
+          fontSize: isEnglish ? 11 : 12,
+        ),
+        secondaryLabelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          color: AppColors.onSurfaceDark,
+          fontSize: isEnglish ? 11 : 12,
+        ),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      tabBarTheme: TabBarThemeData(
+        indicatorColor: AppColors.goldDark,
+        labelColor: AppColors.goldDark,
+        unselectedLabelColor: AppColors.textSecondaryDark,
+        labelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 13 : 14,
+          fontWeight: FontWeight.bold,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 13 : 14,
+          fontWeight: FontWeight.normal,
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.goldDark,
+        circularTrackColor: Colors.white10,
+        linearTrackColor: Colors.white10,
+      ),
     );
   }
 
-  static ThemeData get lightTheme {
-    final isEn = KasbyTypography.isEnglish();
+  static ThemeData getLightTheme({required bool isEnglish}) {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -59,7 +189,7 @@ class AppTheme {
         outline: AppColors.borderLight,
         outlineVariant: AppColors.borderStrongLight,
       ),
-      textTheme: _buildTextTheme(isDark: false, isEnglish: isEn),
+      textTheme: _buildTextTheme(isDark: false, isEnglish: isEnglish),
       cardTheme: CardThemeData(
         color: AppColors.surfaceLight,
         elevation: 0,
@@ -83,7 +213,7 @@ class AppTheme {
         actionsIconTheme: const IconThemeData(color: AppColors.onSurfaceLight),
         titleTextStyle: TextStyle(
           fontFamily: KasbyTypography.fontFamily,
-          fontSize: isEn ? 17 : 18,
+          fontSize: isEnglish ? 16.5 : 18,
           fontWeight: FontWeight.bold,
           color: AppColors.onSurfaceLight,
         ),
@@ -92,15 +222,15 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceLight,
-        hintStyle: const TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
+        hintStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
           color: AppColors.textMutedLight,
-          fontSize: 14,
+          fontSize: isEnglish ? 12.5 : 14,
         ),
-        labelStyle: const TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
+        labelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
           color: AppColors.textSecondaryLight,
-          fontSize: 14,
+          fontSize: isEnglish ? 12.5 : 14,
         ),
         prefixIconColor: AppColors.textSecondaryLight,
         suffixIconColor: AppColors.textSecondaryLight,
@@ -125,19 +255,19 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.errorLight, width: 1.5),
         ),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.surfaceLight,
         elevation: 8,
         selectedItemColor: AppColors.goldLight,
         unselectedItemColor: AppColors.textSecondaryLight,
         selectedLabelStyle: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 11,
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 10 : 11,
           fontWeight: FontWeight.bold,
         ),
         unselectedLabelStyle: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 11,
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 10 : 11,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -149,15 +279,15 @@ class AppTheme {
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: AppColors.borderLight),
         ),
-        titleTextStyle: const TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 18,
+        titleTextStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 16 : 18,
           fontWeight: FontWeight.bold,
           color: AppColors.onSurfaceLight,
         ),
-        contentTextStyle: const TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 14,
+        contentTextStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 12.5 : 14,
           color: AppColors.textBodyLight,
         ),
       ),
@@ -169,12 +299,12 @@ class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
       ),
-      snackBarTheme: const SnackBarThemeData(
+      snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.onSurfaceLight,
         contentTextStyle: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
+          fontFamily: KasbyTypography.fontFamily,
           color: Colors.white,
-          fontSize: 14,
+          fontSize: isEnglish ? 13 : 14,
         ),
         behavior: SnackBarBehavior.floating,
       ),
@@ -183,31 +313,31 @@ class AppTheme {
         disabledColor: AppColors.borderLight,
         selectedColor: AppColors.goldLight.withValues(alpha: 0.18),
         secondarySelectedColor: AppColors.goldLight,
-        labelStyle: const TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
+        labelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
           color: AppColors.onSurfaceLight,
-          fontSize: 12,
+          fontSize: isEnglish ? 11 : 12,
         ),
-        secondaryLabelStyle: const TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
+        secondaryLabelStyle: TextStyle(
+          fontFamily: KasbyTypography.fontFamily,
           color: AppColors.onSurfaceLight,
-          fontSize: 12,
+          fontSize: isEnglish ? 11 : 12,
         ),
         side: const BorderSide(color: AppColors.borderLight),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      tabBarTheme: const TabBarThemeData(
+      tabBarTheme: TabBarThemeData(
         indicatorColor: AppColors.goldLight,
         labelColor: AppColors.goldLight,
         unselectedLabelColor: AppColors.textSecondaryLight,
         labelStyle: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 14,
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 13 : 14,
           fontWeight: FontWeight.bold,
         ),
         unselectedLabelStyle: TextStyle(
-          fontFamily: 'IBMPlexSansArabic',
-          fontSize: 14,
+          fontFamily: KasbyTypography.fontFamily,
+          fontSize: isEnglish ? 13 : 14,
           fontWeight: FontWeight.normal,
         ),
       ),
@@ -255,92 +385,92 @@ class AppTheme {
     return TextTheme(
       displayLarge: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 28 : 32,
+        fontSize: isEnglish ? 26 : 32,
         fontWeight: FontWeight.bold,
         color: primaryTextColor,
       ),
       displayMedium: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 24 : 28,
+        fontSize: isEnglish ? 22 : 28,
         fontWeight: FontWeight.bold,
         color: primaryTextColor,
       ),
       displaySmall: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 22 : 24,
+        fontSize: isEnglish ? 20 : 24,
         fontWeight: FontWeight.bold,
         color: primaryTextColor,
       ),
       headlineLarge: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 20 : 22,
+        fontSize: isEnglish ? 18.5 : 22,
         fontWeight: FontWeight.bold,
         color: primaryTextColor,
       ),
       headlineMedium: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 18 : 20,
+        fontSize: isEnglish ? 17 : 20,
         fontWeight: FontWeight.bold,
         color: primaryTextColor,
       ),
       headlineSmall: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 16.5 : 18,
+        fontSize: isEnglish ? 15.5 : 18,
         fontWeight: FontWeight.w600,
         color: primaryTextColor,
       ),
       titleLarge: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 18 : 20,
+        fontSize: isEnglish ? 17 : 20,
         fontWeight: FontWeight.bold,
         color: primaryTextColor,
       ),
       titleMedium: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 15 : 16,
+        fontSize: isEnglish ? 14 : 16,
         fontWeight: FontWeight.w600,
         color: primaryTextColor,
       ),
       titleSmall: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 13.5 : 14,
+        fontSize: isEnglish ? 12.5 : 14,
         fontWeight: FontWeight.w600,
         color: secondaryTextColor,
       ),
       bodyLarge: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 14.5 : 16,
+        fontSize: isEnglish ? 13.5 : 16,
         fontWeight: FontWeight.normal,
         color: bodyTextColor,
       ),
       bodyMedium: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 13 : 14,
+        fontSize: isEnglish ? 12.5 : 14,
         fontWeight: FontWeight.normal,
         color: bodyTextColor,
       ),
       bodySmall: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 11.5 : 12,
+        fontSize: isEnglish ? 11 : 12,
         fontWeight: FontWeight.normal,
         color: secondaryTextColor,
       ),
       labelLarge: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 13.5 : 14,
+        fontSize: isEnglish ? 13 : 14,
         fontWeight: FontWeight.w600,
         color: primaryTextColor,
         letterSpacing: isEnglish ? 0.2 : 0,
       ),
       labelMedium: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 11.5 : 12,
+        fontSize: isEnglish ? 11 : 12,
         fontWeight: FontWeight.w500,
         color: secondaryTextColor,
       ),
       labelSmall: TextStyle(
         fontFamily: KasbyTypography.fontFamily,
-        fontSize: isEnglish ? 10 : 11,
+        fontSize: isEnglish ? 9.5 : 11,
         fontWeight: FontWeight.w500,
         color: secondaryTextColor,
       ),

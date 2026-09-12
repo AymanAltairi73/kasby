@@ -953,8 +953,7 @@ class _ProfileViewState extends State<ProfileView> {
       selected: isSelected,
       child: InkWell(
         onTap: () async {
-          Get.updateLocale(Locale(langCode, countryCode));
-          await LocaleHelper.saveLanguageCode(langCode);
+          await LocaleHelper.updateLocale(Locale(langCode, countryCode));
           Get.back();
         },
         child: Container(

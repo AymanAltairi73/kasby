@@ -144,11 +144,9 @@ class _OnboardingViewState extends State<OnboardingView> {
                 ),
                 onPressed: () {
                   if (Get.locale?.languageCode == 'ar') {
-                    Get.updateLocale(const Locale('en', 'US'));
-                    LocaleHelper.saveLanguageCode('en');
+                    LocaleHelper.updateLocale(const Locale('en', 'US'));
                   } else {
-                    Get.updateLocale(const Locale('ar', 'SA'));
-                    LocaleHelper.saveLanguageCode('ar');
+                    LocaleHelper.updateLocale(const Locale('ar', 'SA'));
                   }
                 },
               ),

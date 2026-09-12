@@ -251,7 +251,7 @@ class _NotificationsViewState extends State<NotificationsView> {
                                           child: Text(
                                             notification.localizedTitle,
                                             style: TextStyle(
-                                              fontSize: KasbyTypography.sp(ar: 15.0, en: 14.0, context: context),
+                                              fontSize: KasbyTypography.sp(ar: 15.0, en: 13.5, context: context),
                                               fontWeight: isRead
                                                   ? FontWeight.w600
                                                   : FontWeight.bold,

@@ -7,6 +7,15 @@ class ThemeController extends GetxController {
   static ThemeController get to => Get.find();
 
   final RxBool isDark = true.obs;
+  final RxString currentLanguage = (Get.locale?.languageCode ?? 'ar').obs;
+
+  bool get isEnglish => currentLanguage.value == 'en';
+
+  void updateLanguage(String langCode) {
+    if (currentLanguage.value != langCode) {
+      currentLanguage.value = langCode;
+    }
+  }
 
   static const String _themeKey = 'isDarkMode';
 

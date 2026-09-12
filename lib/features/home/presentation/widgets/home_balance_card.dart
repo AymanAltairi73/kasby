@@ -204,7 +204,11 @@ class HomeBalanceCard extends StatelessWidget {
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w500,
-                              fontSize: 13,
+                              fontSize: KasbyTypography.sp(
+                                ar: 13.0,
+                                en: 11.5,
+                                context: context,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -649,7 +653,7 @@ class _BalanceLegendItem extends StatelessWidget {
                 : AppColors.textSecondaryLight,
             fontSize: KasbyTypography.sp(
               ar: 10.0,
-              en: 9.5,
+              en: 8.5,
               context: context,
             ),
           ),

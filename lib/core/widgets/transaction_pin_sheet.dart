@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/features/auth/presentation/widgets/auth_otp_input.dart';
 import 'package:kasby/core/services/transaction_auth_service.dart';
@@ -60,8 +61,8 @@ class _TransactionPinSheetBodyState extends State<_TransactionPinSheetBody> {
               const SizedBox(height: 16),
               Text(
                 widget.title,
-                style: const TextStyle(
-                  fontSize: 20,
+                style: TextStyle(
+                  fontSize: KasbyTypography.cardTitle(context),
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
@@ -73,7 +74,7 @@ class _TransactionPinSheetBodyState extends State<_TransactionPinSheetBody> {
                   color: isDark
                       ? AppColors.textSecondary
                       : AppColors.textSecondaryLight,
-                  fontSize: 14,
+                  fontSize: KasbyTypography.body(context),
                 ),
                 textAlign: TextAlign.center,
               ),

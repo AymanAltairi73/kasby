@@ -168,14 +168,18 @@ class _KasbyButtonState extends State<KasbyButton>
                         Icon(widget.icon, size: 20),
                         const SizedBox(width: 10),
                       ],
-                      Text(
-                        widget.text,
-                        style: TextStyle(
-                          fontFamily: KasbyTypography.fontFamily,
-                          fontSize: KasbyTypography.button(context),
-                          letterSpacing:
-                              KasbyTypography.isEnglish(context) ? 0.2 : 0.0,
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          widget.text,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: KasbyTypography.fontFamily,
+                            fontSize: KasbyTypography.button(context),
+                            letterSpacing:
+                                KasbyTypography.isEnglish(context) ? 0.2 : 0.0,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],

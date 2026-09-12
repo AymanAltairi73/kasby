@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/models/agent_model.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/agent_status_badge.dart';
 import 'package:kasby/core/widgets/directional_chevron.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
@@ -75,7 +76,7 @@ class AgentCard extends StatelessWidget {
             label,
             style: TextStyle(
               color: color,
-              fontSize: 10,
+              fontSize: KasbyTypography.badge(context),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -122,7 +123,11 @@ class AgentCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: KasbyTypography.sp(
+                                ar: 16.0,
+                                en: 14.5,
+                                context: context,
+                              ),
                               fontWeight: FontWeight.w800,
                               color: isDark
                                   ? Colors.white

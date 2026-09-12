@@ -210,6 +210,7 @@ class _KasbyAppState extends State<KasbyApp> {
       status: 'SUCCESS',
       message: 'GetMaterialApp initialized',
     );
+    ThemeController.to.updateLanguage(widget.initialLocale.languageCode);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AppVersionService.to.checkForUpdate();
     });
@@ -219,11 +220,12 @@ class _KasbyAppState extends State<KasbyApp> {
   Widget build(BuildContext context) {
     return Obx(() {
       final isDark = ThemeController.to.isDark.value;
+      final isEn = ThemeController.to.isEnglish;
       return GetMaterialApp(
         title: 'Kasby',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
+        theme: AppTheme.getLightTheme(isEnglish: isEn),
+        darkTheme: AppTheme.getDarkTheme(isEnglish: isEn),
         themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
         initialRoute: AppPages.initial,
         getPages: AppPages.routes,

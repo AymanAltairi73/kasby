@@ -78,7 +78,7 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
                       ? AppColors.textSecondary
                       : AppColors.textSecondaryLight,
                   fontSize:
-                      KasbyTypography.sp(ar: 14.0, en: 13.0, context: context),
+                      KasbyTypography.sp(ar: 14.0, en: 12.5, context: context),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -99,7 +99,7 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
               style: TextStyle(
                 fontFamily: KasbyTypography.fontFamily,
                 fontSize:
-                    KasbyTypography.sp(ar: 15.0, en: 14.0, context: context),
+                    KasbyTypography.sp(ar: 15.0, en: 13.5, context: context),
                 color: Theme.of(context).colorScheme.onSurface,
               ),
               decoration: InputDecoration(
@@ -107,7 +107,7 @@ class _KasbyTextFieldState extends State<KasbyTextField> {
                 hintStyle: TextStyle(
                   fontFamily: KasbyTypography.fontFamily,
                   fontSize:
-                      KasbyTypography.sp(ar: 14.0, en: 13.0, context: context),
+                      KasbyTypography.sp(ar: 14.0, en: 12.5, context: context),
                   color: Theme.of(
                     context,
                   ).colorScheme.onSurface.withValues(alpha: 0.55),

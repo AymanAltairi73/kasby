@@ -176,7 +176,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                               'select_amount'.tr,
                               style: TextStyle(
                                 color: AppColors.textSecondary,
-                                fontSize: KasbyTypography.sp(ar: 14.0, en: 13.0, context: context),
+                                fontSize: KasbyTypography.sp(ar: 14.0, en: 12.5, context: context),
                               ),
                             ),
                             icon: Icon(
@@ -193,7 +193,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                                   ? Colors.white
                                   : AppColors.textBodyLight,
                               fontWeight: FontWeight.bold,
-                              fontSize: KasbyTypography.sp(ar: 16.0, en: 14.5, context: context),
+                              fontSize: KasbyTypography.sp(ar: 16.0, en: 13.5, context: context),
                             ),
                             onChanged: (String? newValue) {
                               if (newValue != null) {
@@ -249,7 +249,10 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                         Expanded(
                           child: Text(
                             'estimated_profit'.tr,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: KasbyTypography.sp(ar: 14.0, en: 12.5, context: context),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -346,7 +349,7 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
             style: TextStyle(
               color: valueColor,
               fontWeight: FontWeight.bold,
-              fontSize: KasbyTypography.sp(ar: 16.0, en: 14.5, context: context),
+              fontSize: KasbyTypography.sp(ar: 16.0, en: 13.5, context: context),
             ),
           ),
         ),

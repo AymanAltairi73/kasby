@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:kasby/core/controllers/theme_controller.dart';
+
 /// Centralized typography token system that scales font sizes proportionally
 /// between Arabic and English without breaking the visual hierarchy.
 ///
@@ -18,7 +20,12 @@ class KasbyTypography {
       final loc = Localizations.maybeLocaleOf(context);
       if (loc != null) return loc.languageCode == 'en';
     }
-    return Get.locale?.languageCode == 'en';
+    final code = Get.locale?.languageCode;
+    if (code != null) return code == 'en';
+    if (Get.isRegistered<ThemeController>()) {
+      return ThemeController.to.isEnglish;
+    }
+    return false;
   }
 
   /// Whether the active application locale is Arabic.
@@ -36,24 +43,33 @@ class KasbyTypography {
 
   // ─── STANDARD COMPONENT SIZES ─────────────────────────────
 
-  /// Button label size: 16 (ar) / 14.5 (en)
-  static double button(BuildContext context) => sp(ar: 16.0, en: 14.5, context: context);
+  /// Large hero / Display title: 28 (ar) / 24.0 (en)
+  static double displayTitle([BuildContext? context]) => sp(ar: 28.0, en: 24.0, context: context);
 
-  /// Hero / Plan card title: 22 (ar) / 19.0 (en)
-  static double cardTitle(BuildContext context) => sp(ar: 22.0, en: 19.0, context: context);
+  /// Button label size: 16 (ar) / 13.5 (en)
+  static double button([BuildContext? context]) => sp(ar: 16.0, en: 13.5, context: context);
 
-  /// Section header: 18 (ar) / 16.5 (en)
-  static double sectionHeader(BuildContext context) => sp(ar: 18.0, en: 16.5, context: context);
+  /// Hero / Plan card title: 20 (ar) / 17.5 (en)
+  static double cardTitle([BuildContext? context]) => sp(ar: 20.0, en: 17.5, context: context);
 
-  /// Standard body text: 14 (ar) / 13.0 (en)
-  static double body(BuildContext context) => sp(ar: 14.0, en: 13.0, context: context);
+  /// Section header: 18 (ar) / 15.5 (en)
+  static double sectionHeader([BuildContext? context]) => sp(ar: 18.0, en: 15.5, context: context);
 
-  /// Secondary body / Subtitle: 13 (ar) / 12.0 (en)
-  static double bodySecondary(BuildContext context) => sp(ar: 13.0, en: 12.0, context: context);
+  /// Standard card item title / ListTile title: 15 (ar) / 13.5 (en)
+  static double itemTitle([BuildContext? context]) => sp(ar: 15.0, en: 13.5, context: context);
 
-  /// Caption / Timestamp: 12 (ar) / 11.0 (en)
-  static double caption(BuildContext context) => sp(ar: 12.0, en: 11.0, context: context);
+  /// Standard body text / Form input: 14 (ar) / 12.5 (en)
+  static double body([BuildContext? context]) => sp(ar: 14.0, en: 12.5, context: context);
 
-  /// Small badge / Tag: 10 (ar) / 9.5 (en)
-  static double badge(BuildContext context) => sp(ar: 10.0, en: 9.5, context: context);
+  /// Secondary body / Subtitle: 13 (ar) / 11.5 (en)
+  static double bodySecondary([BuildContext? context]) => sp(ar: 13.0, en: 11.5, context: context);
+
+  /// Caption / Timestamp: 12 (ar) / 10.5 (en)
+  static double caption([BuildContext? context]) => sp(ar: 12.0, en: 10.5, context: context);
+
+  /// Small badge / Tag: 10 (ar) / 8.5 (en)
+  static double badge([BuildContext? context]) => sp(ar: 10.0, en: 8.5, context: context);
+
+  /// Micro / Status indicator text: 9 (ar) / 8.0 (en)
+  static double micro([BuildContext? context]) => sp(ar: 9.0, en: 8.0, context: context);
 }

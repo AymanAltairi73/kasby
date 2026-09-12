@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -175,8 +176,8 @@ class _SupportViewState extends State<SupportView> {
                   const SizedBox(height: 32),
                   Text(
                     'common_questions'.tr,
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      fontSize: KasbyTypography.sectionHeader(context),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -384,7 +385,11 @@ class _SupportViewState extends State<SupportView> {
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        fontSize: 13,
+                        fontSize: KasbyTypography.sp(
+                          ar: 13.0,
+                          en: 11.5,
+                          context: context,
+                        ),
                       ),
                     ),
                   ],
@@ -405,7 +410,14 @@ class _SupportViewState extends State<SupportView> {
         child: ExpansionTile(
           title: Text(
             question,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: KasbyTypography.sp(
+                ar: 14.0,
+                en: 12.5,
+                context: context,
+              ),
+              fontWeight: FontWeight.bold,
+            ),
           ),
           iconColor: AppColors.darkGold,
           collapsedIconColor: AppColors.textSecondary,
@@ -422,8 +434,12 @@ class _SupportViewState extends State<SupportView> {
                   color: isDark
                       ? AppColors.textSecondary
                       : AppColors.textSecondaryLight,
-                  fontSize: 13,
-                  height: 1.5,
+                  fontSize: KasbyTypography.sp(
+                    ar: 13.0,
+                    en: 11.5,
+                    context: context,
+                  ),
+                  height: KasbyTypography.isEnglish(context) ? 1.45 : 1.5,
                 ),
               ),
             ),

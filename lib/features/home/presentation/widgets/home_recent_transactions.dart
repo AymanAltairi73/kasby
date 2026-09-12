@@ -5,6 +5,7 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/core/localization/model_localization_extensions.dart';
+import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/directional_chevron.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
@@ -27,7 +28,10 @@ class HomeSectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: KasbyTypography.sectionHeader(context),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         TextButton(
           onPressed: onSeeAll,
@@ -138,9 +142,13 @@ class HomeRecentTransactions extends StatelessWidget {
                             tx.localizedDescription,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                              fontSize: KasbyTypography.sp(
+                                ar: 13.0,
+                                en: 12.0,
+                                context: context,
+                              ),
                               height: 1.2,
                             ),
                           ),
@@ -153,7 +161,11 @@ class HomeRecentTransactions extends StatelessWidget {
                               color: isDark
                                   ? AppColors.textSecondary
                                   : AppColors.textSecondaryLight,
-                              fontSize: 11,
+                              fontSize: KasbyTypography.sp(
+                                ar: 11.0,
+                                en: 10.0,
+                                context: context,
+                              ),
                             ),
                           ),
                         ],

@@ -5,10 +5,20 @@ import 'package:kasby/core/localization/kasby_l10n.dart';
 import 'package:kasby/core/localization/localization_logger.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/controllers/theme_controller.dart';
 
 /// Locale utilities for contexts where GetX may not be available (e.g. scheduled notifications).
 class LocaleHelper {
   static const String localeKey = 'app_locale';
+
+  /// Updates application locale across GetX, storage, ThemeController, and backend.
+  static Future<void> updateLocale(Locale locale) async {
+    await saveLanguageCode(locale.languageCode);
+    await Get.updateLocale(locale);
+    if (Get.isRegistered<ThemeController>()) {
+      ThemeController.to.updateLanguage(locale.languageCode);
+    }
+  }
 
   static Future<String> getLanguageCode() async {
     return SafeGetx.traceAsync(
@@ -82,7 +92,7 @@ class LocaleHelper {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(localeKey, serverLanguage);
         if (Get.locale?.languageCode != serverLanguage) {
-          await Get.updateLocale(KasbyL10n.localeFromCode(serverLanguage));
+          await updateLocale(KasbyL10n.localeFromCode(serverLanguage));
         }
       }
     } catch (e) {

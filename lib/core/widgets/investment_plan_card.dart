@@ -182,7 +182,7 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                                       fontWeight: FontWeight.bold,
                                       fontSize: KasbyTypography.sp(
                                         ar: 14.0,
-                                        en: 13.0,
+                                        en: 12.5,
                                         context: context,
                                       ),
                                     ),
