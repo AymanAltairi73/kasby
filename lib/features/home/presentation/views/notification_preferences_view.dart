@@ -201,7 +201,7 @@ class _NotificationPreferencesViewState
                 ),
                 const SizedBox(height: 24),
                 _buildSection(
-                  title: 'المؤثرات الصوتية',
+                  title: 'sound_effects'.tr,
                   children: [
                     Obx(
                       () => _buildToggleItem(
@@ -209,10 +209,10 @@ class _NotificationPreferencesViewState
                             ? Icons.volume_up_rounded
                             : Icons.volume_off_rounded,
                         color: Colors.amber,
-                        title: 'المؤثرات الصوتية',
+                        title: 'sound_effects'.tr,
                         subtitle: SoundService.to.isSoundEnabled.value
-                            ? 'تشغيل أصوات العمليات والشراء'
-                            : 'كتم المؤثرات الصوتية',
+                            ? 'enable_sound_effects'.tr
+                            : 'mute_sound_effects'.tr,
                         value: SoundService.to.isSoundEnabled.value,
                         onChanged: (val) => SoundService.to.toggleSound(val),
                       ),

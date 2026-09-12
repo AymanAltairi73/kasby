@@ -5,7 +5,7 @@ import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/supabase_service.dart';
-import 'package:kasby/core/tour/widgets/tour_settings_sheet.dart';
+// import 'package:kasby/core/tour/widgets/tour_settings_sheet.dart';
 
 class SupportView extends StatefulWidget {
   const SupportView({super.key});
@@ -22,6 +22,9 @@ class _SupportViewState extends State<SupportView> {
 
   List<Map<String, String>> _allFaqs = [];
   List<Map<String, String>> _fallbackFaqs = [];
+
+  /// Track the current locale to detect language changes.
+  String? _currentLocale;
 
   bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -42,9 +45,23 @@ class _SupportViewState extends State<SupportView> {
       feature: 'Profile',
       status: 'INFO',
     );
+    _currentLocale = Get.locale?.languageCode;
     _fallbackFaqs = _buildFallbackFaqs();
     _allFaqs = List.from(_fallbackFaqs);
     _fetchFaqs();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newLocale = Get.locale?.languageCode;
+    if (_currentLocale != null && _currentLocale != newLocale) {
+      _currentLocale = newLocale;
+      // Rebuild fallback FAQs with new locale translations
+      _fallbackFaqs = _buildFallbackFaqs();
+      // Re-fetch FAQs from DB so _pickLocalizedField uses the new locale
+      _fetchFaqs();
+    }
   }
 
   String _pickLocalizedField(Map<String, dynamic> faq, String base) {
@@ -152,8 +169,8 @@ class _SupportViewState extends State<SupportView> {
                 children: [
                   _buildSearchBar(),
                   const SizedBox(height: 16),
-                  _buildAppTutorialCard(),
-                  const SizedBox(height: 24),
+                  // _buildAppTutorialCard(),
+                  // const SizedBox(height: 24),
                   _buildCategories(),
                   const SizedBox(height: 32),
                   Text(
@@ -239,35 +256,35 @@ class _SupportViewState extends State<SupportView> {
   //   }
   // }
 
-  Widget _buildAppTutorialCard() {
-    return KasbyCard(
-      padding: EdgeInsets.zero,
-      child: Material(
-        color: Colors.transparent,
-        child: ListTile(
-          leading: Icon(Icons.tour_rounded, color: AppColors.darkGold),
-          title: Text(
-            'app_tour'.tr,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(
-            'tour_settings_desc'.tr,
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark
-                  ? AppColors.textSecondary
-                  : AppColors.textSecondaryLight,
-            ),
-          ),
-          trailing: Icon(
-            Icons.play_circle_outline_rounded,
-            color: AppColors.darkGold,
-          ),
-          onTap: () => TourSettingsSheet.show(context),
-        ),
-      ),
-    );
-  }
+  // Widget _buildAppTutorialCard() {
+  //   return KasbyCard(
+  //     padding: EdgeInsets.zero,
+  //     child: Material(
+  //       color: Colors.transparent,
+  //       child: ListTile(
+  //         leading: Icon(Icons.tour_rounded, color: AppColors.darkGold),
+  //         title: Text(
+  //           'app_tour'.tr,
+  //           style: const TextStyle(fontWeight: FontWeight.bold),
+  //         ),
+  //         subtitle: Text(
+  //           'tour_settings_desc'.tr,
+  //           style: TextStyle(
+  //             fontSize: 12,
+  //             color: isDark
+  //                 ? AppColors.textSecondary
+  //                 : AppColors.textSecondaryLight,
+  //           ),
+  //         ),
+  //         trailing: Icon(
+  //           Icons.play_circle_outline_rounded,
+  //           color: AppColors.darkGold,
+  //         ),
+  //         onTap: () => TourSettingsSheet.show(context),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildSearchBar() {
     return Container(

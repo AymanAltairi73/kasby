@@ -91,49 +91,42 @@ class _SubscriptionViewState extends State<SubscriptionView> {
             ).animate().fadeIn(duration: 1200.ms, delay: 300.ms),
           ),
 
-          SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Column(
-              children: [
-                // Header Image/Icon Section
-                _buildHeader(),
-                const SizedBox(height: 28),
+          RefreshIndicator(
+            onRefresh: () async {
+              await Future.wait([
+                controller.fetchPlans(),
+                controller.fetchActiveSubscription(),
+              ]);
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Column(
+                children: [
+                  // Header Image/Icon Section
+                  _buildHeader(),
+                  const SizedBox(height: 28),
 
-                _buildToggle(),
-                const SizedBox(height: 28),
+                  _buildToggle(),
+                  const SizedBox(height: 28),
 
-                _buildBenefitsSection('premium_features'.tr, [
-                  {
-                    'icon': Icons.card_giftcard_rounded,
-                    'title': 'exclusive_gift'.tr,
-                    'desc': 'exclusive_gift_desc'.tr,
-                  },
-                  {
-                    'icon': Icons.speed_rounded,
-                    'title': 'priority_withdrawals'.tr,
-                    'desc': 'priority_withdrawals_desc'.tr,
-                  },
-                  {
-                    'icon': Icons.all_inclusive_rounded,
-                    'title': 'unlimited_investments'.tr,
-                    'desc': 'unlimited_investments_desc'.tr,
-                  },
-                ]),
+                  _buildBenefitsSection('premium_features'.tr),
 
-                const SizedBox(height: 36),
-                _buildPricingCard(),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 36),
+                  _buildPricingCard(),
+                  const SizedBox(height: 20),
 
-                Text(
-                  'terms_apply'.tr,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w400,
+                  Text(
+                    'terms_apply'.tr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 30),
-              ],
+                  const SizedBox(height: 30),
+                ],
+              ),
             ),
           ),
         ],
@@ -269,42 +262,64 @@ class _SubscriptionViewState extends State<SubscriptionView> {
     );
   }
 
-  Widget _buildBenefitsSection(
-    String title,
-    List<Map<String, dynamic>> benefits,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
+  Widget _buildBenefitsSection(String title) {
+    return Obx(() {
+      final features = controller.getPlanFeatures(isYearly: isYearly);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const Spacer(),
+              if (controller.isLoadingPlans.value)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-        ...List.generate(benefits.length, (index) {
-          final benefit = benefits[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildBenefitItem(
-              benefit['icon'],
-              benefit['title'],
-              benefit['desc'],
-              index,
-            ),
-          );
-        }),
-      ],
-    );
+          const SizedBox(height: 16),
+          ...List.generate(features.length, (index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildFeatureCard(
+                features[index],
+                _getFeatureIcon(index),
+                index,
+              ),
+            );
+          }),
+        ],
+      );
+    });
   }
 
-  Widget _buildBenefitItem(
+  IconData _getFeatureIcon(int index) {
+    const icons = [
+      Icons.timer_outlined,
+      Icons.autorenew_rounded,
+      Icons.all_inclusive_rounded,
+      Icons.speed_rounded,
+      Icons.support_agent_rounded,
+      Icons.card_giftcard_rounded,
+      Icons.star_outline_rounded,
+      Icons.workspace_premium_outlined,
+    ];
+    return icons[index % icons.length];
+  }
+
+  Widget _buildFeatureCard(
+    String text,
     IconData icon,
-    String title,
-    String desc,
     int index,
   ) {
     final accent = AppColors.darkGold;
@@ -332,34 +347,21 @@ class _SubscriptionViewState extends State<SubscriptionView> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      desc,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  text,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ],
           ),
         )
         .animate()
-        .fadeIn(delay: (400 + (index * 100)).ms)
-        .slideX(begin: 0.1, end: 0);
+        .fadeIn(delay: (200 + (index * 60)).ms)
+        .slideX(begin: 0.05, end: 0);
   }
 
   Widget _buildPricingCard() {
@@ -369,18 +371,21 @@ class _SubscriptionViewState extends State<SubscriptionView> {
       border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.2)),
       child: Column(
         children: [
-          Text(
-                isYearly ? 'price_year'.tr : 'price_month'.tr,
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  color: isDark
-                      ? AppColors.onSurface
-                      : AppColors.onSurfaceLight,
-                ),
-              )
-              .animate(target: isYearly ? 1 : 0)
-              .shimmer(duration: const Duration(milliseconds: 1000)),
+          Obx(() {
+            final price = controller.getPlanPrice(isYearly: isYearly);
+            return Text(
+              price,
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: isDark
+                    ? AppColors.onSurface
+                    : AppColors.onSurfaceLight,
+              ),
+            )
+            .animate(target: isYearly ? 1 : 0)
+            .shimmer(duration: const Duration(milliseconds: 1000));
+          }),
           const SizedBox(height: 8),
           Text(
             'activation_fee'.tr,

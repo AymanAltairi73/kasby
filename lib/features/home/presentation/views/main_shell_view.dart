@@ -11,6 +11,7 @@ import 'package:kasby/features/investment/presentation/views/investment_plans_vi
 import 'package:kasby/features/profile/presentation/views/profile_view.dart';
 import 'package:kasby/core/controllers/shell_controller.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/routes/app_routes.dart';
 
 class MainShellView extends StatefulWidget {
   const MainShellView({super.key});
@@ -103,7 +104,16 @@ class _MainShellViewState extends State<MainShellView> {
       label: 'Main navigation',
       child: NavigationRail(
         selectedIndex: index,
-        onDestinationSelected: shellController.setIndex,
+        onDestinationSelected: (idx) {
+          if (idx == ShellController.tabTransactions) {
+            HapticFeedback.selectionClick();
+            if (Get.currentRoute != Routes.allTransactions) {
+              Get.toNamed(Routes.allTransactions);
+            }
+          } else {
+            shellController.setIndex(idx);
+          }
+        },
         labelType: NavigationRailLabelType.all,
         backgroundColor: isDark ? AppColors.surface : Colors.white,
         selectedIconTheme: IconThemeData(color: AppColors.darkGold),
@@ -271,7 +281,12 @@ class _MainShellViewState extends State<MainShellView> {
       selected: isActive,
       child: GestureDetector(
         onTap: () {
-          if (shellController.currentIndex.value != index) {
+          if (index == ShellController.tabTransactions) {
+            HapticFeedback.selectionClick();
+            if (Get.currentRoute != Routes.allTransactions) {
+              Get.toNamed(Routes.allTransactions);
+            }
+          } else if (shellController.currentIndex.value != index) {
             HapticFeedback.selectionClick();
             shellController.setIndex(index);
           }

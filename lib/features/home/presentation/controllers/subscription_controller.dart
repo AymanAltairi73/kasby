@@ -18,6 +18,8 @@ class SubscriptionController extends GetxController {
   final RxString countdownText = ''.obs;
   final RxDouble remainingPercentage = 0.0.obs;
   final Rx<Color> countdownColor = AppColors.softGreen.obs;
+  final RxList<Map<String, dynamic>> plans = <Map<String, dynamic>>[].obs;
+  final RxBool isLoadingPlans = false.obs;
 
   Timer? _timer;
   bool _notifiedExpiry = false;
@@ -31,6 +33,7 @@ class SubscriptionController extends GetxController {
       status: 'INFO',
     );
     super.onInit();
+    fetchPlans();
     fetchActiveSubscription();
     _startCountdownTimer();
   }
@@ -128,6 +131,153 @@ class SubscriptionController extends GetxController {
       title: 'subscription_ended'.tr,
       body: 'subscription_ended_desc'.tr,
     );
+  }
+
+  Map<String, dynamic>? get monthlyPlan {
+    return plans.firstWhereOrNull((p) {
+      final monthly = (p['price_monthly'] as num?)?.toDouble() ?? 0.0;
+      final name = (p['name'] as String? ?? '').toLowerCase();
+      return monthly > 0 || name.contains('شهر') || name.contains('month');
+    });
+  }
+
+  Map<String, dynamic>? get yearlyPlan {
+    return plans.firstWhereOrNull((p) {
+      final yearly = (p['price_yearly'] as num?)?.toDouble() ?? 0.0;
+      final name = (p['name'] as String? ?? '').toLowerCase();
+      return yearly > 0 || name.contains('سنو') || name.contains('year');
+    });
+  }
+
+  Future<void> fetchPlans() async {
+    isLoadingPlans.value = true;
+    final stopwatch = Stopwatch()..start();
+    try {
+      final response = await SupabaseService.client
+          .from('subscription_plans')
+          .select()
+          .eq('is_active', true)
+          .order('created_at', ascending: true);
+
+      plans.value = List<Map<String, dynamic>>.from(response);
+
+      SafeGetx.debugTrace(
+        className: 'SubscriptionController',
+        method: 'fetchPlans',
+        feature: 'Home',
+        status: 'SUCCESS',
+        params: {'plansCount': plans.length},
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'SubscriptionController',
+        method: 'fetchPlans',
+        feature: 'Home',
+        status: 'ERROR',
+        durationMs: stopwatch.elapsedMilliseconds,
+        error: e,
+        stackTrace: stack,
+      );
+    } finally {
+      isLoadingPlans.value = false;
+    }
+  }
+
+  String getPlanPrice({required bool isYearly}) {
+    if (isYearly) {
+      final p = yearlyPlan;
+      if (p != null) {
+        final val = (p['price_yearly'] as num?)?.toDouble();
+        if (val != null && val > 0) {
+          return '\$${val.toStringAsFixed(2)}';
+        }
+      }
+      return 'price_year'.tr;
+    } else {
+      final p = monthlyPlan;
+      if (p != null) {
+        final val = (p['price_monthly'] as num?)?.toDouble();
+        if (val != null && val > 0) {
+          return '\$${val.toStringAsFixed(2)}';
+        }
+      }
+      return 'price_month'.tr;
+    }
+  }
+
+  List<String> getPlanFeatures({required bool isYearly}) {
+    final plan = isYearly ? yearlyPlan : monthlyPlan;
+    final isArabic = Get.locale?.languageCode != 'en';
+
+    if (plan != null && plan['features'] != null) {
+      final rawFeatures = plan['features'];
+      if (rawFeatures is List && rawFeatures.isNotEmpty) {
+        final parsed = <String>[];
+        for (final item in rawFeatures) {
+          if (item is Map) {
+            final text = (isArabic ? item['ar'] : item['en'])?.toString() ??
+                item['ar']?.toString() ??
+                item['en']?.toString();
+            if (text != null && text.trim().isNotEmpty) {
+              parsed.add(text.trim());
+            }
+          } else if (item is String && item.trim().isNotEmpty) {
+            parsed.add(item.trim());
+          }
+        }
+        if (parsed.isNotEmpty) return parsed;
+      }
+    }
+
+    return _getDefaultFeatures(isYearly: isYearly, isArabic: isArabic);
+  }
+
+  List<String> _getDefaultFeatures({
+    required bool isYearly,
+    required bool isArabic,
+  }) {
+    if (isYearly) {
+      return isArabic
+          ? [
+              'تفعيل عداد الربح 24 ساعة لمدة 365 يومًا',
+              'إعادة تشغيل دورات الاستثمار تلقائيًا طوال مدة الاشتراك',
+              'استثمارات غير محدودة',
+              'أولوية قصوى في معالجة السحب والعمليات',
+              'دعم VIP مخصص',
+              'مكافآت ومزايا حصرية على مدار العام',
+              'وصول مبكر إلى الميزات والخدمات الجديدة',
+              'مزايا Premium مستمرة طوال السنة',
+            ]
+          : [
+              'Activate 24-hour profit timer for 365 days',
+              'Automatic investment cycle restarts during active subscription',
+              'Unlimited active investments',
+              'Highest priority processing for withdrawals & operations',
+              'Dedicated VIP customer support',
+              'Exclusive bonuses & perks all year round',
+              'Early access to new features and services',
+              'Continuous Premium benefits throughout the year',
+            ];
+    } else {
+      return isArabic
+          ? [
+              'تفعيل عداد الربح 24 ساعة لمدة 30 يومًا',
+              'إعادة تشغيل دورات الاستثمار تلقائيًا طوال مدة الاشتراك',
+              'استثمارات غير محدودة',
+              'أولوية السحب ومعالجة الطلبات خلال ساعتين',
+              'دعم فني سريع على مدار الساعة',
+              'مكافآت ومزايا حصرية للمشتركين',
+            ]
+          : [
+              'Activate 24-hour profit timer for 30 days',
+              'Automatic investment cycle restarts during active subscription',
+              'Unlimited active investments',
+              'Priority withdrawals & request processing within 2 hours',
+              '24/7 fast-response technical support',
+              'Exclusive subscriber bonuses and privileges',
+            ];
+    }
   }
 
   Future<void> fetchActiveSubscription() async {
