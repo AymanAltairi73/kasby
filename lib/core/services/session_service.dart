@@ -2,21 +2,32 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/services/security_activity_service.dart';
+import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:local_auth/local_auth.dart';
 
+/// Single authoritative service for session security, inactivity tracking,
+/// background timeouts, and screen lock in the Kasby application.
 class SessionService extends GetxService with WidgetsBindingObserver {
   static SessionService get to => Get.find();
 
   final LocalAuthentication _auth = LocalAuthentication();
-  DateTime? _backgroundTime;
-  Timer? _logoutTimer;
 
-  // Timeouts in minutes
-  static const int lockTimeout = 5;
-  static const int logoutTimeout = 30;
+  // Timeouts
+  static const int lockTimeout = 5; // 5 minutes
+  static const Duration screenLockTimeout = Duration(minutes: lockTimeout);
+
+  static const int logoutTimeout = 30; // 30 minutes
+  static const Duration backgroundLogoutTimeout = Duration(minutes: logoutTimeout);
+
+  // Background and inactivity state
+  DateTime? _backgroundAt;
+  DateTime _lastInteractionTime = DateTime.now();
+
+  Timer? _inactivityTimer;
+  Timer? _logoutTimer;
 
   bool _isLocked = false;
   bool get isLocked => _isLocked;
@@ -52,6 +63,9 @@ class SessionService extends GetxService with WidgetsBindingObserver {
     );
     super.onInit();
     WidgetsBinding.instance.addObserver(this);
+    if (SupabaseService.isLoggedIn) {
+      recordUserInteraction();
+    }
   }
 
   @override
@@ -63,46 +77,47 @@ class SessionService extends GetxService with WidgetsBindingObserver {
       status: 'INFO',
     );
     WidgetsBinding.instance.removeObserver(this);
+    _inactivityTimer?.cancel();
     _logoutTimer?.cancel();
     super.onClose();
   }
 
+  // ─── Lifecycle Handling ───
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!AuthController.to.isLoggedIn) return;
+    if (!SupabaseService.isLoggedIn) return;
+
+    SafeGetx.debugTrace(
+      className: 'SessionService',
+      method: 'didChangeAppLifecycleState',
+      feature: 'Core',
+      status: 'INFO',
+      params: {'state': state.name},
+    );
 
     if (state == AppLifecycleState.paused) {
-      SafeGetx.debugTrace(
-        className: 'SessionService',
-        method: 'didChangeAppLifecycleState',
-        feature: 'Core',
-        status: 'INFO',
-        params: {'state': 'paused'},
-      );
-      _backgroundTime = DateTime.now();
+      _backgroundAt ??= DateTime.now();
+      _inactivityTimer?.cancel();
       _startLogoutTimer();
+    } else if (state == AppLifecycleState.inactive) {
+      // Transitioning away or momentary system dialog/screenshot
+      _backgroundAt ??= DateTime.now();
     } else if (state == AppLifecycleState.resumed) {
-      SafeGetx.debugTrace(
-        className: 'SessionService',
-        method: 'didChangeAppLifecycleState',
-        feature: 'Core',
-        status: 'INFO',
-        params: {'state': 'resumed'},
-      );
       _handleAppResume();
     }
   }
 
   void _startLogoutTimer() {
     _logoutTimer?.cancel();
-    _logoutTimer = Timer(const Duration(minutes: logoutTimeout), () {
-      if (_backgroundTime != null) {
+    _logoutTimer = Timer(backgroundLogoutTimeout, () {
+      if (_backgroundAt != null && SupabaseService.isLoggedIn) {
         SafeGetx.debugTrace(
           className: 'SessionService',
           method: '_startLogoutTimer',
           feature: 'Core',
           status: 'WARN',
-          message: 'Auto logout triggered',
+          message: 'Auto logout triggered after $logoutTimeout minutes in background',
         );
         unawaited(
           SecurityActivityService.to.logEvent(
@@ -116,49 +131,155 @@ class SessionService extends GetxService with WidgetsBindingObserver {
 
   void _handleAppResume() {
     _logoutTimer?.cancel();
-    if (_backgroundTime == null) return;
+    final backgroundTime = _backgroundAt;
+    _backgroundAt = null;
 
-    final duration = DateTime.now().difference(_backgroundTime!);
+    if (!SupabaseService.isLoggedIn) return;
 
-    if (duration.inMinutes >= logoutTimeout) {
-      SafeGetx.debugTrace(
-        className: 'SessionService',
-        method: '_handleAppResume',
-        feature: 'Core',
-        status: 'WARN',
-        message: 'Logout timeout exceeded',
-      );
-      unawaited(
-        SecurityActivityService.to.logEvent(
-          SecurityEventType.sessionExpiration,
-        ),
-      );
-      AuthController.to.logout();
-    } else if (duration.inMinutes >= lockTimeout) {
+    // Ignore resume triggered by native biometric dialog dismissal
+    if (isBiometricJustFinished || _isBiometricPromptActive) {
+      recordUserInteraction();
+      return;
+    }
+
+    if (backgroundTime != null) {
+      final elapsed = DateTime.now().difference(backgroundTime);
+
       SafeGetx.debugTrace(
         className: 'SessionService',
         method: '_handleAppResume',
         feature: 'Core',
         status: 'INFO',
-        message: 'Showing lock screen',
+        params: {'elapsedSeconds': elapsed.inSeconds},
       );
-      _showLockScreen();
+
+      // 1. Check for 30-minute background auto-logout
+      if (elapsed >= backgroundLogoutTimeout) {
+        SafeGetx.debugTrace(
+          className: 'SessionService',
+          method: '_handleAppResume',
+          feature: 'Core',
+          status: 'WARN',
+          message: 'Logout timeout exceeded ($logoutTimeout min)',
+        );
+        unawaited(
+          SecurityActivityService.to.logEvent(
+            SecurityEventType.sessionExpiration,
+          ),
+        );
+        AuthController.to.logout();
+        return;
+      }
+
+      // 2. Check for 5-minute background screen lock
+      if (elapsed >= screenLockTimeout) {
+        SafeGetx.debugTrace(
+          className: 'SessionService',
+          method: '_handleAppResume',
+          feature: 'Core',
+          status: 'INFO',
+          message: 'Background timeout exceeded ($screenLockTimeout). Showing lock screen.',
+        );
+        _showLockScreen();
+        return;
+      }
     }
 
-    _backgroundTime = null;
+    // Returned before 5 minutes (or momentary inactive, e.g. screenshot taken):
+    // Cancel pending lock, keep state, resume 5-minute inactivity tracking.
+    recordUserInteraction();
   }
 
-  Future<void> _showLockScreen() async {
-    if (_isLocked) return;
-    _isLocked = true;
+  // ─── Inactivity Tracking ───
 
-    // We use Get.toNamed to show a lock screen that can't be dismissed easily
+  /// Called on genuine user interactions (taps, drags, navigation).
+  /// Resets the 5-minute inactivity timer.
+  void recordUserInteraction() {
+    if (!SupabaseService.isLoggedIn || _isLocked) return;
+
+    final now = DateTime.now();
+    final timeSinceLast = now.difference(_lastInteractionTime);
+    _lastInteractionTime = now;
+
+    // Throttle timer recreation to once every 2 seconds during continuous scrolling/gestures
+    if (_inactivityTimer != null &&
+        _inactivityTimer!.isActive &&
+        timeSinceLast < const Duration(seconds: 2)) {
+      return;
+    }
+
+    _resetInactivityTimer();
+  }
+
+  void _resetInactivityTimer() {
+    _inactivityTimer?.cancel();
+    if (!SupabaseService.isLoggedIn || _isLocked) return;
+
+    _inactivityTimer = Timer(screenLockTimeout, _handleInactivityTimeout);
+  }
+
+  void _handleInactivityTimeout() {
+    if (!SupabaseService.isLoggedIn || _isLocked) return;
+    if (Get.currentRoute == Routes.lockScreen) return;
+
+    // Verify genuine wall-clock elapsed time
+    final elapsed = DateTime.now().difference(_lastInteractionTime);
+    if (elapsed < screenLockTimeout) {
+      final remaining = screenLockTimeout - elapsed;
+      _inactivityTimer?.cancel();
+      _inactivityTimer = Timer(remaining, _handleInactivityTimeout);
+      return;
+    }
+
+    SafeGetx.debugTrace(
+      className: 'SessionService',
+      method: '_handleInactivityTimeout',
+      feature: 'Core',
+      status: 'WARN',
+      message: 'Inactivity timeout reached ($screenLockTimeout). Showing lock screen.',
+    );
+
+    _showLockScreen();
+  }
+
+  // ─── Lock & Unlock ───
+
+  Future<void> _showLockScreen() async {
+    if (!SupabaseService.isLoggedIn) return;
+    if (_isLocked) return;
+    if (Get.currentRoute == Routes.lockScreen) return;
+
+    // Do not lock while biometric prompt is actively displayed
+    if (isBiometricJustFinished || _isBiometricPromptActive) return;
+
+    _isLocked = true;
+    _inactivityTimer?.cancel();
+
     Get.toNamed(Routes.lockScreen);
   }
 
   void unlock() {
     _isLocked = false;
+    _backgroundAt = null;
+    _lastInteractionTime = DateTime.now();
+    _resetInactivityTimer();
   }
+
+  void onUserLogin() {
+    _isLocked = false;
+    _backgroundAt = null;
+    _lastInteractionTime = DateTime.now();
+    _resetInactivityTimer();
+  }
+
+  void onUserLogout() {
+    _isLocked = false;
+    _backgroundAt = null;
+    _inactivityTimer?.cancel();
+    _logoutTimer?.cancel();
+  }
+
+  // ─── Biometric Authentication ───
 
   Future<bool> authenticate() async {
     notifyBiometricPromptStarted();

@@ -27,6 +27,7 @@ import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/services/security_activity_service.dart';
 import 'package:kasby/core/services/fcm_service.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
+import 'package:kasby/core/services/session_service.dart';
 import 'package:kasby/routes/app_routes.dart';
 
 enum AuthStatus { initial, authenticated, unauthenticated }
@@ -320,6 +321,9 @@ class AuthController extends GetxController {
           if (Get.isRegistered<CurrencyController>()) {
             CurrencyController.to.fetchWalletBalances();
           }
+          if (Get.isRegistered<SessionService>()) {
+            SessionService.to.onUserLogin();
+          }
 
           unawaited(CrashReportingService.syncUserContextFromProfile());
           if (!TourService.isNewUserTourSetupInProgress) {
@@ -347,6 +351,9 @@ class AuthController extends GetxController {
 
         case AuthChangeEvent.signedOut:
           _log('User signed out');
+          if (Get.isRegistered<SessionService>()) {
+            SessionService.to.onUserLogout();
+          }
           if (Get.isRegistered<FCMService>()) {
             unawaited(FCMService.to.clearTokenOnLogout());
           }

@@ -36,6 +36,77 @@ class AppColors {
   static Color get goldSoftBg =>
       _isDark ? const Color(0xFF2A2312) : const Color(0xFFFDF8EE);
 
+  // ─── Chat Semantic Tokens ───
+  /// Chat canvas background — subtle tinted surface
+  static Color get chatBackground =>
+      _isDark ? backgroundDark : const Color(0xFFF0F2F5);
+  /// Received message bubble — soft neutral
+  static Color get chatReceivedBubble =>
+      _isDark ? surfaceDark : const Color(0xFFFFFFFF);
+  /// Received bubble border
+  static Color get chatReceivedBorder =>
+      _isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+  /// Chat input area surface
+  static Color get chatInputSurface =>
+      _isDark ? surfaceDark : const Color(0xFFFFFFFF);
+  /// Chat input field background
+  static Color get chatInputField =>
+      _isDark ? backgroundDark : const Color(0xFFF1F4F8);
+  /// Chat input field border
+  static Color get chatInputBorder =>
+      _isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+  /// Chat input top divider
+  static Color get chatInputDivider =>
+      _isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+  /// Chat text on received bubble
+  static Color get chatReceivedText =>
+      _isDark ? const Color(0xFFE0E0E0) : const Color(0xFF1E293B);
+  /// Chat secondary text (timestamps, edited labels) on received side
+  static Color get chatReceivedMuted =>
+      _isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF94A3B8);
+  /// Chat date separator text
+  static Color get chatDateText =>
+      _isDark ? Colors.white.withValues(alpha: 0.3) : const Color(0xFF94A3B8);
+  /// Chat date separator divider
+  static Color get chatDateDivider =>
+      _isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+  /// Chat deleted message text/icon
+  static Color get chatDeletedText =>
+      _isDark ? Colors.white.withValues(alpha: 0.3) : const Color(0xFFCBD5E1);
+  /// Chat deleted message surface
+  static Color get chatDeletedBg =>
+      _isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC);
+  /// Chat deleted message border
+  static Color get chatDeletedBorder =>
+      _isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+  /// Bottom sheet handle
+  static Color get sheetHandle =>
+      _isDark ? const Color(0x3DFFFFFF) : const Color(0xFFCBD5E1);
+  /// Bottom sheet divider
+  static Color get sheetDivider =>
+      _isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+  /// Bottom sheet option text/icon
+  static Color get sheetOptionColor =>
+      _isDark ? Colors.white : const Color(0xFF1E293B);
+  /// Reaction container surface
+  static Color get chatReactionBg =>
+      _isDark ? surfaceDark : const Color(0xFFF1F4F8);
+  /// Reaction container border
+  static Color get chatReactionBorder =>
+      _isDark ? const Color(0x1AFFFFFF) : const Color(0xFFE2E8F0);
+  /// User bubble timestamp color (on gold gradient)
+  static Color get chatUserTimestamp =>
+      _isDark ? Colors.black.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.55);
+  /// User bubble edited label color (on gold gradient)
+  static Color get chatUserEditedLabel =>
+      _isDark ? Colors.black.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.45);
+  /// Welcome/connecting overlay text
+  static Color get chatWelcomeText =>
+      _isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF1E293B);
+  /// Placeholder shimmer in chat image loading
+  static Color get chatImagePlaceholder =>
+      _isDark ? const Color(0x1AFFFFFF) : const Color(0xFFEDF2F7);
+
   // Theme-aware shadows
   static Color get shadowColor =>
       _isDark ? Colors.black.withValues(alpha: 0.4) : const Color(0x0A0F172A);

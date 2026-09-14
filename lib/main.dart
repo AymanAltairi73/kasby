@@ -42,7 +42,6 @@ import 'package:kasby/core/services/presence_service.dart';
 import 'package:kasby/core/services/app_version_service.dart';
 import 'package:kasby/core/services/deep_link_service.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
-import 'package:kasby/core/services/app_lifecycle_lock_service.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/widgets/app_error_widget.dart';
@@ -164,7 +163,6 @@ Future<void> _bootstrap() async {
   Get.put(TourController(), permanent: true);
   Get.put(SessionService(), permanent: true);
   Get.put(BiometricLoginService(), permanent: true);
-  Get.put(AppLifecycleLockService(), permanent: true);
   Get.put(SecurityActivityService(), permanent: true);
   Get.put(ConfettiService(), permanent: true);
   Get.put(SoundService(), permanent: true);
@@ -229,7 +227,12 @@ class _KasbyAppState extends State<KasbyApp> {
         themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
         initialRoute: AppPages.initial,
         getPages: AppPages.routes,
-        routingCallback: SafeGetx.logRoute,
+        routingCallback: (routing) {
+          SafeGetx.logRoute(routing);
+          if (Get.isRegistered<SessionService>()) {
+            SessionService.to.recordUserInteraction();
+          }
+        },
         translations: KasbyTranslations(),
         locale: widget.initialLocale,
         fallbackLocale: const Locale('en', 'US'),
@@ -243,15 +246,28 @@ class _KasbyAppState extends State<KasbyApp> {
         builder: (context, child) {
           return MediaQuery(
             data: AccessibilityUtils.clampTextScale(context),
-            child: Stack(
-              children: [
-                AccountRestrictionBanner(
-                  child: ConnectivityBanner(
-                    child: child ?? const SizedBox.shrink(),
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) {
+                if (Get.isRegistered<SessionService>()) {
+                  SessionService.to.recordUserInteraction();
+                }
+              },
+              onPointerMove: (_) {
+                if (Get.isRegistered<SessionService>()) {
+                  SessionService.to.recordUserInteraction();
+                }
+              },
+              child: Stack(
+                children: [
+                  AccountRestrictionBanner(
+                    child: ConnectivityBanner(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
-                ),
-                ConfettiService.to.buildConfetti(),
-              ],
+                  ConfettiService.to.buildConfetti(),
+                ],
+              ),
             ),
           );
         },

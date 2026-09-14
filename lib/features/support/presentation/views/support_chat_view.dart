@@ -30,6 +30,8 @@ class _SupportChatViewState extends State<SupportChatView> {
   final SupportChatController _chatController =
       Get.find<SupportChatController>();
 
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
   bool _showSearch = false;
   ChatMessageModel? _editingMessage;
   final Set<String> _expandedMessages = {};
@@ -181,7 +183,7 @@ class _SupportChatViewState extends State<SupportChatView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.chatBackground,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -201,11 +203,16 @@ class _SupportChatViewState extends State<SupportChatView> {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [
-                            AppColors.background,
-                            AppColors.background.withValues(alpha: 0.8),
-                            Colors.black,
-                          ],
+                          colors: _isDark
+                              ? [
+                                  AppColors.background,
+                                  AppColors.background.withValues(alpha: 0.8),
+                                  Colors.black,
+                                ]
+                              : [
+                                  AppColors.chatBackground,
+                                  AppColors.chatBackground,
+                                ],
                         ),
                       ),
                     ),
@@ -224,7 +231,7 @@ class _SupportChatViewState extends State<SupportChatView> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: AppColors.surface,
+      backgroundColor: _isDark ? AppColors.surface : AppColors.chatInputSurface,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -376,13 +383,13 @@ class _SupportChatViewState extends State<SupportChatView> {
 
                     return Text(
                       'last_seen_ago'.trArgs([timeStr]),
-                      style: TextStyle(fontSize: 12, color: Colors.white54),
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     );
                   }
 
                   return Text(
                     'offline'.tr,
-                    style: TextStyle(fontSize: 12, color: Colors.white54),
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                   );
                 }),
               ],
@@ -405,21 +412,33 @@ class _SupportChatViewState extends State<SupportChatView> {
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: _isDark ? AppColors.surface : AppColors.chatInputSurface,
+        border: Border(
+          bottom: BorderSide(color: AppColors.chatInputDivider),
+        ),
+      ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _searchController,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(
+                color: _isDark ? Colors.white : AppColors.textBodyLight,
+              ),
               decoration: InputDecoration(
                 hintText: 'search_conversations'.tr,
                 hintStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: _isDark
+                      ? Colors.white.withValues(alpha: 0.4)
+                      : AppColors.textSecondaryLight,
                 ),
                 prefixIcon: Icon(Icons.search, color: AppColors.darkGold),
                 suffixIcon: IconButton(
-                  icon: Icon(Icons.close, color: Colors.white54),
+                  icon: Icon(
+                    Icons.close,
+                    color: _isDark ? Colors.white54 : AppColors.textSecondaryLight,
+                  ),
                   tooltip: 'close'.tr,
                   onPressed: () {
                     _searchController.clear();
@@ -428,10 +447,18 @@ class _SupportChatViewState extends State<SupportChatView> {
                   },
                 ),
                 filled: true,
-                fillColor: AppColors.background,
+                fillColor: AppColors.chatInputField,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+                  borderSide: _isDark
+                      ? BorderSide.none
+                      : BorderSide(color: AppColors.chatInputBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: _isDark
+                      ? BorderSide.none
+                      : BorderSide(color: AppColors.chatInputBorder),
                 ),
               ),
               onChanged: (value) => _chatController.searchMessages(value),
@@ -446,21 +473,23 @@ class _SupportChatViewState extends State<SupportChatView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.keyboard_arrow_up,
-                    color: Colors.white,
+                    color: _isDark ? Colors.white : AppColors.textBodyLight,
                   ),
                   tooltip: 'back'.tr,
                   onPressed: _chatController.previousSearchResult,
                 ),
                 Text(
                   '${_chatController.currentSearchIndex.value + 1}/${_chatController.searchResultIds.length}',
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(
+                    color: _isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                  ),
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.keyboard_arrow_down,
-                    color: Colors.white,
+                    color: _isDark ? Colors.white : AppColors.textBodyLight,
                   ),
                   tooltip: 'next'.tr,
                   onPressed: _chatController.nextSearchResult,
@@ -488,7 +517,11 @@ class _SupportChatViewState extends State<SupportChatView> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, size: 20),
+            icon: Icon(
+              Icons.close,
+              size: 20,
+              color: _isDark ? Colors.white70 : AppColors.textSecondaryLight,
+            ),
             tooltip: 'close'.tr,
             onPressed: () {
               setState(() {
@@ -504,7 +537,7 @@ class _SupportChatViewState extends State<SupportChatView> {
 
   Widget _buildWelcomeOverlay() {
     return Container(
-      color: AppColors.background,
+      color: AppColors.chatBackground,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -515,8 +548,8 @@ class _SupportChatViewState extends State<SupportChatView> {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        AppColors.darkGold.withValues(alpha: 0.3),
-                        AppColors.darkGold.withValues(alpha: 0.1),
+                        AppColors.darkGold.withValues(alpha: _isDark ? 0.3 : 0.15),
+                        AppColors.darkGold.withValues(alpha: _isDark ? 0.1 : 0.05),
                         Colors.transparent,
                       ],
                     ),
@@ -524,12 +557,14 @@ class _SupportChatViewState extends State<SupportChatView> {
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: _isDark ? AppColors.surface : AppColors.surfaceLight,
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.darkGold, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.darkGold.withValues(alpha: 0.5),
+                          color: AppColors.darkGold.withValues(
+                            alpha: _isDark ? 0.5 : 0.25,
+                          ),
                           blurRadius: 30,
                           spreadRadius: 5,
                         ),
@@ -558,7 +593,7 @@ class _SupportChatViewState extends State<SupportChatView> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white.withValues(alpha: 0.9),
+                color: AppColors.chatWelcomeText,
               ),
             ).animate().fadeIn(delay: 400.ms),
             const SizedBox(height: 12),
@@ -700,19 +735,19 @@ class _SupportChatViewState extends State<SupportChatView> {
       margin: const EdgeInsets.symmetric(vertical: 20),
       child: Row(
         children: [
-          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+          Expanded(child: Divider(color: AppColors.chatDateDivider)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: AppColors.chatDateText,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+          Expanded(child: Divider(color: AppColors.chatDateDivider)),
         ],
       ),
     );
@@ -726,7 +761,7 @@ class _SupportChatViewState extends State<SupportChatView> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.darkGold.withValues(alpha: 0.1),
+        color: AppColors.darkGold.withValues(alpha: _isDark ? 0.1 : 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.3)),
       ),
@@ -759,7 +794,11 @@ class _SupportChatViewState extends State<SupportChatView> {
                     );
                   }
                 },
-                child: const Icon(Icons.close, size: 16, color: Colors.white54),
+                child: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: _isDark ? Colors.white54 : AppColors.textSecondaryLight,
+                ),
               ),
             ],
           ),
@@ -772,7 +811,10 @@ class _SupportChatViewState extends State<SupportChatView> {
           else
             Text(
               pinned.content,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(
+                color: _isDark ? Colors.white : AppColors.textBodyLight,
+                fontSize: 14,
+              ),
             ),
         ],
       ),
@@ -788,9 +830,9 @@ class _SupportChatViewState extends State<SupportChatView> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: AppColors.chatDeletedBg,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border: Border.all(color: AppColors.chatDeletedBorder),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -798,13 +840,13 @@ class _SupportChatViewState extends State<SupportChatView> {
             Icon(
               Icons.block,
               size: 16,
-              color: Colors.white.withValues(alpha: 0.3),
+              color: AppColors.chatDeletedText,
             ),
             const SizedBox(width: 8),
             Text(
               'message_deleted'.tr,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.3),
+                color: AppColors.chatDeletedText,
                 fontSize: 13,
                 fontStyle: FontStyle.italic,
               ),
@@ -898,7 +940,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                                   ? (message.messageType == 'image'
                                         ? Colors.transparent
                                         : null)
-                                  : AppColors.surface,
+                                  : AppColors.chatReceivedBubble,
                               borderRadius: BorderRadius.only(
                                 topLeft: const Radius.circular(20),
                                 topRight: const Radius.circular(20),
@@ -916,9 +958,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                                   : (message.isFromUser
                                         ? null
                                         : Border.all(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.1,
-                                            ),
+                                            color: AppColors.chatReceivedBorder,
                                           )),
                               boxShadow:
                                   message.isFromUser &&
@@ -926,13 +966,25 @@ class _SupportChatViewState extends State<SupportChatView> {
                                   ? [
                                       BoxShadow(
                                         color: AppColors.darkGold.withValues(
-                                          alpha: 0.3,
+                                          alpha: _isDark ? 0.3 : 0.2,
                                         ),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       ),
                                     ]
-                                  : null,
+                                  : (!message.isFromUser &&
+                                          message.messageType == 'text' &&
+                                          !_isDark
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.04,
+                                            ),
+                                            blurRadius: 6,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ]
+                                      : null),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -966,14 +1018,16 @@ class _SupportChatViewState extends State<SupportChatView> {
                                     style: TextStyle(
                                       color: message.isFromUser
                                           ? Colors.black
-                                          : Colors.white,
+                                          : AppColors.chatReceivedText,
                                       fontSize: 15,
                                       height: 1.4,
                                     ),
                                     linkStyle: TextStyle(
                                       color: message.isFromUser
                                           ? Colors.blue.shade900
-                                          : Colors.blue.shade300,
+                                          : (_isDark
+                                              ? Colors.blue.shade300
+                                              : Colors.blue.shade700),
                                       decoration: TextDecoration.underline,
                                     ),
                                   ),
@@ -993,12 +1047,9 @@ class _SupportChatViewState extends State<SupportChatView> {
                                                 ? (message.messageType ==
                                                           'image'
                                                       ? Colors.white70
-                                                      : Colors.black.withValues(
-                                                          alpha: 0.5,
-                                                        ))
-                                                : Colors.white.withValues(
-                                                    alpha: 0.4,
-                                                  ),
+                                                      : AppColors
+                                                          .chatUserEditedLabel)
+                                                : AppColors.chatReceivedMuted,
                                             fontSize: 10,
                                             fontStyle: FontStyle.italic,
                                           ),
@@ -1010,12 +1061,9 @@ class _SupportChatViewState extends State<SupportChatView> {
                                         color: message.isFromUser
                                             ? (message.messageType == 'image'
                                                   ? Colors.white70
-                                                  : Colors.black.withValues(
-                                                      alpha: 0.6,
-                                                    ))
-                                            : Colors.white.withValues(
-                                                alpha: 0.5,
-                                              ),
+                                                  : AppColors
+                                                      .chatUserTimestamp)
+                                            : AppColors.chatReceivedMuted,
                                         fontSize: 11,
                                       ),
                                     ),
@@ -1040,9 +1088,11 @@ class _SupportChatViewState extends State<SupportChatView> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.surface,
+                                color: AppColors.chatReactionBg,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white10),
+                                border: Border.all(
+                                  color: AppColors.chatReactionBorder,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1069,7 +1119,7 @@ class _SupportChatViewState extends State<SupportChatView> {
       Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: _isDark ? AppColors.surface : AppColors.surfaceLight,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
@@ -1079,7 +1129,7 @@ class _SupportChatViewState extends State<SupportChatView> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: AppColors.sheetHandle,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1098,8 +1148,17 @@ class _SupportChatViewState extends State<SupportChatView> {
                     decoration: BoxDecoration(
                       color: hasReacted
                           ? AppColors.darkGold.withValues(alpha: 0.2)
-                          : Colors.white10,
+                          : (_isDark
+                              ? Colors.white10
+                              : const Color(0xFFF1F4F8)),
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: hasReacted
+                            ? AppColors.darkGold
+                            : (_isDark
+                                ? Colors.transparent
+                                : const Color(0xFFE2E8F0)),
+                      ),
                     ),
                     child: Text(emoji, style: const TextStyle(fontSize: 24)),
                   ),
@@ -1107,7 +1166,7 @@ class _SupportChatViewState extends State<SupportChatView> {
               }).toList(),
             ),
             const SizedBox(height: 16),
-            Divider(color: Colors.white.withValues(alpha: 0.1)),
+            Divider(color: AppColors.sheetDivider),
             const SizedBox(height: 8),
             _buildOptionItem(Icons.copy_rounded, 'copy_text'.tr, () {
               Get.safeBack();
@@ -1162,11 +1221,12 @@ class _SupportChatViewState extends State<SupportChatView> {
     VoidCallback onTap, {
     Color? color,
   }) {
+    final itemColor = color ?? AppColors.sheetOptionColor;
     return Material(
       color: Colors.transparent,
       child: ListTile(
-        leading: Icon(icon, color: color ?? Colors.white),
-        title: Text(label, style: TextStyle(color: color ?? Colors.white)),
+        leading: Icon(icon, color: itemColor),
+        title: Text(label, style: TextStyle(color: itemColor)),
         onTap: onTap,
       ),
     );
@@ -1179,9 +1239,18 @@ class _SupportChatViewState extends State<SupportChatView> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.chatReceivedBubble,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border: Border.all(color: AppColors.chatReceivedBorder),
+          boxShadow: !_isDark
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1216,13 +1285,15 @@ class _SupportChatViewState extends State<SupportChatView> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.chatInputSurface,
           border: Border(
-            top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+            top: BorderSide(color: AppColors.chatInputDivider),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: _isDark
+                  ? Colors.black.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -1242,10 +1313,10 @@ class _SupportChatViewState extends State<SupportChatView> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: AppColors.chatInputField,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: AppColors.chatInputBorder,
                         ),
                       ),
                       child: Row(
@@ -1261,13 +1332,17 @@ class _SupportChatViewState extends State<SupportChatView> {
                           Expanded(
                             child: TextField(
                               controller: _messageController,
-                              style: const TextStyle(color: Colors.white),
+                              style: TextStyle(
+                                color: _isDark ? Colors.white : AppColors.textBodyLight,
+                              ),
                               decoration: InputDecoration(
                                 hintText: _editingMessage != null
                                     ? 'edit_message_hint'.tr
                                     : 'write_message_hint'.tr,
                                 hintStyle: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.4),
+                                  color: _isDark
+                                      ? Colors.white.withValues(alpha: 0.4)
+                                      : AppColors.textSecondaryLight,
                                 ),
                                 border: InputBorder.none,
                                 suffixIcon: IconButton(
@@ -1357,7 +1432,7 @@ class _SupportChatViewState extends State<SupportChatView> {
       Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: _isDark ? AppColors.surface : AppColors.surfaceLight,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
@@ -1367,7 +1442,7 @@ class _SupportChatViewState extends State<SupportChatView> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: AppColors.sheetHandle,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1429,7 +1504,11 @@ class _SupportChatViewState extends State<SupportChatView> {
         const SizedBox(height: 12),
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: AppColors.sheetOptionColor,
+          ),
         ),
       ],
     );
@@ -1454,7 +1533,10 @@ class _SupportChatViewState extends State<SupportChatView> {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
                 count > 1 ? '$emoji $count' : emoji,
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _isDark ? Colors.white : AppColors.textBodyLight,
+                ),
               ),
             ),
           )
@@ -1473,10 +1555,12 @@ class _SupportChatViewState extends State<SupportChatView> {
     Color color;
 
     final bool isImage = message.messageType == 'image';
-    final Color readColor = isImage ? AppColors.darkGold : Colors.blue.shade900;
+    final Color readColor = isImage
+        ? AppColors.darkGold
+        : (_isDark ? Colors.blue.shade900 : const Color(0xFF1565C0));
     final Color unreadColor = isImage
-        ? Colors.white38
-        : Colors.black.withValues(alpha: 0.3);
+        ? (_isDark ? Colors.white38 : Colors.white70)
+        : Colors.black.withValues(alpha: 0.35);
 
     switch (message.status) {
       case MessageStatus.sending:
@@ -1545,7 +1629,9 @@ class _SupportChatViewState extends State<SupportChatView> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: _isDark
+                    ? Colors.black.withValues(alpha: 0.3)
+                    : AppColors.darkGold.withValues(alpha: 0.25),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -1609,6 +1695,7 @@ class _SupportChatViewState extends State<SupportChatView> {
     if (parentMsg == null) return const SizedBox.shrink();
 
     final isUser = parentMsg.isFromUser;
+    final onUserBubble = message.isFromUser;
 
     return GestureDetector(
       onTap: () {
@@ -1627,11 +1714,17 @@ class _SupportChatViewState extends State<SupportChatView> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.12),
+          color: onUserBubble
+              ? Colors.black.withValues(alpha: 0.12)
+              : (_isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0xFFF1F4F8)),
           borderRadius: BorderRadius.circular(10),
           border: Border(
             right: BorderSide(
-              color: isUser ? Colors.white70 : AppColors.darkGold,
+              color: onUserBubble
+                  ? (isUser ? Colors.black54 : AppColors.darkGold)
+                  : AppColors.darkGold,
               width: 3,
             ),
           ),
@@ -1645,7 +1738,9 @@ class _SupportChatViewState extends State<SupportChatView> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: isUser ? Colors.white70 : AppColors.darkGold,
+                color: onUserBubble
+                    ? (isUser ? Colors.black87 : AppColors.darkGold)
+                    : AppColors.darkGold,
               ),
             ),
             const SizedBox(height: 2),
@@ -1657,9 +1752,9 @@ class _SupportChatViewState extends State<SupportChatView> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
-                color: message.isFromUser
+                color: onUserBubble
                     ? Colors.black.withValues(alpha: 0.6)
-                    : Colors.white70,
+                    : (_isDark ? Colors.white70 : AppColors.textSecondaryLight),
               ),
             ),
           ],
@@ -1673,9 +1768,15 @@ class _SupportChatViewState extends State<SupportChatView> {
     return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.background.withValues(alpha: 0.5),
+            color: _isDark
+                ? AppColors.background.withValues(alpha: 0.5)
+                : const Color(0xFFF1F4F8),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            border: Border.all(
+              color: _isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Row(
             children: [
@@ -1703,7 +1804,7 @@ class _SupportChatViewState extends State<SupportChatView> {
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: replyMsg.isFromUser
-                            ? Colors.white70
+                            ? (_isDark ? Colors.white70 : AppColors.textSecondaryLight)
                             : AppColors.darkGold,
                       ),
                     ),
@@ -1714,19 +1815,19 @@ class _SupportChatViewState extends State<SupportChatView> {
                           : replyMsg.content,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white70,
+                        color: _isDark ? Colors.white70 : AppColors.textBodyLight,
                       ),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.close_rounded,
                   size: 20,
-                  color: Colors.white60,
+                  color: _isDark ? Colors.white60 : AppColors.textSecondaryLight,
                 ),
                 tooltip: 'close'.tr,
                 onPressed: () => _chatController.clearReply(),

@@ -63,8 +63,8 @@ class _ChatAttachmentImageState extends State<ChatAttachmentImage> {
             height: widget.height,
             memCacheWidth: widget.memCacheWidth,
             maxHeightDiskCache: widget.memCacheWidth,
-            placeholder: (_, __) => _placeholder(),
-            errorWidget: (_, __, ___) => _error(),
+            placeholder: (context, url) => _placeholder(),
+            errorWidget: (context, url, error) => _error(),
             fit: widget.fit,
           ),
         );
@@ -72,11 +72,13 @@ class _ChatAttachmentImageState extends State<ChatAttachmentImage> {
     );
   }
 
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
   Widget _placeholder() {
     return Container(
       width: widget.width ?? 200,
       height: widget.height ?? 200,
-      color: Colors.white10,
+      color: AppColors.chatImagePlaceholder,
       child: Center(
         child: CircularProgressIndicator(color: AppColors.darkGold),
       ),
@@ -87,8 +89,11 @@ class _ChatAttachmentImageState extends State<ChatAttachmentImage> {
     return Container(
       width: widget.width ?? 200,
       height: widget.height ?? 200,
-      color: Colors.white10,
-      child: const Icon(Icons.broken_image_outlined, color: Colors.white54),
+      color: AppColors.chatImagePlaceholder,
+      child: Icon(
+        Icons.broken_image_outlined,
+        color: _isDark ? Colors.white54 : AppColors.textSecondaryLight,
+      ),
     );
   }
 }
