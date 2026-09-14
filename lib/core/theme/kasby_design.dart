@@ -88,3 +88,50 @@ class KasbyLayout {
     return 1.55;
   }
 }
+
+/// Standardized fintech shadows that avoid harsh or muddy black blurs on light surfaces.
+class KasbyShadow {
+  KasbyShadow._();
+
+  /// Very subtle ambient elevation for cards and lists.
+  static List<BoxShadow> subtle(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return [
+      BoxShadow(
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.25)
+            : const Color(0x0A0F172A),
+        blurRadius: 10,
+        offset: const Offset(0, 2),
+      ),
+    ];
+  }
+
+  /// Standard card elevation with soft ambient depth.
+  static List<BoxShadow> card(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return [
+      BoxShadow(
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.35)
+            : const Color(0x0C0F172A),
+        blurRadius: 16,
+        offset: const Offset(0, 4),
+      ),
+    ];
+  }
+
+  /// Prominent elevation for floating sheets, bottom bars, and dialogs.
+  static List<BoxShadow> elevated(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return [
+      BoxShadow(
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.5)
+            : const Color(0x120F172A),
+        blurRadius: 24,
+        offset: const Offset(0, 6),
+      ),
+    ];
+  }
+}

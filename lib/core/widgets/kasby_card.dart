@@ -52,7 +52,7 @@ class KasbyCard extends StatelessWidget {
                     BoxShadow(
                       color: isDark
                           ? Colors.black.withValues(alpha: 0.3)
-                          : const Color(0x0F0F172A),
+                          : const Color(0x0C0F172A),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),

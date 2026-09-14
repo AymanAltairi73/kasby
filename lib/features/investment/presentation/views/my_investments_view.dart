@@ -13,6 +13,7 @@ import 'package:kasby/core/models/user_investment_model.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/utils/date_helper.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 
@@ -712,35 +713,21 @@ class _InvestmentsListState extends State<_InvestmentsList> {
                             ],
                           );
                         }),
-                      const SizedBox(height: 8),
-                      _buildProgressRow(
-                        'investment_duration'.tr,
-                        '30_months_2_5_years'.tr,
-                        AppColors.darkGold,
-                      ),
-                      const SizedBox(height: 8),
-                      if (isActive && inv.endDate != null) ...[
-                        const SizedBox(height: 16),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value:
-                                inv.remainingDays != null &&
-                                    inv.startDate != null
-                                ? 1 -
-                                      (inv.remainingDays! /
-                                          inv.endDate!
-                                              .difference(inv.startDate!)
-                                              .inDays
-                                              .clamp(1, 99999))
-                                : 1,
-                            backgroundColor: isDark
-                                ? Colors.white.withValues(alpha: 0.05)
-                                : Colors.black.withValues(alpha: 0.05),
-                            color: AppColors.darkGold,
-                            minHeight: 6,
-                          ),
+                      if (isActive) ...[
+                        const SizedBox(height: 14),
+                        _buildCycleProgressSection(context, inv, isDark),
+                      ] else ...[
+                        const SizedBox(height: 8),
+                        _buildProgressRow(
+                          'investment_duration'.tr,
+                          _formatInvestmentDuration(inv),
+                          AppColors.darkGold,
                         ),
+                        if (inv.status == 'completed' ||
+                            inv.status == 'matured') ...[
+                          const SizedBox(height: 12),
+                          _buildCompletedCycleSection(context, inv, isDark),
+                        ],
                       ],
                       if (isActive && HomeController.to.isSubscribed.value) ...[
                         const SizedBox(height: 12),
@@ -825,6 +812,290 @@ class _InvestmentsListState extends State<_InvestmentsList> {
         ),
       ],
     );
+  }
+
+  Widget _buildCycleProgressSection(
+    BuildContext context,
+    UserInvestmentModel inv,
+    bool isDark,
+  ) {
+    final elapsed = inv.elapsedDays;
+    final remaining = inv.cycleRemainingDays;
+    final total = inv.totalDurationDays;
+    final progress = inv.cycleProgress;
+    final progressPercent = (progress * 100).toInt();
+    final isCompleted = remaining == 0 || progress >= 1.0;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.03)
+            : AppColors.surfaceSecondaryLight.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : AppColors.borderLight,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ─── Header: Title & Remaining Days Badge ───
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.timelapse_rounded,
+                    size: 16,
+                    color: AppColors.darkGold,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'cycle_progress'.tr,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isCompleted ? AppColors.softGreen : AppColors.darkGold)
+                      .withValues(alpha: isDark ? 0.15 : 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: (isCompleted ? AppColors.softGreen : AppColors.darkGold)
+                        .withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  isCompleted
+                      ? 'cycle_completed'.tr
+                      : 'days_left'.trParams({'days': '$remaining'}),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: isCompleted
+                        ? (isDark ? AppColors.softGreen : const Color(0xFF107C41))
+                        : (isDark ? AppColors.darkGold : const Color(0xFFB78628)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ─── Smooth Animated LinearProgressIndicator ───
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: progress),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutCubic,
+              builder: (context, animatedValue, _) {
+                return LinearProgressIndicator(
+                  value: animatedValue,
+                  minHeight: 7,
+                  backgroundColor: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : const Color(0xFFE2E8F0),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isCompleted ? AppColors.softGreen : AppColors.darkGold,
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // ─── Metrics: Elapsed Days & Percentage ───
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'day_x_of_y'.trParams({
+                  'current': '$elapsed',
+                  'total': '$total',
+                }),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white70 : AppColors.textBodyLight,
+                ),
+              ),
+              Text(
+                '$progressPercent%',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: isCompleted
+                      ? AppColors.softGreen
+                      : (isDark ? AppColors.darkGold : const Color(0xFFB78628)),
+                ),
+              ),
+            ],
+          ),
+
+          // ─── Footer: Started & Ends Dates ───
+          if (inv.effectiveStartDate != null || inv.effectiveEndDate != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.only(top: 8),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : AppColors.borderLight.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (inv.effectiveStartDate != null)
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.play_circle_outline_rounded,
+                            size: 13,
+                            color: isDark
+                                ? Colors.white38
+                                : AppColors.textMutedLight,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '${'started'.tr}: ${DateHelper.date(inv.effectiveStartDate)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppColors.textSecondaryLight,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (inv.effectiveEndDate != null)
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Icon(
+                            Icons.flag_outlined,
+                            size: 13,
+                            color: isDark
+                                ? Colors.white38
+                                : AppColors.textMutedLight,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '${'ends'.tr}: ${DateHelper.date(inv.effectiveEndDate)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppColors.textSecondaryLight,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedCycleSection(
+    BuildContext context,
+    UserInvestmentModel inv,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.softGreen.withValues(alpha: isDark ? 0.08 : 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.softGreen.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle_outline_rounded,
+            size: 18,
+            color: AppColors.softGreen,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'cycle_completed'.tr,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AppColors.softGreen : const Color(0xFF107C41),
+              ),
+            ),
+          ),
+          if (inv.effectiveEndDate != null)
+            Text(
+              DateHelper.date(inv.effectiveEndDate),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppColors.textSecondaryLight,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatInvestmentDuration(UserInvestmentModel inv) {
+    final days = inv.investment?.durationDays ?? inv.totalDurationDays;
+    if (days >= 900) {
+      return '30_months_2_5_years'.tr;
+    }
+    if (days >= 365) {
+      final years = days / 365;
+      return years == years.toInt()
+          ? '${years.toInt()} ${'years'.tr}'
+          : '${years.toStringAsFixed(1)} ${'years'.tr}';
+    }
+    if (days >= 60) {
+      final months = (days / 30).round();
+      return '$months ${'months'.tr}';
+    }
+    return '$days ${'days'.tr}';
   }
 
   /// Portfolio performance summary (audit C20): totals, return trend sparkline

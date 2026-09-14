@@ -123,10 +123,10 @@ class _MainShellViewState extends State<MainShellView> {
           fontWeight: FontWeight.bold,
         ),
         unselectedIconTheme: IconThemeData(
-          color: isDark ? Colors.white38 : Colors.grey.shade400,
+          color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
         ),
         unselectedLabelTextStyle: TextStyle(
-          color: isDark ? Colors.white38 : Colors.grey.shade400,
+          color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
           fontSize: 11,
           fontWeight: FontWeight.w500,
         ),
@@ -202,17 +202,17 @@ class _MainShellViewState extends State<MainShellView> {
             top: BorderSide(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.06),
-              width: 0.5,
+                  : const Color(0xFFE2E8F0),
+              width: 1.0,
             ),
           ),
           boxShadow: isDark
               ? []
               : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
+                  const BoxShadow(
+                    color: Color(0x0C0F172A),
                     blurRadius: 20,
-                    offset: const Offset(0, -4),
+                    offset: Offset(0, -4),
                   ),
                 ],
         ),

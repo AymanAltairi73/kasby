@@ -354,9 +354,9 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
                 BoxShadow(
                   color: isDark
                       ? Colors.black.withValues(alpha: 0.4)
-                      : Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
+                      : const Color(0x0C0F172A),
+                  blurRadius: 16,
+                  offset: const Offset(0, -4),
                 ),
               ],
             ),
@@ -400,8 +400,8 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
                           text: 'checkin_done_today'.tr,
                           onPressed: null,
                           color: isDark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.black.withValues(alpha: 0.1),
+                              ? const Color(0xFF232328)
+                              : AppColors.surfaceSecondaryLight,
                         ),
                       ],
                     ),
@@ -458,9 +458,11 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
             borderRadius: BorderRadius.circular(20),
             color: isDark
                 ? Colors.white.withValues(alpha: 0.05)
-                : Colors.black.withValues(alpha: 0.03),
+                : AppColors.surfaceSecondaryLight,
             border: Border.all(
-              color: AppColors.darkGold.withValues(alpha: 0.2),
+              color: isDark
+                  ? AppColors.darkGold.withValues(alpha: 0.2)
+                  : const Color(0xFFE2E8F0),
             ),
           ),
           child: Column(
@@ -531,19 +533,19 @@ class _DailyCheckInViewState extends State<DailyCheckInView> {
                 ? AppColors.darkGold
                 : (isDark
                       ? AppColors.surface
-                      : Colors.black.withValues(alpha: 0.05)),
+                      : const Color(0xFFEDF2F7)),
             shape: BoxShape.circle,
             border: Border.all(
               color: isCompleted
                   ? AppColors.darkGold
-                  : (isDark ? Colors.white12 : Colors.black12),
+                  : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
             ),
           ),
           child: Icon(
             isCompleted ? Icons.check : Icons.star_border,
             color: isCompleted
                 ? (isDark ? Colors.black : Colors.white)
-                : (isDark ? Colors.white38 : Colors.black38),
+                : (isDark ? Colors.white38 : AppColors.textMutedLight),
             size: 20,
           ),
         ),

@@ -36,7 +36,9 @@ class HomeBalanceCard extends StatelessWidget {
                       height: 120,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.darkGold.withValues(alpha: 0.15),
+                        color: AppColors.darkGold.withValues(
+                          alpha: isDark ? 0.15 : 0.05,
+                        ),
                       ),
                     )
                     .animate(onPlay: (c) => c.repeat(reverse: true))
@@ -57,7 +59,9 @@ class HomeBalanceCard extends StatelessWidget {
                       height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.softGreen.withValues(alpha: 0.1),
+                        color: AppColors.softGreen.withValues(
+                          alpha: isDark ? 0.1 : 0.04,
+                        ),
                       ),
                     )
                     .animate(onPlay: (c) => c.repeat(reverse: true))
@@ -80,8 +84,8 @@ class HomeBalanceCard extends StatelessWidget {
               border: Border.all(
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.1)
-                    : AppColors.darkGold.withValues(alpha: 0.2),
-                width: 1.5,
+                    : AppColors.borderLight,
+                width: 1.0,
               ),
               hasShadow: true,
               child: Column(
@@ -297,7 +301,7 @@ class HomeBalanceCard extends StatelessWidget {
                         width: 1,
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.black.withValues(alpha: 0.1),
+                            : const Color(0xFFE2E8F0),
                       ),
                       Expanded(
                         child: Column(
@@ -438,7 +442,7 @@ class HomeBalanceCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.05)
-                                : Colors.black.withValues(alpha: 0.05),
+                                : const Color(0xFFEDF2F7),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(4),
@@ -521,7 +525,7 @@ class HomeBalanceCard extends StatelessWidget {
                         Divider(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.black.withValues(alpha: 0.1),
+                              : const Color(0xFFE2E8F0),
                           height: 1,
                         ),
                         const SizedBox(height: 20),

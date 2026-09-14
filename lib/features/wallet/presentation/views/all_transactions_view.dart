@@ -6,7 +6,6 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:kasby/core/models/transaction_model.dart';
-import 'package:kasby/core/localization/model_localization_extensions.dart';
 import 'package:kasby/routes/app_routes.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
@@ -275,19 +274,29 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                         border: Border.all(
                           color: isActive
                               ? AppColors.darkGold
-                              : Colors.transparent,
+                              : (isDark
+                                    ? Colors.transparent
+                                    : const Color(0xFFE2E8F0)),
                         ),
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
                                   color: AppColors.darkGold.withValues(
-                                    alpha: 0.3,
+                                    alpha: isDark ? 0.3 : 0.25,
                                   ),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
                                 ),
                               ]
-                            : [],
+                            : (isDark
+                                  ? []
+                                  : const [
+                                      BoxShadow(
+                                        color: Color(0x060F172A),
+                                        blurRadius: 6,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ]),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -351,7 +360,9 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                   border: Border.all(
                     color: _selectedDateRange != null
                         ? AppColors.darkGold
-                        : Colors.transparent,
+                        : (isDark
+                              ? Colors.transparent
+                              : const Color(0xFFE2E8F0)),
                   ),
                 ),
                 child: Row(
@@ -396,6 +407,11 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.surface : AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.transparent
+                        : const Color(0xFFE2E8F0),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -473,7 +489,6 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
     int groupIndex,
     int itemIndex,
   ) {
-    final isOut = tx.isDebit;
     final typeInfo = _getTypeInfo(tx.type);
     final statusInfo = _getStatusInfo(tx.status);
 
@@ -504,9 +519,9 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                   BoxShadow(
                     color: isDark
                         ? Colors.black.withValues(alpha: 0.2)
-                        : Colors.black.withValues(alpha: 0.04),
+                        : const Color(0x0A0F172A),
                     blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),

@@ -17,7 +17,6 @@ import 'package:kasby/core/services/auth_security_service.dart';
 import 'package:kasby/core/utils/locale_helper.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/tour/tour_target_keys.dart';
-import 'package:kasby/core/tour/widgets/tour_settings_sheet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileView extends StatefulWidget {
@@ -71,7 +70,7 @@ class _ProfileViewState extends State<ProfileView> {
                       isDark,
                       Icons.person_outline_rounded,
                       'personal_info'.tr,
-                      Colors.blueAccent,
+                      const Color(0xFF2563EB),
                       () => Get.toNamed(Routes.personalProfile),
                     ),
                     _buildProfileItem(
@@ -79,7 +78,7 @@ class _ProfileViewState extends State<ProfileView> {
                       isDark,
                       Icons.groups_rounded,
                       'my_team'.tr,
-                      Colors.cyanAccent,
+                      const Color(0xFF0891B2),
                       () => Get.toNamed(Routes.myTeam),
                     ),
                     _buildProfileItem(
@@ -87,7 +86,7 @@ class _ProfileViewState extends State<ProfileView> {
                       isDark,
                       Icons.analytics_rounded,
                       'referral_analytics'.tr,
-                      Colors.blueAccent,
+                      const Color(0xFF2563EB),
                       () => Get.toNamed(Routes.referralAnalytics),
                     ),
                     _buildProfileItem(
@@ -95,7 +94,7 @@ class _ProfileViewState extends State<ProfileView> {
                       isDark,
                       Icons.account_balance_wallet_rounded,
                       'earnings_analytics'.tr,
-                      Colors.greenAccent,
+                      AppColors.softGreen,
                       () => Get.toNamed(Routes.earningsAnalytics),
                     ),
                     KeyedSubtree(
@@ -105,7 +104,7 @@ class _ProfileViewState extends State<ProfileView> {
                         isDark,
                         Icons.security_rounded,
                         'security_center'.tr,
-                        Colors.redAccent,
+                        AppColors.error,
                         () => Get.toNamed(Routes.securityCenter),
                       ),
                     ),
@@ -115,7 +114,7 @@ class _ProfileViewState extends State<ProfileView> {
                       isDark,
                       Icons.description_outlined,
                       'statements'.tr,
-                      Colors.tealAccent,
+                      const Color(0xFF0D9488),
                       () => Get.toNamed(Routes.statements),
                     ),
                     // KeyedSubtree(
@@ -205,7 +204,7 @@ class _ProfileViewState extends State<ProfileView> {
                         isDark,
                         Icons.language_rounded,
                         'language'.tr,
-                        Colors.greenAccent,
+                        AppColors.softGreen,
                         () => _showLanguageSelector(context, isDark),
                       ),
                     ),
@@ -219,7 +218,7 @@ class _ProfileViewState extends State<ProfileView> {
                       isDark,
                       Icons.notifications_none_rounded,
                       'notification_settings'.tr,
-                      Colors.orangeAccent,
+                      const Color(0xFFD97706),
                       () => Get.toNamed(Routes.notificationPreferences),
                     ),
                     _buildProfileItem(
@@ -227,7 +226,7 @@ class _ProfileViewState extends State<ProfileView> {
                       isDark,
                       Icons.help_outline_rounded,
                       'support_faq'.tr,
-                      Colors.cyanAccent,
+                      const Color(0xFF0891B2),
                       () => Get.toNamed(Routes.support),
                     ),
                     // _buildProfileItem(
@@ -298,8 +297,8 @@ class _ProfileViewState extends State<ProfileView> {
                           height: 150,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.blueAccent.withValues(
-                              alpha: isDark ? 0.1 : 0.06,
+                            color: AppColors.darkGold.withValues(
+                              alpha: isDark ? 0.08 : 0.03,
                             ),
                           ),
                         )
@@ -586,15 +585,15 @@ class _ProfileViewState extends State<ProfileView> {
             border: Border.all(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.06),
+                  : AppColors.borderLight,
             ),
             boxShadow: isDark
                 ? null
-                : [
+                : const [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
+                      color: Color(0x0A0F172A),
+                      blurRadius: 16,
+                      offset: Offset(0, 4),
                     ),
                   ],
           ),
@@ -647,12 +646,12 @@ class _ProfileViewState extends State<ProfileView> {
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.05)
-                      : Colors.black.withValues(alpha: 0.05),
+                      : AppColors.surfaceSecondaryLight,
                   shape: BoxShape.circle,
                 ),
                 child: DirectionalChevron(
                   size: 12,
-                  color: isDark ? Colors.white54 : Colors.black38,
+                  color: isDark ? Colors.white54 : AppColors.textSecondaryLight,
                 ),
               ),
           onTap: onTap,

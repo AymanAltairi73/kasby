@@ -87,7 +87,7 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                       height: 150,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: widget.color.withValues(alpha: 0.15),
+                        color: widget.color.withValues(alpha: isDark ? 0.15 : 0.06),
                       ),
                     )
                     .animate(onPlay: (c) => c.repeat(reverse: true))
@@ -107,8 +107,8 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                 border: Border.all(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.1)
-                      : AppColors.darkGold.withValues(alpha: 0.2),
-                  width: 1.5,
+                      : AppColors.borderLight,
+                  width: 1.0,
                 ),
                 child: SingleChildScrollView(
                   physics:
@@ -159,7 +159,7 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                                     decoration: BoxDecoration(
                                       color: isDark
                                           ? Colors.white.withValues(alpha: 0.05)
-                                          : Colors.black.withValues(alpha: 0.05),
+                                          : AppColors.surfaceSecondaryLight,
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(

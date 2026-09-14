@@ -53,9 +53,10 @@ class EmptyStateWidget extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.onSurfaceLight,
                 ),
               ),
 
@@ -66,7 +67,7 @@ class EmptyStateWidget extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDark ? Colors.white54 : Colors.black54,
+                  color: isDark ? Colors.white54 : AppColors.textSecondaryLight,
                 ),
               ),
 
@@ -89,7 +90,7 @@ class EmptyStateWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.darkGold.withValues(alpha: 0.1),
+        color: AppColors.darkGold.withValues(alpha: isDark ? 0.1 : 0.08),
         shape: BoxShape.circle,
       ),
       child: Icon(

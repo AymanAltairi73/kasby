@@ -103,6 +103,81 @@ class UserInvestmentModel {
   /// Estimated monthly profit (30-day cycle) calculated from daily profit.
   double get monthlyProfit => dailyProfit * 30;
 
+  /// Effective start date of the investment cycle.
+  /// Falls back to [createdAt] if [startDate] is null.
+  DateTime? get effectiveStartDate => startDate ?? createdAt;
+
+  /// Effective end date of the investment cycle.
+  /// Uses [endDate] if provided, or calculates from [effectiveStartDate] + plan [durationDays].
+  DateTime? get effectiveEndDate {
+    if (endDate != null) return endDate;
+    final start = effectiveStartDate;
+    final duration = investment?.durationDays;
+    if (start != null && duration != null && duration > 0) {
+      return start.add(Duration(days: duration));
+    }
+    return null;
+  }
+
+  /// Total duration of the investment cycle in days.
+  /// Determined from the actual date span (endDate - startDate),
+  /// or from the plan's durationDays, safely falling back to 30 days.
+  int get totalDurationDays {
+    final start = effectiveStartDate;
+    final end = effectiveEndDate;
+    if (start != null && end != null) {
+      final s = DateTime(start.year, start.month, start.day);
+      final e = DateTime(end.year, end.month, end.day);
+      final diff = e.difference(s).inDays;
+      if (diff > 0) return diff;
+    }
+    if ((investment?.durationDays ?? 0) > 0) {
+      return investment!.durationDays!;
+    }
+    return 30;
+  }
+
+  /// Elapsed days since the investment cycle started.
+  /// Clamped between 0 and [totalDurationDays].
+  int getElapsedDays([DateTime? asOf]) {
+    final start = effectiveStartDate;
+    if (start == null) return 0;
+    final target = asOf ?? DateTime.now();
+    final today = DateTime(target.year, target.month, target.day);
+    final startDay = DateTime(start.year, start.month, start.day);
+
+    if (today.isBefore(startDay)) return 0;
+
+    final diff = today.difference(startDay).inDays;
+    return diff.clamp(0, totalDurationDays);
+  }
+
+  /// Elapsed days as of current time.
+  int get elapsedDays => getElapsedDays();
+
+  /// Remaining days until the investment cycle completes.
+  /// Clamped between 0 and [totalDurationDays].
+  int getCycleRemainingDays([DateTime? asOf]) {
+    final total = totalDurationDays;
+    final elapsed = getElapsedDays(asOf);
+    final remaining = total - elapsed;
+    return remaining.clamp(0, total);
+  }
+
+  /// Remaining days as of current time.
+  int get cycleRemainingDays => getCycleRemainingDays();
+
+  /// Current cycle progress as a fraction between 0.0 and 1.0.
+  double getCycleProgress([DateTime? asOf]) {
+    final total = totalDurationDays;
+    if (total <= 0) return 0.0;
+    final progress = getElapsedDays(asOf) / total;
+    return progress.clamp(0.0, 1.0);
+  }
+
+  /// Current cycle progress as of current time.
+  double get cycleProgress => getCycleProgress();
+
 
   factory UserInvestmentModel.fromJson(Map<String, dynamic> json) {
     try {

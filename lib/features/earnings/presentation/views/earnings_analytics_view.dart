@@ -20,14 +20,14 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.surfaceLight,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.backgroundLight,
       appBar: AppBar(
         title: Text(
           'earnings_analytics'.tr,
           style: TextStyle(
             fontFamily: 'IBMPlexSansArabic',
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87,
+            color: isDark ? Colors.white : AppColors.onSurfaceLight,
           ),
         ),
         centerTitle: true,
@@ -37,7 +37,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 20,
-            color: isDark ? Colors.white : Colors.black87,
+            color: isDark ? Colors.white : AppColors.onSurfaceLight,
           ),
           onPressed: () => Get.back(),
         ),
@@ -127,15 +127,26 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                       ? AppColors.darkGold
                       : (isDark
                           ? Colors.white.withValues(alpha: 0.05)
-                          : Colors.black.withValues(alpha: 0.04)),
+                          : AppColors.surfaceLight),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
                         ? AppColors.darkGold
                         : (isDark
                             ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.black.withValues(alpha: 0.08)),
+                            : const Color(0xFFE2E8F0)),
                   ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.darkGold.withValues(
+                              alpha: isDark ? 0.3 : 0.25,
+                            ),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Center(
                   child: Text(
@@ -146,7 +157,9 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                       color: isSelected
                           ? Colors.black
-                          : (isDark ? Colors.white70 : Colors.black87),
+                          : (isDark
+                              ? Colors.white70
+                              : AppColors.textSecondaryLight),
                     ),
                   ),
                 ),
@@ -200,7 +213,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
           title: 'last_24h'.tr,
           value: CurrencyConversionService.formatUsd(last24hUsd),
           icon: Icons.schedule_rounded,
-          color: Colors.orangeAccent,
+          color: const Color(0xFFD97706),
           isDark: isDark,
         ),
         _buildStatCard(
@@ -208,7 +221,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
           title: 'highest_daily'.tr,
           value: CurrencyConversionService.formatUsd(highestUsd),
           icon: Icons.trending_up_rounded,
-          color: Colors.purpleAccent,
+          color: const Color(0xFF7C3AED),
           isDark: isDark,
         ),
         _buildStatCard(
@@ -216,7 +229,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
           title: 'average_daily'.tr,
           value: CurrencyConversionService.formatUsd(averageUsd),
           icon: Icons.bar_chart_rounded,
-          color: Colors.tealAccent,
+          color: const Color(0xFF0D9488),
           isDark: isDark,
         ),
         _buildStatCard(
@@ -224,7 +237,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
           title: 'days_in_period'.tr,
           value: '$daysInPeriod',
           icon: Icons.calendar_today_rounded,
-          color: Colors.blueAccent,
+          color: const Color(0xFF2563EB),
           isDark: isDark,
         ),
       ],
@@ -246,7 +259,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       border: Border.all(
         color: isDark
             ? Colors.white.withValues(alpha: 0.08)
-            : Colors.black.withValues(alpha: 0.06),
+            : const Color(0xFFE2E8F0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,7 +299,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                 fontFamily: 'IBMPlexSansArabic',
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white : Colors.black87,
+                color: isDark ? Colors.white : AppColors.onSurfaceLight,
               ),
             ),
           ),
@@ -314,7 +327,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                 fontFamily: 'IBMPlexSansArabic',
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black87,
+                color: isDark ? Colors.white : AppColors.onSurfaceLight,
               ),
             ),
             Icon(
@@ -332,7 +345,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
           border: Border.all(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.06),
+                : const Color(0xFFE2E8F0),
           ),
           child: Column(
             children: [
@@ -387,7 +400,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
             fontFamily: 'IBMPlexSansArabic',
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87,
+            color: isDark ? Colors.white : AppColors.onSurfaceLight,
           ),
         ),
         const SizedBox(height: 12),
@@ -417,7 +430,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.06),
+              : const Color(0xFFE2E8F0),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,7 +453,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                       fontFamily: 'IBMPlexSansArabic',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: isDark ? Colors.white : AppColors.onSurfaceLight,
                     ),
                   ),
                 ),
@@ -479,7 +492,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                       value: (percentage / 100).clamp(0.0, 1.0),
                       backgroundColor: isDark
                           ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.08),
+                          : const Color(0xFFEDF2F7),
                       valueColor: AlwaysStoppedAnimation<Color>(AppColors.darkGold),
                       minHeight: 6,
                     ),
@@ -492,7 +505,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                     fontFamily: 'IBMPlexSansArabic',
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white70 : Colors.black87,
+                    color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
                   ),
                 ),
               ],
@@ -544,7 +557,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
               fontFamily: 'IBMPlexSansArabic',
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+              color: isDark ? Colors.white : AppColors.onSurfaceLight,
             ),
           ),
           const SizedBox(height: 12),
@@ -588,7 +601,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
             fontFamily: 'IBMPlexSansArabic',
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87,
+            color: isDark ? Colors.white : AppColors.onSurfaceLight,
           ),
         ),
         const SizedBox(height: 12),
@@ -599,7 +612,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
           border: Border.all(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.06),
+                : const Color(0xFFE2E8F0),
           ),
           child: Column(
             children: [
@@ -619,7 +632,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
               if (hasAvg)
                 _buildInsightTile(
                   icon: Icons.bar_chart_rounded,
-                  color: Colors.tealAccent,
+                  color: const Color(0xFF0D9488),
                   text: 'insight_average_daily'.trParams({
                     'amount': CurrencyConversionService.formatUsd(
                       stats.averageDailyEarningsUsd,
@@ -670,7 +683,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
               fontFamily: 'IBMPlexSansArabic',
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: isDark ? Colors.white70 : Colors.black87,
+              color: isDark ? Colors.white70 : AppColors.onSurfaceLight,
             ),
           ),
         ),
@@ -700,7 +713,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                   fontFamily: 'IBMPlexSansArabic',
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
+                  color: isDark ? Colors.white : AppColors.onSurfaceLight,
                 ),
               ),
               InkWell(
@@ -756,7 +769,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       border: Border.all(
         color: isDark
             ? Colors.white.withValues(alpha: 0.08)
-            : Colors.black.withValues(alpha: 0.06),
+            : const Color(0xFFE2E8F0),
       ),
       child: Row(
         children: [
@@ -783,7 +796,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                     fontFamily: 'IBMPlexSansArabic',
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: isDark ? Colors.white : AppColors.onSurfaceLight,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -860,7 +873,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
             fontFamily: 'IBMPlexSansArabic',
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87,
+            color: isDark ? Colors.white : AppColors.onSurfaceLight,
           ),
         ),
         const SizedBox(height: 12),
@@ -886,7 +899,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.06),
+              : const Color(0xFFE2E8F0),
         ),
         child: Row(
           children: [
@@ -909,7 +922,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
                       fontFamily: 'IBMPlexSansArabic',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: isDark ? Colors.white : AppColors.onSurfaceLight,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -1003,7 +1016,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
               style: TextStyle(
                 fontFamily: 'IBMPlexSansArabic',
                 fontSize: 14,
-                color: isDark ? Colors.white70 : Colors.black87,
+                color: isDark ? Colors.white70 : AppColors.onSurfaceLight,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1109,7 +1122,7 @@ class _InteractiveTrendChartState extends State<InteractiveTrendChart> {
                     style: TextStyle(
                       fontFamily: 'IBMPlexSansArabic',
                       fontSize: 11,
-                      color: widget.isDark ? Colors.white70 : Colors.black87,
+                      color: widget.isDark ? Colors.white70 : AppColors.onSurfaceLight,
                     ),
                   ),
                   Text(
@@ -1192,7 +1205,7 @@ class _SmoothTrendChartPainter extends CustomPainter {
     final gridPaint = Paint()
       ..color = isDark
           ? Colors.white.withValues(alpha: 0.06)
-          : Colors.black.withValues(alpha: 0.06)
+          : const Color(0xFFE2E8F0)
       ..strokeWidth = 1;
 
     for (int i = 0; i <= 3; i++) {

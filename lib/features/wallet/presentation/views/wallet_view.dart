@@ -168,8 +168,10 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 20,
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.5)
+                            : const Color(0x180F172A),
+                        blurRadius: 24,
                         offset: const Offset(0, 10),
                       ),
                     ],
@@ -1074,6 +1076,15 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                   ? Colors.white.withValues(alpha: 0.05)
                   : AppColors.borderLight,
             ),
+            boxShadow: isDark
+                ? null
+                : const [
+                    BoxShadow(
+                      color: Color(0x080F172A),
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1129,6 +1140,15 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                   ? Colors.white.withValues(alpha: 0.05)
                   : AppColors.borderLight,
             ),
+            boxShadow: isDark
+                ? null
+                : const [
+                    BoxShadow(
+                      color: Color(0x080F172A),
+                      blurRadius: 12,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1393,7 +1413,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
       padding: const EdgeInsets.only(bottom: 12),
       child: GlassCard(
         padding: const EdgeInsets.all(16),
-        opacity: isDark ? 0.03 : 0.05,
+        opacity: isDark ? 0.03 : 0.95,
         child: InkWell(
           onTap: () => Get.toNamed(Routes.transactionDetails, arguments: tx),
           child: Row(

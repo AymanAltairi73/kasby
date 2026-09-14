@@ -112,7 +112,7 @@ class KasbyShimmer extends StatelessWidget {
           border: Border.all(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.05)
-                : Colors.black.withValues(alpha: 0.08),
+                : const Color(0xFFE2E8F0),
           ),
         ),
         child: Row(

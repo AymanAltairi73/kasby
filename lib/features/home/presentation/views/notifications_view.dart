@@ -68,7 +68,7 @@ class _NotificationsViewState extends State<NotificationsView> {
       case 'success':
         return AppColors.softGreen;
       case 'warning':
-        return Colors.orange;
+        return const Color(0xFFD97706);
       case 'critical':
         return AppColors.error;
       case 'info':
@@ -457,7 +457,9 @@ class _NotificationsViewState extends State<NotificationsView> {
                 color: selected ? Colors.black : AppColors.textSecondary,
               ),
               selectedColor: AppColors.darkGold,
-              backgroundColor: AppColors.surface,
+              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.surfaceDark
+                  : AppColors.surfaceVariantLight,
               shape: RoundedRectangleBorder(borderRadius: KasbyRadius.chipR),
               onSelected: (_) => setState(() => _filter = e.key),
             ),

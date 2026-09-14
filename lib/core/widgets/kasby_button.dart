@@ -107,83 +107,96 @@ class _KasbyButtonState extends State<KasbyButton>
                   ]
                 : null,
           ),
-          child: ElevatedButton(
-            onPressed: null, // Handled by GestureDetector for custom animation
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  widget.color ??
-                  (widget.isSecondary
-                      ? Colors.transparent
-                      : AppColors.darkGold),
-              disabledBackgroundColor:
-                  widget.color ??
-                  (widget.isSecondary
-                      ? Colors.transparent
-                      : AppColors.darkGold),
-              foregroundColor:
-                  widget.textColor ??
-                  (widget.isSecondary && widget.color == null
+          child: Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final isEnabled = widget.onPressed != null && !widget.isLoading;
+
+              Color effectiveBgColor;
+              if (widget.color != null) {
+                effectiveBgColor = widget.color!;
+              } else if (widget.isSecondary) {
+                effectiveBgColor = Colors.transparent;
+              } else if (!isEnabled) {
+                effectiveBgColor = isDark
+                    ? const Color(0xFF232328)
+                    : AppColors.surfaceSecondaryLight;
+              } else {
+                effectiveBgColor = AppColors.darkGold;
+              }
+
+              Color effectiveFgColor;
+              if (widget.textColor != null) {
+                effectiveFgColor = widget.textColor!;
+              } else if (!isEnabled) {
+                effectiveFgColor = isDark
+                    ? const Color(0xFF6B7280)
+                    : AppColors.textMutedLight;
+              } else if (widget.isSecondary) {
+                effectiveFgColor = AppColors.darkGold;
+              } else {
+                effectiveFgColor = Colors.black;
+              }
+
+              BorderSide effectiveBorder;
+              if (widget.isSecondary && widget.color == null) {
+                effectiveBorder = BorderSide(
+                  color: isEnabled
                       ? AppColors.darkGold
-                      : ((widget.color == null ||
-                              widget.color == AppColors.darkGold ||
-                              widget.color == AppColors.goldLight)
-                          ? Colors.black
-                          : Colors.white)),
-              disabledForegroundColor:
-                  widget.textColor ??
-                  (widget.isSecondary && widget.color == null
-                      ? AppColors.darkGold
-                      : ((widget.color == null ||
-                              widget.color == AppColors.darkGold ||
-                              widget.color == AppColors.goldLight)
-                          ? Colors.black
-                          : Colors.white)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: widget.isSecondary && widget.color == null
-                    ? BorderSide(color: AppColors.darkGold)
-                    : BorderSide.none,
-              ),
-              elevation: 0,
-              padding: EdgeInsets.zero,
-            ),
-            child: widget.isLoading
-                ? SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: widget.textColor ??
-                          ((widget.color == null ||
-                                  widget.color == AppColors.darkGold ||
-                                  widget.color == AppColors.goldLight)
-                              ? Colors.black
-                              : Colors.white),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (widget.icon != null) ...[
-                        Icon(widget.icon, size: 20),
-                        const SizedBox(width: 10),
-                      ],
-                      Flexible(
-                        child: Text(
-                          widget.text,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: KasbyTypography.fontFamily,
-                            fontSize: KasbyTypography.button(context),
-                            letterSpacing:
-                                KasbyTypography.isEnglish(context) ? 0.2 : 0.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+                      : (isDark ? const Color(0xFF374151) : AppColors.borderLight),
+                );
+              } else {
+                effectiveBorder = BorderSide.none;
+              }
+
+              return ElevatedButton(
+                onPressed: null, // Handled by GestureDetector for custom animation
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: effectiveBgColor,
+                  disabledBackgroundColor: effectiveBgColor,
+                  foregroundColor: effectiveFgColor,
+                  disabledForegroundColor: effectiveFgColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: effectiveBorder,
                   ),
+                  elevation: 0,
+                  padding: EdgeInsets.zero,
+                ),
+                child: widget.isLoading
+                    ? SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: effectiveFgColor,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.icon != null) ...[
+                            Icon(widget.icon, size: 20),
+                            const SizedBox(width: 10),
+                          ],
+                          Flexible(
+                            child: Text(
+                              widget.text,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily: KasbyTypography.fontFamily,
+                                fontSize: KasbyTypography.button(context),
+                                letterSpacing:
+                                    KasbyTypography.isEnglish(context) ? 0.2 : 0.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+              );
+            },
           ),
         ),
       ),
