@@ -6,6 +6,7 @@ import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/services/crash_reporting/crash_error_category.dart';
 import 'package:kasby/core/services/enterprise_operations_logger.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
+import 'package:kasby/core/utils/transaction_formatter.dart';
 
 /// Centralized financial RPC layer with idempotency persistence and error mapping.
 class FinancialRepository {
@@ -69,17 +70,28 @@ class FinancialRepository {
       }
     }
 
-    // 2. Structured balance detail — localized
+    // 2. Structured balance detail — localized with real currency
     if (response['details'] != null && response['details'] is Map) {
       final details = response['details'] as Map;
       final available = (details['available_balance'] as num?)?.toDouble();
       final totalReq = (details['total_required'] as num?)?.toDouble();
       final fee = (details['fee'] as num?)?.toDouble() ?? 0;
+      final currency = (details['currency'] as String?)?.isNotEmpty == true
+          ? details['currency'] as String
+          : 'USD';
       if (available != null && totalReq != null) {
+        final availStr = TransactionFormatter.formatAmountWithoutSign(
+          amount: available,
+          currency: currency,
+        );
+        final reqStr = TransactionFormatter.formatAmountWithoutSign(
+          amount: totalReq,
+          currency: currency,
+        );
         final feeStr = fee > 0
-            ? ' (${'including_fees'.tr} \$${fee.toStringAsFixed(2)})'
+            ? ' (${'including_fees'.tr} ${TransactionFormatter.formatAmountWithoutSign(amount: fee, currency: currency)})'
             : '';
-        return '${'insufficient_balance_detail'.tr} (\$${available.toStringAsFixed(2)}) / (\$${totalReq.toStringAsFixed(2)})$feeStr';
+        return '${'insufficient_balance_detail'.tr} ($availStr) / ($reqStr)$feeStr';
       }
     }
 
@@ -95,6 +107,7 @@ class FinancialRepository {
   static Future<Map<String, dynamic>> createWithdrawal({
     required double amount,
     required String agentId,
+    String currency = 'USD',
   }) async {
     final idempotencyKey = await _persistedIdempotencyKey(
       'withdraw_${amount.toStringAsFixed(2)}_$agentId',
@@ -107,7 +120,7 @@ class FinancialRepository {
           'p_amount': amount,
           'p_agent_id': agentId,
           'p_idempotency_key': idempotencyKey,
-          'p_currency': 'USD',
+          'p_currency': currency,
         },
       );
 

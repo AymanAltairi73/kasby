@@ -380,14 +380,13 @@ class StatementService {
     ];
 
     final rows = txns.map((t) {
-      final sign = t.isDebit ? '-' : '+';
-      final typeLabel = t.type.tr;
-      final statusLabel = t.status.tr;
+      final typeLabel = t.localizedTypeLabel;
+      final statusLabel = t.localizedStatusLabel;
       return [
         t.createdAt != null ? df.format(t.createdAt!) : '--',
         typeLabel,
         statusLabel,
-        '$sign${money(t.amount)}',
+        t.formattedAmount,
       ];
     }).toList();
 

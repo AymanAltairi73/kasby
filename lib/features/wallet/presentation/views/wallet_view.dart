@@ -1389,11 +1389,6 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
   }
 
   Widget _buildGlassTransactionItem(TransactionModel tx) {
-    final isNegative =
-        tx.type == 'withdrawal' ||
-        tx.type == 'transfer_out' ||
-        tx.type == 'investment';
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GlassCard(
@@ -1406,12 +1401,12 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: _getTransactionColor(tx.type).withValues(alpha: 0.1),
+                  color: tx.typeColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  _getTransactionIcon(tx.type),
-                  color: _getTransactionColor(tx.type),
+                  tx.typeIcon,
+                  color: tx.typeColor,
                   size: 20,
                 ),
               ),
@@ -1421,7 +1416,7 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      tx.description ?? tx.type.tr,
+                      tx.localizedDescription,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: KasbyTypography.sp(
@@ -1451,16 +1446,19 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    '${isNegative ? "-" : "+"}${currencyController.formatAmount(tx.amount)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: KasbyTypography.sp(
-                        ar: 15.0,
-                        en: 13.5,
-                        context: context,
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Text(
+                      tx.formattedAmount,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: KasbyTypography.sp(
+                          ar: 15.0,
+                          en: 13.5,
+                          context: context,
+                        ),
+                        color: tx.isDebit ? AppColors.error : AppColors.softGreen,
                       ),
-                      color: isNegative ? AppColors.error : AppColors.softGreen,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1470,13 +1468,13 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(tx.status).withValues(alpha: 0.1),
+                      color: tx.statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      tx.status.tr.toUpperCase(),
+                      tx.localizedStatusLabel.toUpperCase(),
                       style: TextStyle(
-                        color: _getStatusColor(tx.status),
+                        color: tx.statusColor,
                         fontSize: KasbyTypography.sp(
                           ar: 8.0,
                           en: 7.5,
@@ -1493,59 +1491,6 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
         ),
       ),
     ).animate().fadeIn().slideY(begin: 0.2, end: 0);
-  }
-
-  Color _getTransactionColor(String type) {
-    switch (type) {
-      case 'deposit':
-        return AppColors.softGreen;
-      case 'withdraw':
-        return AppColors.error;
-      case 'transfer_in':
-        return Colors.blue;
-      case 'transfer_out':
-        return AppColors.darkGold;
-      case 'investment':
-        return AppColors.darkGold;
-      case 'reward':
-        return Colors.purple;
-      default:
-        return AppColors.darkGold;
-    }
-  }
-
-  IconData _getTransactionIcon(String type) {
-    switch (type) {
-      case 'deposit':
-        return Icons.add_circle_outline_rounded;
-      case 'withdraw':
-        return Icons.remove_circle_outline_rounded;
-      case 'transfer_in':
-        return Icons.arrow_downward_rounded;
-      case 'transfer_out':
-        return Icons.arrow_upward_rounded;
-      case 'investment':
-        return Icons.trending_up_rounded;
-      case 'reward':
-        return Icons.stars_rounded;
-      default:
-        return Icons.swap_horiz_rounded;
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'completed':
-        return AppColors.softGreen;
-      case 'pending':
-        return AppColors.darkGold;
-      case 'failed':
-        return AppColors.error;
-      case 'cancelled':
-        return AppColors.textSecondary;
-      default:
-        return AppColors.darkGold;
-    }
   }
 }
 

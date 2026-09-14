@@ -121,15 +121,12 @@ class HomeRecentTransactions extends StatelessWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: (isOut ? AppColors.error : AppColors.softGreen)
-                            .withValues(alpha: 0.1),
+                        color: tx.typeColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        isOut
-                            ? Icons.arrow_outward_rounded
-                            : Icons.arrow_downward_rounded,
-                        color: isOut ? AppColors.error : AppColors.softGreen,
+                        tx.typeIcon,
+                        color: tx.typeColor,
                         size: 20,
                       ),
                     ),
@@ -173,17 +170,20 @@ class HomeRecentTransactions extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 100),
+                      constraints: const BoxConstraints(maxWidth: 125),
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text(
-                          '${isOut ? '-' : '+'}${currencyController.formatAmount(tx.amount)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15,
-                            color: isOut
-                                ? AppColors.error
-                                : AppColors.softGreen,
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Text(
+                            tx.formattedAmount,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15,
+                              color: tx.isDebit
+                                  ? AppColors.error
+                                  : AppColors.softGreen,
+                            ),
                           ),
                         ),
                       ),

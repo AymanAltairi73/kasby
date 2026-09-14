@@ -1165,10 +1165,75 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   // ─── TRANSACTIONS ─────────────────────────────────────
 
+  String _derivePointTransactionType(String? description, String pointType) {
+    if (description == null || description.isEmpty) {
+      return pointType == 'earn' ? 'reward' : 'transfer_out';
+    }
+    final desc = description.toLowerCase();
+    if (desc.contains('daily check-in') ||
+        desc.contains('daily_checkin') ||
+        desc.contains('check-in') ||
+        desc.contains('تسجيل دخول يومي') ||
+        desc.contains('تسجيل الدخول اليومي') ||
+        desc.contains('تسجيل حضور') ||
+        desc.contains('تسجيل الحضور')) {
+      return 'daily_check_in';
+    }
+    if (desc.contains('spin attempt purchase') ||
+        desc.contains('spin attempts purchase') ||
+        (desc.contains('purchased') && desc.contains('spin')) ||
+        desc.contains('lucky wheel bundle') ||
+        desc.contains('شراء محاولات تدوير') ||
+        desc.contains('شراء باقة محاولات تدوير') ||
+        desc.contains('شراء محاولات عجلة الحظ')) {
+      return 'spin_purchase';
+    }
+    if (desc.contains('spin wheel reward') ||
+        desc.contains('lucky wheel reward') ||
+        desc.contains('مكافأة عجلة الحظ') ||
+        desc.contains('جائزة عجلة الحظ')) {
+      return 'spin_reward';
+    }
+    if (desc.contains('referral') || desc.contains('إحالة')) {
+      return 'referral_reward';
+    }
+    if (desc.contains('redemption') ||
+        desc.contains('استبدال') ||
+        desc.contains('رصيد كاش')) {
+      return 'ksp_redemption';
+    }
+    if (desc.contains('transfer to') || desc.contains('تحويل إلى')) {
+      return 'transfer_out';
+    }
+    if (desc.contains('transfer from') || desc.contains('تحويل من')) {
+      return 'transfer_in';
+    }
+    return pointType == 'earn' ? 'reward' : 'transfer_out';
+  }
+
+  TransactionModel _mapPointHistoryToTransaction(Map<String, dynamic> json) {
+    final pointType = json['type']?.toString() ?? 'earn';
+    final desc = json['description']?.toString();
+    return TransactionModel(
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? SupabaseService.userId ?? '',
+      walletId: 'points_wallet',
+      amount: (json['points'] as num?)?.toDouble() ?? 0.0,
+      currency: 'KSP',
+      type: _derivePointTransactionType(desc, pointType),
+      status: 'completed',
+      description: desc,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+    );
+  }
+
   Future<void> fetchRecentTransactions() async {
     if (!SupabaseService.isLoggedIn) return;
     isLoadingTransactions.value = true;
     try {
+      final List<TransactionModel> combined = [];
+
+      // 1. Fiat wallet transactions
       final response = await SupabaseService.client
           .from('transactions')
           .select()
@@ -1176,9 +1241,26 @@ class HomeController extends GetxController with WidgetsBindingObserver {
           .order('created_at', ascending: false)
           .limit(10);
 
-      recentTransactions.value = (response as List)
-          .map((json) => TransactionModel.fromJson(json))
-          .toList();
+      combined.addAll((response as List).map((json) => TransactionModel.fromJson(json)));
+
+      // 2. KSP point history transactions
+      final pointsResponse = await SupabaseService.client
+          .from('point_history')
+          .select()
+          .eq('user_id', SupabaseService.userId!)
+          .order('created_at', ascending: false)
+          .limit(10);
+
+      combined.addAll(
+        (pointsResponse as List).map((json) => _mapPointHistoryToTransaction(json)),
+      );
+
+      // 3. Sort by created_at descending and take 10
+      combined.sort(
+        (a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)),
+      );
+
+      recentTransactions.value = combined.take(10).toList();
     } catch (e, stack) {
       SafeGetx.debugTrace(
         className: 'HomeController',
@@ -1253,20 +1335,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             .order('created_at', ascending: false)
             .range(from, to);
 
-        final pointsList = (pointsResponse as List).map((json) {
-          return TransactionModel(
-            id: json['id'],
-            userId: json['user_id'],
-            walletId: 'points_wallet',
-            amount: (json['points'] as num).toDouble(),
-            type: json['type'] == 'earn'
-                ? 'reward'
-                : 'transfer_out', // Mapping for UI icons
-            status: 'completed',
-            description: json['description'],
-            createdAt: DateTime.parse(json['created_at']),
-          );
-        }).toList();
+        final pointsList = (pointsResponse as List)
+            .map((json) => _mapPointHistoryToTransaction(json))
+            .toList();
 
         fetchedList.addAll(pointsList);
         // Re-sort because we merged two lists

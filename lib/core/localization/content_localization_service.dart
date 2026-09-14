@@ -125,7 +125,61 @@ class ContentLocalizationService {
     r'^استثمار\s+(.+?)\s+بقيمة\s+([\d\.]+)\s+اكتمل\.$',
   );
 
+  static final RegExp _dailyCheckinStreakAr = RegExp(
+    r'^تسجيل دخول يومي متتالي:\s*(\d+)\s*أيام?$',
+  );
+  static final RegExp _dailyCheckinStreakEn = RegExp(
+    r'^Daily check-in streak:\s*(\d+)\s*days?$',
+  );
+  static final RegExp _spinBundlePurchaseAr = RegExp(
+    r'^شراء باقة محاولات تدوير:\s*(.+)$',
+  );
+  static final RegExp _spinBundlePurchaseEn = RegExp(
+    r'^(?:Purchased|Lucky Wheel bundle:)\s*(.+)$',
+  );
+  static final RegExp _spinWheelRewardAr = RegExp(
+    r'^(?:مكافأة|جائزة) عجلة الحظ:\s*(\d+)\s*(?:نقطة\s*)?(?:KSP)?$',
+  );
+  static final RegExp _spinWheelRewardEn = RegExp(
+    r'^(?:Lucky wheel reward|Spin Wheel Reward):\s*(\d+)\s*(?:KSP)?$',
+  );
+  static final RegExp _kspTransferToRegex = RegExp(
+    r'^(?:Points|KSP) transfer to:\s*(.+)$',
+  );
+  static final RegExp _kspTransferFromRegex = RegExp(
+    r'^(?:Points|KSP) transfer from:\s*(.+)$',
+  );
+  static final RegExp _kspCashRedeemAr = RegExp(
+    r'^تحويل\s*(\d+)\s*(?:نقطة\s*)?KSP إلى رصيد كاش$',
+  );
+  static final RegExp _kspCashRedeemEn = RegExp(
+    r'^Converted\s*(\d+)\s*KSP to cash$',
+  );
+
   static final Map<String, String> _exactDynamicMap = {
+    // Points & Rewards & Spins
+    'Daily check-in': 'enum_txn_daily_check_in',
+    'Daily Check-in': 'enum_txn_daily_check_in',
+    'Daily Check-in Reward': 'enum_txn_daily_check_in',
+    'تسجيل الدخول اليومي': 'enum_txn_daily_check_in',
+    'تسجيل دخول يومي': 'enum_txn_daily_check_in',
+    'تسجيل الحضور اليومي': 'enum_txn_daily_check_in',
+    'مكافأة تسجيل الحضور اليومية': 'enum_txn_daily_check_in',
+    'مكافأة تسجيل الدخول': 'enum_txn_daily_check_in',
+    'Spin Attempt Purchase': 'enum_txn_spin_purchase',
+    'Spin Attempts Purchase': 'enum_txn_spin_purchase',
+    'شراء محاولات عجلة الحظ': 'enum_txn_spin_purchase',
+    'Spin Wheel Reward': 'enum_txn_spin_reward',
+    'مكافأة عجلة الحظ': 'enum_txn_spin_reward',
+    'شراء محاولات تدوير': 'enum_txn_spin_purchase',
+    'شراء باقة محاولات تدوير': 'enum_txn_spin_purchase',
+    'Referral registration bonus': 'referral_registration_bonus',
+    'مكافأة التسجيل عبر الإحالة': 'referral_registration_bonus',
+    'New referral bonus': 'new_referral_bonus',
+    'مكافأة إحالة مستخدم جديد': 'new_referral_bonus',
+    'Investment Profit': 'enum_txn_investment_profit',
+    'أرباح الاستثمار': 'enum_txn_investment_profit',
+    'أرباح استثمار': 'enum_txn_investment_profit',
     // Notification Titles
     'أرباحك اليومية وصلت ✅': 'notif_daily_profits_title',
     'أرباح يومية 📈': 'notif_daily_profits_title',
@@ -220,6 +274,20 @@ class ContentLocalizationService {
       default:
         return clean;
     }
+  }
+
+  static String _localizeBundleName(String bundleStr) {
+    final lower = bundleStr.toLowerCase();
+    if (bundleStr.contains('7') || bundleStr.contains('سباعية') || lower.contains('septuple')) {
+      return _resolveKey('bundle_septuple');
+    }
+    if (bundleStr.contains('3') || bundleStr.contains('ثلاثية') || lower.contains('triple')) {
+      return _resolveKey('bundle_triple');
+    }
+    if (bundleStr.contains('1') || bundleStr.contains('واحدة') || lower.contains('single')) {
+      return _resolveKey('bundle_single');
+    }
+    return bundleStr;
   }
 
   /// Whether [value] looks like a localization key rather than free-form user text.
@@ -539,6 +607,84 @@ class ContentLocalizationService {
       );
     }
 
+    // 5. Points, Wheel Spins, Bundles & Check-in Patterns
+    final checkinAr = _dailyCheckinStreakAr.firstMatch(trimmed);
+    if (checkinAr != null) {
+      return _resolveKey(
+        'txn_daily_check_in_streak',
+        params: {'days': checkinAr.group(1) ?? ''},
+      );
+    }
+    final checkinEn = _dailyCheckinStreakEn.firstMatch(trimmed);
+    if (checkinEn != null) {
+      return _resolveKey(
+        'txn_daily_check_in_streak',
+        params: {'days': checkinEn.group(1) ?? ''},
+      );
+    }
+
+    final spinBundleAr = _spinBundlePurchaseAr.firstMatch(trimmed);
+    if (spinBundleAr != null) {
+      final bundle = _localizeBundleName(spinBundleAr.group(1)?.trim() ?? '');
+      return _resolveKey(
+        'txn_spin_bundle_purchase',
+        params: {'bundle': bundle},
+      );
+    }
+    final spinBundleEn = _spinBundlePurchaseEn.firstMatch(trimmed);
+    if (spinBundleEn != null) {
+      final bundle = _localizeBundleName(spinBundleEn.group(1)?.trim() ?? '');
+      return _resolveKey(
+        'txn_spin_bundle_purchase',
+        params: {'bundle': bundle},
+      );
+    }
+
+    final spinRewardAr = _spinWheelRewardAr.firstMatch(trimmed);
+    if (spinRewardAr != null) {
+      return _resolveKey(
+        'txn_spin_wheel_reward',
+        params: {'amount': spinRewardAr.group(1) ?? ''},
+      );
+    }
+    final spinRewardEn = _spinWheelRewardEn.firstMatch(trimmed);
+    if (spinRewardEn != null) {
+      return _resolveKey(
+        'txn_spin_wheel_reward',
+        params: {'amount': spinRewardEn.group(1) ?? ''},
+      );
+    }
+
+    final kspToMatch = _kspTransferToRegex.firstMatch(trimmed);
+    if (kspToMatch != null) {
+      return _resolveKey(
+        'txn_ksp_transfer_to',
+        params: {'name': kspToMatch.group(1)?.trim() ?? ''},
+      );
+    }
+    final kspFromMatch = _kspTransferFromRegex.firstMatch(trimmed);
+    if (kspFromMatch != null) {
+      return _resolveKey(
+        'txn_ksp_transfer_from',
+        params: {'name': kspFromMatch.group(1)?.trim() ?? ''},
+      );
+    }
+
+    final kspRedeemAr = _kspCashRedeemAr.firstMatch(trimmed);
+    if (kspRedeemAr != null) {
+      return _resolveKey(
+        'txn_ksp_cash_redemption',
+        params: {'points': kspRedeemAr.group(1) ?? ''},
+      );
+    }
+    final kspRedeemEn = _kspCashRedeemEn.firstMatch(trimmed);
+    if (kspRedeemEn != null) {
+      return _resolveKey(
+        'txn_ksp_cash_redemption',
+        params: {'points': kspRedeemEn.group(1) ?? ''},
+      );
+    }
+
     return trimmed;
   }
 
@@ -580,6 +726,10 @@ class ContentLocalizationService {
     }
     return resolve(notification.message, context: 'notification_message');
   }
+
+  /// Translates dynamic database strings (keys, JSON, or localized patterns).
+  static String translate(String? value, {Map<String, String>? params}) =>
+      resolve(value, params: params);
 
   /// Convenience wrapper matching GetX `.tr` for UI code.
   static String tr(String key, {Map<String, String>? params}) {

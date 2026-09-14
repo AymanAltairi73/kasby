@@ -12,6 +12,8 @@ import 'package:kasby/core/services/financial_repository.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/services/snack_service.dart';
 import 'package:kasby/core/services/currency_conversion_service.dart';
+import 'package:kasby/core/utils/transaction_formatter.dart';
+import 'package:kasby/core/localization/content_localization_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class TransactionDetailsView extends StatefulWidget {
@@ -129,7 +131,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
         slivers: [
           // ── Hero Header ──────────────────────────
           SliverAppBar(
-            expandedHeight: 280,
+            expandedHeight: 300,
             pinned: true,
             backgroundColor: isDark ? AppColors.surface : Colors.white,
             leading: IconButton(
@@ -272,99 +274,109 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
         ),
       ),
       child: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 40),
-            // Type Icon
-            Hero(
-              tag: heroTag ?? 'home_tx_${tx.id}',
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: (typeInfo['color'] as Color).withValues(alpha: 0.15),
-                  border: Border.all(
-                    color: (typeInfo['color'] as Color).withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                ),
-                child: Icon(
-                  typeInfo['icon'] as IconData,
-                  size: 40,
-                  color: typeInfo['color'] as Color,
-                ),
-              ),
-            ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
-            const SizedBox(height: 16),
-            // Type Label
-            Text(
-              typeInfo['label'] as String,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: isDark
-                    ? AppColors.textSecondary
-                    : AppColors.textSecondaryLight,
-              ),
-            ).animate().fadeIn(delay: 200.ms),
-            const SizedBox(height: 8),
-            // Amount
-            Text(
-                  tx.currency == 'KSP'
-                      ? '${isOut ? '-' : '+'}${CurrencyConversionService.formatKsp(tx.amount)} KSP'
-                      : '${isOut ? '-' : '+'}${currencyController.formatToUSD(tx.amount)}',
-                  style: TextStyle(
-                    fontSize: 38,
-                    fontWeight: FontWeight.w900,
-                    color: isOut ? AppColors.error : AppColors.softGreen,
-                    letterSpacing: -1,
-                  ),
-                )
-                .animate()
-                .fadeIn(delay: 300.ms)
-                .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1)),
-            if (tx.currency == 'KSP')
-              Text(
-                CurrencyConversionService.getUsdEquivalentText(tx.amount),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                ),
-              ).animate().fadeIn(delay: 350.ms),
-            const SizedBox(height: 12),
-            // Status Badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: (statusInfo['color'] as Color).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: (statusInfo['color'] as Color).withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    statusInfo['icon'] as IconData,
-                    size: 16,
-                    color: statusInfo['color'] as Color,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    statusInfo['label'] as String,
-                    style: TextStyle(
-                      color: statusInfo['color'] as Color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 28),
+                // Type Icon
+                Hero(
+                  tag: heroTag ?? 'home_tx_${tx.id}',
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: (typeInfo['color'] as Color).withValues(alpha: 0.15),
+                      border: Border.all(
+                        color: (typeInfo['color'] as Color).withValues(alpha: 0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      typeInfo['icon'] as IconData,
+                      size: 38,
+                      color: typeInfo['color'] as Color,
                     ),
                   ),
-                ],
-              ),
-            ).animate().fadeIn(delay: 400.ms),
-          ],
+                ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
+                const SizedBox(height: 12),
+                // Type Label
+                Text(
+                  typeInfo['label'] as String,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLight,
+                  ),
+                ).animate().fadeIn(delay: 200.ms),
+                const SizedBox(height: 6),
+                // Amount
+                Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Text(
+                        tx.formattedAmount,
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          color: isOut ? AppColors.error : AppColors.softGreen,
+                          letterSpacing: -1,
+                        ),
+                      ),
+                    )
+                    .animate()
+                    .fadeIn(delay: 300.ms)
+                    .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1)),
+                if (tx.currency == 'KSP')
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      CurrencyConversionService.getUsdEquivalentText(tx.amount),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ).animate().fadeIn(delay: 350.ms),
+                  ),
+                const SizedBox(height: 10),
+                // Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: (statusInfo['color'] as Color).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: (statusInfo['color'] as Color).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        statusInfo['icon'] as IconData,
+                        size: 15,
+                        color: statusInfo['color'] as Color,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        statusInfo['label'] as String,
+                        style: TextStyle(
+                          color: statusInfo['color'] as Color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 400.ms),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -531,15 +543,13 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
           const SizedBox(height: 20),
           _buildDetailRow(
             'transaction_type'.tr,
-            _getTypeInfo(tx.type)['label'] as String,
+            tx.localizedTypeLabel,
             isDark,
           ),
           _buildDivider(isDark),
           _buildDetailRow(
             'transaction_amount'.tr,
-            tx.currency == 'KSP'
-                ? '${CurrencyConversionService.formatKsp(tx.amount)} KSP'
-                : currencyController.formatToUSD(tx.amount),
+            tx.formattedAmountWithoutSign,
             isDark,
           ),
           if (tx.currency == 'KSP') ...[
@@ -560,9 +570,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
             _buildDivider(isDark),
             _buildDetailRow(
               'transaction_fee'.tr,
-              tx.currency == 'KSP'
-                  ? '${CurrencyConversionService.formatKsp(tx.fee)} KSP'
-                  : currencyController.formatToUSD(tx.fee),
+              tx.formattedFee,
               isDark,
             ),
           ],
@@ -570,9 +578,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
             _buildDivider(isDark),
             _buildDetailRow(
               'net_amount'.tr,
-              tx.currency == 'KSP'
-                  ? '${CurrencyConversionService.formatKsp(tx.netAmount!)} KSP'
-                  : currencyController.formatToUSD(tx.netAmount!),
+              tx.formattedAmountWithoutSign,
               isDark,
               valueColor: AppColors.softGreen,
             ),
@@ -583,7 +589,10 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
             _buildDivider(isDark),
             _buildDetailRow(
               'running_balance'.tr,
-              currencyController.formatToUSD(tx.runningBalance!),
+              TransactionFormatter.formatAmountWithoutSign(
+                amount: tx.runningBalance!,
+                currency: tx.currency,
+              ),
               isDark,
             ),
           ],
@@ -856,151 +865,19 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
   }
 
   Map<String, dynamic> _getTypeInfo(String type) {
-    switch (type) {
-      case 'deposit':
-        return {
-          'icon': Icons.arrow_downward_rounded,
-          'color': AppColors.softGreen,
-          'label': 'enum_txn_deposit'.tr,
-        };
-      case 'withdrawal':
-        return {
-          'icon': Icons.arrow_upward_rounded,
-          'color': AppColors.error,
-          'label': 'enum_txn_withdrawal'.tr,
-        };
-      case 'transfer_in':
-        return {
-          'icon': Icons.call_received_rounded,
-          'color': AppColors.softGreen,
-          'label': 'enum_txn_transfer_in'.tr,
-        };
-      case 'transfer_out':
-        return {
-          'icon': Icons.call_made_rounded,
-          'color': AppColors.error,
-          'label': 'enum_txn_transfer_out'.tr,
-        };
-      case 'investment':
-        return {
-          'icon': Icons.trending_up_rounded,
-          'color': const Color(0xFF2196F3),
-          'label': 'enum_txn_investment'.tr,
-        };
-      case 'investment_return':
-        return {
-          'icon': Icons.assignment_return_rounded,
-          'color': AppColors.softGreen,
-          'label': 'enum_txn_investment_return'.tr,
-        };
-      case 'profit':
-        return {
-          'icon': Icons.auto_awesome_rounded,
-          'color': AppColors.darkGold,
-          'label': 'enum_txn_profit'.tr,
-        };
-      case 'reward':
-        return {
-          'icon': Icons.card_giftcard_rounded,
-          'color': const Color(0xFFE91E63),
-          'label': 'enum_txn_reward'.tr,
-        };
-      case 'fee':
-        return {
-          'icon': Icons.receipt_long_rounded,
-          'color': Colors.orange,
-          'label': 'enum_txn_fee'.tr,
-        };
-      case 'loan_disbursement':
-        return {
-          'icon': Icons.handshake_rounded,
-          'color': const Color(0xFF9C27B0),
-          'label': 'enum_txn_loan_disbursement'.tr,
-        };
-      case 'loan_repayment':
-        return {
-          'icon': Icons.payments_rounded,
-          'color': Colors.teal,
-          'label': 'enum_txn_loan_repayment'.tr,
-        };
-      case 'adjustment':
-        return {
-          'icon': Icons.tune_rounded,
-          'color': Colors.blueGrey,
-          'label': 'enum_txn_adjustment'.tr,
-        };
-      case 'admin_credit':
-        return {
-          'icon': Icons.add_card_rounded,
-          'color': AppColors.softGreen,
-          'label': 'enum_txn_admin_credit'.tr,
-        };
-      case 'admin_debit':
-        return {
-          'icon': Icons.credit_card_off_rounded,
-          'color': AppColors.error,
-          'label': 'enum_txn_admin_debit'.tr,
-        };
-      default:
-        return {
-          'icon': Icons.receipt_rounded,
-          'color': AppColors.textSecondary,
-          'label': type,
-        };
-    }
+    return {
+      'icon': TransactionFormatter.getTypeIcon(type),
+      'color': TransactionFormatter.getTypeColor(type),
+      'label': ContentLocalizationService.transactionTypeLabel(type),
+    };
   }
 
   Map<String, dynamic> _getStatusInfo(String status) {
-    switch (status) {
-      case 'completed':
-        return {
-          'label': 'enum_status_completed'.tr,
-          'color': AppColors.softGreen,
-          'icon': Icons.check_circle_rounded,
-        };
-      case 'approved':
-        return {
-          'label': 'enum_status_approved'.tr,
-          'color': AppColors.softGreen,
-          'icon': Icons.check_circle_rounded,
-        };
-      case 'pending':
-        return {
-          'label': 'enum_status_pending'.tr,
-          'color': Colors.orange,
-          'icon': Icons.hourglass_empty_rounded,
-        };
-      case 'processing':
-        return {
-          'label': 'enum_status_processing'.tr,
-          'color': const Color(0xFF2196F3),
-          'icon': Icons.sync_rounded,
-        };
-      case 'rejected':
-        return {
-          'label': 'enum_status_rejected'.tr,
-          'color': AppColors.error,
-          'icon': Icons.cancel_rounded,
-        };
-      case 'failed':
-        return {
-          'label': 'enum_status_failed'.tr,
-          'color': AppColors.error,
-          'icon': Icons.cancel_rounded,
-        };
-      case 'cancelled':
-        return {
-          'label': 'enum_status_cancelled'.tr,
-          'color': AppColors.error,
-          'icon': Icons.cancel_rounded,
-        };
-      default:
-        return {
-          'label': status,
-          'color': AppColors.textSecondary,
-          'icon': Icons.info_outline_rounded,
-        };
-    }
+    return {
+      'icon': TransactionFormatter.getStatusIcon(status),
+      'color': TransactionFormatter.getStatusColor(status),
+      'label': ContentLocalizationService.transactionStatusLabel(status),
+    };
   }
 
   Widget _buildPartyCard({
@@ -1133,7 +1010,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
               height: 180,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (context, error, stackTrace) => Container(
                 height: 120,
                 alignment: Alignment.center,
                 child: Text('couldnt_load_data'.tr),

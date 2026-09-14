@@ -342,6 +342,7 @@ class _WithdrawViewState extends State<WithdrawView> {
       final response = await FinancialRepository.createWithdrawal(
         amount: amount,
         agentId: selectedAgent.id,
+        currency: CurrencyController.to.selectedCurrency.value,
       );
 
       if (response['success'] == true) {

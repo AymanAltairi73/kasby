@@ -13,6 +13,8 @@ import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/widgets/empty_state_widget.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/utils/date_helper.dart';
+import 'package:kasby/core/utils/transaction_formatter.dart';
+import 'package:kasby/core/localization/content_localization_service.dart';
 
 class AllTransactionsView extends StatefulWidget {
   const AllTransactionsView({super.key});
@@ -587,32 +589,38 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                   const SizedBox(width: 8),
                   // Amount
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 110),
+                    constraints: const BoxConstraints(maxWidth: 125),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: Text(
-                            '${isOut ? '-' : '+'}${CurrencyController.to.formatToUSD(tx.amount)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 15,
-                              color: isOut
-                                  ? AppColors.error
-                                  : AppColors.softGreen,
+                          child: Directionality(
+                            textDirection: TextDirection.ltr,
+                            child: Text(
+                              tx.formattedAmount,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 15,
+                                color: tx.isDebit
+                                    ? AppColors.error
+                                    : AppColors.softGreen,
+                              ),
                             ),
                           ),
                         ),
                         if (tx.fee > 0)
                           FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text(
-                              '-${CurrencyController.to.formatToUSD(tx.fee)} ${'fee'.tr}',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
+                            child: Directionality(
+                              textDirection: TextDirection.ltr,
+                              child: Text(
+                                '-${tx.formattedFee} ${'fee'.tr}',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ),
@@ -719,127 +727,18 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
   String _formatDate(DateTime? date) => DateHelper.time(date);
 
   Map<String, dynamic> _getTypeInfo(String type) {
-    switch (type) {
-      case 'deposit':
-        return {
-          'icon': Icons.arrow_downward_rounded,
-          'color': AppColors.softGreen,
-          'label': 'enum_txn_deposit'.tr,
-        };
-      case 'withdrawal':
-        return {
-          'icon': Icons.arrow_upward_rounded,
-          'color': AppColors.error,
-          'label': 'enum_txn_withdrawal'.tr,
-        };
-      case 'transfer_in':
-        return {
-          'icon': Icons.call_received_rounded,
-          'color': AppColors.softGreen,
-          'label': 'enum_txn_transfer_in'.tr,
-        };
-      case 'transfer_out':
-        return {
-          'icon': Icons.call_made_rounded,
-          'color': AppColors.error,
-          'label': 'enum_txn_transfer_out'.tr,
-        };
-      case 'investment':
-        return {
-          'icon': Icons.trending_up_rounded,
-          'color': const Color(0xFF2196F3),
-          'label': 'enum_txn_investment'.tr,
-        };
-      case 'investment_return':
-        return {
-          'icon': Icons.assignment_return_rounded,
-          'color': AppColors.softGreen,
-          'label': 'enum_txn_investment_return'.tr,
-        };
-      case 'profit':
-        return {
-          'icon': Icons.auto_awesome_rounded,
-          'color': AppColors.darkGold,
-          'label': 'enum_txn_profit'.tr,
-        };
-      case 'reward':
-        return {
-          'icon': Icons.card_giftcard_rounded,
-          'color': const Color(0xFFE91E63),
-          'label': 'enum_txn_reward'.tr,
-        };
-      case 'fee':
-        return {
-          'icon': Icons.receipt_long_rounded,
-          'color': Colors.orange,
-          'label': 'enum_txn_fee'.tr,
-        };
-      case 'loan_disbursement':
-        return {
-          'icon': Icons.handshake_rounded,
-          'color': const Color(0xFF9C27B0),
-          'label': 'enum_txn_loan_disbursement'.tr,
-        };
-      case 'loan_repayment':
-        return {
-          'icon': Icons.payments_rounded,
-          'color': Colors.teal,
-          'label': 'enum_txn_loan_repayment'.tr,
-        };
-      case 'adjustment':
-        return {
-          'icon': Icons.tune_rounded,
-          'color': Colors.blueGrey,
-          'label': 'enum_txn_adjustment'.tr,
-        };
-      case 'admin_credit':
-        return {
-          'icon': Icons.add_card_rounded,
-          'color': AppColors.softGreen,
-          'label': 'enum_txn_admin_credit'.tr,
-        };
-      case 'admin_debit':
-        return {
-          'icon': Icons.credit_card_off_rounded,
-          'color': AppColors.error,
-          'label': 'enum_txn_admin_debit'.tr,
-        };
-      default:
-        return {
-          'icon': Icons.receipt_rounded,
-          'color': AppColors.textSecondary,
-          'label': type,
-        };
-    }
+    return {
+      'icon': TransactionFormatter.getTypeIcon(type),
+      'color': TransactionFormatter.getTypeColor(type),
+      'label': ContentLocalizationService.transactionTypeLabel(type),
+    };
   }
 
   Map<String, dynamic> _getStatusInfo(String status) {
-    switch (status) {
-      case 'completed':
-        return {
-          'label': 'enum_status_completed'.tr,
-          'color': AppColors.softGreen,
-        };
-      case 'approved':
-        return {
-          'label': 'enum_status_approved'.tr,
-          'color': AppColors.softGreen,
-        };
-      case 'pending':
-        return {'label': 'enum_status_pending'.tr, 'color': Colors.orange};
-      case 'processing':
-        return {
-          'label': 'enum_status_processing'.tr,
-          'color': const Color(0xFF2196F3),
-        };
-      case 'rejected':
-        return {'label': 'enum_status_rejected'.tr, 'color': AppColors.error};
-      case 'failed':
-        return {'label': 'enum_status_failed'.tr, 'color': AppColors.error};
-      case 'cancelled':
-        return {'label': 'enum_status_cancelled'.tr, 'color': AppColors.error};
-      default:
-        return {'label': status, 'color': AppColors.textSecondary};
-    }
+    return {
+      'icon': TransactionFormatter.getStatusIcon(status),
+      'color': TransactionFormatter.getStatusColor(status),
+      'label': ContentLocalizationService.transactionStatusLabel(status),
+    };
   }
 }

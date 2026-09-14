@@ -55,6 +55,7 @@ class AgentCard extends StatelessWidget {
   }
 
   Widget _metaChip({
+    BuildContext? context,
     required String label,
     required Color color,
     IconData? icon,
@@ -195,16 +196,19 @@ class AgentCard extends StatelessWidget {
                       runSpacing: 6,
                       children: [
                         _metaChip(
+                          context: context,
                           label: 'agent'.tr,
                           color: AppColors.darkGold,
                           icon: Icons.badge_outlined,
                         ),
                         _metaChip(
+                          context: context,
                           label: _statusText(agent.availabilityStatus),
                           color: _statusColor(agent.availabilityStatus),
                         ),
                         if (agent.successRate > 0)
                           _metaChip(
+                            context: context,
                             label: 'success_rate'.trParams({
                               'rate':
                                   '${agent.successRate.toStringAsFixed(0)}%',
