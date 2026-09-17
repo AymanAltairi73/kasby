@@ -173,6 +173,26 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
                               const SizedBox(height: 10),
                               Row(
                                 children: [
+                                  if (widget.duration != null &&
+                                      widget.duration!.isNotEmpty) ...[
+                                    Icon(
+                                      Icons.access_time_rounded,
+                                      size: 14,
+                                      color: widget.color,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '${'investment_duration'.tr}: ${widget.duration}',
+                                      style: TextStyle(
+                                        fontFamily: KasbyTypography.fontFamily,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : AppColors.textSecondaryLight,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                   const Spacer(),
                                   Text(
                                     'invest_now'.tr,

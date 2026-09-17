@@ -22,12 +22,8 @@ import '../../firebase_options.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  SafeGetx.debugTrace(
-    className: 'FCMService',
-    method: 'firebaseMessagingBackgroundHandler',
-    feature: 'Core',
-    status: 'INFO',
-    params: {'messageId': message.messageId ?? 'unknown'},
+  debugPrint(
+    '[FCM_BACKGROUND] Background message received -> id: ${message.messageId ?? 'unknown'} | title: ${message.notification?.title ?? message.data['title'] ?? 'none'}',
   );
 }
 
@@ -129,6 +125,7 @@ class FCMService extends GetxService {
       importance: Importance.max,
       playSound: true,
       enableVibration: true,
+      showBadge: true,
     );
 
     await _localNotifications
@@ -145,16 +142,34 @@ class FCMService extends GetxService {
         alert: true,
         badge: true,
         sound: true,
+        provisional: true,
       );
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      final isAuthorized =
+          settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+
+      if (isAuthorized) {
         SafeGetx.debugTrace(
           className: 'FCMService',
           method: '_setupFCM',
           feature: 'Core',
           status: 'SUCCESS',
-          message: 'User granted permission',
+          message: 'User granted notification permission (authorized/provisional)',
         );
+
+        // Ensure iOS displays notification alerts, badges, and sounds while in foreground
+        if (!kIsWeb && GetPlatform.isIOS) {
+          try {
+            await _fcm.setForegroundNotificationPresentationOptions(
+              alert: true,
+              badge: true,
+              sound: true,
+            );
+          } catch (e) {
+            debugPrint('[FCM] Error setting foreground presentation options: $e');
+          }
+        }
 
         if (!await _waitForApnsToken()) {
           return;
@@ -246,17 +261,17 @@ class FCMService extends GetxService {
 
     _foregroundMessageSubscription ??=
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          final title = message.notification?.title ?? message.data['title'] ?? 'none';
           SafeGetx.debugTrace(
             className: 'FCMService',
             method: 'onMessage',
             feature: 'Core',
             status: 'INFO',
-            params: {'title': message.notification?.title ?? 'none'},
+            params: {'title': title},
           );
           _handleOtpFromMessage(message);
-          // Automatic in-app notification display disabled by design.
-          // Notifications are still received, processed, and stored via
-          // the realtime stream in HomeController.
+          // Present local heads-up notification with sound and banner for foreground pushes
+          _showLocalNotification(message);
         });
 
     _messageOpenedAppSubscription ??=
@@ -364,8 +379,10 @@ class FCMService extends GetxService {
 
   void _showLocalNotification(RemoteMessage message) async {
     RemoteNotification? notification = message.notification;
+    final rawTitle = notification?.title ?? (message.data['title'] as String?);
+    final rawBody = notification?.body ?? (message.data['body'] as String?);
 
-    if (notification != null && !kIsWeb) {
+    if ((rawTitle != null || rawBody != null) && !kIsWeb) {
       final category = message.data['category'] as String?;
       final entityType = message.data['entity_type'] as String?;
       final type = message.data['type'] as String?;
@@ -385,7 +402,7 @@ class FCMService extends GetxService {
           final pRaw = message.data['parameters'];
           final pMap = pRaw is Map
               ? pRaw
-              : (pRaw is String ? jsonDecode(pRaw as String) : null);
+              : (pRaw is String ? jsonDecode(pRaw) : null);
           if (pMap is Map) {
             params = pMap.map(
               (k, v) => MapEntry(k.toString(), v?.toString() ?? ''),
@@ -400,7 +417,7 @@ class FCMService extends GetxService {
           KasbyL10n.hasKey(titleKey)) {
         resolvedTitle = ContentLocalizationService.tr(titleKey, params: params);
       } else {
-        resolvedTitle = ContentLocalizationService.resolve(notification.title);
+        resolvedTitle = ContentLocalizationService.resolve(rawTitle ?? 'Kasby');
       }
 
       String resolvedBody = '';
@@ -410,7 +427,7 @@ class FCMService extends GetxService {
         resolvedBody =
             ContentLocalizationService.tr(messageKey, params: params);
       } else {
-        resolvedBody = ContentLocalizationService.resolve(notification.body);
+        resolvedBody = ContentLocalizationService.resolve(rawBody ?? '');
       }
 
       final channelName = await LocaleHelper.translate('fcm_channel_name');
@@ -418,11 +435,15 @@ class FCMService extends GetxService {
         'fcm_channel_description',
       );
 
+      final notifId = message.messageId != null
+          ? (message.messageId.hashCode.abs() % 1000000)
+          : (DateTime.now().millisecondsSinceEpoch % 1000000);
+
       debugPrint(
-        '[PROFIT_NOTIFICATION] LOCAL NOTIFICATION CREATED -> title: $resolvedTitle | body: $resolvedBody',
+        '[PROFIT_NOTIFICATION] LOCAL NOTIFICATION PRESENTED -> id: $notifId | title: $resolvedTitle | body: $resolvedBody',
       );
       _localNotifications.show(
-        id: notification.hashCode,
+        id: notifId,
         title: resolvedTitle,
         body: resolvedBody,
         notificationDetails: NotificationDetails(
@@ -435,8 +456,15 @@ class FCMService extends GetxService {
             icon: '@drawable/ic_stat_notification',
             largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
             color: const Color(0xFFC9A24D),
+            playSound: true,
+            enableVibration: true,
+            visibility: NotificationVisibility.public,
           ),
-          iOS: const DarwinNotificationDetails(),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
         payload: jsonEncode(message.data),
       );

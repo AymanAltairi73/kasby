@@ -114,6 +114,16 @@ serve(async (req) => {
     const accessToken = tokens.access_token;
     const projectId = serviceAccount.project_id;
 
+    // Sanitize data payload: FCM v1 strictly requires all values in data to be strings
+    const sanitizedData: Record<string, string> = {};
+    if (data && typeof data === 'object') {
+      for (const [key, val] of Object.entries(data)) {
+        if (val !== null && val !== undefined) {
+          sanitizedData[key] = typeof val === 'string' ? val : (typeof val === 'object' ? JSON.stringify(val) : String(val));
+        }
+      }
+    }
+
     // Build the FCM payload
     const fcmPayload = {
       message: {
@@ -122,17 +132,27 @@ serve(async (req) => {
           title: title,
           body: body,
         },
-        data: data || {},
+        data: sanitizedData,
         android: {
           priority: "high",
           notification: {
+            channel_id: "high_importance_channel",
             sound: "default",
+            default_sound: true,
+            default_vibrate_timings: true,
+            notification_priority: "PRIORITY_MAX",
+            visibility: "PUBLIC",
           },
         },
         apns: {
+          headers: {
+            "apns-priority": "10",
+          },
           payload: {
             aps: {
               sound: "default",
+              badge: 1,
+              "content-available": 1,
             },
           },
         },
@@ -154,6 +174,29 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error("[FCM] FCM API Error:", fcmResponseStr);
+
+      // Auto-deactivate stale/unregistered token in database
+      if (
+        fcmResponseStr.includes("UNREGISTERED") ||
+        fcmResponseStr.includes("NOT_FOUND") ||
+        fcmResponseStr.includes("registration-token-not-registered")
+      ) {
+        try {
+          const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+          await supabaseAdmin
+            .from("device_tokens")
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq("token", token);
+          await supabaseAdmin
+            .from("profiles")
+            .update({ fcm_token: null })
+            .eq("fcm_token", token);
+          console.log(`[FCM] Deactivated invalid/unregistered token: ${token.substring(0, 12)}...`);
+        } catch (dbErr) {
+          console.error("[FCM] Failed to deactivate invalid token in DB:", dbErr);
+        }
+      }
+
       throw new Error(fcmResponseStr);
     }
 

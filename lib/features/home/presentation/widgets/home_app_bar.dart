@@ -167,82 +167,122 @@ class HomeAppBar extends StatelessWidget {
           tooltip: 'global_search'.tr,
           onPressed: () => Get.toNamed(Routes.globalSearch),
         ),
-        KeyedSubtree(
-          key: TourTargetKeys.notifications,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                icon: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primaryGold.withValues(alpha: 0.5),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryGold.withValues(alpha: 0.15),
-                        blurRadius: 4,
-                        spreadRadius: 0.5,
+        // ── Premium Notification Bell ──
+        Obx(() {
+          final count = homeController.unreadNotificationCount.value;
+          final semanticLabel = count > 0
+              ? 'notifications_x_unread'.trParams({'count': '$count'})
+              : 'notifications_no_unread'.tr;
+          return KeyedSubtree(
+            key: TourTargetKeys.notifications,
+            child: Semantics(
+              button: true,
+              label: semanticLabel,
+              excludeSemantics: true,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark
+                            ? AppColors.darkGold.withValues(alpha: 0.12)
+                            : AppColors.darkGold.withValues(alpha: 0.08),
+                        border: Border.all(
+                          color: AppColors.darkGold.withValues(alpha: 0.35),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.darkGold.withValues(
+                              alpha: isDark ? 0.15 : 0.08,
+                            ),
+                            blurRadius: 6,
+                            spreadRadius: 0.5,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/logo4.png',
-                      width: 32,
-                      height: 32,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(
+                      child: Icon(
                         Icons.notifications_none_rounded,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.9),
+                        color: AppColors.darkGold,
                         size: 20,
                       ),
                     ),
+                    tooltip: 'notifications'.tr,
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      Get.toNamed(Routes.notifications);
+                    },
                   ),
-                ),
-                tooltip: 'notifications'.tr,
-                onPressed: () => Get.toNamed(Routes.notifications),
-              ),
-              Obx(
-                () => homeController.unreadNotificationCount.value > 0
-                    ? Positioned(
-                        right: 6,
-                        top: 6,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppColors.error,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            homeController.unreadNotificationCount.value > 9
-                                ? '9+'
-                                : homeController.unreadNotificationCount.value
-                                      .toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                  // ── Dynamic Unread Badge ──
+                  if (count > 0)
+                    Positioned(
+                      right: count > 9 ? 2 : 5,
+                      top: 5,
+                      child: IgnorePointer(
+                        child: AnimatedScale(
+                          scale: 1.0,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.elasticOut,
+                          child: Container(
+                            key: ValueKey<int>(count),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: count > 9 ? 4 : 0,
+                              vertical: 1,
                             ),
-                            textAlign: TextAlign.center,
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFFEF4444),
+                                  Color(0xFFDC2626),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF0E0E12)
+                                    : Colors.white,
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFEF4444)
+                                      .withValues(alpha: 0.4),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                count > 99 ? '99+' : '$count',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.1,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                           ),
                         ),
-                      )
-                    : const SizedBox.shrink(),
+                      ),
+                    ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        }),
         const SizedBox(width: 8),
       ],
     );
