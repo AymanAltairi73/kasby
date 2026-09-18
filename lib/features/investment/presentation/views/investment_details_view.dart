@@ -10,6 +10,7 @@ import 'package:kasby/core/services/crash_reporting_service.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_typography.dart';
+import 'package:kasby/core/models/investment_timeline_state.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:kasby/core/services/supabase_service.dart';
@@ -125,10 +126,20 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                             : Colors.black.withValues(alpha: 0.1),
                         height: 24,
                       ),
-                      _buildDetailRow(
-                        'investment_duration'.tr,
-                        '30_months_2_5_years'.tr,
-                        AppColors.darkGold,
+                      Builder(
+                        builder: (context) {
+                          final isAr = Get.locale?.languageCode == 'ar';
+                          final days = plan['duration_days'] as int?;
+                          final months = days != null ? (days / 30).round() : 30;
+                          final durText = InvestmentTimelineState.formatDurationMonths(months, isAr: isAr);
+                          final durSub = InvestmentTimelineState.formatDurationSubtext(months, isAr: isAr);
+                          final fullDuration = durSub != null ? '$durText $durSub' : durText;
+                          return _buildDetailRow(
+                            'investment_duration'.tr,
+                            fullDuration,
+                            AppColors.darkGold,
+                          );
+                        },
                       ),
                     ],
                   ),

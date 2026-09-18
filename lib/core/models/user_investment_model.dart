@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:kasby/core/models/investment_plan_model.dart';
+import 'package:kasby/core/models/investment_timeline_state.dart';
+export 'package:kasby/core/models/investment_timeline_state.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 class UserInvestmentModel {
@@ -107,16 +109,35 @@ class UserInvestmentModel {
   /// Falls back to [createdAt] if [startDate] is null.
   DateTime? get effectiveStartDate => startDate ?? createdAt;
 
-  /// Effective end date of the investment cycle.
-  /// Uses [endDate] if provided, or calculates from [effectiveStartDate] + plan [durationDays].
+  /// Effective end date of the investment contract.
+  /// Uses [endDate] if provided by the authoritative backend and spans the genuine contract (> 180 days).
+  /// If null or if backend endDate is only a 30-day cycle date in the same year,
+  /// safely derives using calendar-month arithmetic (30 months / 2.5 years) from [effectiveStartDate].
   DateTime? get effectiveEndDate {
-    if (endDate != null) return endDate;
     final start = effectiveStartDate;
-    final duration = investment?.durationDays;
-    if (start != null && duration != null && duration > 0) {
-      return start.add(Duration(days: duration));
+    if (start == null) return endDate;
+
+    final planDays = investment?.durationDays;
+    final int months;
+    if (planDays != null && planDays >= 365) {
+      months = (planDays / 30).round();
+    } else if (planDays != null && planDays > 30) {
+      months = (planDays / 30).round();
+    } else {
+      months = 30; // Default Kasby contract duration: 30 months (2.5 years)
     }
-    return null;
+
+    // If backend provided an end_date that spans the real multi-year contract:
+    if (endDate != null && endDate!.difference(start).inDays > 180) {
+      return endDate;
+    }
+
+    return InvestmentTimelineState.addCalendarMonths(start, months);
+  }
+
+  /// Returns the single source of truth timeline state.
+  InvestmentTimelineState timelineState({DateTime? asOf, bool isAr = true}) {
+    return InvestmentTimelineState.fromInvestment(this, asOf: asOf, isAr: isAr);
   }
 
   /// Total duration of the investment cycle in days.

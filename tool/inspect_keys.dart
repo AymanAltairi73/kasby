@@ -8,40 +8,15 @@ const serviceKey =
 final _client = HttpClient();
 
 Future<void> main() async {
-  // Let's inspect user_investments columns by querying one row and inspecting keys
-  final uri = Uri.parse('$supabaseUrl/rest/v1/user_investments?id=eq.81402050-0685-4aaa-8d8a-198bc7fca27d');
-  final req = await _client.openUrl('GET', uri);
-  req.headers.set('apikey', serviceKey);
-  req.headers.set('Authorization', 'Bearer $serviceKey');
-  final res = await req.close();
-  final body = await res.transform(utf8.decoder).join();
-  final list = jsonDecode(body) as List;
-  if (list.isNotEmpty) {
-    print('All keys in user_investments row:');
-    final row = list.first as Map<String, dynamic>;
-    row.forEach((k, v) {
-      print('  $k: $v (${v.runtimeType})');
-    });
+  final invUri = Uri.parse('$supabaseUrl/rest/v1/user_investments?status=eq.active&select=*,investment:investment_plans(*)');
+  final invReq = await _client.openUrl('GET', invUri);
+  invReq.headers.set('apikey', serviceKey);
+  invReq.headers.set('Authorization', 'Bearer $serviceKey');
+  final invRes = await invReq.close();
+  final list = jsonDecode(await invRes.transform(utf8.decoder).join()) as List;
+  print('Found ${list.length} active investments:');
+  for (final inv in list) {
+    print('ID: ${inv['id']} | Amount: ${inv['amount']} | Rate: ${inv['profit_percentage']}% | Start: ${inv['start_date']} | End: ${inv['end_date']} | NextPayout: ${inv['next_payout_at']} | AutoRestart: ${inv['auto_restart_enabled']} | Plan: ${inv['investment']?['name_ar']} (days: ${inv['investment']?['duration_days']})');
   }
-
-  // Let's also check transactions table for 81402050...
-  final txnUri = Uri.parse('$supabaseUrl/rest/v1/transactions?reference_id=eq.81402050-0685-4aaa-8d8a-198bc7fca27d');
-  final txnReq = await _client.openUrl('GET', txnUri);
-  txnReq.headers.set('apikey', serviceKey);
-  txnReq.headers.set('Authorization', 'Bearer $serviceKey');
-  final txnRes = await txnReq.close();
-  print('\nTransactions with reference_id: ${await txnRes.transform(utf8.decoder).join()}');
-
-  // Let's check transaction row for transaction_id
-  final txnId = list.first['transaction_id'];
-  if (txnId != null) {
-    final tUri = Uri.parse('$supabaseUrl/rest/v1/transactions?id=eq.$txnId');
-    final tReq = await _client.openUrl('GET', tUri);
-    tReq.headers.set('apikey', serviceKey);
-    tReq.headers.set('Authorization', 'Bearer $serviceKey');
-    final tRes = await tReq.close();
-    print('\nTransaction by transaction_id: ${await tRes.transform(utf8.decoder).join()}');
-  }
-
   _client.close(force: true);
 }

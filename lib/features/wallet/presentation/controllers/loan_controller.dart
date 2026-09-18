@@ -21,6 +21,16 @@ class LoanController extends GetxController {
 
   final RxDouble activeInvestmentValue = 0.0.obs;
   final RxDouble serverInterestRate = 0.10.obs;
+  final RxDouble loanMaxPercentage = 0.50.obs;
+  final RxDouble existingLoanExposure = 0.0.obs;
+
+  double get totalLoanCapacity =>
+      (activeInvestmentValue.value * loanMaxPercentage.value);
+
+  double get remainingLoanCapacity {
+    final remaining = totalLoanCapacity - existingLoanExposure.value;
+    return remaining > 0 ? remaining : 0.0;
+  }
 
   @override
   void onInit() {
@@ -52,7 +62,58 @@ class LoanController extends GetxController {
       fetchActiveLoans(),
       fetchRepaymentHistory(),
       fetchServerInterestRate(),
+      fetchLoanMaxPercentage(),
     ]);
+    calculateLoanExposure();
+  }
+
+  Future<void> fetchLoanMaxPercentage() async {
+    try {
+      final response = await SupabaseService.client
+          .from('app_config')
+          .select('value')
+          .eq('key', 'loan_max_percentage')
+          .maybeSingle();
+
+      if (response != null && response['value'] != null) {
+        final rate = double.tryParse(response['value'].toString());
+        if (rate != null && rate > 0) {
+          loanMaxPercentage.value = rate;
+        }
+      }
+    } catch (e, stack) {
+      SafeGetx.debugTrace(
+        className: 'LoanController',
+        method: 'fetchLoanMaxPercentage',
+        feature: 'Wallet',
+        status: 'ERROR',
+        error: e,
+        stackTrace: stack,
+      );
+    }
+  }
+
+  void calculateLoanExposure() {
+    const exposureStatuses = {
+      'pending',
+      'approved',
+      'active',
+      'current',
+      'partial_paid',
+      'delayed',
+      'overdue',
+    };
+
+    double totalExposure = 0.0;
+    for (final loan in loanHistory) {
+      if (exposureStatuses.contains(loan.status)) {
+        final remainingPrincipal = loan.amount - loan.paidAmount;
+        if (remainingPrincipal > 0) {
+          totalExposure += remainingPrincipal;
+        }
+      }
+    }
+    existingLoanExposure.value = totalExposure;
   }
 
   Future<void> fetchServerInterestRate() async {
@@ -118,6 +179,7 @@ class LoanController extends GetxController {
       loanHistory.value = (response as List)
           .map((json) => LoanModel.fromJson(json))
           .toList();
+      calculateLoanExposure();
     } catch (e, stack) {
       SafeGetx.debugTrace(
         className: 'LoanController',
@@ -192,6 +254,19 @@ class LoanController extends GetxController {
   }
 
   Future<void> applyForLoan(double amount, int duration) async {
+    if (amount <= 0) {
+      AppSnack.error('error'.tr, 'invalid_amount'.tr);
+      return;
+    }
+    if (remainingLoanCapacity <= 0) {
+      AppSnack.error('error'.tr, 'loan_capacity_exhausted'.tr);
+      return;
+    }
+    if (amount > remainingLoanCapacity) {
+      AppSnack.error('error'.tr, 'amount_exceeds_max_loan'.tr);
+      return;
+    }
+
     isSubmitting.value = true;
     debugPrint(
       '[LOAN_CONTROLLER] 🚀 applyForLoan initiated: amount=$amount, duration=$duration months, userId=${SupabaseService.userId}',

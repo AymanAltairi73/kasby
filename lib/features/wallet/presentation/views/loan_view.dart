@@ -404,23 +404,26 @@ class _LoanViewState extends State<LoanView>
 
   Widget _buildEligibilityCard() {
     return KasbyCard(
-      color: AppColors.darkGold.withValues(alpha: 0.1),
+      color: AppColors.darkGold.withValues(alpha: 0.08),
+      border: Border.all(color: AppColors.darkGold.withValues(alpha: 0.3)),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.darkGold.withValues(alpha: 0.1),
+                  color: AppColors.darkGold.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.account_balance_rounded,
                   color: AppColors.darkGold,
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,8 +431,10 @@ class _LoanViewState extends State<LoanView>
                     Text(
                       'active_investment_value'.tr,
                       style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLight,
+                        fontSize: 12,
                       ),
                     ),
                     Obx(
@@ -438,7 +443,7 @@ class _LoanViewState extends State<LoanView>
                           loanController.activeInvestmentValue.value,
                         ),
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: isDark
                               ? Colors.white
@@ -449,13 +454,155 @@ class _LoanViewState extends State<LoanView>
                   ],
                 ),
               ),
+              Obx(() {
+                final pct = (loanController.loanMaxPercentage.value * 100)
+                    .toStringAsFixed(0);
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.darkGold.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.darkGold),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '$pct%',
+                        style: TextStyle(
+                          color: AppColors.darkGold,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        'loan_percentage'.tr,
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black54,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ],
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Divider(
+              color: isDark
+                  ? Colors.white10
+                  : Colors.black.withValues(alpha: 0.08),
+            ),
+          ),
+          Obx(() {
+            final totalCap = loanController.totalLoanCapacity;
+            final existingLoans = loanController.existingLoanExposure.value;
+            final remaining = loanController.remainingLoanCapacity;
+
+            return Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildMetricColumn(
+                      'total_loan_capacity'.tr,
+                      currencyController.formatAmount(totalCap),
+                      isDark ? Colors.white70 : AppColors.textBodyLight,
+                    ),
+                    _buildMetricColumn(
+                      'existing_loans'.tr,
+                      currencyController.formatAmount(existingLoans),
+                      existingLoans > 0
+                          ? AppColors.error
+                          : (isDark ? Colors.white60 : Colors.black54),
+                    ),
+                    _buildMetricColumn(
+                      'remaining_loan_capacity'.tr,
+                      currencyController.formatAmount(remaining),
+                      AppColors.darkGold,
+                      isHighlight: true,
+                    ),
+                  ],
+                ),
+                if (remaining <= 0 &&
+                    loanController.activeInvestmentValue.value > 0) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: AppColors.error,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'loan_capacity_exhausted'.tr,
+                            style: TextStyle(
+                              color: AppColors.error,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            );
+          }),
         ],
       ),
     ).animate().fadeIn().slideY(begin: 0.1);
   }
 
+  Widget _buildMetricColumn(
+    String label,
+    String value,
+    Color valueColor, {
+    bool isHighlight = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: isDark
+                ? AppColors.textSecondary
+                : AppColors.textSecondaryLight,
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isHighlight ? 16 : 14,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildAmountSelector() {
     return Column(
@@ -473,6 +620,24 @@ class _LoanViewState extends State<LoanView>
           suffixIcon: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              TextButton(
+                onPressed: () {
+                  final max = loanController.remainingLoanCapacity;
+                  if (max > 0) {
+                    setState(() {
+                      _amountController.text = max.toStringAsFixed(2);
+                    });
+                  }
+                },
+                child: Text(
+                  'use_max'.tr,
+                  style: TextStyle(
+                    color: AppColors.darkGold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
               IconButton(
                 icon: Icon(
                   Icons.remove_circle_outline_rounded,
@@ -492,6 +657,24 @@ class _LoanViewState extends State<LoanView>
             ],
           ),
         ),
+        Obx(() {
+          final isExceeded =
+              currentLoanAmount > loanController.remainingLoanCapacity;
+          if (isExceeded) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 6, left: 8, right: 8),
+              child: Text(
+                'amount_exceeds_max_loan'.tr,
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }),
       ],
     );
   }
@@ -787,6 +970,22 @@ class _LoanViewState extends State<LoanView>
         '[LOAN_VIEW] ⚠️ Validation failed: Amount <= 0 ($currentLoanAmount)',
       );
       AppSnack.error('error'.tr, 'invalid_amount'.tr);
+      return;
+    }
+
+    if (loanController.remainingLoanCapacity <= 0) {
+      debugPrint(
+        '[LOAN_VIEW] ⚠️ Validation failed: remaining capacity <= 0',
+      );
+      AppSnack.error('error'.tr, 'loan_capacity_exhausted'.tr);
+      return;
+    }
+
+    if (currentLoanAmount > loanController.remainingLoanCapacity) {
+      debugPrint(
+        '[LOAN_VIEW] ⚠️ Validation failed: currentLoanAmount ($currentLoanAmount) > remainingLoanCapacity (${loanController.remainingLoanCapacity})',
+      );
+      AppSnack.error('error'.tr, 'amount_exceeds_max_loan'.tr);
       return;
     }
 

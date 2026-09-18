@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kasby/core/widgets/investment_plan_card.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
 import 'package:kasby/core/models/investment_plan_model.dart';
+import 'package:kasby/core/models/investment_timeline_state.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/utils/number_formatter.dart';
@@ -143,15 +144,12 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
   }
 
   String _formatDuration(int? days) {
-    if (days == null) return '30_months_2_5_years'.tr;
-    if (days >= 365) {
-      final years = days / 365.0;
-      return years == years.roundToDouble()
-          ? '${years.toInt()} ${'years'.tr}'
-          : '${years.toStringAsFixed(1)} ${'years'.tr}';
-    }
+    if (days == null) return '';
+    final isAr = Get.locale?.languageCode == 'ar';
     final months = (days / 30).round();
-    return '$months ${'months'.tr}';
+    final durText = InvestmentTimelineState.formatDurationMonths(months, isAr: isAr);
+    final durSub = InvestmentTimelineState.formatDurationSubtext(months, isAr: isAr);
+    return durSub != null ? '$durText $durSub' : durText;
   }
 
   String _formatProfit(double percentage) {

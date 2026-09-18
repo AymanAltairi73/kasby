@@ -157,17 +157,12 @@ class _InvestmentPlansListState extends State<_InvestmentPlansList> {
   }
 
   String _formatPlanDuration(int? days) {
-    if (days == null || days >= 900 || days == 30) {
-      return 'duration_2_5_years'.tr;
-    }
-    if (days >= 365) {
-      final years = days / 365.0;
-      return years == years.roundToDouble()
-          ? '${years.toInt()} ${'years'.tr}'
-          : '${years.toStringAsFixed(1)} ${'years'.tr}';
-    }
+    if (days == null) return '';
+    final isAr = Get.locale?.languageCode == 'ar';
     final months = (days / 30).round();
-    return '$months ${'months'.tr}';
+    final display = InvestmentTimelineState.formatDurationMonths(months, isAr: isAr);
+    final sub = InvestmentTimelineState.formatDurationSubtext(months, isAr: isAr);
+    return sub != null ? '$display $sub' : display;
   }
 
   @override

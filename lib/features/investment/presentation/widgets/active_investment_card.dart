@@ -82,115 +82,62 @@ class ActiveInvestmentCard extends StatelessWidget {
               ? plan!.descriptionEn!
               : 'safe_investment_stable_returns'.tr);
 
-    // Duration representation from real data
-    final totalDays = plan?.durationDays ?? inv.totalDurationDays;
-    final String durationDisplay;
-    final String? durationSubtext;
-    if (totalDays >= 900 || totalDays == 30) {
-      durationDisplay = isAr ? '30 شهراً' : '30 months';
-      durationSubtext = isAr ? '(سنتان ونصف)' : '(2.5 years)';
-    } else if (totalDays >= 365) {
-      final years = totalDays / 365.0;
-      durationDisplay = years == years.roundToDouble()
-          ? '${years.toInt()} ${'years'.tr}'
-          : '${years.toStringAsFixed(1)} ${'years'.tr}';
-      durationSubtext = null;
-    } else {
-      final months = (totalDays / 30).round();
-      durationDisplay = '$months ${'months'.tr}';
-      durationSubtext = null;
-    }
+    // Single source of truth for timeline, duration and progress
+    final timeline = inv.timelineState(isAr: isAr);
+    final durationDisplay = timeline.durationDisplay;
+    final durationSubtext = timeline.durationSubtext;
 
-    // Progress calculations from existing real data
-    final progressValue = inv.cycleProgress.clamp(0.0, 1.0);
-    final progressPercent = (progressValue * 100).toInt();
+    final progressValue = timeline.progress;
+    final progressPercent = timeline.progressPercent;
 
-    final String cyclePositionText;
-    final String cycleCompletedText;
-    final String cycleRemainingText;
-    final String startElapsedText;
-    final String endRemainingText;
+    final cyclePositionText = timeline.cyclePositionText;
+    final cycleCompletedText = timeline.completedMonthsText;
+    final cycleRemainingText = timeline.remainingMonthsText;
+    final startElapsedText = timeline.startElapsedText;
+    final endRemainingText = timeline.endRemainingText;
 
-    if (totalDays >= 900 || totalDays == 30) {
-      final elapsedMonths = (inv.elapsedDays / 30).floor().clamp(0, 30);
-      final currentMonth = (elapsedMonths + 1).clamp(1, 30);
-      final remainingMonths = (30 - elapsedMonths).clamp(0, 30);
-      cyclePositionText = isAr
-          ? 'الشهر $currentMonth من 30'
-          : 'Month $currentMonth of 30';
-      cycleCompletedText = 'completed_months_legend'.trParams({
-        'count': '$elapsedMonths',
-      });
-      cycleRemainingText = 'remaining_months_legend'.trParams({
-        'count': '$remainingMonths',
-      });
-      startElapsedText = isAr
-          ? 'منذ $elapsedMonths أشهر'
-          : '$elapsedMonths months ago';
-      endRemainingText = isAr
-          ? '(بعد $remainingMonths شهراً)'
-          : '(After $remainingMonths months)';
-    } else {
-      cyclePositionText = 'day_x_of_y'.trParams({
-        'current': '${inv.elapsedDays}',
-        'total': '${inv.totalDurationDays}',
-      });
-      cycleCompletedText = 'completed_days_legend'.trParams({
-        'count': '${inv.elapsedDays}',
-      });
-      cycleRemainingText = 'remaining_days_legend'.trParams({
-        'count': '${inv.cycleRemainingDays}',
-      });
-      startElapsedText = isAr
-          ? 'منذ ${inv.elapsedDays} يوماً'
-          : '${inv.elapsedDays} days ago';
-      endRemainingText = isAr
-          ? '(بعد ${inv.cycleRemainingDays} يوماً)'
-          : '(After ${inv.cycleRemainingDays} days)';
-    }
-
-    final startDateStr = DateHelper.date(inv.effectiveStartDate);
-    final endDateStr = DateHelper.date(inv.effectiveEndDate);
+    final startDateStr = DateHelper.date(timeline.startDate);
+    final endDateStr = DateHelper.date(timeline.endDate);
 
     return Container(
       decoration: BoxDecoration(
         color: _cardBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _cardBorder, width: 1.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _cardBorder, width: 1.0),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withValues(alpha: 0.55)
-                : Colors.black.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 6),
+                ? Colors.black.withValues(alpha: 0.45)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
           ),
           if (isDark)
             BoxShadow(
-              color: AppColors.darkGold.withValues(alpha: 0.05),
-              blurRadius: 32,
+              color: AppColors.darkGold.withValues(alpha: 0.04),
+              blurRadius: 24,
               spreadRadius: 1,
             ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── 1. HEADER (ACTIVE BADGE, TITLE, DESC, TAGS & BULLION ART) ──
               _buildHeader(planDesc),
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
 
               // ── 2. PRIMARY INVESTMENT METRICS (AMOUNT, MONTHLY RATE, DURATION) ──
               _buildPrimaryMetrics(durationDisplay, durationSubtext),
-              const SizedBox(height: 10),
+              const SizedBox(height: 7),
 
               // ── 3. EXPECTED RETURNS (MONTHLY & DAILY ESTIMATES) ──
               _buildExpectedReturns(),
-              const SizedBox(height: 10),
+              const SizedBox(height: 7),
 
               // ── 4. INVESTMENT DURATION & CIRCULAR PROGRESS COUNTER ──
               _buildProgressSection(
@@ -200,11 +147,11 @@ class ActiveInvestmentCard extends StatelessWidget {
                 cycleCompletedText: cycleCompletedText,
                 cycleRemainingText: cycleRemainingText,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 7),
 
               // ── 5. PERFORMANCE SECTION (REAL DATA ONLY) ──
-              _buildPerformanceSection(),
-              const SizedBox(height: 10),
+              // _buildPerformanceSection(),
+              // const SizedBox(height: 7),
 
               // ── 6. START & END DATES ──
               _buildDatesSection(
@@ -213,7 +160,7 @@ class ActiveInvestmentCard extends StatelessWidget {
                 startElapsedText: startElapsedText,
                 endRemainingText: endRemainingText,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 7),
 
               // ── 7. NEXT PAYOUT COUNTDOWN & WALLET AUTO-DEPOSIT FOOTER ──
               _buildPayoutFooter(),
@@ -240,32 +187,30 @@ class ActiveInvestmentCard extends StatelessWidget {
       children: [
         // Status Pill
         _buildStatusPill(),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
 
         // Investment Title (Never truncated)
         Text(
           planName,
           style: TextStyle(
             color: _textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.2,
-            height: 1.25,
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.1,
           ),
         ),
         if (planDesc.isNotEmpty) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             planDesc,
             style: TextStyle(
               color: _textSecondary,
-              fontSize: 12.5,
+              fontSize: 10.5,
               fontWeight: FontWeight.normal,
-              height: 1.35,
             ),
           ),
         ],
-        const SizedBox(height: 14),
+        const SizedBox(height: 8),
 
         // Full-Width Hero Investment Image across card width
         _buildInvestmentArtwork(imageAsset),
@@ -297,37 +242,37 @@ class ActiveInvestmentCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: badgeBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: badgeBorder, width: 1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: badgeBorder, width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 7,
-            height: 7,
+            width: 6,
+            height: 6,
             decoration: BoxDecoration(
               color: dotColor,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: dotColor.withValues(alpha: 0.6),
-                  blurRadius: 6,
-                  spreadRadius: 1,
+                  color: dotColor.withValues(alpha: 0.5),
+                  blurRadius: 4,
+                  spreadRadius: 0.5,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           Text(
             badgeText,
             style: TextStyle(
               color: dotColor,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -340,10 +285,10 @@ class ActiveInvestmentCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      height: 150,
+      height: 110,
       decoration: BoxDecoration(
         color: _innerCardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.08)
@@ -352,14 +297,14 @@ class ActiveInvestmentCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -372,7 +317,7 @@ class ActiveInvestmentCard extends StatelessWidget {
                     radius: 0.9,
                     colors: [
                       AppColors.darkGold.withValues(
-                        alpha: isDark ? 0.22 : 0.12,
+                        alpha: isDark ? 0.20 : 0.10,
                       ),
                       Colors.transparent,
                     ],
@@ -403,31 +348,6 @@ class ActiveInvestmentCard extends StatelessWidget {
                       fit: BoxFit.cover,
                     ),
             ),
-
-            // Subtle Gold Growth Indicator Badge in top corner
-            // Positioned(
-            //   top: 10,
-            //   right: isAr ? null : 12,
-            //   left: isAr ? 12 : null,
-            //   child: Container(
-            //     padding: const EdgeInsets.all(6),
-            //     decoration: BoxDecoration(
-            //       shape: BoxShape.circle,
-            //       color: (isDark ? Colors.black : Colors.white).withValues(
-            //         alpha: 0.5,
-            //       ),
-            //       border: Border.all(
-            //         color: AppColors.darkGold.withValues(alpha: 0.4),
-            //         width: 1,
-            //       ),
-            //     ),
-            //     child: Icon(
-            //       Icons.north_east_rounded,
-            //       size: 16,
-            //       color: AppColors.darkGold,
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ),
@@ -448,7 +368,7 @@ class ActiveInvestmentCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       decoration: BoxDecoration(
         color: _innerCardBg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _innerBorder, width: 1),
       ),
       child: Row(
@@ -458,21 +378,28 @@ class ActiveInvestmentCard extends StatelessWidget {
             flex: 6,
             child: Row(
               children: [
-                _buildCircleIcon(Icons.account_balance_wallet_rounded),
-                const SizedBox(width: 8),
+                _buildCircleIcon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 26,
+                  iconSize: 13,
+                ),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'investment_value'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: isAr
@@ -482,8 +409,8 @@ class ActiveInvestmentCard extends StatelessWidget {
                           amountFormatted,
                           style: TextStyle(
                             color: _goldColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            //fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -500,21 +427,28 @@ class ActiveInvestmentCard extends StatelessWidget {
             flex: 5,
             child: Row(
               children: [
-                _buildCircleIcon(Icons.trending_up_rounded),
-                const SizedBox(width: 8),
+                _buildCircleIcon(
+                  Icons.trending_up_rounded,
+                  size: 26,
+                  iconSize: 13,
+                ),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'monthly_return_rate'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: isAr
@@ -524,8 +458,8 @@ class ActiveInvestmentCard extends StatelessWidget {
                           profitRateFormatted,
                           style: TextStyle(
                             color: _textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            //fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -542,21 +476,28 @@ class ActiveInvestmentCard extends StatelessWidget {
             flex: 5,
             child: Row(
               children: [
-                _buildCircleIcon(Icons.access_time_rounded),
-                const SizedBox(width: 8),
+                _buildCircleIcon(
+                  Icons.access_time_rounded,
+                  size: 26,
+                  iconSize: 13,
+                ),
+                const SizedBox(width: 3),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'investment_duration'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 9,
+                          //fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: isAr
@@ -566,18 +507,24 @@ class ActiveInvestmentCard extends StatelessWidget {
                           durationDisplay,
                           style: TextStyle(
                             color: _textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 9,
+                            //fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                       if (durationSubtext != null)
-                        Text(
-                          durationSubtext,
-                          style: TextStyle(
-                            color: _textMuted,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.normal,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: isAr
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Text(
+                            durationSubtext,
+                            style: TextStyle(
+                              color: _textMuted,
+                              fontSize: 9.5,
+                              //fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                     ],
@@ -596,47 +543,50 @@ class ActiveInvestmentCard extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   Widget _buildExpectedReturns() {
     final monthlyProfitStr =
-        '+\$${KasbyNumberFormatter.formatAmount(inv.monthlyProfit)}';
-    final dailyProfitStr = '+\$${inv.dailyProfit.toStringAsFixed(2)}';
+        '\$${NumberFormat('#,##0.00', 'en_US').format(inv.monthlyProfit)}';
+    final dailyProfitStr = '\$${inv.dailyProfit.toStringAsFixed(2)}';
     final rateBadgeStr =
-        '+${KasbyNumberFormatter.formatProfitPercentage(inv.profitPercentage)}';
+        KasbyNumberFormatter.formatProfitPercentage(inv.profitPercentage);
 
     return Row(
       children: [
         // Card A: Expected Monthly Return
         Expanded(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             decoration: BoxDecoration(
               color: _innerCardBg,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _innerBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
                     _buildCircleIcon(
                       Icons.calendar_today_rounded,
-                      size: 28,
-                      iconSize: 14,
+                      size: 14,
+                      iconSize: 12,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 3),
                     Expanded(
                       child: Text(
-                        'expected_monthly_return'.tr,
+                        'monthly_return'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _textSecondary,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          height: 1.2,
+                          height: 1.15,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 3),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
@@ -651,82 +601,87 @@ class ActiveInvestmentCard extends StatelessWidget {
                           monthlyProfitStr,
                           style: TextStyle(
                             color: _emeraldColor,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                           // fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 3),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
+                        horizontal: 4,
+                        vertical: 1.5,
                       ),
                       decoration: BoxDecoration(
                         color: _emeraldColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
                         rateBadgeStr,
                         style: TextStyle(
                           color: _emeraldColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 9.5,
+                         // fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   'monthly_payout_wallet_note'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: _textMuted,
-                    fontSize: 10,
-                    height: 1.25,
+                    fontSize: 9.5,
+                    height: 1.2,
                   ),
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
 
         // Card B: Estimated Daily Return
         Expanded(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: _innerCardBg,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _innerBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
                     _buildCircleIcon(
                       Icons.monetization_on_rounded,
-                      size: 28,
-                      iconSize: 14,
+                      size: 24,
+                      iconSize: 12,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 3),
                     Expanded(
                       child: Text(
-                        'approx_daily_return'.tr,
+                        'daily_return'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          height: 1.2,
+                          fontSize: 13,
+                          //fontWeight: FontWeight.w600,
+                          height: 1.15,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 3),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
@@ -741,40 +696,42 @@ class ActiveInvestmentCard extends StatelessWidget {
                           dailyProfitStr,
                           style: TextStyle(
                             color: _emeraldColor,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                           // fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
+                        horizontal: 4,
+                        vertical: 1.5,
                       ),
                       decoration: BoxDecoration(
                         color: _emeraldColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
                         rateBadgeStr,
                         style: TextStyle(
                           color: _emeraldColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 9.5,
+                         // fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   'based_on_monthly_return'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: _textMuted,
-                    fontSize: 10,
-                    height: 1.25,
+                    fontSize: 9.5,
+                    height: 1.2,
                   ),
                 ),
               ],
@@ -796,30 +753,32 @@ class ActiveInvestmentCard extends StatelessWidget {
     required String cycleRemainingText,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
         color: _innerCardBg,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _innerBorder),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Circular Progress Ring with Glowing Gold Arc
-              _InvestmentProgressRing(
-                progress: progressValue,
-                percent: progressPercent,
-                goldColor: _goldColor,
-                isDark: isDark,
-              ),
-              const SizedBox(width: 14),
+              // _InvestmentProgressRing(
+              //   progress: progressValue,
+              //   percent: progressPercent,
+              //   goldColor: _goldColor,
+              //   isDark: isDark,
+              // ),
+              //const SizedBox(width: 10),
 
               // Title, Milestone & Linear Bar
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -828,30 +787,54 @@ class ActiveInvestmentCard extends StatelessWidget {
                           'investment_progress'.tr,
                           style: TextStyle(
                             color: _textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                           // fontWeight: FontWeight.bold,
                           ),
                         ),
                         _buildCycleActiveIndicator(),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      cyclePositionText,
-                      style: TextStyle(
-                        color: _textSecondary,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    const SizedBox(height: 3),
+                  Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF4A4E69)
+                          : const Color(0xFF94A3B8),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 8),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    cycleRemainingText,
+                    style: TextStyle(
+                      color: _textSecondary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+                    // Text(
+                    //   cyclePositionText,
+                    //   style: TextStyle(
+                    //     color: _textSecondary,
+                    //     fontSize: 11,
+                    //     fontWeight: FontWeight.w500,
+                    //   ),
+                    // ),
+                     const SizedBox(height: 6),
 
                     // Custom Linear Bar with Gold Glow
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
                         value: progressValue,
-                        minHeight: 7,
+                        minHeight: 5,
                         backgroundColor: isDark
                             ? Colors.white.withValues(alpha: 0.08)
                             : const Color(0xFFE2E8F0),
@@ -863,7 +846,7 @@ class ActiveInvestmentCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           // Milestone Legend Dots Row
           Row(
@@ -873,48 +856,48 @@ class ActiveInvestmentCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 7,
-                    height: 7,
+                    width: 6,
+                    height: 6,
                     decoration: BoxDecoration(
                       color: _goldColor,
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 4),
                   Text(
                     cycleCompletedText,
                     style: TextStyle(
                       color: _textSecondary,
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF4A4E69)
-                          : const Color(0xFF94A3B8),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    cycleRemainingText,
-                    style: TextStyle(
-                      color: _textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+              // Row(
+              //   mainAxisSize: MainAxisSize.min,
+              //   children: [
+              //     Container(
+              //       width: 6,
+              //       height: 6,
+              //       decoration: BoxDecoration(
+              //         color: isDark
+              //             ? const Color(0xFF4A4E69)
+              //             : const Color(0xFF94A3B8),
+              //         shape: BoxShape.circle,
+              //       ),
+              //     ),
+              //     const SizedBox(width: 4),
+              //     Text(
+              //       cycleRemainingText,
+              //       style: TextStyle(
+              //         color: _textSecondary,
+              //         fontSize: 10.5,
+              //         fontWeight: FontWeight.w500,
+              //       ),
+              //     ),
+              //   ],
+              // ),
             ],
           ),
         ],
@@ -942,27 +925,27 @@ class ActiveInvestmentCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withValues(alpha: 0.3), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 5,
-            height: 5,
+            width: 4.5,
+            height: 4.5,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               color: color,
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
+              fontSize: 9.5,
+             // fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -973,6 +956,7 @@ class ActiveInvestmentCard extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   // 5. HISTORICAL PERFORMANCE SECTION (STRICT REAL DATA INTEGRITY)
   // ─────────────────────────────────────────────────────────────
+  // ignore: unused_element
   Widget _buildPerformanceSection() {
     // Check for genuine completed payout transactions for this specific investment
     final allTxns = HomeController.to.allTransactions.isNotEmpty
@@ -994,10 +978,10 @@ class ActiveInvestmentCard extends StatelessWidget {
     final hasRealHistoricalData = profitTxns.isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: _innerCardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _innerBorder),
       ),
       child: Column(
@@ -1010,16 +994,16 @@ class ActiveInvestmentCard extends StatelessWidget {
                 children: [
                   _buildCircleIcon(
                     Icons.show_chart_rounded,
-                    size: 28,
-                    iconSize: 15,
+                    size: 26,
+                    iconSize: 13,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Text(
                     'chart_historical_performance'.tr,
                     style: TextStyle(
                       color: _textPrimary,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                     // fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
@@ -1027,25 +1011,25 @@ class ActiveInvestmentCard extends StatelessWidget {
               if (inv.actualProfit != null && inv.actualProfit! > 0)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
+                    horizontal: 6,
+                    vertical: 2,
                   ),
                   decoration: BoxDecoration(
                     color: _emeraldColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     '+\$${inv.actualProfit!.toStringAsFixed(2)}',
                     style: TextStyle(
                       color: _emeraldColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 10.5,
+                     // fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           if (hasRealHistoricalData)
             _buildRealPerformanceChart(profitTxns)
@@ -1064,9 +1048,9 @@ class ActiveInvestmentCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 50,
+          height: 44,
           child: CustomPaint(
-            size: const Size(double.infinity, 50),
+            size: const Size(double.infinity, 44),
             painter: _RealPayoutSparklinePainter(
               values: amounts,
               lineColor: _goldColor,
@@ -1074,25 +1058,25 @@ class ActiveInvestmentCard extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 5),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               DateHelper.date(profitTxns.first.createdAt),
-              style: TextStyle(color: _textMuted, fontSize: 10),
+              style: TextStyle(color: _textMuted, fontSize: 9.5),
             ),
             Text(
               '${profitTxns.length} ${isAr ? 'دفعات محققة' : 'payouts'}',
               style: TextStyle(
                 color: _textSecondary,
-                fontSize: 10.5,
+                fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
             ),
             Text(
               DateHelper.date(profitTxns.last.createdAt),
-              style: TextStyle(color: _textMuted, fontSize: 10),
+              style: TextStyle(color: _textMuted, fontSize: 9.5),
             ),
           ],
         ),
@@ -1102,24 +1086,24 @@ class ActiveInvestmentCard extends StatelessWidget {
 
   Widget _buildHonestEmptyPerformanceCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.02)
             : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline_rounded, size: 16, color: _textMuted),
-          const SizedBox(width: 8),
+          Icon(Icons.info_outline_rounded, size: 14, color: _textMuted),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               'chart_no_records_msg'.tr,
               style: TextStyle(
                 color: _textSecondary,
-                fontSize: 11,
-                height: 1.3,
+                fontSize: 10.5,
+                height: 1.25,
               ),
             ),
           ),
@@ -1138,10 +1122,10 @@ class ActiveInvestmentCard extends StatelessWidget {
     required String endRemainingText,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: _innerCardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _innerBorder),
       ),
       child: Row(
@@ -1152,35 +1136,41 @@ class ActiveInvestmentCard extends StatelessWidget {
               children: [
                 _buildCircleIcon(
                   Icons.calendar_today_outlined,
-                  size: 32,
-                  iconSize: 16,
+                  size: 26,
+                  iconSize: 13,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'start_date_label'.tr,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        startDateStr,
-                        style: TextStyle(
-                          color: _textPrimary,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(height: 1),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: isAr
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Text(
+                          startDateStr,
+                          style: TextStyle(
+                            color: _textPrimary,
+                            fontSize: 12,
+                            //fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 1),
                       Text(
                         startElapsedText,
-                        style: TextStyle(color: _textMuted, fontSize: 10),
+                        style: TextStyle(color: _textMuted, fontSize: 9.5),
                       ),
                     ],
                   ),
@@ -1188,7 +1178,7 @@ class ActiveInvestmentCard extends StatelessWidget {
               ],
             ),
           ),
-          _buildVerticalDivider(height: 38),
+          _buildVerticalDivider(height: 30),
 
           // End Date Card
           Expanded(
@@ -1196,35 +1186,41 @@ class ActiveInvestmentCard extends StatelessWidget {
               children: [
                 _buildCircleIcon(
                   Icons.event_available_outlined,
-                  size: 32,
-                  iconSize: 16,
+                  size: 26,
+                  iconSize: 13,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'end_date_label'.tr,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        endDateStr,
-                        style: TextStyle(
-                          color: _textPrimary,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(height: 1),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: isAr
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Text(
+                          endDateStr,
+                          style: TextStyle(
+                            color: _textPrimary,
+                            fontSize: 12,
+                           // fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 1),
                       Text(
                         endRemainingText,
-                        style: TextStyle(color: _textMuted, fontSize: 10),
+                        style: TextStyle(color: _textMuted, fontSize: 9.5),
                       ),
                     ],
                   ),
@@ -1242,10 +1238,10 @@ class ActiveInvestmentCard extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   Widget _buildPayoutFooter() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: _innerCardBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _innerBorder),
       ),
       child: Row(
@@ -1255,25 +1251,55 @@ class ActiveInvestmentCard extends StatelessWidget {
             flex: 5,
             child: Row(
               children: [
-                _buildCircleIcon(Icons.timer_outlined, size: 32, iconSize: 16),
-                const SizedBox(width: 8),
+                _buildCircleIcon(
+                  Icons.timer_outlined,
+                  size: 26,
+                  iconSize: 13,
+                ),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'next_payout'.tr,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 2),
                       Obx(() {
-                        final raw =
-                            HomeController.to.investmentCountdowns[inv.id] ??
-                            '--:--:--';
+                        String? raw =
+                            HomeController.to.investmentCountdowns[inv.id];
+
+                        if (raw == null || raw.isEmpty) {
+                          if (inv.status != 'active' || inv.isCycleWaiting) {
+                            raw = 'cycle_completed';
+                          } else if (inv.effectiveNextPayout != null) {
+                            final diff = inv.effectiveNextPayout!.difference(
+                              DateTime.now(),
+                            );
+                            if (!diff.isNegative) {
+                              final h = diff.inHours.toString().padLeft(2, '0');
+                              final m = (diff.inMinutes % 60).toString().padLeft(
+                                2,
+                                '0',
+                              );
+                              final s = (diff.inSeconds % 60).toString().padLeft(
+                                2,
+                                '0',
+                              );
+                              raw = '$h:$m:$s';
+                            } else {
+                              raw = 'cycle_completed';
+                            }
+                          } else {
+                            raw = 'cycle_completed';
+                          }
+                        }
 
                         if (raw == 'cycle_completed') {
                           return Row(
@@ -1281,12 +1307,12 @@ class ActiveInvestmentCard extends StatelessWidget {
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
+                                  horizontal: 5,
+                                  vertical: 1.5,
                                 ),
                                 decoration: BoxDecoration(
                                   color: _emeraldColor.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.circular(5),
                                   border: Border.all(
                                     color: _emeraldColor.withValues(alpha: 0.3),
                                     width: 0.8,
@@ -1296,8 +1322,8 @@ class ActiveInvestmentCard extends StatelessWidget {
                                   'cycle_completed'.tr,
                                   style: TextStyle(
                                     color: _emeraldColor,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                    //fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
@@ -1318,11 +1344,11 @@ class ActiveInvestmentCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _buildTimeSegment(h, 'countdown_hours'.tr),
+                              _buildTimeSegment(s, 'countdown_seconds'.tr),
                               _buildTimeSeparator(),
                               _buildTimeSegment(m, 'countdown_minutes'.tr),
                               _buildTimeSeparator(),
-                              _buildTimeSegment(s, 'countdown_seconds'.tr),
+                              _buildTimeSegment(h, 'countdown_hours'.tr),
                             ],
                           ),
                         );
@@ -1333,7 +1359,7 @@ class ActiveInvestmentCard extends StatelessWidget {
               ],
             ),
           ),
-          _buildVerticalDivider(height: 42),
+          _buildVerticalDivider(height: 30),
 
           // Auto-deposit to Kasby Wallet Note
           Expanded(
@@ -1343,28 +1369,33 @@ class ActiveInvestmentCard extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'auto_deposit_note'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _textPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 10.5,
+                          //fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 1),
                       Text(
                         'to_your_kasby_wallet'.tr,
-                        style: TextStyle(color: _textSecondary, fontSize: 10),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: _textSecondary, fontSize: 9.5),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _buildCircleIcon(
                   Icons.account_balance_wallet_outlined,
-                  size: 32,
-                  iconSize: 16,
+                  size: 26,
+                  iconSize: 13,
                 ),
               ],
             ),
@@ -1382,25 +1413,25 @@ class ActiveInvestmentCard extends StatelessWidget {
           val,
           style: TextStyle(
             color: _goldColor,
-            fontSize: 14,
-            fontWeight: FontWeight.w900,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
             fontFamily: 'monospace',
           ),
         ),
-        Text(label, style: TextStyle(color: _textMuted, fontSize: 8.5)),
+        Text(label, style: TextStyle(color: _textMuted, fontSize: 8)),
       ],
     );
   }
 
   Widget _buildTimeSeparator() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         ':',
         style: TextStyle(
           color: _goldColor.withValues(alpha: 0.6),
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          //fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -1414,7 +1445,7 @@ class ActiveInvestmentCard extends StatelessWidget {
       children: [
         // Cycle Restart Button (If Waiting)
         if (inv.isCycleWaiting) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 7),
           Obx(() {
             final isStarting =
                 HomeController.to.cycleRestartLoading[inv.id] == true;
@@ -1437,9 +1468,9 @@ class ActiveInvestmentCard extends StatelessWidget {
 
         // Auto-Restart Switch (If Subscribed)
         if (isActive && HomeController.to.isSubscribed.value) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 7),
           Divider(height: 1, color: _dividerColor),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Obx(() {
             final isToggling =
                 HomeController.to.autoRestartToggleLoading[inv.id] == true;
@@ -1450,14 +1481,14 @@ class ActiveInvestmentCard extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.autorenew_rounded,
-                      size: 18,
+                      size: 16,
                       color: AppColors.darkGold,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text(
                       'auto_restart'.tr,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: _textPrimary,
                       ),
@@ -1466,8 +1497,8 @@ class ActiveInvestmentCard extends StatelessWidget {
                 ),
                 isToggling
                     ? SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: 18,
+                        height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(_goldColor),
@@ -1492,14 +1523,14 @@ class ActiveInvestmentCard extends StatelessWidget {
         // Completed Cycle Banner (if not active and completed/matured)
         if (!isActive &&
             (inv.status == 'completed' || inv.status == 'matured')) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 7),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: AppColors.softGreen.withValues(
                 alpha: isDark ? 0.08 : 0.06,
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: AppColors.softGreen.withValues(alpha: 0.2),
               ),
@@ -1508,15 +1539,15 @@ class ActiveInvestmentCard extends StatelessWidget {
               children: [
                 Icon(
                   Icons.check_circle_outline_rounded,
-                  size: 18,
+                  size: 16,
                   color: AppColors.softGreen,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'cycle_completed'.tr,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                       color: isDark
                           ? AppColors.softGreen
@@ -1528,7 +1559,7 @@ class ActiveInvestmentCard extends StatelessWidget {
                   Text(
                     DateHelper.date(inv.effectiveEndDate),
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w500,
                       color: _textSecondary,
                     ),
@@ -1546,18 +1577,18 @@ class ActiveInvestmentCard extends StatelessWidget {
   // ─────────────────────────────────────────────────────────────
   Widget _buildCircleIcon(
     IconData icon, {
-    double size = 34,
-    double iconSize = 18,
+    double size = 26,
+    double iconSize = 13,
   }) {
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.darkGold.withValues(alpha: isDark ? 0.15 : 0.1),
+        color: AppColors.darkGold.withValues(alpha: isDark ? 0.14 : 0.09),
         border: Border.all(
-          color: AppColors.darkGold.withValues(alpha: isDark ? 0.35 : 0.2),
-          width: 1,
+          color: AppColors.darkGold.withValues(alpha: isDark ? 0.30 : 0.18),
+          width: 0.8,
         ),
       ),
       child: Center(
@@ -1566,11 +1597,14 @@ class ActiveInvestmentCard extends StatelessWidget {
     );
   }
 
-  Widget _buildVerticalDivider({double height = 36}) {
+  Widget _buildVerticalDivider({
+    double height = 28,
+    EdgeInsetsGeometry margin = const EdgeInsets.symmetric(horizontal: 4),
+  }) {
     return Container(
       height: height,
       width: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
+      margin: margin,
       color: _dividerColor,
     );
   }
@@ -1593,13 +1627,13 @@ class _InvestmentProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 76,
-      height: 76,
+      width: 56,
+      height: 56,
       child: Stack(
         alignment: Alignment.center,
         children: [
           CustomPaint(
-            size: const Size(76, 76),
+            size: const Size(56, 56),
             painter: _RingArcPainter(
               progress: progress,
               goldColor: goldColor,
@@ -1613,8 +1647,8 @@ class _InvestmentProgressRing extends StatelessWidget {
                 '$percent%',
                 style: TextStyle(
                   color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
                   height: 1.1,
                 ),
               ),
@@ -1624,7 +1658,7 @@ class _InvestmentProgressRing extends StatelessWidget {
                   color: isDark
                       ? const Color(0xFF94A3B8)
                       : AppColors.textSecondaryLight,
-                  fontSize: 9.5,
+                  fontSize: 8,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1650,8 +1684,8 @@ class _RingArcPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - 10) / 2;
-    const strokeWidth = 6.5;
+    final radius = (size.width - 8) / 2;
+    const strokeWidth = 4.5;
 
     // Background track
     final trackPaint = Paint()
