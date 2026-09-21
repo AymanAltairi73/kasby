@@ -1,6 +1,8 @@
 # Flutter
 .dart_tool/
 .packages
+.flutter-plugins
+.flutter-plugins-dependencies
 .pub/
 build/
 
@@ -12,25 +14,44 @@ android/.kotlin/
 
 # iOS
 ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
 
-# APK
+# APK & App Bundles
 *.apk
 *.aab
 
-# Keystore files
+# Keystore & Android signing
 *.jks
 *.keystore
 key.properties
 
-# Environment files (keep .env.example if exists)
+# Apple signing & certificates
+*.p12
+*.mobileprovision
+*.cer
+*.pem
+*.p8
+
+# Firebase & Admin credentials
+firebase-adminsdk*.json
+service-account*.json
+
+# Environment files (keep .env.example)
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
 
-# Database / SQL migrations
+# Temporary root SQL patches (keep supabase/migrations/ trackable)
+/fix_*.sql
+/verify_*.sql
 sql/
-supabase/migrations/
+
+# Internal tools, diagnostics & supabase cache
+tool/
+scratch/
+supabase/.temp/
 
 # Temporary files
 *.tmp
@@ -56,4 +77,7 @@ supabase/migrations/
 *.iml
 *.ipr
 *.iws
+
+# OS
 .DS_Store
+Thumbs.db

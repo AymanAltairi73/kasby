@@ -98,19 +98,30 @@ Future<void> _bootstrap() async {
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Load environment variables
-  await dotenv.load(fileName: '.env');
-  SafeGetx.debugTrace(
-    className: 'main',
-    method: 'loadEnv',
-    feature: 'Startup',
-    status: 'SUCCESS',
-  );
+  try {
+    await dotenv.load(fileName: '.env');
+    SafeGetx.debugTrace(
+      className: 'main',
+      method: 'loadEnv',
+      feature: 'Startup',
+      status: 'SUCCESS',
+    );
+  } catch (e) {
+    debugPrint('[ENV] .env file not found or failed to load ($e), falling back to dart-define.');
+  }
+
+  final supabaseUrl = (dotenv.env['SUPABASE_URL']?.isNotEmpty == true)
+      ? dotenv.env['SUPABASE_URL']!
+      : const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://placeholder.supabase.co');
+  final supabaseAnonKey = (dotenv.env['SUPABASE_ANON_KEY']?.isNotEmpty == true)
+      ? dotenv.env['SUPABASE_ANON_KEY']!
+      : const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'placeholder-anon-key');
 
   // Initialize Supabase
   try {
     await Supabase.initialize(
-      url: dotenv.env['SUPABASE_URL']!,
-      publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
+      url: supabaseUrl,
+      publishableKey: supabaseAnonKey,
     );
     SafeGetx.debugTrace(
       className: 'main',
