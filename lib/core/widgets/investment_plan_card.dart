@@ -68,6 +68,7 @@ class _InvestmentPlanCardState extends State<InvestmentPlanCard> {
             'profit': widget.profit,
             'profit_percentage': widget.rawProfitPercentage,
             'duration_days': widget.durationDays,
+            'duration': widget.duration,
             'minAmount': widget.minAmount,
             'color': widget.color,
             'amounts': widget.amounts,

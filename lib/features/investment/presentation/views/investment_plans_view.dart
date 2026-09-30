@@ -33,19 +33,20 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
     final list = plans.toList();
     switch (filterBy.value) {
       case 'short':
-        return list
-            .where(
-              (p) => (p.durationDays ?? 0) > 0 && (p.durationDays ?? 0) < 30,
-            )
-            .toList();
+        return list.where((p) {
+          final months = InvestmentTimelineState.resolveContractMonths(p.durationDays);
+          return months < 6;
+        }).toList();
       case 'medium':
-        return list
-            .where(
-              (p) => (p.durationDays ?? 0) >= 30 && (p.durationDays ?? 0) <= 90,
-            )
-            .toList();
+        return list.where((p) {
+          final months = InvestmentTimelineState.resolveContractMonths(p.durationDays);
+          return months >= 6 && months <= 12;
+        }).toList();
       case 'long':
-        return list.where((p) => (p.durationDays ?? 0) > 90).toList();
+        return list.where((p) {
+          final months = InvestmentTimelineState.resolveContractMonths(p.durationDays);
+          return months > 12;
+        }).toList();
       case 'all':
       default:
         return list;
@@ -60,7 +61,8 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
         break;
       case 'duration':
         list.sort(
-          (a, b) => (a.durationDays ?? 0).compareTo(b.durationDays ?? 0),
+          (a, b) => InvestmentTimelineState.resolveContractMonths(a.durationDays)
+              .compareTo(InvestmentTimelineState.resolveContractMonths(b.durationDays)),
         );
         break;
       case 'roi':
@@ -144,12 +146,8 @@ class _InvestmentPlansViewState extends State<InvestmentPlansView> {
   }
 
   String _formatDuration(int? days) {
-    if (days == null) return '';
     final isAr = Get.locale?.languageCode == 'ar';
-    final months = (days / 30).round();
-    final durText = InvestmentTimelineState.formatDurationMonths(months, isAr: isAr);
-    final durSub = InvestmentTimelineState.formatDurationSubtext(months, isAr: isAr);
-    return durSub != null ? '$durText $durSub' : durText;
+    return InvestmentTimelineState.formatPlanDuration(days, isAr: isAr);
   }
 
   String _formatProfit(double percentage) {

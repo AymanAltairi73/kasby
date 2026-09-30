@@ -157,12 +157,8 @@ class _InvestmentPlansListState extends State<_InvestmentPlansList> {
   }
 
   String _formatPlanDuration(int? days) {
-    if (days == null) return '';
     final isAr = Get.locale?.languageCode == 'ar';
-    final months = (days / 30).round();
-    final display = InvestmentTimelineState.formatDurationMonths(months, isAr: isAr);
-    final sub = InvestmentTimelineState.formatDurationSubtext(months, isAr: isAr);
-    return sub != null ? '$display $sub' : display;
+    return InvestmentTimelineState.formatPlanDuration(days, isAr: isAr);
   }
 
   @override
