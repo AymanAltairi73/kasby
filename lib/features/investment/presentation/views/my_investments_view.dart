@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_card.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -353,9 +354,17 @@ class _InvestmentsListState extends State<_InvestmentsList> {
           .eq('user_id', SupabaseService.userId!)
           .order('created_at', ascending: false);
 
-      investments.value = (response as List)
+      final all = (response as List)
           .map((json) => UserInvestmentModel.fromJson(json))
           .toList();
+
+      if (widget.isActive) {
+        investments.value = all
+            .where((inv) => inv.status == 'active' || inv.status == 'not_active')
+            .toList();
+      } else {
+        investments.value = all;
+      }
       SafeGetx.debugTrace(
         className: '_InvestmentsList',
         method: '_fetchInvestments',
@@ -565,15 +574,26 @@ class _InvestmentsListState extends State<_InvestmentsList> {
     final segments = <AllocationSegment>[];
     final trend = <double>[];
     double cumulative = 0;
+    final isAr = Get.locale?.languageCode == 'ar';
 
-    for (var i = 0; i < investments.length; i++) {
-      final inv = investments[i];
+    // Only compute metrics for active investments
+    final activeInvs = investments
+        .where((inv) => inv.status == 'active' || inv.status == 'not_active')
+        .toList();
+
+    for (var i = 0; i < activeInvs.length; i++) {
+      final inv = activeInvs[i];
       totalInvested += inv.amount;
-      final profit = inv.actualProfit ?? 0.0;
-      totalReturns += profit;
+      // Monthly returns for active investment in the month
+      final monthlyReturn = inv.monthlyProfit > 0
+          ? inv.monthlyProfit
+          : (inv.expectedProfit > 0
+              ? inv.expectedProfit
+              : (inv.amount * inv.profitPercentage / 100));
+      totalReturns += monthlyReturn;
       cumulative += inv.amount;
       trend.add(cumulative);
-      final planName = (Get.locale?.languageCode == 'ar'
+      final planName = (isAr
           ? (inv.investment?.nameAr ?? inv.investment?.nameEn)
           : (inv.investment?.nameEn ?? inv.investment?.nameAr))
           ?? '\$${inv.amount.toStringAsFixed(0)}';
@@ -590,30 +610,21 @@ class _InvestmentsListState extends State<_InvestmentsList> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Text(
-          //   'total_portfolio_value'.tr,
-          //   style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-          // ),
-          // const SizedBox(height: 4),
-          // Text(
-          //   '\$${(totalInvested + totalReturns).toStringAsFixed(2)}',
-          //   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
-          // ),
-          //const SizedBox(height: KasbySpacing.lg),
           Row(
             children: [
               Expanded(
                 child: _buildSummaryStat(
                   'total_invested'.tr,
-                  '\$${totalInvested.toStringAsFixed(2)}',
+                  '\$${NumberFormat('#,##0.00', 'en_US').format(totalInvested)}',
                   AppColors.darkGold,
                 ),
               ),
               Expanded(
                 child: _buildSummaryStat(
                   'total_returns'.tr,
-                  '+\$${totalReturns.toStringAsFixed(2)}',
+                  '+\$${NumberFormat('#,##0.00', 'en_US').format(totalReturns)}',
                   AppColors.softGreen,
+                  sublabel: isAr ? '(شهرياً)' : '(monthly)',
                 ),
               ),
             ],
@@ -649,13 +660,34 @@ class _InvestmentsListState extends State<_InvestmentsList> {
     );
   }
 
-  Widget _buildSummaryStat(String label, String value, Color color) {
+  Widget _buildSummaryStat(
+    String label,
+    String value,
+    Color color, {
+    String? sublabel,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+            if (sublabel != null) ...[
+              const SizedBox(width: 4),
+              Text(
+                sublabel,
+                style: TextStyle(
+                  color: AppColors.textSecondary.withValues(alpha: 0.7),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 4),
         Text(
