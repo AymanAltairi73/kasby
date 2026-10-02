@@ -184,10 +184,12 @@ class AuthSecurityService {
         (lower.contains('invalid') || lower.contains('expired'))) {
       return lower.contains('expired') ? 'otp_expired'.tr : 'invalid_otp'.tr;
     }
-    if (lower.contains('expired') ||
-        lower.contains('has expired') ||
-        lower.contains('otp_expired')) {
-      return 'otp_expired'.tr;
+    if (lower.contains('token has expired or is invalid') ||
+        (lower.contains('expired') && lower.contains('invalid')) ||
+        lower.contains('otp_expired') ||
+        lower.contains('expired') ||
+        lower.contains('has expired')) {
+      return 'otp_invalid_or_expired'.tr;
     }
     if (lower.contains('otp_disabled') || lower.contains('otp is disabled')) {
       return 'otp_channel_error'.tr;
