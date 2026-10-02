@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/utils/date_helper.dart';
-import 'package:kasby/core/localization/model_localization_extensions.dart';
 import 'package:kasby/core/theme/kasby_typography.dart';
 import 'package:kasby/core/widgets/directional_chevron.dart';
 import 'package:kasby/core/widgets/kasby_shimmer.dart';
@@ -52,7 +50,6 @@ class HomeRecentTransactions extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final homeController = HomeController.to;
-    final currencyController = CurrencyController.to;
 
     return Obx(() {
       final transactions = homeController.recentTransactions.take(3).toList();
@@ -90,7 +87,6 @@ class HomeRecentTransactions extends StatelessWidget {
 
       return Column(
         children: transactions.map((tx) {
-          final isOut = tx.isDebit;
           return Semantics(
             button: true,
             label: tx.localizedDescription,
@@ -137,7 +133,7 @@ class HomeRecentTransactions extends StatelessWidget {
                         children: [
                           Text(
                             tx.localizedDescription,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
@@ -146,7 +142,7 @@ class HomeRecentTransactions extends StatelessWidget {
                                 en: 12.0,
                                 context: context,
                               ),
-                              height: 1.2,
+                              height: 1.25,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -156,8 +152,9 @@ class HomeRecentTransactions extends StatelessWidget {
                                 : '',
                             style: TextStyle(
                               color: isDark
-                                  ? AppColors.textSecondary
+                                  ? Colors.white70
                                   : AppColors.textSecondaryLight,
+                              fontWeight: FontWeight.w500,
                               fontSize: KasbyTypography.sp(
                                 ar: 11.0,
                                 en: 10.0,

@@ -266,10 +266,10 @@ class _LoanViewState extends State<LoanView>
         label,
         style: TextStyle(
           color: isDark
-              ? AppColors.textSecondary
-              : AppColors.textSecondaryLight,
+              ? Colors.white
+              : AppColors.textBodyLight,
           fontWeight: FontWeight.bold,
-          fontSize: 12,
+          fontSize: 12.5,
         ),
       ),
     );
@@ -445,9 +445,10 @@ class _LoanViewState extends State<LoanView>
                       'active_investment_value'.tr,
                       style: TextStyle(
                         color: isDark
-                            ? AppColors.textSecondary
-                            : AppColors.textSecondaryLight,
-                        fontSize: 12,
+                            ? Colors.white70
+                            : AppColors.textBodyLight,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     Obx(
@@ -493,8 +494,9 @@ class _LoanViewState extends State<LoanView>
                       Text(
                         'loan_percentage'.tr,
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : Colors.black54,
-                          fontSize: 9,
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -950,10 +952,11 @@ class _LoanViewState extends State<LoanView>
                       Text(
                         'months'.trParams({'count': month.toString()}),
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                           color: isSelected
-                              ? Colors.black54
-                              : (isDark ? Colors.white54 : Colors.black54),
+                              ? Colors.black87
+                              : (isDark ? Colors.white70 : Colors.black87),
                         ),
                       ),
                     ],
@@ -1038,8 +1041,9 @@ class _LoanViewState extends State<LoanView>
               Text(
                 subtitle,
                 style: TextStyle(
-                  color: isDark ? Colors.white38 : Colors.black38,
-                  fontSize: 10,
+                  color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
           ],
@@ -1431,8 +1435,13 @@ class _LoanViewState extends State<LoanView>
       children: [
         Text(
           label,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+          style: TextStyle(
+            color: isDark ? Colors.white70 : AppColors.textBodyLight,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+          ),
         ),
+        const SizedBox(height: 2),
         Text(
           value,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),

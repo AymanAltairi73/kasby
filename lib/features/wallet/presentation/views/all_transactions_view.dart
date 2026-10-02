@@ -122,7 +122,8 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                 decoration: InputDecoration(
                   hintText: 'search_transactions_hint'.tr,
                   hintStyle: TextStyle(
-                    color: isDark ? Colors.white54 : Colors.black38,
+                    color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+                    fontSize: 14,
                   ),
                   border: InputBorder.none,
                 ),
@@ -185,7 +186,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                     vertical: 12,
                   ),
                   itemCount: 6,
-                  itemBuilder: (_, __) =>
+                  itemBuilder: (_, _) =>
                       KasbyShimmer.transactionItem(isDark: isDark),
                 );
               }
@@ -246,7 +247,7 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
             return ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemCount: _filters.length,
               itemBuilder: (context, index) {
                 final filter = _filters[index];
@@ -319,8 +320,8 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                               color: isActive
                                   ? Colors.black
                                   : (isDark
-                                        ? Colors.white70
-                                        : AppColors.textSecondaryLight),
+                                        ? Colors.white
+                                        : AppColors.onSurfaceLight),
                             ),
                           ),
                         ],
@@ -451,21 +452,22 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
             children: [
               Container(
                 width: 4,
+                height: 16,
                 decoration: BoxDecoration(
+                  color: AppColors.darkGold,
                   borderRadius: BorderRadius.circular(2),
                 ),
-                child: Icon(Icons.person_rounded, color: AppColors.darkGold),
               ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w800,
                   color: isDark
-                      ? AppColors.textSecondary
-                      : AppColors.textSecondaryLight,
-                  letterSpacing: 0.5,
+                      ? Colors.white
+                      : AppColors.onSurfaceLight,
+                  letterSpacing: 0.3,
                 ),
               ),
             ],
@@ -552,11 +554,12 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                       children: [
                         Text(
                           tx.localizedDescription,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
+                            height: 1.25,
                             color: isDark
                                 ? Colors.white
                                 : AppColors.onSurfaceLight,
@@ -568,18 +571,18 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
-                                vertical: 2,
+                                vertical: 2.5,
                               ),
                               decoration: BoxDecoration(
                                 color: (statusInfo['color'] as Color)
-                                    .withValues(alpha: 0.1),
+                                    .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 statusInfo['label'] as String,
                                 style: TextStyle(
                                   color: statusInfo['color'] as Color,
-                                  fontSize: 10,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -590,8 +593,10 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                                 _formatDate(tx.createdAt),
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 11,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : AppColors.textSecondaryLight,
+                                  fontSize: 11.5,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -632,9 +637,11 @@ class _AllTransactionsViewState extends State<AllTransactionsView> {
                               child: Text(
                                 '-${tx.formattedFee} ${'fee'.tr}',
                                 style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : AppColors.textSecondaryLight,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),

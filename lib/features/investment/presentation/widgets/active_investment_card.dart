@@ -51,9 +51,9 @@ class ActiveInvestmentCard extends StatelessWidget {
   Color get _goldColor => isDark ? AppColors.darkGold : const Color(0xFFB78628);
   Color get _textPrimary => isDark ? Colors.white : AppColors.textBodyLight;
   Color get _textSecondary =>
-      isDark ? const Color(0xFFB0B3C0) : AppColors.textSecondaryLight;
+      isDark ? const Color(0xFFCCD0DF) : const Color(0xFF475569);
   Color get _textMuted =>
-      isDark ? const Color(0xFF75788A) : AppColors.textMutedLight;
+      isDark ? const Color(0xFFA0A5B8) : const Color(0xFF64748B);
   Color get _emeraldColor => const Color(0xFF22C55E);
 
   String _getPlanImage(String name) {
@@ -395,8 +395,8 @@ class ActiveInvestmentCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 1),
@@ -444,8 +444,8 @@ class ActiveInvestmentCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 1),
@@ -493,8 +493,8 @@ class ActiveInvestmentCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: _textSecondary,
-                          fontSize: 9,
-                          //fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 1),
@@ -507,8 +507,8 @@ class ActiveInvestmentCard extends StatelessWidget {
                           durationDisplay,
                           style: TextStyle(
                             color: _textPrimary,
-                            fontSize: 9,
-                            //fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -631,12 +631,13 @@ class ActiveInvestmentCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   'monthly_payout_wallet_note'.tr,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: _textMuted,
-                    fontSize: 9.5,
-                    height: 1.2,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    height: 1.25,
                   ),
                 ),
               ],
@@ -726,12 +727,13 @@ class ActiveInvestmentCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   'based_on_monthly_return'.tr,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: _textMuted,
-                    fontSize: 9.5,
-                    height: 1.2,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    height: 1.25,
                   ),
                 ),
               ],
