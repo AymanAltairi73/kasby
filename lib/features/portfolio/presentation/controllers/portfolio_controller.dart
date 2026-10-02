@@ -189,7 +189,7 @@ class PortfolioController extends GetxController {
           ? ((inv.actualProfit ?? 0.0) / inv.amount * 100)
           : 0.0;
       bench.add({
-        'planName': inv.investment?.nameEn ?? inv.investment?.nameAr ?? 'Plan',
+        'planName': _planDisplayName(inv),
         'expectedRoi': expectedRoi,
         'actualRoi': actualRoi,
         'amount': inv.amount,
