@@ -10,6 +10,7 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/utils/number_formatter.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
+import 'package:kasby/core/utils/platform_features.dart';
 import 'package:kasby/routes/app_routes.dart';
 
 class SearchService {
@@ -486,6 +487,9 @@ class SearchService {
 
   static Future<List<SearchResultItem>> _searchKsp(String query) async {
     final items = <SearchResultItem>[];
+    if (!PlatformFeatures.isSpinWheelEnabled) {
+      return items;
+    }
 
     final kspTerms = ['ksp', 'points', 'نقاط', 'spin', 'wheel', 'عجلة'];
 
@@ -500,7 +504,7 @@ class SearchService {
           title: 'spin_wheel'.tr,
           subtitle: 'spin_wheel_description'.tr,
           category: 'ksp',
-          icon: Icons.casino_rounded,
+          icon: Icons.stars_rounded,
           color: const Color(0xFFE91E63),
           route: Routes.spinWheel,
         ),

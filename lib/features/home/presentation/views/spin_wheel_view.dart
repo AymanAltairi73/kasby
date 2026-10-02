@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:kasby/core/tour/tour_feature_host.dart';
 import 'package:kasby/core/tour/tour_ids.dart';
 import 'package:kasby/core/tour/tour_target_keys.dart';
+import 'package:kasby/core/utils/platform_features.dart';
+import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/widgets/kasby_button.dart';
@@ -53,6 +55,12 @@ class _SpinWheelViewState extends State<SpinWheelView>
   @override
   void initState() {
     super.initState();
+    if (!PlatformFeatures.isSpinWheelEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Get.offAllNamed(Routes.home);
+      });
+      return;
+    }
     SafeGetx.debugTrace(
       className: 'SpinWheelView',
       method: 'initState',
@@ -354,6 +362,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
   }
 
   void _handleSpinButtonPress() {
+    if (!PlatformFeatures.isSpinWheelEnabled) return;
     if (_isSpinning || _dbRewards.isEmpty) return;
 
     if (_isFreeSpinAvailable || _storedSpins > 0) {
@@ -364,6 +373,7 @@ class _SpinWheelViewState extends State<SpinWheelView>
   }
 
   void _spin() async {
+    if (!PlatformFeatures.isSpinWheelEnabled) return;
     if (_isSpinning || _dbRewards.isEmpty) return;
 
     setState(() {
@@ -757,6 +767,9 @@ class _SpinWheelViewState extends State<SpinWheelView>
 
   @override
   Widget build(BuildContext context) {
+    if (!PlatformFeatures.isSpinWheelEnabled) {
+      return const Scaffold(body: SizedBox.shrink());
+    }
     return PopScope(
       canPop: !_isSpinning,
       child: Scaffold(

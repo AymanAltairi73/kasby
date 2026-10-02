@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../controllers/shell_controller.dart';
 import '../services/enterprise_operations_logger.dart';
 import '../services/tour_service.dart';
+import '../utils/platform_features.dart';
 import 'home_tour_config.dart';
 import 'investments_tour_config.dart';
 import 'lucky_wheel_tour_config.dart';
@@ -118,6 +119,7 @@ class TourController extends GetxController {
   /// Context-aware tour for pushed routes (marketplace, social, QR, etc.).
   Future<void> tryStartFeatureTour(BuildContext context, TourId tourId) async {
     if (isRunning.value) return;
+    if (tourId == TourId.luckyWheel && !PlatformFeatures.isSpinWheelEnabled) return;
     if (!await TourService.canAutoStartTour(tourId)) return;
 
     final steps = _stepsFor(tourId);
@@ -133,6 +135,7 @@ class TourController extends GetxController {
 
   Future<void> replayTour(BuildContext context, TourId tourId) async {
     if (isRunning.value) return;
+    if (tourId == TourId.luckyWheel && !PlatformFeatures.isSpinWheelEnabled) return;
     await TourService.resetTour(tourId);
     final steps = _stepsFor(tourId);
     if (steps.isEmpty) return;
@@ -179,7 +182,9 @@ class TourController extends GetxController {
     TourId.marketplace => MarketplaceTourConfig.steps,
     TourId.social => SocialTourConfig.steps,
     TourId.qr => QrTourConfig.steps,
-    TourId.luckyWheel => LuckyWheelTourConfig.steps,
+    TourId.luckyWheel => PlatformFeatures.isSpinWheelEnabled
+        ? LuckyWheelTourConfig.steps
+        : const <TourStepDefinition>[],
     TourId.referral => ReferralTourConfig.steps,
     TourId.profile => ProfileTourConfig.steps,
   };

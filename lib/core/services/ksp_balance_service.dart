@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/core/services/supabase_service.dart';
+import 'package:kasby/core/utils/platform_features.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 import 'package:kasby/features/home/presentation/controllers/home_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -130,6 +131,9 @@ class KspBalanceService extends GetxService {
   }
 
   Future<Map<String, dynamic>> buySpinsBundle(String bundleType) async {
+    if (!PlatformFeatures.isSpinWheelEnabled) {
+      return {'success': false, 'error': 'Feature unavailable on this platform'};
+    }
     await refresh();
     final raw = await SupabaseService.client.rpc(
       'buy_spins_bundle',

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:kasby/core/theme/app_colors.dart';
 import 'package:kasby/core/theme/kasby_design.dart';
 import 'package:kasby/core/theme/kasby_typography.dart';
+import 'package:kasby/core/utils/platform_features.dart';
 import 'package:kasby/features/social/presentation/widgets/invite_friends_sheet.dart';
 import 'package:kasby/routes/app_routes.dart';
 
@@ -54,11 +55,12 @@ List<Map<String, dynamic>> homeSecondaryActions() => [
   //   'label': 'scan_qr'.tr,
   //   'onTap': () => Get.toNamed(Routes.qrScanner),
   // },
-  {
-    'icon': Icons.description_outlined,
-    'label': 'statements'.tr,
-    'onTap': () => Get.toNamed(Routes.statements),
-  },
+  if (PlatformFeatures.isSpinWheelEnabled)
+    {
+      'icon': Icons.description_outlined,
+      'label': 'statements'.tr,
+      'onTap': () => Get.toNamed(Routes.statements),
+    },
   {
     'icon': Icons.person_add_alt_1_rounded,
     'label': 'invite_friends'.tr,
@@ -107,11 +109,18 @@ class HomeQuickActions extends StatelessWidget {
       'label': 'subscriptions'.tr,
       'onTap': () => Get.toNamed(Routes.subscription),
     },
-    {
-      'icon': Icons.casino_rounded,
-      'label': 'spin_wheel'.tr,
-      'onTap': () => Get.toNamed(Routes.spinWheel),
-    },
+    if (PlatformFeatures.isSpinWheelEnabled)
+      {
+        'icon': Icons.stars_rounded,
+        'label': 'spin_wheel'.tr,
+        'onTap': () => Get.toNamed(Routes.spinWheel),
+      }
+    else
+      {
+        'icon': Icons.description_outlined,
+        'label': 'statements'.tr,
+        'onTap': () => Get.toNamed(Routes.statements),
+      },
     {
       'icon': Icons.grid_view_rounded,
       'label': 'more'.tr,
