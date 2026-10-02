@@ -71,8 +71,14 @@ class _LegalViewState extends State<LegalView>
                   ? KasbyLegalContent.termsOfServiceUrl
                   : KasbyLegalContent.privacyPolicyUrl;
               final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              try {
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  await launchUrl(uri, mode: LaunchMode.platformDefault);
+                }
+              } catch (e) {
+                debugPrint('[LEGAL_VIEW] Error launching $url: $e');
               }
             },
           ),

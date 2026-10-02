@@ -1,5 +1,3 @@
-import 'package:get/get.dart';
-
 /// Centralized platform feature policies for regulatory and store compliance.
 ///
 /// Ensures compliance with Apple App Store Review Guidelines (specifically
@@ -8,10 +6,9 @@ class PlatformFeatures {
   PlatformFeatures._();
 
   /// Whether chance-based / randomized reward features (such as the Spin Wheel)
-  /// are enabled on the current platform.
+  /// are enabled.
   ///
-  /// On iOS, this is strictly `false` to comply with Apple App Store Review
-  /// Guidelines regarding chance-based reward mechanisms.
-  /// On other platforms (e.g. Android), it remains enabled where supported.
-  static bool get isSpinWheelEnabled => !GetPlatform.isIOS;
+  /// Permanently disabled across all platforms (iOS, Android, etc.) to ensure
+  /// unified financial compliance and complete elimination of chance-based mechanics.
+  static bool get isSpinWheelEnabled => false;
 }
