@@ -420,6 +420,8 @@ class KasbyTranslations extends Translations {
       'password_updated_success': 'Password updated successfully!',
       'invalid_otp': 'Invalid OTP code',
       'otp_expired': 'OTP code expired',
+      'otp_invalid_or_expired':
+          'Verification code is incorrect or expired. Please check the code or request a new one.',
       'max_attempts_reached':
           'Maximum attempts reached. Please try again later.',
       'resend_code': 'Resend Code',
@@ -1318,6 +1320,9 @@ class KasbyTranslations extends Translations {
       // My Team
       'my_team': 'My Team',
       'team_members_count': 'Team Members',
+      'total_members': 'Total Members',
+      'earnings': 'Earnings',
+      'invite_friends_grow_team': 'Invite friends to grow your team',
       'team_earnings': 'Earnings from Team',
       'recipient': 'Recipient',
       'active_members': 'Active Members',
@@ -3173,6 +3178,8 @@ class KasbyTranslations extends Translations {
       'password_updated_success': 'تم تحديث كلمة المرور بنجاح!',
       'invalid_otp': 'رمز التحقق غير صحيح',
       'otp_expired': 'انتهت صلاحية الرمز',
+      'otp_invalid_or_expired':
+          'رمز التحقق غير صحيح أو انتهت صلاحيته. يرجى التأكد من الرمز أو طلب رمز جديد.',
       'max_attempts_reached':
           'تم الوصول للحد الأقصى للمحاولات. يرجى المحاولة لاحقاً.',
       'resend_code': 'إعادة إرسال الرمز',
@@ -4054,6 +4061,9 @@ class KasbyTranslations extends Translations {
       // My Team
       'my_team': 'فريقي',
       'team_members_count': 'عدد أعضاء فريقي',
+      'total_members': 'إجمالي الأعضاء',
+      'earnings': 'الأرباح',
+      'invite_friends_grow_team': 'ادعُ أصدقاءك لتوسيع فريقك وبناء شبكتك',
       'team_earnings': 'الأرباح من الفريق',
       'active_members': 'الأعضاء النشطون',
       'inactive_members': 'الأعضاء غير النشطين',

@@ -118,14 +118,7 @@ class UserInvestmentModel {
     if (start == null) return endDate;
 
     final planDays = investment?.durationDays;
-    final int months;
-    if (planDays != null && planDays >= 365) {
-      months = (planDays / 30).round();
-    } else if (planDays != null && planDays > 30) {
-      months = (planDays / 30).round();
-    } else {
-      months = 30; // Default Kasby contract duration: 30 months (2.5 years)
-    }
+    final int months = InvestmentTimelineState.resolveContractMonths(planDays);
 
     // If backend provided an end_date that spans the real multi-year contract:
     if (endDate != null && endDate!.difference(start).inDays > 180) {

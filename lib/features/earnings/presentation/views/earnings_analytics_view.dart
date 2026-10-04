@@ -521,7 +521,7 @@ class EarningsAnalyticsView extends GetView<EarningsAnalyticsController> {
       case 'investments':
         return Icons.trending_up_rounded;
       case 'lucky_wheel':
-        return Icons.casino_rounded;
+        return Icons.military_tech_rounded;
       case 'referral_rewards':
         return Icons.people_rounded;
       case 'registration_bonuses':

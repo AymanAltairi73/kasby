@@ -56,15 +56,7 @@ class InvestmentTimelineState {
     final start = inv.effectiveStartDate ?? now;
 
     final planDays = inv.investment?.durationDays;
-    final int targetContractMonths;
-    if (planDays != null && planDays >= 365) {
-      targetContractMonths = (planDays / 30).round();
-    } else if (planDays != null && planDays > 30) {
-      targetContractMonths = (planDays / 30).round();
-    } else {
-      // Standard Kasby contract duration: 30 months (2.5 years)
-      targetContractMonths = 30;
-    }
+    final int targetContractMonths = resolveContractMonths(planDays);
 
     final bool isEndAuth;
     final DateTime end;
@@ -250,8 +242,33 @@ class InvestmentTimelineState {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // DYNAMIC TEXT FORMATTERS
+  // DYNAMIC TEXT FORMATTERS & DURATION RESOLVER
   // ─────────────────────────────────────────────────────────────
+
+  /// Resolves the genuine contract duration in months for a given [planDays].
+  ///
+  /// In Kasby:
+  /// - Standard plans with 30-day payout cycles (or <= 30 or null) represent the standard
+  ///   2.5-year contract duration (30 months / سنتين ونصف).
+  /// - Custom multi-month or annual plans (> 30 days) map to their corresponding months.
+  static int resolveContractMonths(int? planDays) {
+    if (planDays != null && planDays >= 365) {
+      return (planDays / 30).round();
+    } else if (planDays != null && planDays > 30) {
+      return (planDays / 30).round();
+    } else {
+      // Standard Kasby contract duration: 30 months (2.5 years)
+      return 30;
+    }
+  }
+
+  /// Formats the plan duration for display across all views (e.g., "30 شهرًا (سنتين ونصف)").
+  static String formatPlanDuration(int? planDays, {required bool isAr}) {
+    final months = resolveContractMonths(planDays);
+    final durText = formatDurationMonths(months, isAr: isAr);
+    final durSub = formatDurationSubtext(months, isAr: isAr);
+    return durSub != null ? '$durText $durSub' : durText;
+  }
 
   static String formatDurationMonths(int months, {required bool isAr}) {
     if (!isAr) {

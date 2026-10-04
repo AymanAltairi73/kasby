@@ -61,6 +61,17 @@ import '../features/store/presentation/views/store_orders_view.dart';
 import '../features/earnings/presentation/views/earnings_analytics_view.dart';
 import '../features/earnings/presentation/controllers/earnings_analytics_controller.dart';
 import '../features/auth/presentation/middleware/auth_verification_middleware.dart';
+import '../core/utils/platform_features.dart';
+
+class SpinWheelGuardMiddleware extends GetMiddleware {
+  @override
+  RouteSettings? redirect(String? route) {
+    if (!PlatformFeatures.isSpinWheelEnabled) {
+      return const RouteSettings(name: Routes.home);
+    }
+    return null;
+  }
+}
 
 class AppPages {
   static const initial = Routes.splash;
@@ -129,7 +140,12 @@ class AppPages {
     _route(Routes.deposit, 'DepositView', () => const DepositView()),
     _route(Routes.withdraw, 'WithdrawView', () => const WithdrawView()),
     _route(Routes.agents, 'AgentsView', () => const AgentsView()),
-    _route(Routes.spinWheel, 'SpinWheelView', () => const SpinWheelView()),
+    _route(
+      Routes.spinWheel,
+      'SpinWheelView',
+      () => const SpinWheelView(),
+      middlewares: [SpinWheelGuardMiddleware()],
+    ),
     _route(
       Routes.dailyCheckIn,
       'DailyCheckInView',

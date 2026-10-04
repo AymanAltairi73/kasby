@@ -130,6 +130,14 @@ void main() {
       expect(InvestmentTimelineState.formatDurationSubtext(36, isAr: true), '(3 سنوات)');
       expect(InvestmentTimelineState.formatDurationMonths(36, isAr: false), '36 months');
       expect(InvestmentTimelineState.formatDurationSubtext(36, isAr: false), '(3 years)');
+
+      // formatPlanDuration (Standard Kasby 30-day plan -> 30 months / 2.5 years)
+      expect(InvestmentTimelineState.resolveContractMonths(30), 30);
+      expect(InvestmentTimelineState.resolveContractMonths(null), 30);
+      expect(InvestmentTimelineState.formatPlanDuration(30, isAr: true), '30 شهرًا (سنتين ونصف)');
+      expect(InvestmentTimelineState.formatPlanDuration(30, isAr: false), '30 months (2.5 years)');
+      expect(InvestmentTimelineState.formatPlanDuration(null, isAr: true), '30 شهرًا (سنتين ونصف)');
+      expect(InvestmentTimelineState.formatPlanDuration(365, isAr: true), '12 شهرًا (سنة واحدة)');
     });
 
     test('Authoritative Backend end_date Priority', () {

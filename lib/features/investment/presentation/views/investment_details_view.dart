@@ -130,10 +130,11 @@ class _InvestmentDetailsViewState extends State<InvestmentDetailsView> {
                         builder: (context) {
                           final isAr = Get.locale?.languageCode == 'ar';
                           final days = plan['duration_days'] as int?;
-                          final months = days != null ? (days / 30).round() : 30;
-                          final durText = InvestmentTimelineState.formatDurationMonths(months, isAr: isAr);
-                          final durSub = InvestmentTimelineState.formatDurationSubtext(months, isAr: isAr);
-                          final fullDuration = durSub != null ? '$durText $durSub' : durText;
+                          final fullDuration = plan['duration'] as String? ??
+                              InvestmentTimelineState.formatPlanDuration(
+                                days,
+                                isAr: isAr,
+                              );
                           return _buildDetailRow(
                             'investment_duration'.tr,
                             fullDuration,

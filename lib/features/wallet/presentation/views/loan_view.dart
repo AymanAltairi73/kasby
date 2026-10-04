@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
@@ -10,6 +11,7 @@ import 'package:kasby/core/controllers/currency_controller.dart';
 import 'package:kasby/features/wallet/presentation/controllers/loan_controller.dart';
 import 'package:kasby/core/models/loan_model.dart';
 import 'package:kasby/core/services/snack_service.dart';
+import 'package:kasby/routes/app_routes.dart';
 import 'package:kasby/core/utils/date_helper.dart';
 
 class LoanView extends StatefulWidget {
@@ -30,6 +32,8 @@ class _LoanViewState extends State<LoanView>
   bool agreedToTerms = false;
   int selectedDuration = 3;
   final TextEditingController _amountController = TextEditingController();
+  late final TapGestureRecognizer _legalTermsRecognizer;
+  late final TapGestureRecognizer _agreeTermsRecognizer;
 
   double get currentLoanAmount =>
       double.tryParse(_amountController.text) ?? 0.0;
@@ -65,6 +69,13 @@ class _LoanViewState extends State<LoanView>
       status: 'INFO',
     );
     _tabController = TabController(length: 3, vsync: this);
+    _legalTermsRecognizer = TapGestureRecognizer()
+      ..onTap = () => Get.toNamed(
+            Routes.legal,
+            arguments: {'initialTab': 0},
+          );
+    _agreeTermsRecognizer = TapGestureRecognizer()
+      ..onTap = () => setState(() => agreedToTerms = !agreedToTerms);
   }
 
   @override
@@ -77,6 +88,8 @@ class _LoanViewState extends State<LoanView>
     );
     _tabController.dispose();
     _amountController.dispose();
+    _legalTermsRecognizer.dispose();
+    _agreeTermsRecognizer.dispose();
     super.dispose();
   }
 
@@ -121,7 +134,7 @@ class _LoanViewState extends State<LoanView>
         );
       }
       return SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(15),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -253,10 +266,10 @@ class _LoanViewState extends State<LoanView>
         label,
         style: TextStyle(
           color: isDark
-              ? AppColors.textSecondary
-              : AppColors.textSecondaryLight,
+              ? Colors.white
+              : AppColors.textBodyLight,
           fontWeight: FontWeight.bold,
-          fontSize: 12,
+          fontSize: 12.5,
         ),
       ),
     );
@@ -412,7 +425,7 @@ class _LoanViewState extends State<LoanView>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: AppColors.darkGold.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
@@ -432,9 +445,10 @@ class _LoanViewState extends State<LoanView>
                       'active_investment_value'.tr,
                       style: TextStyle(
                         color: isDark
-                            ? AppColors.textSecondary
-                            : AppColors.textSecondaryLight,
-                        fontSize: 12,
+                            ? Colors.white70
+                            : AppColors.textBodyLight,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     Obx(
@@ -480,8 +494,9 @@ class _LoanViewState extends State<LoanView>
                       Text(
                         'loan_percentage'.tr,
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : Colors.black54,
-                          fontSize: 9,
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -491,7 +506,7 @@ class _LoanViewState extends State<LoanView>
             ],
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: 6),
             child: Divider(
               color: isDark
                   ? Colors.white10
@@ -506,25 +521,42 @@ class _LoanViewState extends State<LoanView>
             return Column(
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildMetricColumn(
-                      'total_loan_capacity'.tr,
-                      currencyController.formatAmount(totalCap),
-                      isDark ? Colors.white70 : AppColors.textBodyLight,
+                    Expanded(
+                      child: _buildMetricCard(
+                        icon: Icons.account_balance_rounded,
+                        label: 'total_loan_capacity'.tr,
+                        value: currencyController.formatAmount(totalCap),
+                        valueColor: isDark
+                            ? Colors.white70
+                            : AppColors.textBodyLight,
+                        iconColor: AppColors.darkGold,
+                      ),
                     ),
-                    _buildMetricColumn(
-                      'existing_loans'.tr,
-                      currencyController.formatAmount(existingLoans),
-                      existingLoans > 0
-                          ? AppColors.error
-                          : (isDark ? Colors.white60 : Colors.black54),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildMetricCard(
+                        icon: Icons.trending_down_rounded,
+                        label: 'existing_loans'.tr,
+                        value: currencyController.formatAmount(existingLoans),
+                        valueColor: existingLoans > 0
+                            ? AppColors.error
+                            : (isDark ? Colors.white60 : Colors.black54),
+                        iconColor: existingLoans > 0
+                            ? AppColors.error
+                            : AppColors.textSecondary,
+                      ),
                     ),
-                    _buildMetricColumn(
-                      'remaining_loan_capacity'.tr,
-                      currencyController.formatAmount(remaining),
-                      AppColors.darkGold,
-                      isHighlight: true,
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildMetricCard(
+                        icon: Icons.savings_rounded,
+                        label: 'remaining_loan_capacity'.tr,
+                        value: currencyController.formatAmount(remaining),
+                        valueColor: AppColors.darkGold,
+                        iconColor: AppColors.darkGold,
+                        isHighlight: true,
+                      ),
                     ),
                   ],
                 ),
@@ -573,53 +605,110 @@ class _LoanViewState extends State<LoanView>
     ).animate().fadeIn().slideY(begin: 0.1);
   }
 
-  Widget _buildMetricColumn(
-    String label,
-    String value,
-    Color valueColor, {
+  Widget _buildMetricCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color valueColor,
+    required Color iconColor,
     bool isHighlight = false,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: isDark
-                ? AppColors.textSecondary
-                : AppColors.textSecondaryLight,
-            fontSize: 11,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: (isHighlight
+                ? AppColors.darkGold
+                : (isDark ? Colors.white : Colors.black))
+            .withValues(alpha: isHighlight ? 0.08 : 0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: (isHighlight
+                  ? AppColors.darkGold
+                  : (isDark ? Colors.white : Colors.black))
+              .withValues(alpha: isHighlight ? 0.2 : 0.06),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isHighlight ? 16 : 14,
-            fontWeight: FontWeight.bold,
-            color: valueColor,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 14, color: iconColor),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 30,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : AppColors.textBodyLight,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.25,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: isHighlight ? 15 : 13,
+                fontWeight: FontWeight.bold,
+                color: valueColor,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildAmountSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        KasbyTextField(
-          label: 'loan_amount'.tr,
-          hint: 'enter_amount_usd'.tr,
-          controller: _amountController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          prefixIcon: Icon(
-            Icons.attach_money_rounded,
-            color: AppColors.darkGold,
-          ),
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
+    return KasbyCard(
+      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+      border: Border.all(
+        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ─── Header ───
+          Row(
             children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.darkGold.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.attach_money_rounded,
+                  color: AppColors.darkGold,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'loan_amount'.tr,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.textBodyLight,
+                ),
+              ),
+              const Spacer(),
               TextButton(
                 onPressed: () {
                   final max = loanController.remainingLoanCapacity;
@@ -629,6 +718,16 @@ class _LoanViewState extends State<LoanView>
                     });
                   }
                 },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  backgroundColor: AppColors.darkGold.withValues(alpha: 0.1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 child: Text(
                   'use_max'.tr,
                   style: TextStyle(
@@ -638,44 +737,167 @@ class _LoanViewState extends State<LoanView>
                   ),
                 ),
               ),
-              IconButton(
-                icon: Icon(
-                  Icons.remove_circle_outline_rounded,
-                  color: AppColors.textSecondary,
-                ),
-                tooltip: 'Decrease',
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // ─── Amount Input with Stepper ───
+          Row(
+            children: [
+              // Decrement button
+              _buildStepperButton(
+                icon: Icons.remove_rounded,
                 onPressed: _decrementAmount,
+                isDecrease: true,
               ),
-              IconButton(
-                icon: Icon(
-                  Icons.add_circle_outline_rounded,
-                  color: AppColors.darkGold,
+              const SizedBox(width: 12),
+              // Text field
+              Expanded(
+                child: KasbyTextField(
+                  hint: 'enter_amount_usd'.tr,
+                  controller: _amountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
-                tooltip: 'Increase',
+              ),
+              const SizedBox(width: 12),
+              // Increment button
+              _buildStepperButton(
+                icon: Icons.add_rounded,
                 onPressed: _incrementAmount,
+                isDecrease: false,
               ),
             ],
           ),
-        ),
-        Obx(() {
-          final isExceeded =
-              currentLoanAmount > loanController.remainingLoanCapacity;
-          if (isExceeded) {
-            return Padding(
-              padding: const EdgeInsets.only(top: 6, left: 8, right: 8),
-              child: Text(
-                'amount_exceeds_max_loan'.tr,
-                style: TextStyle(
-                  color: AppColors.error,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+          const SizedBox(height: 16),
+
+          // ─── Capacity Progress Bar ───
+          Obx(() {
+            final remaining = loanController.remainingLoanCapacity;
+            final totalCap = loanController.totalLoanCapacity;
+            final progress = totalCap > 0
+                ? (currentLoanAmount / totalCap).clamp(0.0, 1.0)
+                : 0.0;
+            final isExceeded = currentLoanAmount > remaining;
+
+            return Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.06),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isExceeded ? AppColors.error : AppColors.darkGold,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      currencyController.formatAmount(currentLoanAmount),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isExceeded
+                            ? AppColors.error
+                            : AppColors.darkGold,
+                      ),
+                    ),
+                    Text(
+                      currencyController.formatAmount(totalCap),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+                if (isExceeded) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: AppColors.error,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'amount_exceeds_max_loan'.tr,
+                            style: TextStyle(
+                              color: AppColors.error,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             );
-          }
-          return const SizedBox.shrink();
-        }),
-      ],
+          }),
+        ],
+      ),
+    ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1);
+  }
+
+  Widget _buildStepperButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required bool isDecrease,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: (isDecrease
+                    ? (isDark ? Colors.white : Colors.black)
+                    : AppColors.darkGold)
+                .withValues(alpha: isDecrease ? 0.06 : 0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: (isDecrease
+                      ? (isDark ? Colors.white : Colors.black)
+                      : AppColors.darkGold)
+                  .withValues(alpha: isDecrease ? 0.1 : 0.3),
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: isDecrease ? AppColors.textSecondary : AppColors.darkGold,
+            size: 22,
+          ),
+        ),
+      ),
     );
   }
 
@@ -730,10 +952,11 @@ class _LoanViewState extends State<LoanView>
                       Text(
                         'months'.trParams({'count': month.toString()}),
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                           color: isSelected
-                              ? Colors.black54
-                              : (isDark ? Colors.white54 : Colors.black54),
+                              ? Colors.black87
+                              : (isDark ? Colors.white70 : Colors.black87),
                         ),
                       ),
                     ],
@@ -818,8 +1041,9 @@ class _LoanViewState extends State<LoanView>
               Text(
                 subtitle,
                 style: TextStyle(
-                  color: isDark ? Colors.white38 : Colors.black38,
-                  fontSize: 10,
+                  color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
           ],
@@ -920,30 +1144,93 @@ class _LoanViewState extends State<LoanView>
   // }
 
   Widget _buildTermsSection() {
-    return Row(
-      children: [
-        Checkbox(
-          value: agreedToTerms,
-          activeColor: AppColors.darkGold,
-          checkColor: Colors.black,
-          onChanged: (val) => setState(() => agreedToTerms = val ?? false),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: agreedToTerms
+              ? AppColors.darkGold.withValues(alpha: 0.3)
+              : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
         ),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => setState(() => agreedToTerms = !agreedToTerms),
-            child: Text(
-              'legal_terms'.tr,
-              style: TextStyle(
-                color: isDark
-                    ? AppColors.textSecondary
-                    : AppColors.textSecondaryLight,
-                fontSize: 12,
+      ),
+      child: Row(
+        children: [
+          // ─── Checkbox ───
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: Checkbox(
+              value: agreedToTerms,
+              activeColor: AppColors.darkGold,
+              checkColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+              side: BorderSide(
+                color: isDark ? Colors.white24 : Colors.black26,
+                width: 1.5,
+              ),
+              onChanged: (val) =>
+                  setState(() => agreedToTerms = val ?? false),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // ─── Agreement text + link ───
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'i_agree_to'.tr,
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLight,
+                      fontSize: 12,
+                    ),
+                    recognizer: _agreeTermsRecognizer,
+                  ),
+                  const TextSpan(text: ' '),
+                  TextSpan(
+                    text: 'legal_terms'.tr,
+                    style: TextStyle(
+                      color: AppColors.darkGold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                      decorationColor: AppColors.darkGold.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                    recognizer: _legalTermsRecognizer,
+                  ),
+                ],
               ),
             ),
           ),
-        ),
-      ],
-    );
+          // ─── Navigate to legal view ───
+          IconButton(
+            onPressed: () => Get.toNamed(
+              Routes.legal,
+              arguments: {'initialTab': 0},
+            ),
+            icon: Icon(
+              Icons.open_in_new_rounded,
+              size: 18,
+              color: AppColors.darkGold,
+            ),
+            tooltip: 'legal_terms'.tr,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 300.ms);
   }
 
   Widget _buildSubmitButton() {
@@ -1148,8 +1435,13 @@ class _LoanViewState extends State<LoanView>
       children: [
         Text(
           label,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+          style: TextStyle(
+            color: isDark ? Colors.white70 : AppColors.textBodyLight,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+          ),
         ),
+        const SizedBox(height: 2),
         Text(
           value,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),

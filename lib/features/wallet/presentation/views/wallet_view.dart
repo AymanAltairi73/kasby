@@ -1445,14 +1445,17 @@ class _WalletViewState extends State<WalletView> with TickerProviderStateMixin {
                           context: context,
                         ),
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       DateHelper.time(tx.createdAt),
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: isDark
+                            ? Colors.white70
+                            : AppColors.textSecondaryLight,
+                        fontWeight: FontWeight.w500,
                         fontSize: KasbyTypography.sp(
                           ar: 11.0,
                           en: 10.0,

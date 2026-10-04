@@ -3,9 +3,9 @@ class KasbyLegalContent {
   KasbyLegalContent._();
 
   static const String privacyPolicyUrl =
-      'https://kasby-investment.netlify.app/privacy-policy';
+      'https://kasby-invest.netlify.app/privacy-policy';
   static const String termsOfServiceUrl =
-      'https://kasby-investment.netlify.app/terms-of-service';
+      'https://kasby-invest.netlify.app/terms-of-service';
 
   static String termsForLocale(String? languageCode) {
     return languageCode == 'ar' ? termsAr : termsEn;
@@ -44,7 +44,7 @@ Referral codes must be used in accordance with Program rules. Self-referrals, fr
 The Kasby marketplace allows purchase of digital and physical products from approved sellers. Listings, pricing, availability, and delivery are subject to seller and Platform policies. Kasby may act as facilitator and is not the manufacturer of third-party goods unless explicitly stated.
 
 8. REWARDS & GIFTS
-Promotional rewards, spin wheels, daily check-ins, gifts, and bonuses are discretionary. Kasby may set caps, expiry dates, and anti-abuse limits. Rewards may be revoked if obtained through fraud or system manipulation.
+Promotional rewards, daily check-ins, gifts, and bonuses are discretionary. Kasby may set caps, expiry dates, and anti-abuse limits. Rewards may be revoked if obtained through fraud or system manipulation.
 
 9. MEMBERSHIPS
 VIP or subscription memberships may unlock additional features, fee discounts, or priority support. Membership fees, renewal terms, and cancellation rules are displayed at purchase. Failure to pay may downgrade or suspend membership benefits.
@@ -150,7 +150,7 @@ By using Kasby, you acknowledge that you have read, understood, and agree to the
 يتيح سوق كاسبي شراء منتجات رقمية ومادية من بائعين معتمدين. الأسعار والتوفر والتسليم خاضعة لسياسات البائع والمنصة. كاسبي وسيط ما لم يُذكر خلاف ذلك.
 
 8. المكافآت والهدايا
-المكافآت الترويجية وعجلة الحظ والتسجيل اليومي والهدايا discretionary. قد تفرض كاسبي سقوفاً وتواريخ انتهاء وحدوداً ضد إساءة الاستخدام.
+المكافآت الترويجية والتسجيل اليومي والهدايا تقديرية. قد تفرض كاسبي سقوفاً وتواريخ انتهاء وحدوداً ضد إساءة الاستخدام.
 
 9. العضويات
 عضويات VIP أو الاشتراك قد تفتح ميزات إضافية أو خصومات. تُعرض رسوم التجديد وقواعد الإلغاء عند الشراء.

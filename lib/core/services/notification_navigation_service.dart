@@ -6,6 +6,7 @@ import 'package:kasby/core/models/notification_model.dart';
 import 'package:kasby/core/models/transaction_model.dart';
 import 'package:kasby/core/services/supabase_service.dart';
 import 'package:kasby/routes/app_routes.dart';
+import 'package:kasby/core/utils/platform_features.dart';
 import 'package:kasby/core/utils/safe_getx.dart';
 
 /// Centralized notification deep-link router for the Kasby user app.
@@ -31,7 +32,7 @@ class NotificationNavigationService {
     Routes.deposit,
     Routes.withdraw,
     Routes.agents,
-    Routes.spinWheel,
+    if (PlatformFeatures.isSpinWheelEnabled) Routes.spinWheel,
     Routes.dailyCheckIn,
     Routes.subscription,
     Routes.notifications,
@@ -226,7 +227,7 @@ class NotificationNavigationService {
 
   static String _normalizeUserRoute(String route) {
     final normalized = route.startsWith('/') ? route : '/$route';
-    const mapping = {
+    final mapping = {
       '/deposit': Routes.deposit,
       '/withdraw': Routes.withdraw,
       '/wallet': Routes.wallet,
@@ -243,7 +244,7 @@ class NotificationNavigationService {
       '/chat': Routes.supportChat,
       '/notifications': Routes.notifications,
       '/agent-dashboard': Routes.agentDashboard,
-      '/ksp-wallet': Routes.spinWheel,
+      '/ksp-wallet': PlatformFeatures.isSpinWheelEnabled ? Routes.spinWheel : Routes.wallet,
       '/my-qr': Routes.myQr,
       '/qr-scanner': Routes.qrScanner,
       '/profile': Routes.profile,
@@ -251,7 +252,7 @@ class NotificationNavigationService {
       '/daily-check-in': Routes.dailyCheckIn,
       '/all-transactions': Routes.allTransactions,
       '/transfer': Routes.transfer,
-      '/spin-wheel': Routes.spinWheel,
+      '/spin-wheel': PlatformFeatures.isSpinWheelEnabled ? Routes.spinWheel : Routes.home,
       '/store': Routes.store,
       '/store-orders': Routes.storeOrders,
       '/home': Routes.home,
@@ -282,6 +283,9 @@ class NotificationNavigationService {
       deepLink: data['deep_link'],
       entityType: data['entity_type'],
     );
+    if (!PlatformFeatures.isSpinWheelEnabled && resolved == Routes.spinWheel) {
+      return Routes.home;
+    }
     if (_isKnownRoute(resolved)) return resolved;
 
     SafeGetx.debugTrace(

@@ -263,6 +263,12 @@ class _VerifyEmailViewState extends State<VerifyEmailView>
     } on AuthException catch (e) {
       AppSnack.error('error'.tr, _auth.translateOtpError(e));
       _otpKey.currentState?.clear();
+      if (mounted) {
+        setState(() {
+          _resendCountdown = 0;
+          _countdownTimer?.cancel();
+        });
+      }
     } catch (_) {
       AppSnack.error('error'.tr, 'invalid_otp'.tr);
       _otpKey.currentState?.clear();

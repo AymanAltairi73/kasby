@@ -266,6 +266,13 @@ class _OtpViewState extends State<OtpView> {
       if (_retryCount < 2 && mounted) {
         _retryCount++;
       }
+      if (mounted) {
+        setState(() {
+          _canResend = true;
+          _resendCountdown = 0;
+          _timer?.cancel();
+        });
+      }
     } catch (_) {
       AppSnack.error('error'.tr, 'invalid_otp'.tr);
       _otpKey.currentState?.clear();
@@ -303,6 +310,13 @@ class _OtpViewState extends State<OtpView> {
       } on AuthException catch (e) {
         AppSnack.error('error'.tr, AuthController.to.translateOtpError(e));
         _otpKey.currentState?.clear();
+        if (mounted) {
+          setState(() {
+            _canResend = true;
+            _resendCountdown = 0;
+            _timer?.cancel();
+          });
+        }
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }

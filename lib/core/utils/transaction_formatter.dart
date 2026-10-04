@@ -171,7 +171,7 @@ class TransactionFormatter {
         return Icons.stars_rounded;
 
       case 'spin_reward':
-        return Icons.casino_rounded;
+        return Icons.military_tech_rounded;
 
       case 'referral_reward':
       case 'referral_commission':
