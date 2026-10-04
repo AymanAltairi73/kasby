@@ -57,3 +57,6 @@ supabase/migrations/
 *.ipr
 *.iws
 .DS_Store
+
+# FVM Version Cache
+.fvm/
